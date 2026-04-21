@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getResume, deleteResume, reparseResume, exportResume } from '../lib/api';
+import { useQuery } from '@tanstack/react-query';
+import { getResume, deleteResume, exportResume } from '../lib/api';
 import ScoreBreakdown from '../components/ScoreBreakdown';
 
 const BAND_STYLES = {
@@ -24,7 +24,6 @@ function Field({ label, value }) {
 export default function ResumeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [selectedScoreIdx, setSelectedScoreIdx] = useState(0);
 
   const { data: resume, isLoading, error } = useQuery({
@@ -36,11 +35,6 @@ export default function ResumeDetail() {
     if (!confirm('Delete this resume?')) return;
     await deleteResume(id);
     navigate('/resumes');
-  };
-
-  const handleReparse = async () => {
-    await reparseResume(id);
-    queryClient.invalidateQueries({ queryKey: ['resume', id] });
   };
 
   const handleExport = async (format) => {
@@ -75,10 +69,6 @@ export default function ResumeDetail() {
           <button onClick={() => handleExport('csv')}
             className="text-sm border border-ds-border px-3 py-1.5 rounded-btn text-ds-text hover:bg-ds-card transition-colors">
             Export CSV
-          </button>
-          <button onClick={handleReparse}
-            className="text-sm border border-ds-border px-3 py-1.5 rounded-btn text-ds-text hover:bg-ds-card transition-colors">
-            Reparse
           </button>
           <button onClick={handleDelete}
             className="text-sm bg-ds-dangerLight text-ds-danger border border-ds-dangerLight px-3 py-1.5 rounded-btn hover:bg-ds-danger hover:text-white transition-colors">

@@ -62,7 +62,7 @@ export default function ResumeList() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-heading text-2xl font-bold text-ds-text">
-          Resumes <span className="text-ds-textMuted font-normal text-lg">({deduplicated.length})</span>
+          Profiles <span className="text-ds-textMuted font-normal text-lg">({deduplicated.length})</span>
         </h1>
         <Link to="/upload"
           className="bg-primary text-white px-5 py-2 rounded-btn text-sm font-medium hover:bg-primary-dark transition-colors">
@@ -72,9 +72,9 @@ export default function ResumeList() {
 
       {deduplicated.length === 0 ? (
         <div className="text-center py-20 text-ds-textMuted">
-          <p className="text-base font-medium">No resumes yet.</p>
+          <p className="text-base font-medium">No profiles yet.</p>
           <Link to="/upload" className="text-primary hover:underline text-sm mt-2 inline-block">
-            Upload your first resume →
+            Upload your first profile →
           </Link>
         </div>
       ) : (
