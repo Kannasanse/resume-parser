@@ -107,7 +107,12 @@ router.get('/', async (req, res) => {
 
     const { data, error, count } = await supabase
       .from('resumes')
-      .select('*, parsed_data(candidate_name, email, skills), job_profiles(id, title)', { count: 'exact' })
+      .select(`
+        *,
+        parsed_data(candidate_name, email, skills),
+        job_profiles(id, title),
+        resume_scores(overall_score, band, job_profile_id, job_profiles(id, title))
+      `, { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(from, from + limit - 1);
 

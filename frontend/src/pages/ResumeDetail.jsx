@@ -1,7 +1,15 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getResume, deleteResume, reparseResume, exportResume } from '../lib/api';
 import ScoreBreakdown from '../components/ScoreBreakdown';
+
+const BAND_STYLES = {
+  'Strong Match':   'bg-ds-successLight text-ds-success',
+  'Good Match':     'bg-secondary-light text-secondary',
+  'Moderate Match': 'bg-ds-warningLight text-ds-warning',
+  'Weak Match':     'bg-ds-dangerLight text-ds-danger',
+};
 
 function Field({ label, value }) {
   if (!value) return null;
@@ -17,6 +25,7 @@ export default function ResumeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [selectedScoreIdx, setSelectedScoreIdx] = useState(0);
 
   const { data: resume, isLoading, error } = useQuery({
     queryKey: ['resume', id],
@@ -48,6 +57,8 @@ export default function ResumeDetail() {
   if (error || !resume) return <p className="text-ds-danger">Resume not found.</p>;
 
   const pd = resume.parsed_data?.[0];
+  const scores = resume.scores || [];
+  const activeScore = scores[selectedScoreIdx] || null;
 
   return (
     <div className="space-y-4">
@@ -84,11 +95,6 @@ export default function ResumeDetail() {
             <h1 className="font-heading text-xl font-bold text-ds-text mb-1">
               {pd?.candidate_name || 'Unknown Candidate'}
             </h1>
-            {resume.job_profiles?.title && (
-              <p className="text-xs text-secondary bg-secondary-light px-2.5 py-1 rounded-btn inline-block mb-4">
-                {resume.job_profiles.title}
-              </p>
-            )}
             <div className="grid grid-cols-2 gap-4 mt-3">
               <Field label="Email" value={pd?.email} />
               <Field label="Phone" value={pd?.phone} />
@@ -158,26 +164,61 @@ export default function ResumeDetail() {
           )}
         </div>
 
-        {/* Right column — all job scores */}
-        {resume.scores?.length > 0 && (
-          <div className="lg:col-span-1 space-y-4">
-            {resume.scores.map(s => (
-              <div key={s.job_profile_id} className="bg-ds-card rounded border border-ds-border p-6">
-                <div className="mb-4">
-                  <p className="text-xs text-ds-textMuted uppercase tracking-wide font-medium">Scored against</p>
-                  <p className="font-heading font-semibold text-ds-text mt-0.5">{s.job_profiles?.title || 'Job Profile'}</p>
-                  {s.job_profiles?.role_type && (
-                    <div className="flex gap-1.5 mt-1">
-                      <span className="text-xs bg-primary-light text-primary px-2 py-0.5 rounded-btn">{s.job_profiles.role_type}</span>
-                      {s.job_profiles.seniority && (
-                        <span className="text-xs bg-ds-bg text-ds-textMuted px-2 py-0.5 rounded-btn">{s.job_profiles.seniority}</span>
+        {/* Right column — score panel with job switcher */}
+        {scores.length > 0 && (
+          <div className="lg:col-span-1">
+            <div className="bg-ds-card rounded border border-ds-border overflow-hidden sticky top-4">
+              {/* Job profile switcher */}
+              <div className="border-b border-ds-border px-4 pt-4 pb-0">
+                <p className="text-xs font-semibold text-ds-textMuted uppercase tracking-widest mb-2">Match Score</p>
+                <div className="flex flex-wrap gap-1.5 pb-3">
+                  {scores.map((s, i) => {
+                    const title = s.job_profiles?.title || 'Job Profile';
+                    const pct   = Math.round((s.overall_score ?? 0) * 100);
+                    const isActive = i === selectedScoreIdx;
+                    return (
+                      <button
+                        key={s.job_profile_id}
+                        onClick={() => setSelectedScoreIdx(i)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-btn text-xs font-medium border transition-colors ${
+                          isActive
+                            ? 'bg-primary text-white border-primary'
+                            : 'bg-ds-bg text-ds-text border-ds-border hover:border-primary hover:text-primary'
+                        }`}
+                      >
+                        <span className="truncate max-w-[110px]">{title}</span>
+                        <span className={`flex-shrink-0 px-1.5 py-0.5 rounded-btn text-xs font-mono ${
+                          isActive ? 'bg-white/20 text-white' : `${BAND_STYLES[s.band] || 'bg-ds-bg text-ds-textMuted'}`
+                        }`}>
+                          {pct}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Active score breakdown */}
+              {activeScore && (
+                <div className="p-5">
+                  {scores.length > 1 && activeScore.job_profiles && (
+                    <div className="flex gap-1.5 mb-4">
+                      {activeScore.job_profiles.role_type && (
+                        <span className="text-xs bg-primary-light text-primary px-2 py-0.5 rounded-btn">
+                          {activeScore.job_profiles.role_type}
+                        </span>
+                      )}
+                      {activeScore.job_profiles.seniority && (
+                        <span className="text-xs bg-ds-bg text-ds-textMuted px-2 py-0.5 rounded-btn">
+                          {activeScore.job_profiles.seniority}
+                        </span>
                       )}
                     </div>
                   )}
+                  <ScoreBreakdown score={activeScore} />
                 </div>
-                <ScoreBreakdown score={s} />
-              </div>
-            ))}
+              )}
+            </div>
           </div>
         )}
       </div>

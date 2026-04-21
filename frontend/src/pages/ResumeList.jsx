@@ -4,6 +4,39 @@ import { Link } from 'react-router-dom';
 import { getResumes, deleteResume } from '../lib/api';
 import ResumeCard from '../components/ResumeCard';
 
+// Group resumes by candidate email; keep latest per email, attach all job profiles
+function deduplicateByEmail(resumes) {
+  const map = new Map(); // email → { resume, jobs: [{id, title, overall_score, band}] }
+
+  for (const r of resumes) {
+    const email = r.parsed_data?.[0]?.email || `__no_email_${r.id}`;
+    const scores = r.resume_scores || [];
+
+    if (!map.has(email)) {
+      map.set(email, { resume: r, jobs: scores });
+    } else {
+      const existing = map.get(email);
+      // Keep the record with the higher overall score (or most recent if no score)
+      const existingBest = Math.max(...existing.jobs.map(s => s.overall_score ?? 0), 0);
+      const newBest      = Math.max(...scores.map(s => s.overall_score ?? 0), 0);
+      if (newBest > existingBest) {
+        map.set(email, { resume: r, jobs: scores });
+      } else {
+        // Merge any job profiles not already tracked
+        const knownIds = new Set(existing.jobs.map(j => j.job_profile_id));
+        for (const s of scores) {
+          if (!knownIds.has(s.job_profile_id)) {
+            existing.jobs.push(s);
+            knownIds.add(s.job_profile_id);
+          }
+        }
+      }
+    }
+  }
+
+  return [...map.values()];
+}
+
 export default function ResumeList() {
   const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
@@ -22,13 +55,14 @@ export default function ResumeList() {
   if (isLoading) return <p className="text-ds-textMuted">Loading resumes...</p>;
   if (error) return <p className="text-ds-danger">Failed to load resumes.</p>;
 
-  const totalPages = Math.ceil((data?.total || 0) / (data?.limit || 10));
+  const deduplicated = deduplicateByEmail(data?.data || []);
+  const totalPages   = Math.ceil((data?.total || 0) / (data?.limit || 10));
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-heading text-2xl font-bold text-ds-text">
-          Resumes <span className="text-ds-textMuted font-normal text-lg">({data?.total || 0})</span>
+          Resumes <span className="text-ds-textMuted font-normal text-lg">({deduplicated.length})</span>
         </h1>
         <Link to="/upload"
           className="bg-primary text-white px-5 py-2 rounded-btn text-sm font-medium hover:bg-primary-dark transition-colors">
@@ -36,7 +70,7 @@ export default function ResumeList() {
         </Link>
       </div>
 
-      {data?.data?.length === 0 ? (
+      {deduplicated.length === 0 ? (
         <div className="text-center py-20 text-ds-textMuted">
           <p className="text-base font-medium">No resumes yet.</p>
           <Link to="/upload" className="text-primary hover:underline text-sm mt-2 inline-block">
@@ -45,8 +79,8 @@ export default function ResumeList() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {data?.data?.map(resume => (
-            <ResumeCard key={resume.id} resume={resume} onDelete={handleDelete} />
+          {deduplicated.map(({ resume, jobs }) => (
+            <ResumeCard key={resume.id} resume={resume} jobs={jobs} onDelete={handleDelete} />
           ))}
         </div>
       )}
