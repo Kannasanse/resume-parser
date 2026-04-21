@@ -1,3 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Source Sans 3', sans-serif;
+    background-color: #F2F3F5;
+    color: #171A45;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Montserrat', sans-serif;
+  }
+}

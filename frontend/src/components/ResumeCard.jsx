@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom';
 
-const STATUS_COLORS = {
-  completed: 'bg-green-100 text-green-700',
-  processing: 'bg-yellow-100 text-yellow-700',
-  failed: 'bg-red-100 text-red-700',
-  pending: 'bg-gray-100 text-gray-600',
+const STATUS_STYLES = {
+  completed:  'bg-ds-successLight text-ds-success',
+  processing: 'bg-ds-warningLight text-ds-warning',
+  failed:     'bg-ds-dangerLight text-ds-danger',
+  pending:    'bg-ds-bg text-ds-textMuted',
 };
 
 export default function ResumeCard({ resume, onDelete }) {
@@ -12,26 +12,32 @@ export default function ResumeCard({ resume, onDelete }) {
   const status = resume.status;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex flex-col gap-3">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="font-semibold text-gray-900 truncate">{pd?.candidate_name || 'Unknown'}</p>
-          <p className="text-sm text-gray-500 truncate">{pd?.email || resume.file_name}</p>
+    <div className="bg-ds-card rounded border border-ds-border p-5 flex flex-col gap-3 hover:border-ds-borderStrong transition-colors">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="font-heading font-semibold text-ds-text truncate">{pd?.candidate_name || 'Unknown'}</p>
+          <p className="text-sm text-ds-textMuted truncate mt-0.5">{pd?.email || resume.file_name}</p>
         </div>
-        <span className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_COLORS[status] || STATUS_COLORS.pending}`}>
+        <span className={`flex-shrink-0 text-xs px-2.5 py-1 rounded-btn font-medium ${STATUS_STYLES[status] || STATUS_STYLES.pending}`}>
           {status}
         </span>
       </div>
 
+      {resume.job_profiles?.title && (
+        <p className="text-xs text-ds-textTertiary bg-secondary-light px-2 py-1 rounded truncate">
+          {resume.job_profiles.title}
+        </p>
+      )}
+
       {pd?.skills?.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {pd.skills.slice(0, 5).map(skill => (
-            <span key={skill} className="bg-indigo-50 text-indigo-600 text-xs px-2 py-0.5 rounded-full">
+            <span key={skill} className="bg-primary-light text-primary text-xs px-2.5 py-0.5 rounded-btn font-medium">
               {skill}
             </span>
           ))}
           {pd.skills.length > 5 && (
-            <span className="text-xs text-gray-400">+{pd.skills.length - 5} more</span>
+            <span className="text-xs text-ds-textMuted">+{pd.skills.length - 5} more</span>
           )}
         </div>
       )}
@@ -39,13 +45,13 @@ export default function ResumeCard({ resume, onDelete }) {
       <div className="flex gap-2 mt-auto">
         <Link
           to={`/resumes/${resume.id}`}
-          className="flex-1 text-center text-sm bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700"
+          className="flex-1 text-center text-sm bg-primary text-white px-3 py-1.5 rounded-btn font-medium hover:bg-primary-dark transition-colors"
         >
           View
         </Link>
         <button
           onClick={() => onDelete(resume.id)}
-          className="text-sm text-red-500 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50"
+          className="text-sm text-ds-danger border border-ds-border px-3 py-1.5 rounded-btn hover:bg-ds-dangerLight transition-colors"
         >
           Delete
         </button>

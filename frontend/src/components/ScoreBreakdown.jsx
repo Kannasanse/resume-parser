@@ -1,28 +1,38 @@
 const BAND_STYLES = {
-  'Strong Match':   { bar: 'bg-emerald-500', badge: 'bg-emerald-100 text-emerald-700' },
-  'Good Match':     { bar: 'bg-blue-500',    badge: 'bg-blue-100 text-blue-700' },
-  'Moderate Match': { bar: 'bg-yellow-500',  badge: 'bg-yellow-100 text-yellow-700' },
-  'Weak Match':     { bar: 'bg-red-400',     badge: 'bg-red-100 text-red-600' },
+  'Strong Match':   { bar: '#177A17', badge: 'bg-ds-successLight text-ds-success', gauge: '#177A17' },
+  'Good Match':     { bar: '#0B8BC8', badge: 'bg-secondary-light text-secondary',  gauge: '#0B8BC8' },
+  'Moderate Match': { bar: '#A26412', badge: 'bg-ds-warningLight text-ds-warning', gauge: '#A26412' },
+  'Weak Match':     { bar: '#A01535', badge: 'bg-ds-dangerLight text-ds-danger',   gauge: '#A01535' },
 };
 
-const FACTOR_LABELS = {
-  skills:     'Skills Match',
-  experience: 'Experience',
-  education:  'Education',
-  title:      'Title Similarity',
-  certs:      'Certifications',
-  projects:   'Projects / Portfolio',
-  quality:    'Resume Quality',
+const FACTOR_META = {
+  skills:     { label: 'Skills Match',        blurb: 'Keyword + synonym alignment' },
+  experience: { label: 'Experience',           blurb: 'Years, domain & recency' },
+  education:  { label: 'Education',            blurb: 'Degree level & field' },
+  title:      { label: 'Title Similarity',     blurb: 'Role title cosine match' },
+  certs:      { label: 'Certifications',       blurb: 'Required cert coverage' },
+  projects:   { label: 'Projects / Portfolio', blurb: 'GitHub, depth & impact' },
+  quality:    { label: 'Resume Quality',       blurb: 'Completeness & metrics' },
 };
 
-function ScoreBar({ value, colorClass }) {
-  const pct = Math.round((value ?? 0) * 100);
+const FACTORS = ['skills', 'experience', 'education', 'title', 'certs', 'projects', 'quality'];
+function Gauge({ pct, color, size = 64, strokeWidth = 4 }) {
+  const r = (size / 2) - strokeWidth;
+  const circ = 2 * Math.PI * r;
+  const dash = (pct / 100) * circ;
   return (
-    <div className="flex items-center gap-3">
-      <div className="flex-1 bg-gray-100 rounded-full h-2">
-        <div className={`h-2 rounded-full transition-all ${colorClass}`} style={{ width: `${pct}%` }} />
-      </div>
-      <span className="text-xs text-gray-500 w-8 text-right">{pct}%</span>
+    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#E5E7ED" strokeWidth={strokeWidth} />
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color}
+          strokeWidth={strokeWidth}
+          strokeDasharray={`${dash} ${circ}`}
+          strokeLinecap="round" />
+      </svg>
+      <span className="absolute inset-0 flex items-center justify-center font-heading font-bold text-ds-text"
+        style={{ fontSize: size <= 44 ? 11 : 15 }}>
+        {pct}
+      </span>
     </div>
   );
 }
@@ -34,68 +44,53 @@ export default function ScoreBreakdown({ score, compact = false }) {
   const styles = BAND_STYLES[band] || BAND_STYLES['Weak Match'];
   const overall = Math.round((score.overall_score ?? 0) * 100);
 
-  const factors = ['skills', 'experience', 'education', 'title', 'certs', 'projects', 'quality'];
-
   if (compact) {
     return (
       <div className="flex items-center gap-2">
-        <div className="relative w-10 h-10">
-          <svg className="w-10 h-10 -rotate-90" viewBox="0 0 36 36">
-            <circle cx="18" cy="18" r="14" fill="none" stroke="#e5e7eb" strokeWidth="4" />
-            <circle cx="18" cy="18" r="14" fill="none"
-              stroke={overall >= 80 ? '#10b981' : overall >= 65 ? '#3b82f6' : overall >= 50 ? '#eab308' : '#f87171'}
-              strokeWidth="4"
-              strokeDasharray={`${overall * 0.879} 87.96`}
-              strokeLinecap="round" />
-          </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-gray-700">{overall}</span>
-        </div>
-        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${styles.badge}`}>{band}</span>
+        <Gauge pct={overall} color={styles.gauge} size={44} strokeWidth={4} />
+        <span className={`text-xs font-medium px-2.5 py-0.5 rounded-btn ${styles.badge}`}>{band}</span>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
-      {/* Overall */}
+    <div className="space-y-5">
+      {/* Overall header */}
       <div className="flex items-center gap-4">
-        <div className="relative w-16 h-16">
-          <svg className="w-16 h-16 -rotate-90" viewBox="0 0 36 36">
-            <circle cx="18" cy="18" r="14" fill="none" stroke="#e5e7eb" strokeWidth="4" />
-            <circle cx="18" cy="18" r="14" fill="none"
-              stroke={overall >= 80 ? '#10b981' : overall >= 65 ? '#3b82f6' : overall >= 50 ? '#eab308' : '#f87171'}
-              strokeWidth="4"
-              strokeDasharray={`${overall * 0.879} 87.96`}
-              strokeLinecap="round" />
-          </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-lg font-bold text-gray-800">{overall}</span>
-        </div>
+        <Gauge pct={overall} color={styles.gauge} size={64} strokeWidth={5} />
         <div>
-          <p className="text-sm text-gray-500">Overall Score</p>
-          <span className={`inline-block mt-0.5 text-sm font-semibold px-3 py-0.5 rounded-full ${styles.badge}`}>{band}</span>
+          <p className="text-xs text-ds-textMuted uppercase tracking-wide font-medium">Overall Score</p>
+          <span className={`inline-block mt-1 text-sm font-semibold px-3 py-0.5 rounded-btn ${styles.badge}`}>{band}</span>
           {score.candidate_years != null && (
-            <p className="text-xs text-gray-400 mt-1">{score.candidate_years.toFixed(1)} yrs experience detected</p>
+            <p className="text-xs text-ds-textMuted mt-1 font-mono">{score.candidate_years.toFixed(1)} yrs detected</p>
           )}
         </div>
       </div>
 
-      {/* Factor breakdown */}
-      <div className="space-y-3">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Score Breakdown</p>
-        {factors.map(key => {
+      {/* Factor rows: [label+blurb 140px] [bar flex] [score 64px] [weight 52px] */}
+      <div className="space-y-2.5">
+        <p className="text-xs font-semibold text-ds-textMuted uppercase tracking-widest">Score Breakdown</p>
+        {FACTORS.map(key => {
           const raw = score[`${key}_score`];
           const pct = raw != null ? Math.round(raw * 100) : null;
           const weight = score.weights_used?.[key];
+          const meta = FACTOR_META[key];
           return (
-            <div key={key}>
-              <div className="flex justify-between mb-1">
-                <span className="text-xs text-gray-600">{FACTOR_LABELS[key]}</span>
-                <span className="text-xs text-gray-400">
-                  {pct != null ? `${pct}%` : '—'}
-                  {weight != null && <span className="ml-1 text-gray-300">· wt {Math.round(weight * 100)}%</span>}
-                </span>
+            <div key={key} className="flex items-center gap-3">
+              <div className="w-36 flex-shrink-0">
+                <p className="text-xs font-semibold text-ds-text leading-tight">{meta.label}</p>
+                <p className="text-xs text-ds-textMuted leading-tight mt-0.5">{meta.blurb}</p>
               </div>
-              <ScoreBar value={raw ?? 0} colorClass={styles.bar} />
+              <div className="flex-1 bg-ds-bg rounded-full h-1.5">
+                <div className="h-1.5 rounded-full transition-all"
+                  style={{ width: `${pct ?? 0}%`, backgroundColor: styles.bar }} />
+              </div>
+              <span className="w-16 text-right text-xs font-mono font-medium text-ds-text">
+                {pct != null ? `${pct}/100` : '—'}
+              </span>
+              <span className="w-12 text-right text-xs text-ds-textMuted font-mono">
+                {weight != null ? `×${Math.round(weight * 100)}%` : ''}
+              </span>
             </div>
           );
         })}
