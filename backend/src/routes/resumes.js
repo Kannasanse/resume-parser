@@ -143,21 +143,44 @@ router.get('/:id', async (req, res) => {
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Resume not found' });
 
-    // Attach all scores across every job this resume was scored against
+    // Find all resume IDs that belong to the same candidate (matched by email),
+    // so scores from duplicate uploads are all visible on any one of their detail pages.
+    const candidateEmail = data.parsed_data?.[0]?.email;
+    let siblingResumeIds = [req.params.id];
+
+    if (candidateEmail) {
+      const { data: siblings } = await supabase
+        .from('parsed_data')
+        .select('resume_id')
+        .eq('email', candidateEmail);
+      if (siblings?.length) {
+        siblingResumeIds = [...new Set(siblings.map(s => s.resume_id))];
+      }
+    }
+
+    // Fetch scores across all sibling resume IDs, deduplicated by job_profile_id
     const { data: allScores } = await supabase
       .from('resume_scores')
       .select(`
         overall_score, band, skills_score, experience_score, education_score,
         title_score, certs_score, projects_score, quality_score,
-        weights_used, candidate_years, job_profile_id,
+        weights_used, candidate_years, job_profile_id, resume_id,
         job_profiles(id, title, role_type, seniority)
       `)
-      .eq('resume_id', req.params.id)
+      .in('resume_id', siblingResumeIds)
       .order('overall_score', { ascending: false });
 
-    data.scores = allScores || [];
-    // Keep data.score pointing to the primary job's score for backward compat
-    data.score = allScores?.find(s => s.job_profile_id === data.job_id) || allScores?.[0] || null;
+    // Deduplicate by job_profile_id (keep highest score per job)
+    const scoreMap = new Map();
+    for (const s of allScores || []) {
+      const existing = scoreMap.get(s.job_profile_id);
+      if (!existing || s.overall_score > existing.overall_score) {
+        scoreMap.set(s.job_profile_id, s);
+      }
+    }
+
+    data.scores = [...scoreMap.values()].sort((a, b) => b.overall_score - a.overall_score);
+    data.score  = data.scores.find(s => s.job_profile_id === data.job_id) || data.scores[0] || null;
 
     res.json(data);
   } catch (err) {
