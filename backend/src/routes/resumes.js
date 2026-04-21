@@ -138,16 +138,21 @@ router.get('/:id', async (req, res) => {
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Resume not found' });
 
-    // Attach score if linked to a job
-    if (data.job_id) {
-      const { data: score } = await supabase
-        .from('resume_scores')
-        .select('overall_score, band, skills_score, experience_score, education_score, title_score, certs_score, projects_score, quality_score, weights_used, candidate_years')
-        .eq('resume_id', req.params.id)
-        .eq('job_profile_id', data.job_id)
-        .single();
-      data.score = score || null;
-    }
+    // Attach all scores across every job this resume was scored against
+    const { data: allScores } = await supabase
+      .from('resume_scores')
+      .select(`
+        overall_score, band, skills_score, experience_score, education_score,
+        title_score, certs_score, projects_score, quality_score,
+        weights_used, candidate_years, job_profile_id,
+        job_profiles(id, title, role_type, seniority)
+      `)
+      .eq('resume_id', req.params.id)
+      .order('overall_score', { ascending: false });
+
+    data.scores = allScores || [];
+    // Keep data.score pointing to the primary job's score for backward compat
+    data.score = allScores?.find(s => s.job_profile_id === data.job_id) || allScores?.[0] || null;
 
     res.json(data);
   } catch (err) {

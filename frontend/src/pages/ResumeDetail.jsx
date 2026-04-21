@@ -158,13 +158,26 @@ export default function ResumeDetail() {
           )}
         </div>
 
-        {/* Right column — score */}
-        {resume.score && (
-          <div className="lg:col-span-1">
-            <div className="bg-ds-card rounded border border-ds-border p-6 sticky top-4">
-              <h2 className="font-heading text-base font-semibold text-ds-text mb-4">Match Score</h2>
-              <ScoreBreakdown score={resume.score} />
-            </div>
+        {/* Right column — all job scores */}
+        {resume.scores?.length > 0 && (
+          <div className="lg:col-span-1 space-y-4">
+            {resume.scores.map(s => (
+              <div key={s.job_profile_id} className="bg-ds-card rounded border border-ds-border p-6">
+                <div className="mb-4">
+                  <p className="text-xs text-ds-textMuted uppercase tracking-wide font-medium">Scored against</p>
+                  <p className="font-heading font-semibold text-ds-text mt-0.5">{s.job_profiles?.title || 'Job Profile'}</p>
+                  {s.job_profiles?.role_type && (
+                    <div className="flex gap-1.5 mt-1">
+                      <span className="text-xs bg-primary-light text-primary px-2 py-0.5 rounded-btn">{s.job_profiles.role_type}</span>
+                      {s.job_profiles.seniority && (
+                        <span className="text-xs bg-ds-bg text-ds-textMuted px-2 py-0.5 rounded-btn">{s.job_profiles.seniority}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <ScoreBreakdown score={s} />
+              </div>
+            ))}
           </div>
         )}
       </div>

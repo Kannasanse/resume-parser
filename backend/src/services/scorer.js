@@ -161,9 +161,19 @@ function isCurrentRole(endDate) {
   return lower.includes('present') || lower.includes('current') || lower.includes('now');
 }
 
+// Education institutions should not count toward employment years
+const EDUCATION_INSTITUTION_RE = /\b(university|college|school|institute|academy|polytechnic|conservatory)\b/i;
+const EDUCATION_TITLE_RE = /\b(student|bachelor|master|phd|doctorate|b\.?s\.?|m\.?s\.?|graduate|undergraduate|coursework|diploma)\b/i;
+
+function isEducationalEntry(job) {
+  const company = (job.company || '').toLowerCase();
+  const title   = (job.title   || '').toLowerCase();
+  return EDUCATION_INSTITUTION_RE.test(company) && EDUCATION_TITLE_RE.test(title);
+}
+
 function calcTotalYearsExperience(workExperience) {
   let totalMonths = 0;
-  for (const job of workExperience || []) {
+  for (const job of (workExperience || []).filter(j => !isEducationalEntry(j))) {
     const startYear = parseYear(job.start_date);
     const endYear = parseYear(job.end_date || 'present');
     if (!startYear || !endYear) continue;
@@ -330,7 +340,7 @@ function computeProjectScore(summary, workExperience, rawText) {
 
 // ── Resume quality score ──────────────────────────────────────────────────────
 
-function computeQualityScore(parsedData, workExperience, education) {
+function computeQualityScore(parsedData, workExperience) {
   let score = 0;
   if (parsedData.candidate_name && parsedData.email && workExperience?.length > 0 && parsedData.skills?.length > 0) score += 0.3;
   const allDesc = (workExperience || []).map(w => w.description || '').join(' ');
@@ -416,7 +426,7 @@ async function scoreResume(resumeId, jobProfileId, supabase) {
     title:      computeTitleScore(workExperience, jobProfile.title),
     certs:      computeCertScore(pd.skills, resume.raw_text, jobProfile.required_certs),
     projects:   computeProjectScore(pd.summary, workExperience, resume.raw_text),
-    quality:    computeQualityScore(pd, workExperience, education),
+    quality:    computeQualityScore(pd, workExperience),
   };
 
   const weights = getWeights(jobProfile.role_type || 'technical', jobProfile.seniority || 'mid');
