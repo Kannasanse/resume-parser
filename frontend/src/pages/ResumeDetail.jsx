@@ -4,13 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { getResume, deleteResume, exportResume } from '../lib/api';
 import ScoreBreakdown from '../components/ScoreBreakdown';
 
-const BAND_STYLES = {
-  'Strong Match':   'bg-ds-successLight text-ds-success',
-  'Good Match':     'bg-secondary-light text-secondary',
-  'Moderate Match': 'bg-ds-warningLight text-ds-warning',
-  'Weak Match':     'bg-ds-dangerLight text-ds-danger',
-};
-
 function Field({ label, value }) {
   if (!value) return null;
   return (
@@ -159,33 +152,23 @@ export default function ResumeDetail() {
           <div className="lg:col-span-1">
             <div className="bg-ds-card rounded border border-ds-border overflow-hidden sticky top-4">
               {/* Job profile switcher */}
-              <div className="border-b border-ds-border px-4 pt-4 pb-0">
+              <div className="border-b border-ds-border px-4 py-4">
                 <p className="text-xs font-semibold text-ds-textMuted uppercase tracking-widest mb-2">Match Score</p>
-                <div className="flex flex-wrap gap-1.5 pb-3">
+                <select
+                  value={selectedScoreIdx}
+                  onChange={e => setSelectedScoreIdx(Number(e.target.value))}
+                  className="w-full border border-ds-inputBorder rounded px-3 py-2 text-sm bg-ds-card text-ds-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+                >
                   {scores.map((s, i) => {
                     const title = s.job_profiles?.title || 'Job Profile';
                     const pct   = Math.round((s.overall_score ?? 0) * 100);
-                    const isActive = i === selectedScoreIdx;
                     return (
-                      <button
-                        key={s.job_profile_id}
-                        onClick={() => setSelectedScoreIdx(i)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-btn text-xs font-medium border transition-colors ${
-                          isActive
-                            ? 'bg-primary text-white border-primary'
-                            : 'bg-ds-bg text-ds-text border-ds-border hover:border-primary hover:text-primary'
-                        }`}
-                      >
-                        <span className="truncate max-w-[110px]">{title}</span>
-                        <span className={`flex-shrink-0 px-1.5 py-0.5 rounded-btn text-xs font-mono ${
-                          isActive ? 'bg-white/20 text-white' : `${BAND_STYLES[s.band] || 'bg-ds-bg text-ds-textMuted'}`
-                        }`}>
-                          {pct}
-                        </span>
-                      </button>
+                      <option key={s.job_profile_id} value={i}>
+                        {title} — {pct}/100 ({s.band})
+                      </option>
                     );
                   })}
-                </div>
+                </select>
               </div>
 
               {/* Active score breakdown */}
