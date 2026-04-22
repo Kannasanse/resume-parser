@@ -1,7 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useTheme } from '../hooks/useTheme';
 
 export default function Navbar() {
   const { pathname } = useLocation();
+  const [dark, toggleTheme] = useTheme();
 
   const link = (to, label) => (
     <Link
@@ -25,10 +27,30 @@ export default function Navbar() {
             resume<span className="text-primary">.</span>parse
           </span>
         </Link>
+
         <div className="flex items-center gap-1">
           {link('/resumes', 'Profiles')}
           {link('/jobs', 'Job Profiles')}
           {link('/upload', 'Upload')}
+
+          <button
+            onClick={toggleTheme}
+            aria-label="Toggle dark mode"
+            className="ml-2 w-8 h-8 flex items-center justify-center rounded-btn text-ds-textMuted hover:text-ds-text hover:bg-ds-bg transition-colors"
+          >
+            {dark ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="4"/>
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+              </svg>
+            )}
+          </button>
         </div>
       </div>
     </nav>

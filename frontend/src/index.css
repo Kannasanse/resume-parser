@@ -5,11 +5,48 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --ds-bg:           #F2F3F5;
+    --ds-card:         #FFFFFF;
+    --ds-border:       #E5E7ED;
+    --ds-borderStrong: #D4D6DE;
+    --ds-inputBorder:  #B0B7C1;
+    --ds-text:         #171A45;
+    --ds-textSecondary:#323836;
+    --ds-textTertiary: #555698;
+    --ds-textMuted:    #8A8DA3;
+    --ds-success:      #177A17;
+    --ds-successLight: #E8F9E2;
+    --ds-warning:      #A26412;
+    --ds-warningLight: #FFF3E0;
+    --ds-danger:       #A01535;
+    --ds-dangerLight:  #FDE8E8;
+  }
+
+  .dark {
+    --ds-bg:           #0F1117;
+    --ds-card:         #1A1D2E;
+    --ds-border:       #2D3148;
+    --ds-borderStrong: #3D4168;
+    --ds-inputBorder:  #4D5178;
+    --ds-text:         #E8E9F3;
+    --ds-textSecondary:#C8CAD8;
+    --ds-textTertiary: #9CA3C8;
+    --ds-textMuted:    #6B6E8A;
+    --ds-success:      #4ADE80;
+    --ds-successLight: #052e16;
+    --ds-warning:      #FFA726;
+    --ds-warningLight: #1c1200;
+    --ds-danger:       #F87171;
+    --ds-dangerLight:  #2d0a0a;
+  }
+
   body {
     font-family: 'Source Sans 3', sans-serif;
-    background-color: #F2F3F5;
-    color: #171A45;
+    background-color: var(--ds-bg);
+    color: var(--ds-text);
   }
+
   h1, h2, h3, h4 {
     font-family: 'Montserrat', sans-serif;
   }
