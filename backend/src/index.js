@@ -8,24 +8,21 @@ const jobRoutes = require('./routes/jobs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const allowedOrigins = process.env.CORS_ORIGIN
+const extraOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
-  : null;
+  : [];
 
-app.use(cors({
-  origin: allowedOrigins
-    ? (origin, cb) => {
-        // Allow requests with no origin (curl, Postman) or matching allowed list
-        if (!origin || allowedOrigins.some(o => origin === o || origin.endsWith('.vercel.app'))) {
-          cb(null, true);
-        } else {
-          cb(new Error(`CORS: ${origin} not allowed`));
-        }
-      }
-    : '*',
-  credentials: true,
-}));
-app.options('*', cors());
+const corsOptions = {
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true); // curl / Postman
+    if (origin.endsWith('.vercel.app')) return cb(null, true);
+    if (extraOrigins.includes(origin)) return cb(null, true);
+    cb(new Error(`CORS: ${origin} not allowed`));
+  },
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(morgan('[:date[clf]] :method :url :status :res[content-length] bytes - :response-time ms'));
 
