@@ -48,6 +48,15 @@ const SKILL_SYNONYMS = {
   'deep learning': ['dl'],
   tensorflow: ['tf'],
   pytorch: ['torch'],
+  // Soft skills
+  communication: ['verbal communication', 'written communication', 'interpersonal communication', 'interpersonal skills', 'communication skills'],
+  leadership: ['team leadership', 'people leadership', 'lead teams', 'leading teams', 'staff leadership'],
+  documentation: ['technical writing', 'technical documentation', 'document writing', 'writing documentation', 'report writing', 'specification writing', 'docs'],
+  teamwork: ['collaboration', 'team collaboration', 'cross-functional collaboration', 'team player'],
+  'problem solving': ['problem-solving', 'analytical thinking', 'critical thinking', 'troubleshooting'],
+  presentation: ['public speaking', 'presenting', 'stakeholder presentations'],
+  mentoring: ['coaching', 'mentorship', 'team mentoring'],
+  'time management': ['prioritization', 'task prioritization', 'deadline management'],
   // Other
   graphql: ['graph ql', 'graph api'],
   rest: ['restful', 'rest api', 'restful api', 'rest apis'],

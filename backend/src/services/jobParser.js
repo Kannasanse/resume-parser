@@ -2,10 +2,10 @@ const Groq = require('groq-sdk');
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-const SYSTEM_PROMPT = `You are an expert technical recruiter. Analyse the job description and extract every technical skill, tool, technology, and methodology mentioned.
+const SYSTEM_PROMPT = `You are an expert technical recruiter. Analyse the job description and extract every skill, tool, technology, methodology, and professional competency mentioned.
 
 Return a JSON array where each element has exactly these fields:
-- "skill": canonical name of the skill (e.g. "React", "PostgreSQL", "Docker")
+- "skill": canonical name of the skill (e.g. "React", "PostgreSQL", "Docker", "Communication", "Leadership", "Documentation")
 - "proficiency": one of "Expert" | "Advanced" | "Intermediate" | "Beginner" | "Nice-to-have"
   - Expert: "expert", "mastery", "deep knowledge", 8-10+ years mentioned
   - Advanced: "strong", "proficient", "senior", "lead", 5-7 years mentioned
@@ -14,7 +14,13 @@ Return a JSON array where each element has exactly these fields:
   - Nice-to-have: "nice to have", "preferred", "bonus", "optional", "desirable"
 - "is_required": true if mandatory, false if optional/preferred
 
-Include both hard skills (languages, frameworks, tools) and process skills (Agile, CI/CD) if mentioned.
+Include ALL of the following if mentioned:
+- Hard skills: languages, frameworks, tools, platforms, databases
+- Process skills: Agile, CI/CD, Scrum, Kanban
+- Soft skills: Communication, Leadership, Teamwork, Problem-solving, Presentation, Mentoring, Collaboration, Time Management
+- Documentation skills: Technical Writing, Documentation, Report Writing, Specification Writing
+- Any other professional competency explicitly stated in the JD
+
 Do not duplicate skills. Return only the JSON array, no explanation or markdown.`;
 
 async function parseJobSkills(description) {
