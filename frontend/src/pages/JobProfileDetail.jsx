@@ -32,6 +32,8 @@ export default function JobProfileDetail() {
   const [tab, setTab] = useState('overview');
   const [expandedId, setExpandedId] = useState(null);
   const [rescoring, setRescoring] = useState(null);
+  const [filterBand, setFilterBand] = useState('all');
+  const [sortBy, setSortBy] = useState('score_desc');
 
   const { data: job, isLoading, error } = useQuery({
     queryKey: ['job', id],
@@ -124,9 +126,10 @@ export default function JobProfileDetail() {
         )}
 
         {job.description && (
-          <p className="mt-4 text-sm text-ds-textSecondary whitespace-pre-line border-t border-ds-border pt-4 leading-relaxed">
-            {job.description}
-          </p>
+          <div
+            className="mt-4 text-sm text-ds-textSecondary border-t border-ds-border pt-4 leading-relaxed rich-content"
+            dangerouslySetInnerHTML={{ __html: job.description }}
+          />
         )}
       </div>
 
@@ -203,7 +206,46 @@ export default function JobProfileDetail() {
             </div>
           )}
 
-          {candidates.map(c => (
+          {/* Filter + sort toolbar */}
+          {!candidatesLoading && candidates.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-ds-card border border-ds-border rounded px-4 py-3">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {['all', 'Strong Match', 'Good Match', 'Moderate Match', 'Weak Match'].map(b => (
+                  <button key={b} onClick={() => setFilterBand(b)}
+                    className={`text-xs px-3 py-1 rounded-btn font-medium transition-colors ${
+                      filterBand === b
+                        ? 'bg-primary text-white'
+                        : 'bg-ds-bg text-ds-textMuted hover:text-ds-text hover:bg-ds-border'
+                    }`}>
+                    {b === 'all' ? 'All' : b}
+                  </button>
+                ))}
+              </div>
+              <select value={sortBy} onChange={e => setSortBy(e.target.value)}
+                className="text-xs border border-ds-inputBorder rounded px-2.5 py-1.5 bg-ds-card text-ds-text focus:outline-none focus:ring-1 focus:ring-primary">
+                <option value="score_desc">Score: High to Low</option>
+                <option value="score_asc">Score: Low to High</option>
+                <option value="name">Name A–Z</option>
+                <option value="date">Date: Newest</option>
+              </select>
+            </div>
+          )}
+
+          {(() => {
+            const filtered = candidates
+              .filter(c => filterBand === 'all' || c.score?.band === filterBand)
+              .sort((a, b) => {
+                if (sortBy === 'score_asc') return (a.score?.overall_score ?? -1) - (b.score?.overall_score ?? -1);
+                if (sortBy === 'name') return (a.candidate_name || a.file_name).localeCompare(b.candidate_name || b.file_name);
+                if (sortBy === 'date') return new Date(b.created_at) - new Date(a.created_at);
+                return (b.score?.overall_score ?? -1) - (a.score?.overall_score ?? -1);
+              });
+
+            if (!candidatesLoading && candidates.length > 0 && filtered.length === 0) {
+              return <p className="text-sm text-ds-textMuted text-center py-6">No candidates match the selected filter.</p>;
+            }
+
+            return filtered.map(c => (
             <div key={c.resume_id} className="bg-ds-card rounded border border-ds-border overflow-hidden">
               <div className="flex items-center gap-4 p-4">
                 <div className="flex-1 min-w-0">
@@ -256,7 +298,8 @@ export default function JobProfileDetail() {
                 </div>
               )}
             </div>
-          ))}
+            ));
+          })()}
         </div>
       )}
     </div>

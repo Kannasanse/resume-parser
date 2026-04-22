@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { parseJobSkills, createJob } from '../lib/api';
+import RichTextEditor from '../components/RichTextEditor';
+
+function stripHtml(html) {
+  const d = document.createElement('div');
+  d.innerHTML = html;
+  return d.textContent || d.innerText || '';
+}
 
 const PROFICIENCY_OPTIONS = ['Expert', 'Advanced', 'Intermediate', 'Beginner', 'Nice-to-have'];
 
@@ -62,11 +69,12 @@ export default function JobProfileCreate() {
   };
 
   const handleGenerateSkills = async () => {
-    if (!description.trim()) { setParseError('Enter a job description first.'); return; }
+    const plainText = stripHtml(description).trim();
+    if (!plainText) { setParseError('Enter a job description first.'); return; }
     setParsing(true);
     setParseError('');
     try {
-      const { skills: parsed } = await parseJobSkills(description);
+      const { skills: parsed } = await parseJobSkills(plainText);
       setSkills(parsed);
       if (parsed.length === 0) setParseError('No recognisable skills found. Try adding more detail.');
     } catch {
@@ -221,12 +229,11 @@ export default function JobProfileCreate() {
                 ) : '✦ Generate Skills'}
               </button>
             </div>
-            <textarea
+            <RichTextEditor
               value={description}
-              onChange={e => setDescription(e.target.value)}
-              rows={10}
+              onChange={setDescription}
               placeholder="Paste the full job description here..."
-              className={`${inputCls} resize-y`}
+              minHeight="220px"
             />
             {parseError && <p className="mt-1.5 text-sm text-ds-danger">{parseError}</p>}
           </div>
