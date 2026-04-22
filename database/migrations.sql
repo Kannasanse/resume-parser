@@ -16,7 +16,11 @@ ALTER TABLE job_profiles
   ADD COLUMN IF NOT EXISTS required_field TEXT,
   ADD COLUMN IF NOT EXISTS required_certs TEXT[] DEFAULT '{}';
 
--- 3. Create resume_scores table
+-- 3. Add custom_weights to job_profiles (allows per-job weight overrides)
+ALTER TABLE job_profiles
+  ADD COLUMN IF NOT EXISTS custom_weights JSONB DEFAULT NULL;
+
+-- 4. Create resume_scores table
 CREATE TABLE IF NOT EXISTS resume_scores (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   resume_id UUID REFERENCES resumes(id) ON DELETE CASCADE,

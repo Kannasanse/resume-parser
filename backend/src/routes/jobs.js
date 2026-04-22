@@ -26,6 +26,7 @@ router.post('/', async (req, res) => {
       role_type = 'technical', seniority = 'mid',
       required_years_experience = 0, required_degree = 'None',
       required_field = null, required_certs = [],
+      custom_weights = null,
     } = req.body;
     if (!title?.trim()) return res.status(400).json({ error: 'title is required' });
 
@@ -39,6 +40,7 @@ router.post('/', async (req, res) => {
         required_degree,
         required_field: required_field?.trim() || null,
         required_certs: required_certs || [],
+        custom_weights: custom_weights || null,
       })
       .select()
       .single();
@@ -147,6 +149,7 @@ router.put('/:id', async (req, res) => {
       role_type, seniority,
       required_years_experience, required_degree,
       required_field, required_certs,
+      custom_weights,
     } = req.body;
 
     const updates = {};
@@ -158,6 +161,7 @@ router.put('/:id', async (req, res) => {
     if (required_degree !== undefined) updates.required_degree = required_degree;
     if (required_field !== undefined) updates.required_field = required_field?.trim() || null;
     if (required_certs !== undefined) updates.required_certs = required_certs || [];
+    if (custom_weights !== undefined) updates.custom_weights = custom_weights || null;
 
     const { error: updateErr } = await supabase
       .from('job_profiles')

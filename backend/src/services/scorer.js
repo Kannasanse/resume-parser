@@ -382,7 +382,15 @@ const WEIGHTS = {
   },
 };
 
-function getWeights(roleType, seniority) {
+function getWeights(roleType, seniority, customWeights) {
+  if (customWeights && typeof customWeights === 'object') {
+    // Normalise to fractions if stored as percentages (e.g. 30 → 0.30)
+    const vals = Object.values(customWeights);
+    const isPercent = vals.some(v => v > 1);
+    return Object.fromEntries(
+      Object.entries(customWeights).map(([k, v]) => [k, isPercent ? v / 100 : v])
+    );
+  }
   const roleWeights = WEIGHTS[roleType] || WEIGHTS.technical;
   return roleWeights[seniority] || roleWeights.mid || roleWeights.senior;
 }
@@ -438,7 +446,7 @@ async function scoreResume(resumeId, jobProfileId, supabase) {
     quality:    computeQualityScore(pd, workExperience),
   };
 
-  const weights = getWeights(jobProfile.role_type || 'technical', jobProfile.seniority || 'mid');
+  const weights = getWeights(jobProfile.role_type || 'technical', jobProfile.seniority || 'mid', jobProfile.custom_weights);
   const overall = Math.round(Object.keys(scores).reduce((sum, k) => sum + scores[k] * (weights[k] || 0), 0) * 100) / 100;
 
   return {
