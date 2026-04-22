@@ -25,15 +25,6 @@ const WEIGHTS_TABLE = {
   'entry-level.entry':  { skills: 25, experience: 10, title: 5,  projects: 20, education: 25, certs: 5,  quality: 10 },
 };
 
-function WeightChip({ label, value }) {
-  return (
-    <div className="flex flex-col items-center bg-ds-bg rounded px-2 py-1.5 min-w-[52px]">
-      <span className="text-xs font-mono font-semibold text-primary">{value}%</span>
-      <span className="text-xs text-ds-textMuted leading-tight text-center">{label}</span>
-    </div>
-  );
-}
-
 export default function JobProfileCreate() {
   const navigate = useNavigate();
   const [title, setTitle]             = useState('');
@@ -49,9 +40,26 @@ export default function JobProfileCreate() {
   const [saving, setSaving]   = useState(false);
   const [parseError, setParseError] = useState('');
   const [saveError, setSaveError]   = useState('');
+  const [customWeights, setCustomWeights] = useState({ ...WEIGHTS_TABLE['technical.mid'] });
 
-  const weightKey = `${roleType}.${seniority}`;
-  const weights = WEIGHTS_TABLE[weightKey] || WEIGHTS_TABLE['technical.mid'];
+  const weightTotal = Object.values(customWeights).reduce((a, b) => a + b, 0);
+
+  const handleRoleTypeChange = (val) => {
+    setRoleType(val);
+    const defaults = WEIGHTS_TABLE[`${val}.${seniority}`] || WEIGHTS_TABLE['technical.mid'];
+    setCustomWeights({ ...defaults });
+  };
+
+  const handleSeniorityChange = (val) => {
+    setSeniority(val);
+    const defaults = WEIGHTS_TABLE[`${roleType}.${val}`] || WEIGHTS_TABLE['technical.mid'];
+    setCustomWeights({ ...defaults });
+  };
+
+  const updateWeight = (key, val) => {
+    const num = Math.max(0, Math.min(100, parseInt(val) || 0));
+    setCustomWeights(prev => ({ ...prev, [key]: num }));
+  };
 
   const handleGenerateSkills = async () => {
     if (!description.trim()) { setParseError('Enter a job description first.'); return; }
@@ -78,6 +86,7 @@ export default function JobProfileCreate() {
 
   const handleSave = async () => {
     if (!title.trim()) { setSaveError('Job title is required.'); return; }
+    if (weightTotal !== 100) { setSaveError(`Scoring weights must sum to 100% (currently ${weightTotal}%).`); return; }
     setSaving(true);
     setSaveError('');
     try {
@@ -91,6 +100,7 @@ export default function JobProfileCreate() {
         required_degree: requiredDegree,
         required_field: requiredField || null,
         required_certs: certsArray,
+        custom_weights: customWeights,
       });
       navigate(`/jobs/${id}`);
     } catch {
@@ -128,13 +138,13 @@ export default function JobProfileCreate() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-ds-textMuted mb-1.5">Role Type</label>
-                <select value={roleType} onChange={e => setRoleType(e.target.value)} className={inputCls}>
+                <select value={roleType} onChange={e => handleRoleTypeChange(e.target.value)} className={inputCls}>
                   {ROLE_TYPES.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-xs font-medium text-ds-textMuted mb-1.5">Seniority</label>
-                <select value={seniority} onChange={e => setSeniority(e.target.value)} className={inputCls}>
+                <select value={seniority} onChange={e => handleSeniorityChange(e.target.value)} className={inputCls}>
                   {SENIORITIES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
                 </select>
               </div>
@@ -165,14 +175,32 @@ export default function JobProfileCreate() {
               </div>
             </div>
 
-            {/* Auto-weight preview */}
+            {/* Editable scoring weights */}
             <div>
-              <p className="text-xs text-ds-textMuted mb-2">Auto-selected weights for <span className="font-mono text-ds-text">{roleType} · {seniority}</span></p>
-              <div className="flex flex-wrap gap-1.5">
-                {Object.entries(weights).map(([k, v]) => (
-                  <WeightChip key={k} label={k} value={v} />
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs text-ds-textMuted">Scoring Weights</p>
+                <span className={`text-xs font-mono font-semibold ${weightTotal === 100 ? 'text-ds-success' : 'text-ds-danger'}`}>
+                  {weightTotal}/100%
+                </span>
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {Object.entries(customWeights).map(([k, v]) => (
+                  <div key={k} className="flex flex-col items-center gap-0.5">
+                    <div className="relative w-full">
+                      <input
+                        type="number" min={0} max={100} value={v}
+                        onChange={e => updateWeight(k, e.target.value)}
+                        className="w-full text-center text-sm font-mono border border-ds-inputBorder rounded px-1 py-1.5 bg-ds-bg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+                      />
+                      <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-xs text-ds-textMuted pointer-events-none">%</span>
+                    </div>
+                    <span className="text-xs text-ds-textMuted capitalize">{k}</span>
+                  </div>
                 ))}
               </div>
+              {weightTotal !== 100 && (
+                <p className="text-xs text-ds-danger mt-1.5">Weights must sum to 100% (currently {weightTotal}%)</p>
+              )}
             </div>
           </div>
 
