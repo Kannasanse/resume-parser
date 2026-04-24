@@ -1,9 +1,10 @@
-import { useState, useRef, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getJob, deleteJob, updateJob, getJobCandidates, rescoreCandidate, getResumes, scoreResume } from '../lib/api';
 import ScoreBreakdown from '../components/ScoreBreakdown';
 import RichTextEditor from '../components/RichTextEditor';
+import HoldToDeleteComponent from '../components/HoldToDelete';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -45,43 +46,7 @@ const WEIGHTS_TABLE = {
   'entry-level.entry':  { skills: 25, experience: 10, title: 5,  projects: 20, education: 25, certs: 5,  quality: 10 },
 };
 
-// ── Hold-to-delete ────────────────────────────────────────────────────────────
-
-function HoldToDelete({ onDelete }) {
-  const [progress, setProgress] = useState(0);
-  const intervalRef = useRef(null);
-  const DURATION = 5000;
-
-  const startHold = useCallback(() => {
-    const start = Date.now();
-    intervalRef.current = setInterval(() => {
-      const pct = Math.min(100, ((Date.now() - start) / DURATION) * 100);
-      setProgress(pct);
-      if (pct >= 100) { clearInterval(intervalRef.current); onDelete(); }
-    }, 30);
-  }, [onDelete]);
-
-  const endHold = useCallback(() => {
-    clearInterval(intervalRef.current);
-    setProgress(0);
-  }, []);
-
-  const remaining = progress > 0 ? Math.ceil((DURATION * (1 - progress / 100)) / 1000) : null;
-
-  return (
-    <div className="relative overflow-hidden rounded-btn select-none">
-      <button
-        onMouseDown={startHold} onMouseUp={endHold} onMouseLeave={endHold}
-        onTouchStart={startHold} onTouchEnd={endHold}
-        className="relative z-10 w-full px-5 py-2.5 text-sm font-semibold text-white bg-ds-danger rounded-btn"
-      >
-        {progress > 0 ? `Hold to delete… ${remaining}s` : 'Hold to Delete'}
-      </button>
-      <div className="absolute inset-0 bg-red-800 rounded-btn pointer-events-none"
-        style={{ width: `${progress}%`, opacity: 0.35 }} />
-    </div>
-  );
-}
+// ── Delete modal ──────────────────────────────────────────────────────────────
 
 function DeleteModal({ onCancel, onDelete }) {
   return (
@@ -110,7 +75,7 @@ function DeleteModal({ onCancel, onDelete }) {
           </p>
         </div>
         <div className="flex flex-col gap-2 pt-1">
-          <HoldToDelete onDelete={onDelete} />
+          <HoldToDeleteComponent onDelete={onDelete} />
           <button onClick={onCancel}
             className="w-full px-5 py-2.5 text-sm font-medium text-ds-textMuted border border-ds-border rounded-btn hover:bg-ds-bg transition-colors">
             Cancel
@@ -146,6 +111,7 @@ function ScoreBar({ score }) {
 export default function JobProfileDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
 
   const [tab, setTab]               = useState('candidates');
@@ -183,6 +149,14 @@ export default function JobProfileDetail() {
     queryKey: ['job-candidates', id],
     queryFn: () => getJobCandidates(id),
   });
+
+  // Auto-enter edit mode when navigated from the list with ?edit=1
+  useEffect(() => {
+    if (job && searchParams.get('edit') === '1' && !isEditing) {
+      startEdit();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job, searchParams]);
 
   const { data: allResumesData } = useQuery({
     queryKey: ['resumes-picker'],

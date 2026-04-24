@@ -69,10 +69,25 @@ router.get('/', async (_req, res) => {
   try {
     const { data, error } = await supabase
       .from('job_profiles')
-      .select('id, title, description, role_type, seniority, required_years_experience, required_degree, created_at, job_skills(count)')
+      .select('id, title, role_type, seniority, created_at, job_skills(skill, proficiency, is_required)')
       .order('created_at', { ascending: false });
     if (error) throw error;
-    res.json(data);
+
+    // Count candidates per job from resume_scores in one query
+    const jobIds = (data || []).map(j => j.id);
+    let countMap = {};
+    if (jobIds.length > 0) {
+      const { data: scoreRows } = await supabase
+        .from('resume_scores')
+        .select('job_profile_id')
+        .in('job_profile_id', jobIds);
+      for (const { job_profile_id } of scoreRows || []) {
+        countMap[job_profile_id] = (countMap[job_profile_id] || 0) + 1;
+      }
+    }
+
+    const result = (data || []).map(j => ({ ...j, candidate_count: countMap[j.id] || 0 }));
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -99,65 +114,65 @@ router.get('/:id/candidates', async (req, res) => {
   try {
     const jobId = req.params.id;
 
-    // 1. All resumes that have been scored against this job (regardless of their primary job_id)
-    const { data: scoredRows, error: scoreErr } = await supabase
+    // 1. All scores for this job
+    const { data: scoreRows, error: scoreErr } = await supabase
       .from('resume_scores')
-      .select(`
-        overall_score, band, skills_score, experience_score, education_score,
-        title_score, certs_score, projects_score, quality_score, weights_used, candidate_years,
-        resume_id,
-        resumes!inner(id, file_name, status, created_at,
-          parsed_data(candidate_name, email, phone, skills)
-        )
-      `)
+      .select('resume_id, overall_score, band, skills_score, experience_score, education_score, title_score, certs_score, projects_score, quality_score, weights_used, candidate_years')
       .eq('job_profile_id', jobId);
     if (scoreErr) throw scoreErr;
 
-    const scoredIds = new Set((scoredRows || []).map(s => s.resume_id));
+    const scoredIds = new Set((scoreRows || []).map(s => s.resume_id));
 
-    // 2. Unscored resumes that were originally uploaded to this job
-    let unscoredRows = [];
-    const unscoredQuery = supabase
+    // 2. Unscored resumes uploaded directly to this job
+    let unscoredIds = [];
+    if (scoredIds.size > 0) {
+      const { data, error } = await supabase
+        .from('resumes').select('id').eq('job_id', jobId)
+        .not('id', 'in', `(${[...scoredIds].join(',')})`);
+      if (error) throw error;
+      unscoredIds = (data || []).map(r => r.id);
+    } else {
+      const { data, error } = await supabase
+        .from('resumes').select('id').eq('job_id', jobId);
+      if (error) throw error;
+      unscoredIds = (data || []).map(r => r.id);
+    }
+
+    // 3. Fetch full resume data for all candidate IDs in one query
+    const allIds = [...scoredIds, ...unscoredIds];
+    if (allIds.length === 0) return res.json([]);
+
+    const { data: resumes, error: resumeErr } = await supabase
       .from('resumes')
       .select('id, file_name, status, created_at, parsed_data(candidate_name, email, phone, skills)')
-      .eq('job_id', jobId);
-    const { data: rawUnscored, error: unscoredErr } = scoredIds.size > 0
-      ? await unscoredQuery.not('id', 'in', `(${[...scoredIds].join(',')})`)
-      : await unscoredQuery;
-    if (unscoredErr) throw unscoredErr;
-    unscoredRows = rawUnscored || [];
+      .in('id', allIds);
+    if (resumeErr) throw resumeErr;
 
-    const candidates = [
-      ...(scoredRows || []).map(s => ({
-        resume_id: s.resume_id,
-        file_name: s.resumes.file_name,
-        status: s.resumes.status,
-        created_at: s.resumes.created_at,
-        candidate_name: s.resumes.parsed_data?.[0]?.candidate_name || null,
-        email: s.resumes.parsed_data?.[0]?.email || null,
-        phone: s.resumes.parsed_data?.[0]?.phone || null,
-        skills: s.resumes.parsed_data?.[0]?.skills || [],
-        score: {
-          overall_score: s.overall_score, band: s.band,
-          skills_score: s.skills_score, experience_score: s.experience_score,
-          education_score: s.education_score, title_score: s.title_score,
-          certs_score: s.certs_score, projects_score: s.projects_score,
-          quality_score: s.quality_score, weights_used: s.weights_used,
-          candidate_years: s.candidate_years,
-        },
-      })),
-      ...unscoredRows.map(r => ({
-        resume_id: r.id,
-        file_name: r.file_name,
-        status: r.status,
-        created_at: r.created_at,
-        candidate_name: r.parsed_data?.[0]?.candidate_name || null,
-        email: r.parsed_data?.[0]?.email || null,
-        phone: r.parsed_data?.[0]?.phone || null,
-        skills: r.parsed_data?.[0]?.skills || [],
-        score: null,
-      })),
-    ];
+    const scoreMap = Object.fromEntries((scoreRows || []).map(s => [s.resume_id, s]));
+
+    const candidates = (resumes || []).map(r => ({
+      resume_id: r.id,
+      file_name: r.file_name,
+      status: r.status,
+      created_at: r.created_at,
+      candidate_name: r.parsed_data?.[0]?.candidate_name || null,
+      email: r.parsed_data?.[0]?.email || null,
+      phone: r.parsed_data?.[0]?.phone || null,
+      skills: r.parsed_data?.[0]?.skills || [],
+      score: scoreMap[r.id] ? {
+        overall_score:    scoreMap[r.id].overall_score,
+        band:             scoreMap[r.id].band,
+        skills_score:     scoreMap[r.id].skills_score,
+        experience_score: scoreMap[r.id].experience_score,
+        education_score:  scoreMap[r.id].education_score,
+        title_score:      scoreMap[r.id].title_score,
+        certs_score:      scoreMap[r.id].certs_score,
+        projects_score:   scoreMap[r.id].projects_score,
+        quality_score:    scoreMap[r.id].quality_score,
+        weights_used:     scoreMap[r.id].weights_used,
+        candidate_years:  scoreMap[r.id].candidate_years,
+      } : null,
+    }));
 
     candidates.sort((a, b) => (b.score?.overall_score ?? -1) - (a.score?.overall_score ?? -1));
     res.json(candidates);
