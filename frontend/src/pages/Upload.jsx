@@ -46,14 +46,13 @@ export default function Upload() {
   const allDone        = files.length > 0 && doneCount + errorCount === files.length;
 
   const handleUploadAll = async () => {
-    if (!jobId) { setJobError('Please select a job profile before uploading.'); return; }
     setJobError('');
 
     const pending = files.filter(f => f.status === 'pending');
     for (const entry of pending) {
       setFiles(prev => prev.map(f => f.id === entry.id ? { ...f, status: 'uploading' } : f));
       try {
-        const { data } = await uploadResume(entry.file, jobId);
+        const { data } = await uploadResume(entry.file, jobId || null);
         setFiles(prev => prev.map(f =>
           f.id === entry.id ? { ...f, status: 'done', resumeId: data.id } : f
         ));
@@ -83,7 +82,7 @@ export default function Upload() {
       {/* Job selector */}
       <div className="bg-ds-card rounded border border-ds-border p-5 space-y-3">
         <label className="block text-xs font-semibold text-ds-textMuted uppercase tracking-wide">
-          Job Profile <span className="text-ds-danger">*</span>
+          Job Profile <span className="text-ds-textMuted font-normal normal-case">(optional — resumes without a profile won't be scored)</span>
         </label>
         <select
           value={jobId}

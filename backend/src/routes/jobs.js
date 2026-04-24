@@ -94,36 +94,72 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// GET /api/v1/jobs/:id/candidates  — list resumes submitted under this job with scores
+// GET /api/v1/jobs/:id/candidates  — list all resumes scored against this job + unscored resumes uploaded to it
 router.get('/:id/candidates', async (req, res) => {
   try {
-    const { data: resumes, error } = await supabase
-      .from('resumes')
+    const jobId = req.params.id;
+
+    // 1. All resumes that have been scored against this job (regardless of their primary job_id)
+    const { data: scoredRows, error: scoreErr } = await supabase
+      .from('resume_scores')
       .select(`
-        id, file_name, status, created_at,
-        parsed_data(candidate_name, email, phone, skills),
-        resume_scores(overall_score, band, skills_score, experience_score, education_score, title_score, certs_score, projects_score, quality_score, weights_used, candidate_years)
+        overall_score, band, skills_score, experience_score, education_score,
+        title_score, certs_score, projects_score, quality_score, weights_used, candidate_years,
+        resume_id,
+        resumes!inner(id, file_name, status, created_at,
+          parsed_data(candidate_name, email, phone, skills)
+        )
       `)
-      .eq('job_id', req.params.id)
-      .order('created_at', { ascending: false });
+      .eq('job_profile_id', jobId);
+    if (scoreErr) throw scoreErr;
 
-    if (error) throw error;
+    const scoredIds = new Set((scoredRows || []).map(s => s.resume_id));
 
-    const candidates = (resumes || []).map(r => ({
-      resume_id: r.id,
-      file_name: r.file_name,
-      status: r.status,
-      created_at: r.created_at,
-      candidate_name: r.parsed_data?.[0]?.candidate_name || null,
-      email: r.parsed_data?.[0]?.email || null,
-      phone: r.parsed_data?.[0]?.phone || null,
-      skills: r.parsed_data?.[0]?.skills || [],
-      score: r.resume_scores?.[0] || null,
-    }));
+    // 2. Unscored resumes that were originally uploaded to this job
+    let unscoredRows = [];
+    const unscoredQuery = supabase
+      .from('resumes')
+      .select('id, file_name, status, created_at, parsed_data(candidate_name, email, phone, skills)')
+      .eq('job_id', jobId);
+    const { data: rawUnscored, error: unscoredErr } = scoredIds.size > 0
+      ? await unscoredQuery.not('id', 'in', `(${[...scoredIds].join(',')})`)
+      : await unscoredQuery;
+    if (unscoredErr) throw unscoredErr;
+    unscoredRows = rawUnscored || [];
 
-    // Sort by overall_score descending (unscored at bottom)
+    const candidates = [
+      ...(scoredRows || []).map(s => ({
+        resume_id: s.resume_id,
+        file_name: s.resumes.file_name,
+        status: s.resumes.status,
+        created_at: s.resumes.created_at,
+        candidate_name: s.resumes.parsed_data?.[0]?.candidate_name || null,
+        email: s.resumes.parsed_data?.[0]?.email || null,
+        phone: s.resumes.parsed_data?.[0]?.phone || null,
+        skills: s.resumes.parsed_data?.[0]?.skills || [],
+        score: {
+          overall_score: s.overall_score, band: s.band,
+          skills_score: s.skills_score, experience_score: s.experience_score,
+          education_score: s.education_score, title_score: s.title_score,
+          certs_score: s.certs_score, projects_score: s.projects_score,
+          quality_score: s.quality_score, weights_used: s.weights_used,
+          candidate_years: s.candidate_years,
+        },
+      })),
+      ...unscoredRows.map(r => ({
+        resume_id: r.id,
+        file_name: r.file_name,
+        status: r.status,
+        created_at: r.created_at,
+        candidate_name: r.parsed_data?.[0]?.candidate_name || null,
+        email: r.parsed_data?.[0]?.email || null,
+        phone: r.parsed_data?.[0]?.phone || null,
+        skills: r.parsed_data?.[0]?.skills || [],
+        score: null,
+      })),
+    ];
+
     candidates.sort((a, b) => (b.score?.overall_score ?? -1) - (a.score?.overall_score ?? -1));
-
     res.json(candidates);
   } catch (err) {
     res.status(500).json({ error: err.message });

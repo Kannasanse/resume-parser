@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getJob, deleteJob, updateJob, getJobCandidates, rescoreCandidate } from '../lib/api';
+import { getJob, deleteJob, updateJob, getJobCandidates, rescoreCandidate, getResumes, scoreResume } from '../lib/api';
 import ScoreBreakdown from '../components/ScoreBreakdown';
 import RichTextEditor from '../components/RichTextEditor';
 
@@ -154,6 +154,10 @@ export default function JobProfileDetail() {
   const [filterBand, setFilterBand] = useState('all');
   const [sortBy, setSortBy]         = useState('score_desc');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showAddModal, setShowAddModal]       = useState(false);
+  const [addSearch, setAddSearch]             = useState('');
+  const [selectedIds, setSelectedIds]         = useState(new Set());
+  const [adding, setAdding]                   = useState(false);
 
   // Edit state
   const [isEditing, setIsEditing]             = useState(false);
@@ -179,6 +183,27 @@ export default function JobProfileDetail() {
     queryKey: ['job-candidates', id],
     queryFn: () => getJobCandidates(id),
   });
+
+  const { data: allResumesData } = useQuery({
+    queryKey: ['resumes-picker'],
+    queryFn: () => getResumes(1, 500),
+    enabled: showAddModal,
+  });
+
+  const handleAddResumes = async () => {
+    setAdding(true);
+    try {
+      for (const resumeId of selectedIds) {
+        await scoreResume(resumeId, id);
+      }
+      queryClient.invalidateQueries({ queryKey: ['job-candidates', id] });
+      setShowAddModal(false);
+      setSelectedIds(new Set());
+      setAddSearch('');
+    } finally {
+      setAdding(false);
+    }
+  };
 
   const startEdit = () => {
     setEditTitle(job.title || '');
@@ -343,6 +368,87 @@ export default function JobProfileDetail() {
     <div className="max-w-5xl mx-auto space-y-4">
       {showDeleteModal && <DeleteModal onCancel={() => setShowDeleteModal(false)} onDelete={handleDeleteConfirmed} />}
 
+      {/* Add existing resumes modal */}
+      {showAddModal && (() => {
+        const existingIds = new Set(candidates.map(c => c.resume_id));
+        const available = (allResumesData?.data || []).filter(r => !existingIds.has(r.id));
+        const filtered = available.filter(r => {
+          if (!addSearch) return true;
+          const q = addSearch.toLowerCase();
+          return (r.parsed_data?.[0]?.candidate_name || r.file_name || '').toLowerCase().includes(q)
+            || (r.parsed_data?.[0]?.email || '').toLowerCase().includes(q);
+        });
+        const toggleId = (rid) => setSelectedIds(prev => {
+          const next = new Set(prev);
+          next.has(rid) ? next.delete(rid) : next.add(rid);
+          return next;
+        });
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/50" onClick={() => setShowAddModal(false)} />
+            <div className="relative bg-ds-card rounded-lg border border-ds-border shadow-xl w-full max-w-lg flex flex-col max-h-[80vh]">
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-ds-border flex-shrink-0">
+                <h2 className="font-heading font-bold text-ds-text">Add Existing Resumes</h2>
+                <button onClick={() => setShowAddModal(false)} className="text-ds-textMuted hover:text-ds-text text-xl leading-none">×</button>
+              </div>
+
+              {/* Search */}
+              <div className="px-5 py-3 border-b border-ds-border flex-shrink-0">
+                <input
+                  type="text" value={addSearch} onChange={e => setAddSearch(e.target.value)}
+                  placeholder="Search by name or email…"
+                  className="w-full border border-ds-inputBorder rounded px-3 py-2 text-sm bg-ds-bg text-ds-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+                />
+              </div>
+
+              {/* List */}
+              <div className="overflow-y-auto flex-1 divide-y divide-ds-border">
+                {!allResumesData && (
+                  <p className="text-sm text-ds-textMuted text-center py-8">Loading resumes…</p>
+                )}
+                {allResumesData && filtered.length === 0 && (
+                  <p className="text-sm text-ds-textMuted text-center py-8">
+                    {available.length === 0 ? 'All uploaded resumes are already in this job.' : 'No resumes match your search.'}
+                  </p>
+                )}
+                {filtered.map(r => {
+                  const name = r.parsed_data?.[0]?.candidate_name || r.file_name;
+                  const email = r.parsed_data?.[0]?.email;
+                  const checked = selectedIds.has(r.id);
+                  return (
+                    <label key={r.id} className="flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-ds-bg transition-colors">
+                      <input type="checkbox" checked={checked} onChange={() => toggleId(r.id)} className="accent-primary w-4 h-4 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-ds-text truncate">{name}</p>
+                        {email && <p className="text-xs text-ds-textMuted truncate">{email}</p>}
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-ds-border flex-shrink-0">
+                <span className="text-xs text-ds-textMuted">{selectedIds.size} selected</span>
+                <div className="flex gap-2">
+                  <button onClick={() => setShowAddModal(false)}
+                    className="text-sm px-4 py-2 rounded-btn border border-ds-border text-ds-textMuted hover:bg-ds-bg transition-colors">
+                    Cancel
+                  </button>
+                  <button onClick={handleAddResumes} disabled={selectedIds.size === 0 || adding}
+                    className="text-sm bg-primary text-white px-4 py-2 rounded-btn font-semibold hover:bg-primary-dark disabled:opacity-50 transition-colors">
+                    {adding
+                      ? <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />Scoring…</span>
+                      : `Score & Add ${selectedIds.size > 0 ? selectedIds.size : ''}`}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Compact header */}
       <div className="bg-ds-card rounded border border-ds-border px-5 py-4">
         <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -375,6 +481,8 @@ export default function JobProfileDetail() {
             <div className="flex gap-2">
               <button onClick={startEdit}
                 className="text-sm border border-ds-border text-ds-text px-3 py-1.5 rounded-btn hover:bg-ds-bg transition-colors">Edit</button>
+              <button onClick={() => { setShowAddModal(true); setAddSearch(''); setSelectedIds(new Set()); }}
+                className="text-sm border border-ds-border text-ds-text px-3 py-1.5 rounded-btn hover:bg-ds-bg transition-colors">Add Existing</button>
               <Link to={`/upload?jobId=${id}`}
                 className="text-sm bg-primary text-white px-3 py-1.5 rounded-btn font-medium hover:bg-primary-dark transition-colors">Upload</Link>
               <button onClick={() => setShowDeleteModal(true)}
