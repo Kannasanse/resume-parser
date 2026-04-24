@@ -31,7 +31,6 @@ export default function Navbar() {
         <div className="flex items-center gap-1">
           {link('/resumes', 'Profiles')}
           {link('/jobs', 'Job Profiles')}
-          {link('/upload', 'Upload')}
 
           <button
             onClick={toggleTheme}
