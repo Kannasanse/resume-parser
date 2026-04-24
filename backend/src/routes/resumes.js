@@ -51,29 +51,42 @@ router.post('/upload', upload.single('resume'), async (req, res) => {
     const { data: parsed, error: parsedErr } = await supabase
       .from('parsed_data')
       .insert({
-        resume_id: resume.id,
+        resume_id:      resume.id,
         candidate_name: structured.candidate_name,
-        email: structured.email,
-        phone: structured.phone,
-        summary: structured.summary,
-        skills: structured.skills,
-        raw_json: structured,
+        email:          structured.email,
+        phone:          structured.phone,
+        summary:        structured.summary,
+        skills:         structured.skills,
+        raw_json:       structured.raw_json || structured,
       })
       .select()
       .single();
     if (parsedErr) throw parsedErr;
 
-    // Insert work experience
+    // Insert work experience (explicit columns only)
     if (structured.work_experience?.length) {
       await supabase.from('work_experience').insert(
-        structured.work_experience.map(w => ({ ...w, parsed_data_id: parsed.id }))
+        structured.work_experience.map(w => ({
+          parsed_data_id: parsed.id,
+          title:       w.title,
+          company:     w.company,
+          start_date:  w.start_date,
+          end_date:    w.end_date,
+          description: w.description,
+        }))
       );
     }
 
-    // Insert education
+    // Insert education (explicit columns only)
     if (structured.education?.length) {
       await supabase.from('education').insert(
-        structured.education.map(e => ({ ...e, parsed_data_id: parsed.id }))
+        structured.education.map(e => ({
+          parsed_data_id: parsed.id,
+          institution:     e.institution,
+          degree:          e.degree,
+          field:           e.field,
+          graduation_year: e.graduation_year,
+        }))
       );
     }
 
@@ -262,25 +275,38 @@ router.post('/:id/reparse', async (req, res) => {
     const { data: parsed } = await supabase
       .from('parsed_data')
       .insert({
-        resume_id: req.params.id,
+        resume_id:      req.params.id,
         candidate_name: structured.candidate_name,
-        email: structured.email,
-        phone: structured.phone,
-        summary: structured.summary,
-        skills: structured.skills,
-        raw_json: structured,
+        email:          structured.email,
+        phone:          structured.phone,
+        summary:        structured.summary,
+        skills:         structured.skills,
+        raw_json:       structured.raw_json || structured,
       })
       .select()
       .single();
 
     if (structured.work_experience?.length)
       await supabase.from('work_experience').insert(
-        structured.work_experience.map(w => ({ ...w, parsed_data_id: parsed.id }))
+        structured.work_experience.map(w => ({
+          parsed_data_id: parsed.id,
+          title:       w.title,
+          company:     w.company,
+          start_date:  w.start_date,
+          end_date:    w.end_date,
+          description: w.description,
+        }))
       );
 
     if (structured.education?.length)
       await supabase.from('education').insert(
-        structured.education.map(e => ({ ...e, parsed_data_id: parsed.id }))
+        structured.education.map(e => ({
+          parsed_data_id:  parsed.id,
+          institution:     e.institution,
+          degree:          e.degree,
+          field:           e.field,
+          graduation_year: e.graduation_year,
+        }))
       );
 
     await supabase.from('resumes').update({ status: 'completed' }).eq('id', req.params.id);
