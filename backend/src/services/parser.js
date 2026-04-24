@@ -21,79 +21,31 @@ async function extractText(buffer, mimeType) {
 
 // ── AI extraction ─────────────────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `You are an expert resume parser. Extract ALL information from the resume text and return it as a single JSON object.
+const SYSTEM_PROMPT = `You are an expert resume parser. Extract ALL information from the resume and return a single JSON object with exactly these keys:
 
-The JSON must have exactly these top-level keys:
+personal_info: { name, email, phone, linkedin, github, location, website, other_links[] }
+summary: string or null
+skills: string[]
+experience: [{ title, company, location, start_date, end_date, description }]
+projects: [{ name, github_url, description, technologies[] }]
+education: [{ institution, degree, field, grade, start_date, end_date }]
+certifications: [{ name, issuer, date }]
+other: { languages[], awards[], publications[], volunteer[], interests[], misc[] }
 
-{
-  "personal_info": {
-    "name": string or null,
-    "email": string or null,
-    "phone": string or null,
-    "linkedin": string or null,
-    "github": string or null,
-    "location": string or null,
-    "website": string or null,
-    "other_links": [string]
-  },
-  "summary": string or null,
-  "skills": [string],
-  "experience": [
-    {
-      "title": string or null,
-      "company": string or null,
-      "location": string or null,
-      "start_date": string or null,
-      "end_date": string or null,
-      "description": string or null
-    }
-  ],
-  "projects": [
-    {
-      "name": string or null,
-      "github_url": string or null,
-      "description": string or null,
-      "technologies": [string]
-    }
-  ],
-  "education": [
-    {
-      "institution": string or null,
-      "degree": string or null,
-      "field": string or null,
-      "grade": string or null,
-      "start_date": string or null,
-      "end_date": string or null
-    }
-  ],
-  "certifications": [
-    {
-      "name": string,
-      "issuer": string or null,
-      "date": string or null
-    }
-  ],
-  "other": {
-    "languages": [string],
-    "awards": [string],
-    "publications": [string],
-    "volunteer": [string],
-    "interests": [string],
-    "misc": [string]
-  }
-}
-
-Extraction rules:
-1. skills: extract verbatim from the Skills/Technical Skills/Technologies section FIRST. Then add any additional tools or technologies found in experience and projects that are not already listed. Never duplicate.
-2. experience.description: include the COMPLETE text of all responsibilities and achievements — preserve all bullet points.
-3. education.grade: capture GPA (e.g. "3.8 / 4.0"), percentage, First Class, Distinction, Honours, or any other grade notation if present.
-4. Dates: preserve exactly as written in the resume (e.g. "Jan 2020", "2020", "March 2019 – Present"). Use "Present" for current roles.
-5. LinkedIn and GitHub: extract from URLs, labels ("LinkedIn: …"), or username patterns.
-6. personal_info.other_links: capture any other URLs or social handles not already captured.
-7. certifications: capture all credentials, licences, and professional certifications.
-8. other.languages: spoken/written human languages only (not programming languages).
-9. If a section does not exist in the resume return [] for arrays or null for strings.
-10. Return ONLY the raw JSON object — no markdown fences, no commentary.`;
+Rules (follow every one):
+1. personal_info.linkedin — look for any of: "linkedin.com/in/...", "LinkedIn:", "li:", "/in/username", a profile URL. Extract the full URL or path. Never skip if present.
+2. personal_info.github — look for any of: "github.com/...", "GitHub:", "gh:", a GitHub URL or username after a GitHub icon or label. Never skip if present.
+3. personal_info.name — the candidate's full name, usually the first prominent line.
+4. skills — extract VERBATIM from the Skills/Technical Skills/Technologies section first, then append any additional tools from experience/projects not already listed. No duplicates.
+5. experience.description — format using markdown: start each responsibility/achievement with "- " (dash space). Use **bold** for key achievements or metrics. Preserve all bullet points from the source.
+6. education.grade — capture GPA (e.g. "3.8/4.0"), percentage, First Class, Distinction, cum laude, Honours if mentioned.
+7. education.start_date and end_date — always populate both when a date range is present (e.g. "2018 - 2022" → start_date:"2018", end_date:"2022").
+8. Dates — preserve exactly as written ("Jan 2020", "2020", "March 2019"); use "Present" for current roles.
+9. projects — extract every project, side project, or portfolio item with its name, GitHub link (if any), description, and technologies used.
+10. certifications — include all credentials, licences, and professional certificates.
+11. other.languages — spoken/written human languages only (NOT programming languages).
+12. Empty sections → [] for arrays, null for strings.
+13. Return ONLY valid JSON — no markdown fences, no explanation.`;
 
 async function parseWithAI(rawText) {
   const response = await groq.chat.completions.create({
@@ -104,7 +56,7 @@ async function parseWithAI(rawText) {
     ],
     temperature: 0.1,
     response_format: { type: 'json_object' },
-    max_tokens: 4096,
+    max_tokens: 8192,
   });
 
   const raw = JSON.parse(response.choices[0].message.content);
@@ -147,10 +99,21 @@ function splitSections(lines) {
   return sections;
 }
 
-function extractEmail(text)  { const m = text.match(/[\w.+\-]+@[\w\-]+\.[a-zA-Z]{2,}/); return m ? m[0].toLowerCase() : null; }
-function extractPhone(text)  { const m = text.match(/(\+?1[\s.-]?)?(\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4})/); return m ? m[0].trim() : null; }
-function extractLinkedIn(t)  { const m = t.match(/linkedin\.com\/in\/[\w\-]+/i); return m ? m[0] : null; }
-function extractGitHub(t)    { const m = t.match(/github\.com\/[\w\-]+/i); return m ? m[0] : null; }
+function extractEmail(text) { const m = text.match(/[\w.+\-]+@[\w\-]+\.[a-zA-Z]{2,}/); return m ? m[0].toLowerCase() : null; }
+function extractPhone(text) { const m = text.match(/(\+?1[\s.-]?)?(\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4})/); return m ? m[0].trim() : null; }
+function extractLinkedIn(t) {
+  // Match full URL, short URL, /in/user, or label-prefixed username
+  const m = t.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/([\w\-]+)/i)
+          || t.match(/linkedin[\s:\/]+([a-zA-Z0-9][\w\-]{2,})/i);
+  if (!m) return null;
+  return `linkedin.com/in/${m[1]}`;
+}
+function extractGitHub(t) {
+  const m = t.match(/(?:https?:\/\/)?(?:www\.)?github\.com\/([\w\-]+)/i)
+          || t.match(/github[\s:\/]+([a-zA-Z0-9][\w\-]{1,})/i);
+  if (!m) return null;
+  return `github.com/${m[1]}`;
+}
 
 function extractName(headerLines, text) {
   for (const line of headerLines) {

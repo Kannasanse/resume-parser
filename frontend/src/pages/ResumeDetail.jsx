@@ -1,8 +1,65 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { getResume, deleteResume, exportResume } from '../lib/api';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getResume, deleteResume, exportResume, reparseResume } from '../lib/api';
 import ScoreBreakdown from '../components/ScoreBreakdown';
+
+// ── Markdown renderer ─────────────────────────────────────────────────────────
+// Handles: - bullets, **bold**, *italic* / _italic_, plain text lines
+
+function parseInline(text) {
+  const result = [];
+  const re = /\*\*(.+?)\*\*|\*(.+?)\*|_(.+?)_/g;
+  let last = 0, m;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) result.push(text.slice(last, m.index));
+    if (m[1])      result.push(<strong key={m.index} className="font-semibold text-ds-text">{m[1]}</strong>);
+    else if (m[2]) result.push(<em key={m.index}>{m[2]}</em>);
+    else if (m[3]) result.push(<em key={m.index}>{m[3]}</em>);
+    last = re.lastIndex;
+  }
+  if (last < text.length) result.push(text.slice(last));
+  return result.length ? result : text;
+}
+
+const BULLET_RE = /^[\s]*[-•·▪*]\s+/;
+const NUM_RE    = /^[\s]*\d+\.\s+/;
+
+function MarkdownText({ text }) {
+  if (!text) return null;
+  const lines = text.split('\n');
+  const out = [];
+  let listItems = [];
+
+  const flushList = () => {
+    if (!listItems.length) return;
+    out.push(
+      <ul key={`ul${out.length}`} className="list-disc pl-4 space-y-0.5 mt-1">
+        {listItems.map((li, i) => (
+          <li key={i} className="text-sm text-ds-textSecondary leading-relaxed">{parseInline(li)}</li>
+        ))}
+      </ul>
+    );
+    listItems = [];
+  };
+
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    if (!line.trim()) { flushList(); continue; }
+    if (BULLET_RE.test(line) || NUM_RE.test(line)) {
+      listItems.push(line.replace(BULLET_RE, '').replace(NUM_RE, '').trim());
+    } else {
+      flushList();
+      out.push(
+        <p key={`p${out.length}`} className="text-sm text-ds-textSecondary leading-relaxed">
+          {parseInline(line.trim())}
+        </p>
+      );
+    }
+  }
+  flushList();
+  return <div className="space-y-1">{out}</div>;
+}
 
 // ── Small helpers ─────────────────────────────────────────────────────────────
 
@@ -40,22 +97,38 @@ function normaliseUrl(raw) {
   return raw.startsWith('http') ? raw : `https://${raw}`;
 }
 
+// Resolve a field from multiple possible locations in raw_json
+function pick(...values) { return values.find(v => v != null && v !== '') ?? null; }
+function pickArr(...arrays) { return arrays.find(a => Array.isArray(a) && a.length > 0) ?? []; }
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function ResumeDetail() {
-  const { id } = useParams();
-  const navigate = useNavigate();
+  const { id }     = useParams();
+  const navigate   = useNavigate();
+  const queryClient = useQueryClient();
   const [selectedScoreIdx, setSelectedScoreIdx] = useState(0);
+  const [reparsing, setReparsing] = useState(false);
 
   const { data: resume, isLoading, error } = useQuery({
     queryKey: ['resume', id],
-    queryFn: () => getResume(id),
+    queryFn:  () => getResume(id),
   });
 
   const handleDelete = async () => {
     if (!confirm('Delete this resume?')) return;
     await deleteResume(id);
     navigate('/resumes');
+  };
+
+  const handleReparse = async () => {
+    setReparsing(true);
+    try {
+      await reparseResume(id);
+      queryClient.invalidateQueries({ queryKey: ['resume', id] });
+    } finally {
+      setReparsing(false);
+    }
   };
 
   const handleExport = async (format) => {
@@ -70,43 +143,64 @@ export default function ResumeDetail() {
   if (error || !resume) return <p className="text-ds-danger">Resume not found.</p>;
 
   const pd     = resume.parsed_data?.[0];
-  const rj     = pd?.raw_json || {};              // rich AI output
-  const pi     = rj.personal_info || {};          // personal info block
-  const scores = resume.scores || [];
-  const activeScore = scores[selectedScoreIdx] || null;
+  const rj     = pd?.raw_json || {};
 
-  // Experience: prefer raw_json (richer), fall back to work_experience table rows
-  const experience   = rj.experience?.length   ? rj.experience   : (pd?.work_experience || []);
-  // Education: prefer raw_json (has grade + full date range), fall back to education table
-  const education    = rj.education?.length    ? rj.education    : (pd?.education || []);
-  const projects     = rj.projects     || [];
-  const certs        = rj.certifications || [];
-  const other        = rj.other        || {};
-  const skills       = pd?.skills      || [];
+  // personal_info — new AI format; fall back to flat fields in rj or pd
+  const pi = rj.personal_info || {};
+  const name     = pick(pi.name,     rj.candidate_name, pd?.candidate_name);
+  const email    = pick(pi.email,    rj.email,          pd?.email);
+  const phone    = pick(pi.phone,    rj.phone,          pd?.phone);
+  const linkedin = pick(pi.linkedin);
+  const github   = pick(pi.github);
+  const location = pick(pi.location);
+  const website  = pick(pi.website);
+  const otherLinks = pi.other_links || [];
 
+  const summary = pick(rj.summary, rj.candidate_summary, pd?.summary);
+
+  // Skills — always from the dedicated column (most reliable)
+  const skills = pickArr(pd?.skills, rj.skills);
+
+  // Experience — prefer new AI format (`experience`), fall back to DB table rows
+  const experience = pickArr(rj.experience, pd?.work_experience);
+
+  // Projects — new AI format only
+  const projects = pickArr(rj.projects);
+
+  // Education — prefer new AI format (has grade + both dates), fall back to DB rows
+  const education = pickArr(rj.education, pd?.education);
+
+  // Certifications — new AI format only
+  const certs = pickArr(rj.certifications);
+
+  // Other — new AI format only
+  const other = rj.other || {};
   const hasOther = other.languages?.length || other.awards?.length || other.publications?.length ||
                    other.volunteer?.length || other.interests?.length || other.misc?.length;
+
+  const scores      = resume.scores || [];
+  const activeScore = scores[selectedScoreIdx] || null;
 
   return (
     <div className="space-y-4">
       {/* Top bar */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <button onClick={() => navigate('/resumes')} className="text-sm text-ds-textMuted hover:text-ds-text transition-colors">
           ← Back
         </button>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <button onClick={handleReparse} disabled={reparsing}
+            className="text-sm border border-ds-border px-3 py-1.5 rounded-btn text-ds-text hover:bg-ds-card disabled:opacity-50 transition-colors">
+            {reparsing
+              ? <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />Re-parsing…</span>
+              : 'Re-parse'}
+          </button>
           <button onClick={() => handleExport('json')}
-            className="text-sm border border-ds-border px-3 py-1.5 rounded-btn text-ds-text hover:bg-ds-card transition-colors">
-            Export JSON
-          </button>
+            className="text-sm border border-ds-border px-3 py-1.5 rounded-btn text-ds-text hover:bg-ds-card transition-colors">Export JSON</button>
           <button onClick={() => handleExport('csv')}
-            className="text-sm border border-ds-border px-3 py-1.5 rounded-btn text-ds-text hover:bg-ds-card transition-colors">
-            Export CSV
-          </button>
+            className="text-sm border border-ds-border px-3 py-1.5 rounded-btn text-ds-text hover:bg-ds-card transition-colors">Export CSV</button>
           <button onClick={handleDelete}
-            className="text-sm bg-ds-dangerLight text-ds-danger border border-ds-dangerLight px-3 py-1.5 rounded-btn hover:bg-ds-danger hover:text-white transition-colors">
-            Delete
-          </button>
+            className="text-sm bg-ds-dangerLight text-ds-danger border border-ds-dangerLight px-3 py-1.5 rounded-btn hover:bg-ds-danger hover:text-white transition-colors">Delete</button>
         </div>
       </div>
 
@@ -116,26 +210,24 @@ export default function ResumeDetail() {
 
           {/* Personal information */}
           <div className="bg-ds-card rounded border border-ds-border p-6">
-            <h1 className="font-heading text-xl font-bold text-ds-text mb-1">
-              {pi.name || pd?.candidate_name || 'Unknown Candidate'}
+            <h1 className="font-heading text-xl font-bold text-ds-text mb-0.5">
+              {name || 'Unknown Candidate'}
             </h1>
-            {pi.location && <p className="text-sm text-ds-textMuted mb-3">{pi.location}</p>}
-
+            {location && <p className="text-sm text-ds-textMuted mb-3">{location}</p>}
             <div className="space-y-1.5 mt-3">
-              <InfoRow label="Email"    value={pi.email    || pd?.email}  href={pi.email ? `mailto:${pi.email}` : null} />
-              <InfoRow label="Phone"    value={pi.phone    || pd?.phone} />
-              <InfoRow label="LinkedIn" value={pi.linkedin} href={normaliseUrl(pi.linkedin)} />
-              <InfoRow label="GitHub"   value={pi.github}   href={normaliseUrl(pi.github)} />
-              <InfoRow label="Website"  value={pi.website}  href={normaliseUrl(pi.website)} />
-              {(pi.other_links || []).map((link, i) => (
+              <InfoRow label="Email"    value={email}   href={email ? `mailto:${email}` : null} />
+              <InfoRow label="Phone"    value={phone} />
+              <InfoRow label="LinkedIn" value={linkedin} href={normaliseUrl(linkedin)} />
+              <InfoRow label="GitHub"   value={github}   href={normaliseUrl(github)} />
+              <InfoRow label="Website"  value={website}  href={normaliseUrl(website)} />
+              {otherLinks.map((link, i) => (
                 <InfoRow key={i} label="Link" value={link} href={normaliseUrl(link)} />
               ))}
-              <InfoRow label="File"   value={resume.file_name} />
+              <InfoRow label="File" value={resume.file_name} />
             </div>
-
-            {(pd?.summary || rj.summary) && (
+            {summary && (
               <p className="mt-4 text-sm text-ds-textSecondary border-t border-ds-border pt-4 leading-relaxed">
-                {rj.summary || pd?.summary}
+                {summary}
               </p>
             )}
           </div>
@@ -144,7 +236,7 @@ export default function ResumeDetail() {
           {skills.length > 0 && (
             <Section title={`Skills (${skills.length})`}>
               <div className="flex flex-wrap gap-2">
-                {skills.map(skill => <Tag key={skill}>{skill}</Tag>)}
+                {skills.map(s => <Tag key={s}>{s}</Tag>)}
               </div>
             </Section>
           )}
@@ -152,7 +244,7 @@ export default function ResumeDetail() {
           {/* Experience */}
           {experience.length > 0 && (
             <Section title="Experience">
-              <div className="space-y-5">
+              <div className="space-y-6">
                 {experience.map((w, i) => (
                   <div key={i} className="border-l-2 border-primary-light pl-4">
                     <p className="font-semibold text-ds-text">{w.title}</p>
@@ -162,11 +254,13 @@ export default function ResumeDetail() {
                     </div>
                     {(w.start_date || w.end_date) && (
                       <p className="text-xs text-ds-textMuted mt-0.5 font-mono">
-                        {w.start_date} – {w.end_date || 'Present'}
+                        {[w.start_date, w.end_date || 'Present'].filter(Boolean).join(' – ')}
                       </p>
                     )}
                     {w.description && (
-                      <p className="text-sm text-ds-textSecondary mt-2 leading-relaxed whitespace-pre-line">{w.description}</p>
+                      <div className="mt-2">
+                        <MarkdownText text={w.description} />
+                      </div>
                     )}
                   </div>
                 ))}
@@ -198,7 +292,7 @@ export default function ResumeDetail() {
                       </div>
                     )}
                     {p.description && (
-                      <p className="text-sm text-ds-textSecondary mt-2 leading-relaxed">{p.description}</p>
+                      <div className="mt-2"><MarkdownText text={p.description} /></div>
                     )}
                   </div>
                 ))}
@@ -214,9 +308,10 @@ export default function ResumeDetail() {
                   <div key={i} className="border-l-2 border-ds-border pl-4">
                     <p className="font-semibold text-ds-text">{e.institution}</p>
                     <p className="text-sm text-ds-textTertiary mt-0.5">
-                      {e.degree}{e.field ? ` in ${e.field}` : ''}
+                      {[e.degree, e.field ? `in ${e.field}` : null].filter(Boolean).join(' ')}
                     </p>
                     <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                      {/* Date range: prefer start+end, fall back to graduation_year */}
                       {(e.start_date || e.end_date || e.graduation_year) && (
                         <p className="text-xs text-ds-textMuted font-mono">
                           {e.start_date && e.end_date
@@ -239,7 +334,7 @@ export default function ResumeDetail() {
           {/* Certifications */}
           {certs.length > 0 && (
             <Section title="Certifications">
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {certs.map((c, i) => (
                   <div key={i} className="flex items-start justify-between gap-2">
                     <div>
@@ -292,9 +387,7 @@ export default function ResumeDetail() {
                   </div>
                 )}
                 {other.misc?.length > 0 && (
-                  <div>
-                    <ul className="space-y-0.5">{other.misc.map((m, i) => <li key={i} className="text-sm text-ds-textSecondary">· {m}</li>)}</ul>
-                  </div>
+                  <ul className="space-y-0.5">{other.misc.map((m, i) => <li key={i} className="text-sm text-ds-textSecondary">· {m}</li>)}</ul>
                 )}
               </div>
             </Section>
