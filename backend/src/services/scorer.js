@@ -79,6 +79,23 @@ function normalizeSkill(skill) {
   return SYNONYM_MAP[lower] || lower;
 }
 
+// Proficiency hierarchy — used for gap-penalty scoring
+const PROF_LEVEL = { Expert: 4, Advanced: 3, Intermediate: 2, Beginner: 1 };
+
+// Returns a multiplier (0.40–1.0) based on how far below the job's required level the candidate is.
+// No penalty when candidate meets or exceeds, or when either side is unknown.
+function proficiencyMultiplier(candidateProf, jobProf) {
+  if (!candidateProf || !jobProf || jobProf === 'Nice-to-have') return 1.0;
+  const reqLevel  = PROF_LEVEL[jobProf];
+  const candLevel = PROF_LEVEL[candidateProf];
+  if (!reqLevel || !candLevel) return 1.0;
+  const gap = reqLevel - candLevel;
+  if (gap <= 0) return 1.0;
+  if (gap === 1) return 0.85;
+  if (gap === 2) return 0.65;
+  return 0.40;
+}
+
 // Returns 0 (no match), 0.7 (semantic), 0.9 (synonym/partial), 1.0 (exact/canonical)
 function skillMatchWeight(resumeSkill, jobSkill) {
   const rNorm = normalizeSkill(resumeSkill);
@@ -100,8 +117,10 @@ function skillMatchWeight(resumeSkill, jobSkill) {
 
 // ── Skills score ──────────────────────────────────────────────────────────────
 
-function computeSkillsScore(resumeSkills, workExperience, jobSkills) {
-  if (!jobSkills || jobSkills.length === 0) return 1.0;
+// skillProfMap: { normalizedSkillName → proficiency } built from raw_json.skills objects
+// Returns { score, detail } where detail is a per-skill proficiency breakdown
+function computeSkillsScore(resumeSkills, workExperience, jobSkills, skillProfMap = {}) {
+  if (!jobSkills || jobSkills.length === 0) return { score: 1.0, detail: [] };
 
   const requiredSkills = jobSkills.filter(s => s.is_required);
   const preferredSkills = jobSkills.filter(s => !s.is_required);
@@ -112,17 +131,21 @@ function computeSkillsScore(resumeSkills, workExperience, jobSkills) {
     .join(' ')
     .toLowerCase();
 
+  const detail = [];
+
   function scoreSkillList(skills) {
     if (!skills.length) return 1.0;
     let totalWeight = 0;
     let matchedWeight = 0;
     for (const jobSkill of skills) {
       let bestMatch = 0;
+      let bestMatchResumeSkill = null;
       let inExperience = false;
       for (const resumeSkill of resumeSkills || []) {
         const w = skillMatchWeight(resumeSkill, jobSkill.skill);
         if (w > bestMatch) {
           bestMatch = w;
+          bestMatchResumeSkill = resumeSkill;
           const sNorm = normalizeSkill(jobSkill.skill);
           inExperience =
             experienceText.includes(sNorm) ||
@@ -130,15 +153,30 @@ function computeSkillsScore(resumeSkills, workExperience, jobSkills) {
         }
       }
       const contextMultiplier = inExperience ? 1.0 : 0.7;
+      const candProf = bestMatchResumeSkill ? skillProfMap[normalizeSkill(bestMatchResumeSkill)] : null;
+      const profMult = proficiencyMultiplier(candProf, jobSkill.proficiency);
+      const finalScore = bestMatch * contextMultiplier * profMult;
       totalWeight += 1;
-      matchedWeight += bestMatch * contextMultiplier;
+      matchedWeight += finalScore;
+
+      const reqLevel  = PROF_LEVEL[jobSkill.proficiency];
+      const candLevel = PROF_LEVEL[candProf];
+      detail.push({
+        skill:                jobSkill.skill,
+        isRequired:           !!jobSkill.is_required,
+        jobProficiency:       jobSkill.proficiency || null,
+        candidateProficiency: candProf || null,
+        matched:              bestMatch > 0,
+        proficiencyGap:       (reqLevel && candLevel) ? reqLevel - candLevel : null,
+        score:                Math.round(finalScore * 100) / 100,
+      });
     }
     return totalWeight > 0 ? matchedWeight / totalWeight : 1.0;
   }
 
   const requiredScore = scoreSkillList(requiredSkills);
   const preferredScore = preferredSkills.length > 0 ? scoreSkillList(preferredSkills) : 1.0;
-  return 0.75 * requiredScore + 0.25 * preferredScore;
+  return { score: 0.75 * requiredScore + 0.25 * preferredScore, detail };
 }
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
@@ -414,7 +452,7 @@ async function scoreResume(resumeId, jobProfileId, supabase) {
   const [{ data: resume }, { data: jobProfile }] = await Promise.all([
     supabase
       .from('resumes')
-      .select('raw_text, parsed_data(candidate_name, email, skills, summary, work_experience(*), education(*))')
+      .select('raw_text, parsed_data(candidate_name, email, skills, summary, raw_json, work_experience(*), education(*))')
       .eq('id', resumeId)
       .single(),
     supabase
@@ -434,10 +472,20 @@ async function scoreResume(resumeId, jobProfileId, supabase) {
   const workExperience = pd.work_experience || [];
   const education = pd.education || [];
 
+  // Build proficiency map from raw_json.skills when the AI returned objects { skill, proficiency }
+  const rawJsonSkills = pd.raw_json?.skills || [];
+  const skillProfMap = {};
+  for (const s of rawJsonSkills) {
+    if (s && typeof s === 'object' && s.skill && s.proficiency) {
+      skillProfMap[normalizeSkill(s.skill)] = s.proficiency;
+    }
+  }
+
   const { score: experienceScore, candidateYears } = computeExperienceScore(workExperience, jobProfile);
+  const { score: skillsScore, detail: skillsDetail } = computeSkillsScore(pd.skills, workExperience, jobProfile.job_skills, skillProfMap);
 
   const scores = {
-    skills:     computeSkillsScore(pd.skills, workExperience, jobProfile.job_skills),
+    skills:     skillsScore,
     experience: experienceScore,
     education:  computeEducationScore(education, jobProfile.required_degree, jobProfile.required_field),
     title:      computeTitleScore(workExperience, jobProfile.title),
@@ -452,7 +500,7 @@ async function scoreResume(resumeId, jobProfileId, supabase) {
   return {
     overall,
     band: interpretScore(overall),
-    breakdown: scores,
+    breakdown: { ...scores, skillsDetail },
     weights_used: weights,
     candidateYears,
   };

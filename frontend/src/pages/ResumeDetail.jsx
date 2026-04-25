@@ -92,6 +92,19 @@ function Tag({ children, className = '' }) {
   );
 }
 
+const PROF_COLORS = {
+  Expert:       'bg-emerald-500',
+  Advanced:     'bg-primary',
+  Intermediate: 'bg-amber-400',
+  Beginner:     'bg-ds-textMuted',
+};
+
+function ProficiencyDot({ level }) {
+  const cls = PROF_COLORS[level];
+  if (!cls) return null;
+  return <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${cls}`} title={level} />;
+}
+
 function normaliseUrl(raw) {
   if (!raw) return null;
   return raw.startsWith('http') ? raw : `https://${raw}`;
@@ -158,8 +171,20 @@ export default function ResumeDetail() {
 
   const summary = pick(rj.summary, rj.candidate_summary, pd?.summary);
 
-  // Skills — always from the dedicated column (most reliable)
-  const skills = pickArr(pd?.skills, rj.skills);
+  // Skills — DB column is always strings; raw_json.skills may now be objects { skill, proficiency }
+  const skills = pickArr(
+    pd?.skills,
+    Array.isArray(rj.skills) ? rj.skills.map(s => (typeof s === 'string' ? s : s?.skill) || '').filter(Boolean) : null,
+  );
+
+  // Proficiency map — populated only when AI returned objects (new resumes or after Re-parse)
+  const skillProfMap = {};
+  if (Array.isArray(rj.skills) && rj.skills.length > 0 && typeof rj.skills[0] === 'object') {
+    for (const s of rj.skills) {
+      if (s?.skill) skillProfMap[s.skill.toLowerCase()] = s.proficiency;
+    }
+  }
+  const hasProfData = Object.keys(skillProfMap).length > 0;
 
   // Experience — prefer new AI format (`experience`), fall back to DB table rows
   const experience = pickArr(rj.experience, pd?.work_experience);
@@ -236,8 +261,26 @@ export default function ResumeDetail() {
           {skills.length > 0 && (
             <Section title={`Skills (${skills.length})`}>
               <div className="flex flex-wrap gap-2">
-                {skills.map(s => <Tag key={s}>{s}</Tag>)}
+                {skills.map(s => {
+                  const prof = skillProfMap[s.toLowerCase()];
+                  return (
+                    <span key={s} className="inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-btn font-medium bg-primary-light text-primary">
+                      {s}
+                      {prof && <ProficiencyDot level={prof} />}
+                    </span>
+                  );
+                })}
               </div>
+              {hasProfData && (
+                <div className="flex items-center gap-4 mt-3 flex-wrap">
+                  {Object.entries(PROF_COLORS).map(([label, cls]) => (
+                    <span key={label} className="flex items-center gap-1.5 text-xs text-ds-textMuted">
+                      <span className={`inline-block w-2 h-2 rounded-full ${cls}`} />
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              )}
             </Section>
           )}
 

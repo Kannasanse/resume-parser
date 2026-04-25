@@ -25,7 +25,7 @@ const SYSTEM_PROMPT = `You are an expert resume parser. Extract ALL information 
 
 personal_info: { name, email, phone, linkedin, github, location, website, other_links[] }
 summary: string or null
-skills: string[]
+skills: [{ skill, proficiency }]  — proficiency: "Expert"|"Advanced"|"Intermediate"|"Beginner"|null
 experience: [{ title, company, location, start_date, end_date, description }]
 projects: [{ name, github_url, description, technologies[] }]
 education: [{ institution, degree, field, grade, start_date, end_date }]
@@ -36,7 +36,7 @@ Rules (follow every one):
 1. personal_info.linkedin — look for any of: "linkedin.com/in/...", "LinkedIn:", "li:", "/in/username", a profile URL. Extract the full URL or path. Never skip if present.
 2. personal_info.github — look for any of: "github.com/...", "GitHub:", "gh:", a GitHub URL or username after a GitHub icon or label. Never skip if present.
 3. personal_info.name — the candidate's full name, usually the first prominent line.
-4. skills — extract VERBATIM from the Skills/Technical Skills/Technologies section first, then append any additional tools from experience/projects not already listed. No duplicates.
+4. skills — array of objects: { skill: string, proficiency: "Expert"|"Advanced"|"Intermediate"|"Beginner"|null }. Extract VERBATIM from the Skills/Technical Skills/Technologies section first, then supplement with tools found in experience/projects not already listed. No duplicate skill names. Infer proficiency: "Expert" = explicitly stated expert/specialist OR used in lead/architect/principal role; "Advanced" = primary tool across multiple roles or years; "Intermediate" = regularly used but not primary; "Beginner" = brief mention, familiar/exposure/learning; null = cannot determine.
 5. experience.description — format using markdown: start each responsibility/achievement with "- " (dash space). Use **bold** for key achievements or metrics. Preserve all bullet points from the source.
 6. education.grade — capture GPA (e.g. "3.8/4.0"), percentage, First Class, Distinction, cum laude, Honours if mentioned.
 7. education.start_date and end_date — always populate both when a date range is present (e.g. "2018 - 2022" → start_date:"2018", end_date:"2022").
@@ -207,7 +207,8 @@ function buildStructured(aiResult) {
     email:          pi.email || null,
     phone:          pi.phone || null,
     summary:        aiResult.summary || null,
-    skills:         aiResult.skills || [],
+    // Skills may be string[] (old) or { skill, proficiency }[] (new) — always store strings in DB column
+    skills: (aiResult.skills || []).map(s => (typeof s === 'string' ? s : s?.skill) || '').filter(Boolean),
     // Mapped to DB table columns only
     work_experience: experience.map(e => ({
       title:       e.title || null,
