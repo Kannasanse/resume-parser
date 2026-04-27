@@ -5,8 +5,9 @@ import { upsertScore } from '@/lib/scorer.js';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req, { params }) {
+  const { id } = await params; // hoisted — accessible in catch
+
   try {
-    const { id } = await params;
     const { data: resume, error } = await supabase.from('resumes').select('raw_text, job_id').eq('id', id).single();
 
     if (error || !resume) return Response.json({ error: 'Resume not found' }, { status: 404 });
@@ -24,7 +25,7 @@ export async function POST(req, { params }) {
 
     const { structured } = await parseResume(Buffer.from(resume.raw_text), 'text/plain');
 
-    const { data: parsed } = await supabase
+    const { data: parsed, error: parsedErr } = await supabase
       .from('parsed_data')
       .insert({
         resume_id:      id,
@@ -37,6 +38,7 @@ export async function POST(req, { params }) {
       })
       .select()
       .single();
+    if (parsedErr) throw parsedErr;
 
     if (structured.work_experience?.length) {
       await supabase.from('work_experience').insert(
@@ -81,6 +83,7 @@ export async function POST(req, { params }) {
       status: parseStatus,
     });
   } catch (err) {
+    console.error('[reparse]', err.message);
     await supabase.from('resumes').update({ status: 'failed' }).eq('id', id).catch(() => {});
     return Response.json({ error: err.message }, { status: 500 });
   }

@@ -181,6 +181,7 @@ export default function ResumeDetail() {
     try {
       await reparseResume(id);
       queryClient.invalidateQueries({ queryKey: ['resume', id] });
+      queryClient.invalidateQueries({ queryKey: ['resumes'] });
     } finally {
       setReparsing(false);
     }
