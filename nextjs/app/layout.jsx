@@ -2,8 +2,8 @@ import './globals.css';
 import Providers from '@/components/providers';
 
 export const metadata = {
-  title: 'resume.parse',
-  description: 'AI-powered resume parser and candidate scoring',
+  title: 'Profile Stream',
+  description: 'AI-powered resume parsing and candidate scoring',
 };
 
 export default function RootLayout({ children }) {

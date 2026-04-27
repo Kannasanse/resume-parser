@@ -49,7 +49,7 @@ export default function LoginPage() {
           <div className="inline-flex items-center gap-1.5 mb-2">
             <span className="w-2.5 h-2.5 rounded-full bg-primary inline-block" />
             <span className="font-heading font-bold text-ds-text text-xl tracking-tight">
-              resume<span className="text-primary">.</span>parse
+              profile<span className="text-primary"> </span>stream
             </span>
           </div>
           <p className="text-sm text-ds-textMuted">

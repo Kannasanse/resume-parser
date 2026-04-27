@@ -28,7 +28,7 @@ export default function Navbar() {
         <Link href="/" className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-primary inline-block" />
           <span className="font-heading font-bold text-ds-text text-base tracking-tight">
-            resume<span className="text-primary">.</span>parse
+            profile<span className="text-primary"> </span>stream
           </span>
         </Link>
 
