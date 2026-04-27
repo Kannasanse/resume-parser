@@ -1,5 +1,6 @@
 import supabase from '@/lib/supabase.js';
 import { parseResume } from '@/lib/parser.js';
+import { mimeFromFilename } from '@/lib/mimeTypes.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,10 +8,27 @@ export async function POST(req, { params }) {
   const { id } = await params; // hoisted — accessible in catch
 
   try {
-    const { data: resume, error } = await supabase.from('resumes').select('raw_text, job_id').eq('id', id).single();
+    const { data: resume, error } = await supabase
+      .from('resumes')
+      .select('raw_text, file_url, file_name, job_id')
+      .eq('id', id)
+      .single();
 
     if (error || !resume) return Response.json({ error: 'Resume not found' }, { status: 404 });
-    if (!resume.raw_text) return Response.json({ error: 'No raw text available for reparsing' }, { status: 400 });
+
+    // Determine buffer + mimeType — prefer stored raw_text, fall back to re-downloading the file
+    let buffer, mimeType;
+    if (resume.raw_text) {
+      buffer   = Buffer.from(resume.raw_text);
+      mimeType = 'text/plain';
+    } else if (resume.file_url) {
+      const fileRes = await fetch(resume.file_url);
+      if (!fileRes.ok) return Response.json({ error: 'Could not download original file from storage' }, { status: 502 });
+      buffer   = Buffer.from(await fileRes.arrayBuffer());
+      mimeType = mimeFromFilename(resume.file_name);
+    } else {
+      return Response.json({ error: 'No source available for reparsing — raw text and file are both missing' }, { status: 400 });
+    }
 
     // Clear old parsed data before re-inserting
     const { data: oldParsed } = await supabase.from('parsed_data').select('id').eq('resume_id', id);
@@ -22,7 +40,12 @@ export async function POST(req, { params }) {
     await supabase.from('parsed_data').delete().eq('resume_id', id);
     await supabase.from('resumes').update({ status: 'processing' }).eq('id', id);
 
-    const { structured } = await parseResume(Buffer.from(resume.raw_text), 'text/plain');
+    const { rawText, structured } = await parseResume(buffer, mimeType);
+
+    // Save extracted text for future reparses if it wasn't stored before
+    if (!resume.raw_text && rawText) {
+      await supabase.from('resumes').update({ raw_text: rawText }).eq('id', id).catch(() => {});
+    }
 
     const { data: parsed, error: parsedErr } = await supabase
       .from('parsed_data')
