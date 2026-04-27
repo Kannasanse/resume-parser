@@ -5,9 +5,18 @@ import HoldToDelete from '@/components/HoldToDelete';
 
 const STATUS_STYLES = {
   completed:  'bg-ds-successLight text-ds-success',
+  partial:    'bg-ds-warningLight text-ds-warning',
   processing: 'bg-ds-warningLight text-ds-warning',
   failed:     'bg-ds-dangerLight text-ds-danger',
   pending:    'bg-ds-bg text-ds-textMuted',
+};
+
+const STATUS_LABELS = {
+  completed:  'Parsed',
+  partial:    'Partial — Re-parse',
+  processing: 'Processing',
+  failed:     'Failed',
+  pending:    'Pending',
 };
 
 const BAND_DOT = {
@@ -77,7 +86,7 @@ export default function ResumeCard({ resume, jobs = [], onDelete }) {
             <p className="text-sm text-ds-textMuted truncate mt-0.5">{pd?.email || resume.file_name}</p>
           </div>
           <span className={`flex-shrink-0 text-xs px-2.5 py-1 rounded-btn font-medium ${STATUS_STYLES[resume.status] || STATUS_STYLES.pending}`}>
-            {resume.status}
+            {STATUS_LABELS[resume.status] || resume.status}
           </span>
         </div>
 

@@ -51,7 +51,7 @@ async function parseWithAI(rawText) {
     model: 'llama-3.3-70b-versatile',
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user',   content: `Resume:\n\n${rawText.slice(0, 14000)}` },
+      { role: 'user',   content: `Resume:\n\n${rawText.slice(0, 24000)}` },
     ],
     temperature: 0.1,
     response_format: { type: 'json_object' },
@@ -123,6 +123,10 @@ function fallbackParse(rawText) {
 export async function parseResume(buffer, mimeType) {
   const rawText = await extractText(buffer, mimeType);
 
+  if (!rawText || rawText.trim().length < 50) {
+    throw new Error('Could not extract text from this file. It may be a scanned image or have a non-standard format. Please upload a text-based PDF or DOCX.');
+  }
+
   try {
     const ai = await parseWithAI(rawText);
     const pi = ai.personal_info || {};
@@ -156,7 +160,8 @@ export async function parseResume(buffer, mimeType) {
     };
 
     return { rawText, structured };
-  } catch {
-    return { rawText, structured: fallbackParse(rawText) };
+  } catch (err) {
+    console.error('[parser] AI parse failed, using fallback:', err.message);
+    return { rawText, structured: { ...fallbackParse(rawText), _fallback: true } };
   }
 }

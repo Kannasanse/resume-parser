@@ -12,6 +12,13 @@ export async function POST(req, { params }) {
     if (error || !resume) return Response.json({ error: 'Resume not found' }, { status: 404 });
     if (!resume.raw_text) return Response.json({ error: 'No raw text available for reparsing' }, { status: 400 });
 
+    // Clear old parsed data before re-inserting
+    const { data: oldParsed } = await supabase.from('parsed_data').select('id').eq('resume_id', id);
+    const oldIds = (oldParsed || []).map(p => p.id);
+    if (oldIds.length) {
+      await supabase.from('work_experience').delete().in('parsed_data_id', oldIds);
+      await supabase.from('education').delete().in('parsed_data_id', oldIds);
+    }
     await supabase.from('parsed_data').delete().eq('resume_id', id);
     await supabase.from('resumes').update({ status: 'processing' }).eq('id', id);
 
@@ -37,6 +44,7 @@ export async function POST(req, { params }) {
           parsed_data_id: parsed.id,
           title:       w.title,
           company:     w.company,
+          location:    w.location || null,
           start_date:  w.start_date,
           end_date:    w.end_date,
           description: w.description,
@@ -51,19 +59,29 @@ export async function POST(req, { params }) {
           institution:     e.institution,
           degree:          e.degree,
           field:           e.field,
+          grade:           e.grade || null,
+          start_date:      e.start_date || null,
+          end_date:        e.end_date || null,
           graduation_year: e.graduation_year,
         }))
       );
     }
 
-    await supabase.from('resumes').update({ status: 'completed' }).eq('id', id);
+    const parseStatus = structured._fallback ? 'partial' : 'completed';
+    await supabase.from('resumes').update({ status: parseStatus }).eq('id', id);
 
     if (resume.job_id) {
       await upsertScore(id, resume.job_id).catch(e => console.error('Rescore error:', e.message));
     }
 
-    return Response.json({ message: 'Reparsed successfully' });
+    return Response.json({
+      message: structured._fallback
+        ? 'Reparsed with basic extraction — AI parsing failed again'
+        : 'Reparsed successfully',
+      status: parseStatus,
+    });
   } catch (err) {
+    await supabase.from('resumes').update({ status: 'failed' }).eq('id', id).catch(() => {});
     return Response.json({ error: err.message }, { status: 500 });
   }
 }

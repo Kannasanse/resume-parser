@@ -35,9 +35,17 @@ export async function POST(req) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const { url } = await uploadFile(buffer, file.name, file.type);
-    const { rawText, structured } = await parseResume(buffer, file.type);
 
-    await supabase.from('resumes').update({ file_url: url, raw_text: rawText, status: 'completed' }).eq('id', resume.id);
+    let rawText, structured;
+    try {
+      ({ rawText, structured } = await parseResume(buffer, file.type));
+    } catch (parseErr) {
+      await supabase.from('resumes').update({ file_url: url, status: 'failed' }).eq('id', resume.id);
+      return Response.json({ error: parseErr.message }, { status: 422 });
+    }
+
+    const parseStatus = structured._fallback ? 'partial' : 'completed';
+    await supabase.from('resumes').update({ file_url: url, raw_text: rawText, status: parseStatus }).eq('id', resume.id);
 
     const { data: parsed, error: parsedErr } = await supabase
       .from('parsed_data')
@@ -60,6 +68,7 @@ export async function POST(req) {
           parsed_data_id: parsed.id,
           title:       w.title,
           company:     w.company,
+          location:    w.location || null,
           start_date:  w.start_date,
           end_date:    w.end_date,
           description: w.description,
@@ -74,6 +83,9 @@ export async function POST(req) {
           institution:     e.institution,
           degree:          e.degree,
           field:           e.field,
+          grade:           e.grade || null,
+          start_date:      e.start_date || null,
+          end_date:        e.end_date || null,
           graduation_year: e.graduation_year,
         }))
       );
@@ -86,7 +98,10 @@ export async function POST(req) {
 
     return Response.json({
       id: resume.id,
-      message: 'Resume parsed successfully',
+      message: structured._fallback
+        ? 'Resume uploaded but AI parsing failed — basic extraction used. Try re-parsing.'
+        : 'Resume parsed successfully',
+      status: parseStatus,
       score: scoreResult ? { overall: scoreResult.overall, band: scoreResult.band } : null,
     }, { status: 201 });
   } catch (err) {
