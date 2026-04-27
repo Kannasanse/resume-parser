@@ -1,6 +1,5 @@
 import './globals.css';
 import Providers from '@/components/providers';
-import Navbar from '@/components/Navbar';
 
 export const metadata = {
   title: 'resume.parse',
@@ -12,12 +11,7 @@ export default function RootLayout({ children }) {
     <html lang="en" suppressHydrationWarning>
       <body>
         <Providers>
-          <div className="min-h-screen bg-ds-bg">
-            <Navbar />
-            <main className="max-w-6xl mx-auto px-4 py-8">
-              {children}
-            </main>
-          </div>
+          {children}
         </Providers>
       </body>
     </html>

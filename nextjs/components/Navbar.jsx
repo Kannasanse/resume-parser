@@ -2,10 +2,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '@/hooks/useTheme';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Navbar() {
   const pathname = usePathname();
   const [dark, toggleTheme] = useTheme();
+  const { user, signOut } = useAuth();
 
   const navLink = (to, label) => (
     <Link
@@ -52,6 +54,21 @@ export default function Navbar() {
               </svg>
             )}
           </button>
+
+          {/* User + sign out */}
+          {user && (
+            <div className="flex items-center gap-2 ml-2 pl-2 border-l border-ds-border">
+              <span className="text-xs text-ds-textMuted truncate max-w-[140px]" title={user.email}>
+                {user.email}
+              </span>
+              <button
+                onClick={signOut}
+                className="text-xs px-2.5 py-1.5 rounded-btn border border-ds-border text-ds-textMuted hover:text-ds-danger hover:border-ds-danger transition-colors"
+              >
+                Sign out
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </nav>
