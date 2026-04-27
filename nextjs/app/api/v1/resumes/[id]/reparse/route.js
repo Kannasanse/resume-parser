@@ -40,32 +40,30 @@ export async function POST(req, { params }) {
     if (parsedErr) throw parsedErr;
 
     if (structured.work_experience?.length) {
-      await supabase.from('work_experience').insert(
+      const { error: weErr } = await supabase.from('work_experience').insert(
         structured.work_experience.map(w => ({
           parsed_data_id: parsed.id,
           title:       w.title,
           company:     w.company,
-          location:    w.location || null,
           start_date:  w.start_date,
           end_date:    w.end_date,
           description: w.description,
         }))
       );
+      if (weErr) console.error('[reparse] work_experience insert failed:', weErr.message);
     }
 
     if (structured.education?.length) {
-      await supabase.from('education').insert(
+      const { error: eduErr } = await supabase.from('education').insert(
         structured.education.map(e => ({
           parsed_data_id:  parsed.id,
           institution:     e.institution,
           degree:          e.degree,
           field:           e.field,
-          grade:           e.grade || null,
-          start_date:      e.start_date || null,
-          end_date:        e.end_date || null,
           graduation_year: e.graduation_year,
         }))
       );
+      if (eduErr) console.error('[reparse] education insert failed:', eduErr.message);
     }
 
     const parseStatus = structured._fallback ? 'partial' : 'completed';
