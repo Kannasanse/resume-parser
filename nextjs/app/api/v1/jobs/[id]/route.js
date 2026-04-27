@@ -63,8 +63,14 @@ export async function PUT(req, { params }) {
 export async function DELETE(req, { params }) {
   try {
     const { id } = await params;
+
+    // Cascade: scores + skills → job_profile
+    await supabase.from('resume_scores').delete().eq('job_profile_id', id);
+    await supabase.from('job_skills').delete().eq('job_profile_id', id);
+
     const { error } = await supabase.from('job_profiles').delete().eq('id', id);
     if (error) throw error;
+
     return Response.json({ message: 'Deleted' });
   } catch (err) {
     return Response.json({ error: err.message }, { status: 500 });

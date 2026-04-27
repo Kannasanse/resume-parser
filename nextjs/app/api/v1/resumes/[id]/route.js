@@ -60,13 +60,34 @@ export async function GET(req, { params }) {
 export async function DELETE(req, { params }) {
   try {
     const { id } = await params;
-    const { data: resume } = await supabase.from('resumes').select('file_url').eq('id', id).single();
+
+    // Get file URL and parsed_data ids before deleting
+    const { data: resume } = await supabase
+      .from('resumes')
+      .select('file_url, parsed_data(id)')
+      .eq('id', id)
+      .single();
+
+    // Delete storage file
     if (resume?.file_url) {
       const path = resume.file_url.split('/').pop();
       await deleteFile(path).catch(() => {});
     }
+
+    // Cascade: scores → work_experience + education → parsed_data → resume
+    await supabase.from('resume_scores').delete().eq('resume_id', id);
+
+    const parsedIds = (resume?.parsed_data || []).map(p => p.id);
+    if (parsedIds.length) {
+      await supabase.from('work_experience').delete().in('parsed_data_id', parsedIds);
+      await supabase.from('education').delete().in('parsed_data_id', parsedIds);
+    }
+
+    await supabase.from('parsed_data').delete().eq('resume_id', id);
+
     const { error } = await supabase.from('resumes').delete().eq('id', id);
     if (error) throw error;
+
     return Response.json({ message: 'Deleted successfully' });
   } catch (err) {
     return Response.json({ error: err.message }, { status: 500 });
