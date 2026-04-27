@@ -12,6 +12,7 @@ const ALLOWED = [
 ];
 
 export async function POST(req) {
+  let resume = null;
   try {
     const formData = await req.formData();
     const file  = formData.get('resume');
@@ -26,12 +27,13 @@ export async function POST(req) {
       if (!job) return Response.json({ error: 'Invalid job_id — job profile not found' }, { status: 400 });
     }
 
-    const { data: resume, error: insertErr } = await supabase
+    const { data: resumeData, error: insertErr } = await supabase
       .from('resumes')
       .insert({ file_name: file.name, status: 'processing', job_id: jobId })
       .select()
       .single();
     if (insertErr) throw insertErr;
+    resume = resumeData;
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const { url } = await uploadFile(buffer, file.name, file.type);
@@ -106,6 +108,10 @@ export async function POST(req) {
     }, { status: 201 });
   } catch (err) {
     console.error(err);
+    // Ensure resume never stays stuck in 'processing' on any unexpected failure
+    if (resume?.id) {
+      await supabase.from('resumes').update({ status: 'failed' }).eq('id', resume.id).catch(() => {});
+    }
     return Response.json({ error: err.message }, { status: 500 });
   }
 }

@@ -105,9 +105,10 @@ Rules (follow every one):
 14. The input text may have imperfect formatting due to PDF extraction. Use context to determine section boundaries even if spacing is irregular.`;
 
 async function parseWithAI(rawText) {
-  const MAX_RETRIES = 4;
+  // Two quick retries only — long waits cause serverless timeouts
+  const DELAYS = [2000, 5000]; // 2s then 5s, total overhead max ~7s
 
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+  for (let attempt = 0; attempt <= DELAYS.length; attempt++) {
     try {
       const response = await groq.chat.completions.create({
         model: 'llama-3.3-70b-versatile',
@@ -136,15 +137,10 @@ async function parseWithAI(rawText) {
         err?.message?.toLowerCase().includes('rate limit') ||
         err?.message?.toLowerCase().includes('too many requests');
 
-      if (!isRateLimit || attempt === MAX_RETRIES - 1) throw err;
+      if (!isRateLimit || attempt >= DELAYS.length) throw err;
 
-      // Respect retry-after header if present, otherwise exponential backoff
-      const retryAfterSec = parseInt(err?.headers?.['retry-after'] || err?.headers?.get?.('retry-after') || '0');
-      const waitMs = retryAfterSec > 0
-        ? (retryAfterSec + 1) * 1000
-        : (attempt + 1) * 12000; // 12s, 24s, 36s
-
-      console.warn(`[parser] Groq rate limited — waiting ${waitMs / 1000}s before retry ${attempt + 1}/${MAX_RETRIES - 1}`);
+      const waitMs = DELAYS[attempt];
+      console.warn(`[parser] Groq rate limited — retrying in ${waitMs / 1000}s (attempt ${attempt + 1}/${DELAYS.length})`);
       await new Promise(r => setTimeout(r, waitMs));
     }
   }
