@@ -1,7 +1,6 @@
 import supabase from '@/lib/supabase.js';
 import { uploadFile } from '@/lib/storage.js';
 import { parseResume } from '@/lib/parser.js';
-import { upsertScore } from '@/lib/scorer.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,18 +92,12 @@ export async function POST(req) {
       );
     }
 
-    let scoreResult = null;
-    if (jobId) {
-      try { scoreResult = await upsertScore(resume.id, jobId); } catch (e) { console.error('Scoring error:', e.message); }
-    }
-
     return Response.json({
       id: resume.id,
       message: structured._fallback
         ? 'Resume uploaded but AI parsing failed — basic extraction used. Try re-parsing.'
         : 'Resume parsed successfully',
       status: parseStatus,
-      score: scoreResult ? { overall: scoreResult.overall, band: scoreResult.band } : null,
     }, { status: 201 });
   } catch (err) {
     console.error(err);

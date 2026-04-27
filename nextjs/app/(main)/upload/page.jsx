@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { uploadResume, getJobs } from '@/lib/api';
+import { uploadResume, scoreResume, getJobs } from '@/lib/api';
 
 const ALLOWED = ['application/pdf', 'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
@@ -42,27 +42,46 @@ function UploadInner() {
   };
 
   const pendingCount   = files.filter(f => f.status === 'pending').length;
-  const uploadingCount = files.filter(f => f.status === 'uploading').length;
+  const activeCount    = files.filter(f => f.status === 'parsing' || f.status === 'scoring').length;
   const doneCount      = files.filter(f => f.status === 'done').length;
   const errorCount     = files.filter(f => f.status === 'error').length;
-  const isUploading    = uploadingCount > 0;
+  const isUploading    = activeCount > 0;
   const allDone        = files.length > 0 && doneCount + errorCount === files.length;
 
   const handleUploadAll = async () => {
     setJobError('');
     const pending = files.filter(f => f.status === 'pending');
     for (const entry of pending) {
-      setFiles(prev => prev.map(f => f.id === entry.id ? { ...f, status: 'uploading' } : f));
+      // Phase 1: Parse
+      setFiles(prev => prev.map(f => f.id === entry.id ? { ...f, status: 'parsing' } : f));
+      let resumeId;
       try {
-        const { data } = await uploadResume(entry.file, jobId || null);
+        const { data } = await uploadResume(entry.file, null); // no jobId — parse only
+        resumeId = data.id;
         setFiles(prev => prev.map(f =>
-          f.id === entry.id ? { ...f, status: 'done', resumeId: data.id } : f
+          f.id === entry.id ? { ...f, resumeId, status: jobId ? 'scoring' : 'done' } : f
         ));
       } catch (err) {
-        const msg = err.data?.error || 'Upload failed';
+        const msg = err.data?.error || 'Parsing failed';
         setFiles(prev => prev.map(f =>
           f.id === entry.id ? { ...f, status: 'error', error: msg } : f
         ));
+        continue;
+      }
+
+      // Phase 2: Score (only if a job profile was selected)
+      if (jobId && resumeId) {
+        try {
+          await scoreResume(resumeId, jobId);
+          setFiles(prev => prev.map(f =>
+            f.id === entry.id ? { ...f, status: 'done' } : f
+          ));
+        } catch {
+          // Scoring failure doesn't fail the whole upload — resume is still parsed
+          setFiles(prev => prev.map(f =>
+            f.id === entry.id ? { ...f, status: 'done', scoreError: true } : f
+          ));
+        }
       }
     }
   };
@@ -70,12 +89,19 @@ function UploadInner() {
   const selectedJob = jobs.find(j => j.id === jobId);
 
   const STATUS_STYLES = {
-    pending:   'bg-ds-bg text-ds-textMuted',
-    uploading: 'bg-secondary-light text-secondary',
-    done:      'bg-ds-successLight text-ds-success',
-    error:     'bg-ds-dangerLight text-ds-danger',
+    pending:  'bg-ds-bg text-ds-textMuted',
+    parsing:  'bg-secondary-light text-secondary',
+    scoring:  'bg-ds-warningLight text-ds-warning',
+    done:     'bg-ds-successLight text-ds-success',
+    error:    'bg-ds-dangerLight text-ds-danger',
   };
-  const STATUS_LABEL = { pending: 'Pending', uploading: 'Uploading…', done: 'Done', error: 'Error' };
+  const STATUS_LABEL = {
+    pending: 'Pending',
+    parsing: 'Parsing…',
+    scoring: 'Scoring…',
+    done:    'Done',
+    error:   'Error',
+  };
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
@@ -137,7 +163,7 @@ function UploadInner() {
           <div className="flex items-center justify-between px-4 py-3">
             <p className="text-xs font-semibold text-ds-textMuted uppercase tracking-wide">
               {files.length} file{files.length !== 1 ? 's' : ''}
-              {isUploading && ` · uploading ${doneCount + errorCount + 1} of ${files.length}`}
+              {isUploading && ` · processing ${doneCount + errorCount + 1} of ${files.length}`}
               {allDone && ` · ${doneCount} succeeded, ${errorCount} failed`}
             </p>
             {!isUploading && !allDone && (
@@ -156,14 +182,17 @@ function UploadInner() {
               </div>
 
               <span className={`text-xs font-medium px-2.5 py-0.5 rounded-btn flex-shrink-0 ${STATUS_STYLES[entry.status]}`}>
-                {entry.status === 'uploading'
+                {(entry.status === 'parsing' || entry.status === 'scoring')
                   ? <span className="flex items-center gap-1">
                       <span className="inline-block w-2.5 h-2.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                      Uploading…
+                      {STATUS_LABEL[entry.status]}
                     </span>
                   : STATUS_LABEL[entry.status]
                 }
               </span>
+              {entry.scoreError && (
+                <span className="text-xs text-ds-textMuted flex-shrink-0">Score pending</span>
+              )}
 
               {entry.status === 'done' && entry.resumeId && (
                 <Link href={`/resumes/${entry.resumeId}`}
