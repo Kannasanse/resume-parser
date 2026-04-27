@@ -1,40 +1,31 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { getResumes, deleteResume, bulkDeleteResumes } from '@/lib/api';
+import { deduplicateByEmail } from '@/lib/resumeUtils';
 import ResumeCard from '@/components/ResumeCard';
 import HoldToDelete from '@/components/HoldToDelete';
 
-function deduplicateByEmail(resumes) {
-  const map = new Map();
+const BAND_DOT = {
+  'Strong Match':   'bg-ds-success',
+  'Good Match':     'bg-secondary',
+  'Moderate Match': 'bg-ds-warning',
+  'Weak Match':     'bg-ds-danger',
+};
 
-  for (const r of resumes) {
-    const email = r.parsed_data?.[0]?.email || `__no_email_${r.id}`;
-    const scores = r.resume_scores || [];
-
-    if (!map.has(email)) {
-      map.set(email, { resume: r, jobs: scores });
-    } else {
-      const existing = map.get(email);
-      const existingBest = Math.max(...existing.jobs.map(s => s.overall_score ?? 0), 0);
-      const newBest      = Math.max(...scores.map(s => s.overall_score ?? 0), 0);
-      if (newBest > existingBest) {
-        map.set(email, { resume: r, jobs: scores });
-      } else {
-        const knownIds = new Set(existing.jobs.map(j => j.job_profile_id));
-        for (const s of scores) {
-          if (!knownIds.has(s.job_profile_id)) {
-            existing.jobs.push(s);
-            knownIds.add(s.job_profile_id);
-          }
-        }
-      }
-    }
-  }
-
-  return [...map.values()];
-}
+const STATUS_STYLES = {
+  completed:  'bg-ds-successLight text-ds-success',
+  partial:    'bg-ds-warningLight text-ds-warning',
+  processing: 'bg-ds-warningLight text-ds-warning',
+  failed:     'bg-ds-dangerLight text-ds-danger',
+  pending:    'bg-ds-bg text-ds-textMuted',
+};
+const STATUS_LABELS = {
+  completed: 'Parsed', partial: 'Partial', processing: 'Processing',
+  failed: 'Failed', pending: 'Pending',
+};
 
 function BulkDeleteModal({ count, onCancel, onDelete }) {
   return (
@@ -71,12 +62,98 @@ function BulkDeleteModal({ count, onCancel, onDelete }) {
   );
 }
 
+function ResumeTable({ items, selectedIds, onToggleSelect, onDelete, onDeleteRequest }) {
+  return (
+    <div className="rounded border border-ds-border overflow-hidden">
+      <table className="w-full text-sm">
+        <thead className="bg-ds-bg border-b border-ds-border">
+          <tr>
+            <th className="w-10 px-4 py-3" />
+            <th className="text-left px-4 py-3 text-xs font-semibold text-ds-textMuted uppercase tracking-wide">Name</th>
+            <th className="text-left px-4 py-3 text-xs font-semibold text-ds-textMuted uppercase tracking-wide hidden md:table-cell">Skills</th>
+            <th className="text-left px-4 py-3 text-xs font-semibold text-ds-textMuted uppercase tracking-wide hidden sm:table-cell">Status</th>
+            <th className="text-left px-4 py-3 text-xs font-semibold text-ds-textMuted uppercase tracking-wide hidden lg:table-cell">Best Score</th>
+            <th className="w-24 px-4 py-3" />
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-ds-border">
+          {items.map(({ resume, jobs }) => {
+            const pd = resume.parsed_data?.[0];
+            const bestScore = jobs.reduce((b, j) => (j.overall_score ?? 0) > (b?.overall_score ?? 0) ? j : b, null);
+            const skills = pd?.skills || [];
+            return (
+              <tr key={resume.id}
+                className={`transition-colors ${selectedIds.has(resume.id) ? 'bg-primary/5' : 'hover:bg-ds-bg'}`}>
+                <td className="px-4 py-3">
+                  <input type="checkbox" checked={selectedIds.has(resume.id)}
+                    onChange={() => onToggleSelect(resume.id)}
+                    className="w-4 h-4 accent-primary cursor-pointer" />
+                </td>
+                <td className="px-4 py-3">
+                  <p className="font-medium text-ds-text truncate max-w-[180px]">{pd?.candidate_name || 'Unknown'}</p>
+                  <p className="text-xs text-ds-textMuted truncate max-w-[180px] mt-0.5">{pd?.email || resume.file_name}</p>
+                </td>
+                <td className="px-4 py-3 hidden md:table-cell">
+                  <div className="flex flex-wrap gap-1">
+                    {skills.slice(0, 3).map(s => (
+                      <span key={s} className="bg-primary-light text-primary text-xs px-2 py-0.5 rounded-btn font-medium">{s}</span>
+                    ))}
+                    {skills.length > 3 && <span className="text-xs text-ds-textMuted">+{skills.length - 3}</span>}
+                  </div>
+                </td>
+                <td className="px-4 py-3 hidden sm:table-cell">
+                  <span className={`text-xs px-2.5 py-1 rounded-btn font-medium ${STATUS_STYLES[resume.status] || STATUS_STYLES.pending}`}>
+                    {STATUS_LABELS[resume.status] || resume.status}
+                  </span>
+                </td>
+                <td className="px-4 py-3 hidden lg:table-cell">
+                  {bestScore ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${BAND_DOT[bestScore.band] || 'bg-ds-textMuted'}`} />
+                      <span className="font-semibold text-ds-text">{Math.round((bestScore.overall_score ?? 0) * 100)}</span>
+                      <span className="text-xs text-ds-textMuted">— {bestScore.band}</span>
+                    </div>
+                  ) : <span className="text-xs text-ds-textMuted">—</span>}
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2 justify-end">
+                    <Link href={`/resumes/${resume.id}`}
+                      className="text-xs bg-primary text-white px-3 py-1.5 rounded-btn font-medium hover:bg-primary-dark transition-colors">
+                      View
+                    </Link>
+                    <button onClick={() => onDeleteRequest(resume.id)}
+                      className="text-xs text-ds-danger border border-ds-border px-3 py-1.5 rounded-btn hover:bg-ds-dangerLight transition-colors">
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function ResumeList() {
   const [page, setPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [viewMode, setViewMode] = useState('grid');
+  const [singleDeleteId, setSingleDeleteId] = useState(null);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const saved = localStorage.getItem('profiles-view-mode');
+    if (saved === 'table' || saved === 'grid') setViewMode(saved);
+  }, []);
+
+  const setView = (mode) => {
+    setViewMode(mode);
+    localStorage.setItem('profiles-view-mode', mode);
+  };
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['resumes', page],
@@ -89,24 +166,17 @@ export default function ResumeList() {
   const allSelected  = allIds.length > 0 && allIds.every(id => selectedIds.has(id));
 
   const toggleSelect = (id) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+    setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   };
 
   const toggleSelectAll = () => {
-    if (allSelected) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(allIds));
-    }
+    setSelectedIds(allSelected ? new Set() : new Set(allIds));
   };
 
   const handleDelete = async (id) => {
     await deleteResume(id);
     setSelectedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
+    setSingleDeleteId(null);
     queryClient.invalidateQueries({ queryKey: ['resumes'] });
   };
 
@@ -128,31 +198,65 @@ export default function ResumeList() {
   return (
     <div className="pb-28">
       {showBulkModal && (
-        <BulkDeleteModal
-          count={selectedIds.size}
-          onCancel={() => setShowBulkModal(false)}
-          onDelete={handleBulkDelete}
-        />
+        <BulkDeleteModal count={selectedIds.size} onCancel={() => setShowBulkModal(false)} onDelete={handleBulkDelete} />
       )}
 
-      <div className="flex items-center justify-between mb-6">
+      {/* Single delete modal for table view */}
+      {singleDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setSingleDeleteId(null)} />
+          <div className="relative bg-ds-card rounded-lg border border-ds-border shadow-xl max-w-md w-full p-6 space-y-4">
+            <h2 className="font-heading font-bold text-ds-text text-base">Delete Profile?</h2>
+            <div className="bg-ds-dangerLight rounded px-4 py-3">
+              <p className="text-xs text-ds-danger font-medium">This action cannot be undone.</p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <HoldToDelete onDelete={() => handleDelete(singleDeleteId)} />
+              <button onClick={() => setSingleDeleteId(null)}
+                className="w-full px-5 py-2.5 text-sm font-medium text-ds-textMuted border border-ds-border rounded-btn hover:bg-ds-bg transition-colors">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
         <div className="flex items-center gap-3">
           <h1 className="font-heading text-2xl font-bold text-ds-text">
             Profiles <span className="text-ds-textMuted font-normal text-lg">({deduplicated.length})</span>
           </h1>
           {deduplicated.length > 0 && (
-            <button
-              onClick={toggleSelectAll}
-              className="text-xs text-ds-textMuted hover:text-ds-text border border-ds-border rounded-btn px-2.5 py-1 transition-colors"
-            >
+            <button onClick={toggleSelectAll}
+              className="text-xs text-ds-textMuted hover:text-ds-text border border-ds-border rounded-btn px-2.5 py-1 transition-colors">
               {allSelected ? 'Deselect all' : 'Select all'}
             </button>
           )}
         </div>
-        <Link href="/upload"
-          className="bg-primary text-white px-5 py-2 rounded-btn text-sm font-medium hover:bg-primary-dark transition-colors">
-          + Upload
-        </Link>
+        <div className="flex items-center gap-2">
+          {/* View toggle */}
+          <div className="flex rounded-btn border border-ds-border overflow-hidden">
+            <button onClick={() => setView('grid')}
+              title="Grid view"
+              className={`px-3 py-2 transition-colors ${viewMode === 'grid' ? 'bg-primary text-white' : 'text-ds-textMuted hover:bg-ds-bg'}`}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+              </svg>
+            </button>
+            <button onClick={() => setView('table')}
+              title="Table view"
+              className={`px-3 py-2 transition-colors border-l border-ds-border ${viewMode === 'table' ? 'bg-primary text-white' : 'text-ds-textMuted hover:bg-ds-bg'}`}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          <Link href="/upload"
+            className="bg-primary text-white px-5 py-2 rounded-btn text-sm font-medium hover:bg-primary-dark transition-colors">
+            + Upload
+          </Link>
+        </div>
       </div>
 
       {deduplicated.length === 0 ? (
@@ -162,19 +266,21 @@ export default function ResumeList() {
             Upload your first profile →
           </Link>
         </div>
-      ) : (
+      ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {deduplicated.map(({ resume, jobs }) => (
-            <ResumeCard
-              key={resume.id}
-              resume={resume}
-              jobs={jobs}
-              onDelete={handleDelete}
-              selected={selectedIds.has(resume.id)}
-              onToggleSelect={() => toggleSelect(resume.id)}
-            />
+            <ResumeCard key={resume.id} resume={resume} jobs={jobs} onDelete={handleDelete}
+              selected={selectedIds.has(resume.id)} onToggleSelect={() => toggleSelect(resume.id)} />
           ))}
         </div>
+      ) : (
+        <ResumeTable
+          items={deduplicated}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onDelete={handleDelete}
+          onDeleteRequest={setSingleDeleteId}
+        />
       )}
 
       {totalPages > 1 && (
@@ -191,7 +297,6 @@ export default function ResumeList() {
         </div>
       )}
 
-      {/* Bulk action bar */}
       {selectedIds.size > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-ds-card border-t border-ds-border shadow-xl px-4 py-3">
           <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
@@ -199,18 +304,13 @@ export default function ResumeList() {
               <span className="text-sm font-semibold text-ds-text">
                 {selectedIds.size} profile{selectedIds.size > 1 ? 's' : ''} selected
               </span>
-              <button
-                onClick={() => setSelectedIds(new Set())}
-                className="text-xs text-ds-textMuted hover:text-ds-text underline underline-offset-2"
-              >
+              <button onClick={() => setSelectedIds(new Set())}
+                className="text-xs text-ds-textMuted hover:text-ds-text underline underline-offset-2">
                 Clear
               </button>
             </div>
-            <button
-              onClick={() => setShowBulkModal(true)}
-              disabled={bulkDeleting}
-              className="flex items-center gap-2 bg-ds-danger text-white text-sm font-semibold px-5 py-2 rounded-btn hover:opacity-90 disabled:opacity-50 transition-opacity"
-            >
+            <button onClick={() => setShowBulkModal(true)} disabled={bulkDeleting}
+              className="flex items-center gap-2 bg-ds-danger text-white text-sm font-semibold px-5 py-2 rounded-btn hover:opacity-90 disabled:opacity-50 transition-opacity">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
                 <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>

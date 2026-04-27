@@ -2,7 +2,8 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getResume, deleteResume, exportResume, reparseResume } from '@/lib/api';
+import { getResume, deleteResume, exportResume, reparseResume, getResumes } from '@/lib/api';
+import { deduplicateByEmail } from '@/lib/resumeUtils';
 import ScoreBreakdown from '@/components/ScoreBreakdown';
 import HoldToDelete from '@/components/HoldToDelete';
 
@@ -158,6 +159,18 @@ export default function ResumeDetail() {
     queryFn:  () => getResume(id),
   });
 
+  // Fetch full list for prev/next navigation
+  const { data: listData } = useQuery({
+    queryKey: ['resumes-nav'],
+    queryFn:  () => getResumes(1, 500),
+    staleTime: 60000,
+  });
+
+  const navList = deduplicateByEmail(listData?.data || []).map(({ resume }) => resume.id);
+  const currentIdx = navList.indexOf(id);
+  const prevId = currentIdx > 0 ? navList[currentIdx - 1] : null;
+  const nextId = currentIdx >= 0 && currentIdx < navList.length - 1 ? navList[currentIdx + 1] : null;
+
   const handleDelete = async () => {
     await deleteResume(id);
     router.push('/resumes');
@@ -236,9 +249,38 @@ export default function ResumeDetail() {
         />
       )}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <button onClick={() => router.push('/resumes')} className="text-sm text-ds-textMuted hover:text-ds-text transition-colors">
-          ← Back
-        </button>
+        {/* Left: back + prev/next */}
+        <div className="flex items-center gap-2">
+          <button onClick={() => router.push('/resumes')}
+            className="text-sm text-ds-textMuted hover:text-ds-text transition-colors">
+            ← All Profiles
+          </button>
+          {navList.length > 1 && (
+            <div className="flex items-center gap-1 ml-2 pl-2 border-l border-ds-border">
+              <button
+                onClick={() => prevId && router.push(`/resumes/${prevId}`)}
+                disabled={!prevId}
+                title="Previous candidate"
+                className="w-7 h-7 flex items-center justify-center rounded border border-ds-border text-ds-textMuted hover:text-ds-text hover:bg-ds-bg disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6"/>
+                </svg>
+              </button>
+              <span className="text-xs text-ds-textMuted px-1 tabular-nums">
+                {currentIdx + 1} / {navList.length}
+              </span>
+              <button
+                onClick={() => nextId && router.push(`/resumes/${nextId}`)}
+                disabled={!nextId}
+                title="Next candidate"
+                className="w-7 h-7 flex items-center justify-center rounded border border-ds-border text-ds-textMuted hover:text-ds-text hover:bg-ds-bg disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </button>
+            </div>
+          )}
+        </div>
         <div className="flex gap-2 flex-wrap">
           <button onClick={handleReparse} disabled={reparsing}
             className="text-sm border border-ds-border px-3 py-1.5 rounded-btn text-ds-text hover:bg-ds-card disabled:opacity-50 transition-colors">
