@@ -4,10 +4,67 @@ import Groq     from 'groq-sdk';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-async function extractText(buffer, mimeType) {
-  if (mimeType === 'application/pdf') {
+// Coordinate-aware PDF extraction — fixes multi-column layout ordering.
+// Reads each text item's (x, y) position and reconstructs lines in
+// top-to-bottom, left-to-right order instead of content-stream order.
+async function extractTextFromPDF(buffer) {
+  try {
+    const { getDocument, GlobalWorkerOptions } = await import('pdfjs-dist/legacy/build/pdf.mjs');
+    GlobalWorkerOptions.workerSrc = '';
+
+    const pdf = await getDocument({
+      data: new Uint8Array(buffer),
+      useSystemFonts: true,
+      verbosity: 0,
+    }).promise;
+
+    const pageTexts = [];
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page   = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      const items   = content.items.filter(item => item.str?.trim());
+      if (!items.length) continue;
+
+      // PDF Y-axis is bottom-up, so sort descending Y (top first), then ascending X (left first)
+      const sorted = [...items].sort((a, b) => {
+        const yDiff = b.transform[5] - a.transform[5];
+        if (Math.abs(yDiff) > 4) return yDiff;
+        return a.transform[4] - b.transform[4];
+      });
+
+      // Group into lines by Y proximity
+      const lines = [];
+      let lineItems = [];
+      let lastY = null;
+
+      for (const item of sorted) {
+        const y = item.transform[5];
+        if (lastY !== null && Math.abs(y - lastY) > 4) {
+          lines.push(lineItems.map(it => it.str).join(' ').trim());
+          lineItems = [];
+        }
+        lineItems.push(item);
+        lastY = y;
+      }
+      if (lineItems.length) lines.push(lineItems.map(it => it.str).join(' ').trim());
+
+      pageTexts.push(lines.filter(Boolean).join('\n'));
+    }
+
+    const text = pageTexts.join('\n\n').trim();
+    if (text.length > 50) return text;
+    throw new Error('no text');
+  } catch {
+    // Fallback to pdf-parse for edge cases (encrypted PDFs, etc.)
     const data = await pdfParse(buffer);
     return data.text;
+  }
+}
+
+async function extractText(buffer, mimeType) {
+  if (mimeType === 'application/pdf') {
+    return extractTextFromPDF(buffer);
   }
   if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
       mimeType === 'application/msword') {
@@ -44,7 +101,8 @@ Rules (follow every one):
 10. certifications — include all credentials, licences, and professional certificates.
 11. other.languages — spoken/written human languages only (NOT programming languages).
 12. Empty sections → [] for arrays, null for strings.
-13. Return ONLY valid JSON — no markdown fences, no explanation.`;
+13. Return ONLY valid JSON — no markdown fences, no explanation.
+14. The input text may have imperfect formatting due to PDF extraction. Use context to determine section boundaries even if spacing is irregular.`;
 
 async function parseWithAI(rawText) {
   const response = await groq.chat.completions.create({
@@ -97,7 +155,7 @@ function splitSections(lines) {
 function extractEmail(text) { const m = text.match(/[\w.+\-]+@[\w\-]+\.[a-zA-Z]{2,}/); return m ? m[0].toLowerCase() : null; }
 function extractPhone(text) { const m = text.match(/(\+?1[\s.-]?)?(\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4})/); return m ? m[0].trim() : null; }
 
-function extractName(headerLines, text) {
+function extractName(headerLines) {
   for (const line of headerLines) {
     if (!line.includes('@') && !/\d{5,}/.test(line) && /^[A-Za-z\s'\-\.]{3,40}$/.test(line.trim())) return line.trim();
   }
@@ -107,11 +165,10 @@ function extractName(headerLines, text) {
 function fallbackParse(rawText) {
   const lines = rawText.split('\n');
   const sections = splitSections(lines);
-  const allText = rawText;
   return {
-    candidate_name: extractName(sections.header, allText),
-    email:          extractEmail(allText),
-    phone:          extractPhone(allText),
+    candidate_name: extractName(sections.header),
+    email:          extractEmail(rawText),
+    phone:          extractPhone(rawText),
     summary:        sections.summary.join(' ') || null,
     skills:         sections.skills.flatMap(l => l.split(/[,;|•·]/)).map(s => s.trim()).filter(s => s.length > 1 && s.length < 40),
     work_experience: [],
