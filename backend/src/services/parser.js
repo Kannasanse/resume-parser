@@ -1,12 +1,8 @@
 const pdfParse = require('pdf-parse');
 const mammoth  = require('mammoth');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const Groq     = require('groq-sdk');
 
-const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const geminiModel = genai.getGenerativeModel({
-  model: 'gemini-2.0-flash',
-  generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
-});
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 // ── Text extraction ───────────────────────────────────────────────────────────
 
@@ -51,38 +47,87 @@ Rules (follow every one):
 12. Empty sections → [] for arrays, null for strings.
 13. Return ONLY valid JSON — no markdown fences, no explanation.`;
 
-async function parseWithAI(rawText) {
-  const DELAYS = [3000, 7000];
+function unwrapResult(raw) {
+  if (!raw.personal_info && !raw.skills && !raw.experience) {
+    for (const val of Object.values(raw)) {
+      if (val && typeof val === 'object' && !Array.isArray(val) &&
+          (val.personal_info || val.skills || val.experience)) {
+        return val;
+      }
+    }
+  }
+  return raw;
+}
+
+function isRateLimit(err) {
+  return err?.status === 429 ||
+    err?.message?.toLowerCase().includes('429') ||
+    err?.message?.toLowerCase().includes('quota') ||
+    err?.message?.toLowerCase().includes('rate limit') ||
+    err?.message?.toLowerCase().includes('too many requests');
+}
+
+async function parseWithOpenRouter(rawText) {
+  const DELAYS = [5000, 15000];
 
   for (let attempt = 0; attempt <= DELAYS.length; attempt++) {
     try {
-      const prompt = `${SYSTEM_PROMPT}\n\nResume:\n\n${rawText.slice(0, 60000)}`;
-      const result = await geminiModel.generateContent(prompt);
-      const raw = JSON.parse(result.response.text());
+      const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'meta-llama/llama-3.3-70b-instruct:free',
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'user',   content: `Resume:\n\n${rawText.slice(0, 60000)}` },
+          ],
+          temperature: 0.1,
+          response_format: { type: 'json_object' },
+        }),
+      });
 
-      if (!raw.personal_info && !raw.skills && !raw.experience) {
-        for (const val of Object.values(raw)) {
-          if (val && typeof val === 'object' && !Array.isArray(val) &&
-              (val.personal_info || val.skills || val.experience)) {
-            return val;
-          }
-        }
+      if (!resp.ok) {
+        const body = await resp.text();
+        const err = new Error(`OpenRouter ${resp.status}: ${body}`);
+        err.status = resp.status;
+        throw err;
       }
-      return raw;
+
+      const data = await resp.json();
+      return unwrapResult(JSON.parse(data.choices[0].message.content));
 
     } catch (err) {
-      const isRateLimit = err?.status === 429 ||
-        err?.message?.toLowerCase().includes('quota') ||
-        err?.message?.toLowerCase().includes('rate limit') ||
-        err?.message?.toLowerCase().includes('too many requests') ||
-        err?.message?.toLowerCase().includes('resource_exhausted');
-
-      if (!isRateLimit || attempt >= DELAYS.length) throw err;
-
+      if (!isRateLimit(err) || attempt >= DELAYS.length) throw err;
       const waitMs = DELAYS[attempt];
-      console.warn(`[parser] Gemini quota hit — retrying in ${waitMs / 1000}s (attempt ${attempt + 1}/${DELAYS.length})`);
+      console.warn(`[parser] OpenRouter quota hit — retrying in ${waitMs / 1000}s (attempt ${attempt + 1}/${DELAYS.length})`);
       await new Promise(r => setTimeout(r, waitMs));
     }
+  }
+}
+
+async function parseWithGroq(rawText) {
+  const response = await groq.chat.completions.create({
+    model: 'llama-3.3-70b-versatile',
+    messages: [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user',   content: `Resume:\n\n${rawText.slice(0, 14000)}` },
+    ],
+    temperature: 0.1,
+    response_format: { type: 'json_object' },
+    max_tokens: 8192,
+  });
+  return unwrapResult(JSON.parse(response.choices[0].message.content));
+}
+
+async function parseWithAI(rawText) {
+  try {
+    return await parseWithOpenRouter(rawText);
+  } catch (err) {
+    console.warn('[parser] OpenRouter failed, falling back to Groq:', err.message);
+    return await parseWithGroq(rawText);
   }
 }
 
