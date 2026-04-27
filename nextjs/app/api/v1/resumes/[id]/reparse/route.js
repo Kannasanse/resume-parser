@@ -27,7 +27,55 @@ export async function POST(req, { params }) {
       buffer   = Buffer.from(await fileRes.arrayBuffer());
       mimeType = mimeFromFilename(resume.file_name);
     } else {
-      return Response.json({ error: 'No source available for reparsing — raw text and file are both missing' }, { status: 400 });
+      // No file available — but if raw_json already exists, just re-sync the
+      // relational tables (work_experience / education) from it without reparsing
+      const { data: existingPd } = await supabase
+        .from('parsed_data')
+        .select('id, raw_json')
+        .eq('resume_id', id)
+        .single();
+
+      if (!existingPd?.raw_json) {
+        return Response.json({ error: 'No source available for reparsing — please re-upload the original file' }, { status: 400 });
+      }
+
+      const rj = existingPd.raw_json;
+      const exp  = rj.experience || [];
+      const edu  = rj.education  || [];
+
+      // Clear stale rows and re-insert from raw_json
+      await supabase.from('work_experience').delete().eq('parsed_data_id', existingPd.id);
+      await supabase.from('education').delete().eq('parsed_data_id', existingPd.id);
+
+      if (exp.length) {
+        const { error: weErr } = await supabase.from('work_experience').insert(
+          exp.map(w => ({
+            parsed_data_id: existingPd.id,
+            title:       w.title,
+            company:     w.company,
+            start_date:  w.start_date,
+            end_date:    w.end_date,
+            description: w.description,
+          }))
+        );
+        if (weErr) console.error('[reparse] work_experience insert:', weErr.message);
+      }
+
+      if (edu.length) {
+        const { error: eduErr } = await supabase.from('education').insert(
+          edu.map(e => ({
+            parsed_data_id:  existingPd.id,
+            institution:     e.institution,
+            degree:          e.degree,
+            field:           e.field,
+            graduation_year: e.end_date || e.graduation_year,
+          }))
+        );
+        if (eduErr) console.error('[reparse] education insert:', eduErr.message);
+      }
+
+      await supabase.from('resumes').update({ status: 'completed' }).eq('id', id);
+      return Response.json({ message: 'Sections restored from existing parsed data', status: 'completed' });
     }
 
     // Clear old parsed data before re-inserting
