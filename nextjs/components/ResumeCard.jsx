@@ -61,7 +61,7 @@ function DeleteModal({ name, onCancel, onDelete }) {
   );
 }
 
-export default function ResumeCard({ resume, jobs = [], onDelete }) {
+export default function ResumeCard({ resume, jobs = [], onDelete, selected = false, onToggleSelect }) {
   const [showModal, setShowModal] = useState(false);
   const pd = resume.parsed_data?.[0];
   const bestScore = jobs.reduce((best, j) =>
@@ -79,11 +79,24 @@ export default function ResumeCard({ resume, jobs = [], onDelete }) {
         />
       )}
 
-      <div className="bg-ds-card rounded border border-ds-border p-5 flex flex-col gap-3 hover:border-ds-borderStrong transition-colors">
+      <div className={`bg-ds-card rounded border p-5 flex flex-col gap-3 transition-colors ${
+        selected ? 'border-primary ring-1 ring-primary' : 'border-ds-border hover:border-ds-borderStrong'
+      }`}>
         <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="font-heading font-semibold text-ds-text truncate">{pd?.candidate_name || 'Unknown'}</p>
-            <p className="text-sm text-ds-textMuted truncate mt-0.5">{pd?.email || resume.file_name}</p>
+          <div className="flex items-start gap-2.5 min-w-0">
+            {onToggleSelect && (
+              <input
+                type="checkbox"
+                checked={selected}
+                onChange={onToggleSelect}
+                onClick={e => e.stopPropagation()}
+                className="mt-0.5 flex-shrink-0 w-4 h-4 accent-primary cursor-pointer"
+              />
+            )}
+            <div className="min-w-0">
+              <p className="font-heading font-semibold text-ds-text truncate">{pd?.candidate_name || 'Unknown'}</p>
+              <p className="text-sm text-ds-textMuted truncate mt-0.5">{pd?.email || resume.file_name}</p>
+            </div>
           </div>
           <span className={`flex-shrink-0 text-xs px-2.5 py-1 rounded-btn font-medium ${STATUS_STYLES[resume.status] || STATUS_STYLES.pending}`}>
             {STATUS_LABELS[resume.status] || resume.status}

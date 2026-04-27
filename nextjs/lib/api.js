@@ -24,6 +24,9 @@ export const getResume = (id) => req(`/resumes/${id}`).then(r => r.json());
 
 export const deleteResume = (id) => req(`/resumes/${id}`, { method: 'DELETE' }).then(r => r.json());
 
+export const bulkDeleteResumes = (ids) =>
+  Promise.all(ids.map(id => deleteResume(id)));
+
 export const exportResume = async (id, format = 'json') => {
   const res = await req(`/resumes/${id}/export?format=${format}`);
   const data = await res.blob();
