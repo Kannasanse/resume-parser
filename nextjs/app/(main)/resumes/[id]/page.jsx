@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getResume, deleteResume, exportResume, reparseResume, getResumes } from '@/lib/api';
+import { getResume, deleteResume, exportResume, reparseResume, scoreResume, getResumes } from '@/lib/api';
 import { deduplicateByEmail } from '@/lib/resumeUtils';
 import ScoreBreakdown from '@/components/ScoreBreakdown';
 import HoldToDelete from '@/components/HoldToDelete';
@@ -179,9 +179,16 @@ export default function ResumeDetail() {
   const handleReparse = async () => {
     setReparsing(true);
     try {
-      await reparseResume(id);
+      // Phase 1: parse
+      const result = await reparseResume(id);
       queryClient.invalidateQueries({ queryKey: ['resume', id] });
       queryClient.invalidateQueries({ queryKey: ['resumes'] });
+
+      // Phase 2: score (if resume has a linked job)
+      if (result?.job_id) {
+        await scoreResume(id, result.job_id).catch(() => {});
+        queryClient.invalidateQueries({ queryKey: ['resume', id] });
+      }
     } finally {
       setReparsing(false);
     }

@@ -1,6 +1,5 @@
 import supabase from '@/lib/supabase.js';
 import { parseResume } from '@/lib/parser.js';
-import { upsertScore } from '@/lib/scorer.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -72,15 +71,12 @@ export async function POST(req, { params }) {
     const parseStatus = structured._fallback ? 'partial' : 'completed';
     await supabase.from('resumes').update({ status: parseStatus }).eq('id', id);
 
-    if (resume.job_id) {
-      await upsertScore(id, resume.job_id).catch(e => console.error('Rescore error:', e.message));
-    }
-
     return Response.json({
       message: structured._fallback
         ? 'Reparsed with basic extraction — AI parsing failed again'
         : 'Reparsed successfully',
       status: parseStatus,
+      job_id: resume.job_id || null,
     });
   } catch (err) {
     console.error('[reparse]', err.message);
