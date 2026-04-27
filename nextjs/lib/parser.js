@@ -1,8 +1,12 @@
 import pdfParse from 'pdf-parse';
 import mammoth  from 'mammoth';
-import Groq     from 'groq-sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const geminiModel = genai.getGenerativeModel({
+  model: 'gemini-2.0-flash',
+  generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
+});
 
 // Coordinate-aware PDF extraction — fixes multi-column layout ordering.
 // Reads each text item's (x, y) position and reconstructs lines in
@@ -105,23 +109,14 @@ Rules (follow every one):
 14. The input text may have imperfect formatting due to PDF extraction. Use context to determine section boundaries even if spacing is irregular.`;
 
 async function parseWithAI(rawText) {
-  // Two quick retries only — long waits cause serverless timeouts
-  const DELAYS = [2000, 5000]; // 2s then 5s, total overhead max ~7s
+  const DELAYS = [3000, 7000]; // 3s then 7s on quota errors
 
   for (let attempt = 0; attempt <= DELAYS.length; attempt++) {
     try {
-      const response = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user',   content: `Resume:\n\n${rawText.slice(0, 24000)}` },
-        ],
-        temperature: 0.1,
-        response_format: { type: 'json_object' },
-        max_tokens: 8192,
-      });
+      const prompt = `${SYSTEM_PROMPT}\n\nResume:\n\n${rawText.slice(0, 60000)}`;
+      const result = await geminiModel.generateContent(prompt);
+      const raw = JSON.parse(result.response.text());
 
-      const raw = JSON.parse(response.choices[0].message.content);
       if (!raw.personal_info && !raw.skills && !raw.experience) {
         for (const val of Object.values(raw)) {
           if (val && typeof val === 'object' && !Array.isArray(val) &&
@@ -134,13 +129,15 @@ async function parseWithAI(rawText) {
 
     } catch (err) {
       const isRateLimit = err?.status === 429 ||
+        err?.message?.toLowerCase().includes('quota') ||
         err?.message?.toLowerCase().includes('rate limit') ||
-        err?.message?.toLowerCase().includes('too many requests');
+        err?.message?.toLowerCase().includes('too many requests') ||
+        err?.message?.toLowerCase().includes('resource_exhausted');
 
       if (!isRateLimit || attempt >= DELAYS.length) throw err;
 
       const waitMs = DELAYS[attempt];
-      console.warn(`[parser] Groq rate limited — retrying in ${waitMs / 1000}s (attempt ${attempt + 1}/${DELAYS.length})`);
+      console.warn(`[parser] Gemini quota hit — retrying in ${waitMs / 1000}s (attempt ${attempt + 1}/${DELAYS.length})`);
       await new Promise(r => setTimeout(r, waitMs));
     }
   }
@@ -236,7 +233,7 @@ export async function parseResume(buffer, mimeType) {
 
     return { rawText, structured };
   } catch (err) {
-    console.error('[parser] AI parse failed, using fallback:', err.message);
+    console.error('[parser] Gemini parse failed, using fallback:', err.message);
     return { rawText, structured: { ...fallbackParse(rawText), _fallback: true } };
   }
 }
