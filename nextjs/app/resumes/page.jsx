@@ -45,7 +45,6 @@ export default function ResumeList() {
   });
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this resume?')) return;
     await deleteResume(id);
     queryClient.invalidateQueries({ queryKey: ['resumes'] });
   };

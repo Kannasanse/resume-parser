@@ -4,6 +4,42 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getResume, deleteResume, exportResume, reparseResume } from '@/lib/api';
 import ScoreBreakdown from '@/components/ScoreBreakdown';
+import HoldToDelete from '@/components/HoldToDelete';
+
+function DeleteModal({ name, onCancel, onDelete }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onCancel} />
+      <div className="relative bg-ds-card rounded-lg border border-ds-border shadow-xl max-w-md w-full p-6 space-y-4">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-full bg-ds-dangerLight flex items-center justify-center flex-shrink-0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ds-danger">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <div>
+            <h2 className="font-heading font-bold text-ds-text text-base">Delete Resume?</h2>
+            <p className="text-sm text-ds-textSecondary mt-1 leading-relaxed">
+              <span className="font-medium">{name}</span> and all associated scores will be permanently removed.
+            </p>
+          </div>
+        </div>
+        <div className="bg-ds-dangerLight rounded px-4 py-3">
+          <p className="text-xs text-ds-danger font-medium">This action cannot be undone.</p>
+        </div>
+        <div className="flex flex-col gap-2 pt-1">
+          <HoldToDelete onDelete={onDelete} />
+          <button onClick={onCancel}
+            className="w-full px-5 py-2.5 text-sm font-medium text-ds-textMuted border border-ds-border rounded-btn hover:bg-ds-bg transition-colors">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function parseInline(text) {
   const result = [];
@@ -115,6 +151,7 @@ export default function ResumeDetail() {
   const queryClient = useQueryClient();
   const [selectedScoreIdx, setSelectedScoreIdx] = useState(0);
   const [reparsing, setReparsing] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const { data: resume, isLoading, error } = useQuery({
     queryKey: ['resume', id],
@@ -122,7 +159,6 @@ export default function ResumeDetail() {
   });
 
   const handleDelete = async () => {
-    if (!confirm('Delete this resume?')) return;
     await deleteResume(id);
     router.push('/resumes');
   };
@@ -188,8 +224,17 @@ export default function ResumeDetail() {
   const scores      = resume.scores || [];
   const activeScore = scores[selectedScoreIdx] || null;
 
+  const resumeName = name || 'this resume';
+
   return (
     <div className="space-y-4">
+      {showDeleteModal && (
+        <DeleteModal
+          name={resumeName}
+          onCancel={() => setShowDeleteModal(false)}
+          onDelete={handleDelete}
+        />
+      )}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <button onClick={() => router.push('/resumes')} className="text-sm text-ds-textMuted hover:text-ds-text transition-colors">
           ← Back
@@ -205,7 +250,7 @@ export default function ResumeDetail() {
             className="text-sm border border-ds-border px-3 py-1.5 rounded-btn text-ds-text hover:bg-ds-card transition-colors">Export JSON</button>
           <button onClick={() => handleExport('csv')}
             className="text-sm border border-ds-border px-3 py-1.5 rounded-btn text-ds-text hover:bg-ds-card transition-colors">Export CSV</button>
-          <button onClick={handleDelete}
+          <button onClick={() => setShowDeleteModal(true)}
             className="text-sm bg-ds-dangerLight text-ds-danger border border-ds-dangerLight px-3 py-1.5 rounded-btn hover:bg-ds-danger hover:text-white transition-colors">Delete</button>
         </div>
       </div>
