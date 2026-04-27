@@ -32,7 +32,7 @@ export async function middleware(request) {
   }
 
   // Unauthenticated → block
-  if (!user && pathname !== '/login') {
+  if (!user && pathname !== '/login' && !pathname.startsWith('/auth/')) {
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
