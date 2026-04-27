@@ -1,8 +1,12 @@
 const pdfParse = require('pdf-parse');
 const mammoth  = require('mammoth');
-const Groq     = require('groq-sdk');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const geminiModel = genai.getGenerativeModel({
+  model: 'gemini-2.0-flash',
+  generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
+});
 
 // ── Text extraction ───────────────────────────────────────────────────────────
 
@@ -48,29 +52,38 @@ Rules (follow every one):
 13. Return ONLY valid JSON — no markdown fences, no explanation.`;
 
 async function parseWithAI(rawText) {
-  const response = await groq.chat.completions.create({
-    model: 'llama-3.3-70b-versatile',
-    messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user',   content: `Resume:\n\n${rawText.slice(0, 14000)}` },
-    ],
-    temperature: 0.1,
-    response_format: { type: 'json_object' },
-    max_tokens: 8192,
-  });
+  const DELAYS = [3000, 7000];
 
-  const raw = JSON.parse(response.choices[0].message.content);
+  for (let attempt = 0; attempt <= DELAYS.length; attempt++) {
+    try {
+      const prompt = `${SYSTEM_PROMPT}\n\nResume:\n\n${rawText.slice(0, 60000)}`;
+      const result = await geminiModel.generateContent(prompt);
+      const raw = JSON.parse(result.response.text());
 
-  // If the model wrapped the result in a key, unwrap it
-  if (!raw.personal_info && !raw.skills && !raw.experience) {
-    for (const val of Object.values(raw)) {
-      if (val && typeof val === 'object' && !Array.isArray(val) &&
-          (val.personal_info || val.skills || val.experience)) {
-        return val;
+      if (!raw.personal_info && !raw.skills && !raw.experience) {
+        for (const val of Object.values(raw)) {
+          if (val && typeof val === 'object' && !Array.isArray(val) &&
+              (val.personal_info || val.skills || val.experience)) {
+            return val;
+          }
+        }
       }
+      return raw;
+
+    } catch (err) {
+      const isRateLimit = err?.status === 429 ||
+        err?.message?.toLowerCase().includes('quota') ||
+        err?.message?.toLowerCase().includes('rate limit') ||
+        err?.message?.toLowerCase().includes('too many requests') ||
+        err?.message?.toLowerCase().includes('resource_exhausted');
+
+      if (!isRateLimit || attempt >= DELAYS.length) throw err;
+
+      const waitMs = DELAYS[attempt];
+      console.warn(`[parser] Gemini quota hit — retrying in ${waitMs / 1000}s (attempt ${attempt + 1}/${DELAYS.length})`);
+      await new Promise(r => setTimeout(r, waitMs));
     }
   }
-  return raw;
 }
 
 // ── Regex fallback ────────────────────────────────────────────────────────────
