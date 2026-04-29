@@ -8,7 +8,7 @@ export async function GET(req, { params }) {
 
     const { data: scoreRows, error: scoreErr } = await supabase
       .from('resume_scores')
-      .select('resume_id, overall_score, band, skills_score, experience_score, education_score, title_score, certs_score, projects_score, quality_score, weights_used, candidate_years')
+      .select('resume_id, overall_score, band, skills_score, experience_score, education_score, title_score, certs_score, projects_score, quality_score, weights_used, candidate_years, scored_at')
       .eq('job_profile_id', jobId);
     if (scoreErr) throw scoreErr;
 
@@ -57,6 +57,7 @@ export async function GET(req, { params }) {
         quality_score:    scoreMap[r.id].quality_score,
         weights_used:     scoreMap[r.id].weights_used,
         candidate_years:  scoreMap[r.id].candidate_years,
+        scored_at:        scoreMap[r.id].scored_at,
       } : null,
     }));
 

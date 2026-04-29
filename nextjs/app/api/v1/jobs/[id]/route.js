@@ -24,6 +24,7 @@ export async function PUT(req, { params }) {
       required_years_experience, required_degree,
       required_field, required_certs,
       custom_weights,
+      organization_id,
     } = body;
 
     const updates = {};
@@ -36,6 +37,7 @@ export async function PUT(req, { params }) {
     if (required_field !== undefined) updates.required_field = required_field?.trim() || null;
     if (required_certs !== undefined) updates.required_certs = required_certs || [];
     if (custom_weights !== undefined) updates.custom_weights = custom_weights || null;
+    if (organization_id !== undefined) updates.organization_id = organization_id || null;
 
     const { error: updateErr } = await supabase.from('job_profiles').update(updates).eq('id', id);
     if (updateErr) throw updateErr;

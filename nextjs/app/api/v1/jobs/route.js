@@ -33,6 +33,7 @@ export async function POST(req) {
       required_years_experience = 0, required_degree = 'None',
       required_field = null, required_certs = [],
       custom_weights = null,
+      organization_id = null,
     } = await req.json();
 
     if (!title?.trim()) return Response.json({ error: 'title is required' }, { status: 400 });
@@ -48,6 +49,7 @@ export async function POST(req) {
         required_field: required_field?.trim() || null,
         required_certs: required_certs || [],
         custom_weights: custom_weights || null,
+        organization_id: organization_id || null,
       })
       .select()
       .single();
