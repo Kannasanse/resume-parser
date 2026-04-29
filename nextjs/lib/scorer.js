@@ -1,4 +1,61 @@
 import supabase from './supabase.js';
+import Groq from 'groq-sdk';
+
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+function pct(v) { return `${Math.round((v || 0) * 100)}%`; }
+
+async function generateScoreSummary({ jobProfile, pd, breakdown, overall, band, candidateYears }) {
+  const skillsDetail    = breakdown.skillsDetail || [];
+  const matchedRequired = skillsDetail.filter(s => s.isRequired && s.matched).map(s => s.skill);
+  const missingRequired = skillsDetail.filter(s => s.isRequired && !s.matched).map(s => s.skill);
+
+  const prompt = [
+    `Evaluate candidate fit for: ${jobProfile.title} (${jobProfile.seniority || 'mid'} ${jobProfile.role_type || 'technical'})`,
+    `Job requires: ${jobProfile.required_years_experience || 0}+ yrs exp, degree: ${jobProfile.required_degree || 'None'}`,
+    `Candidate: ${candidateYears} yrs exp | skills: ${(pd.skills || []).slice(0, 12).join(', ')}`,
+    `Matched required skills: ${matchedRequired.join(', ') || 'none'}`,
+    `Missing required skills: ${missingRequired.join(', ') || 'none'}`,
+    `Scores — Skills:${pct(breakdown.skills)} Experience:${pct(breakdown.experience)} Education:${pct(breakdown.education)} Projects:${pct(breakdown.projects)} Quality:${pct(breakdown.quality)}`,
+    `Overall: ${Math.round(overall * 100)}/100 (${band})`,
+    '',
+    'Return ONLY valid JSON (no markdown, no extra text):',
+    '{ "summary": "1-2 sentence assessment", "strengths": ["item1","item2","item3"], "gaps": ["item1","item2","item3"] }',
+  ].join('\n');
+
+  const tryParse = (text) => {
+    try {
+      const m = text.match(/\{[\s\S]*\}/);
+      return m ? JSON.parse(m[0]) : null;
+    } catch { return null; }
+  };
+
+  try {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'meta-llama/llama-3.3-70b-instruct:free', messages: [{ role: 'user', content: prompt }], max_tokens: 400, temperature: 0.3 }),
+    });
+    if (res.ok) {
+      const text = (await res.json()).choices?.[0]?.message?.content?.trim();
+      const parsed = tryParse(text);
+      if (parsed) return parsed;
+    }
+  } catch {}
+
+  try {
+    const res = await groq.chat.completions.create({
+      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 400,
+      temperature: 0.3,
+    });
+    const text = res.choices?.[0]?.message?.content?.trim();
+    return tryParse(text);
+  } catch {}
+
+  return null;
+}
 
 const SKILL_SYNONYMS = {
   javascript: ['js', 'ecmascript', 'vanilla js', 'vanilla javascript'],
@@ -429,6 +486,8 @@ export async function scoreResume(resumeId, jobProfileId) {
     breakdown: { ...scores, skillsDetail },
     weights_used: weights,
     candidateYears,
+    _jobProfile: jobProfile,
+    _pd: pd,
   };
 }
 
@@ -436,7 +495,9 @@ export async function upsertScore(resumeId, jobProfileId) {
   const result = await scoreResume(resumeId, jobProfileId);
   if (!result) return null;
 
-  const { overall, band, breakdown, weights_used, candidateYears } = result;
+  const { overall, band, breakdown, weights_used, candidateYears, _jobProfile, _pd } = result;
+
+  const summary = await generateScoreSummary({ jobProfile: _jobProfile, pd: _pd, breakdown, overall, band, candidateYears }).catch(() => null);
 
   await supabase.from('resume_scores').upsert({
     resume_id:        resumeId,
@@ -453,7 +514,10 @@ export async function upsertScore(resumeId, jobProfileId) {
     candidate_years:  candidateYears,
     weights_used,
     breakdown,
+    score_summary:    summary || null,
+    scored_at:        new Date().toISOString(),
   }, { onConflict: 'resume_id,job_profile_id' });
 
-  return result;
+  const { _jobProfile: _j, _pd: _p, ...publicResult } = result;
+  return publicResult;
 }

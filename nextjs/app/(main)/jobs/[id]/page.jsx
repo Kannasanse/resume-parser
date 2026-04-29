@@ -687,7 +687,46 @@ function JobProfileDetailInner() {
                           </div>
 
                           {expandedId === c.resume_id && c.score && (
-                            <div className="border-t border-ds-border px-6 py-5 bg-ds-bg">
+                            <div className="border-t border-ds-border px-6 py-5 bg-ds-bg space-y-5">
+                              {c.score.score_summary && (() => {
+                                const s = c.score.score_summary;
+                                return (
+                                  <div className="space-y-3">
+                                    <p className="text-xs font-semibold text-ds-textMuted uppercase tracking-widest">AI Assessment</p>
+                                    {s.summary && (
+                                      <p className="text-sm text-ds-text leading-relaxed">{s.summary}</p>
+                                    )}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                      {s.strengths?.length > 0 && (
+                                        <div className="bg-ds-successLight rounded p-3 space-y-1.5">
+                                          <p className="text-xs font-semibold text-ds-success uppercase tracking-wide">Strong Areas</p>
+                                          <ul className="space-y-1">
+                                            {s.strengths.map((item, i) => (
+                                              <li key={i} className="text-xs text-ds-text flex items-start gap-1.5">
+                                                <span className="text-ds-success mt-0.5 flex-shrink-0">✓</span>
+                                                {item}
+                                              </li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      )}
+                                      {s.gaps?.length > 0 && (
+                                        <div className="bg-ds-dangerLight rounded p-3 space-y-1.5">
+                                          <p className="text-xs font-semibold text-ds-danger uppercase tracking-wide">Areas to Improve</p>
+                                          <ul className="space-y-1">
+                                            {s.gaps.map((item, i) => (
+                                              <li key={i} className="text-xs text-ds-text flex items-start gap-1.5">
+                                                <span className="text-ds-danger mt-0.5 flex-shrink-0">✗</span>
+                                                {item}
+                                              </li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                               <ScoreBreakdown score={c.score} />
                             </div>
                           )}

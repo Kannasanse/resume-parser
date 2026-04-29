@@ -55,3 +55,6 @@ CREATE TABLE IF NOT EXISTS organizations (
 -- 6. Add organization reference to job_profiles (optional)
 ALTER TABLE job_profiles
   ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL;
+
+-- 7. Add AI score summary to resume_scores
+ALTER TABLE resume_scores ADD COLUMN IF NOT EXISTS score_summary JSONB DEFAULT NULL;
