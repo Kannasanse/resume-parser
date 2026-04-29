@@ -6,7 +6,7 @@ export async function GET() {
   try {
     const { data, error } = await supabase
       .from('job_profiles')
-      .select('id, title, role_type, seniority, created_at, job_skills(skill, proficiency, is_required)')
+      .select('id, title, role_type, seniority, created_at, organization_id, job_skills(skill, proficiency, is_required), organizations(name)')
       .order('created_at', { ascending: false });
     if (error) throw error;
 

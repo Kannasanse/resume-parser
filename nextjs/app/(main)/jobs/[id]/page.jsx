@@ -31,6 +31,7 @@ const SENIORITIES      = ['entry', 'junior', 'mid', 'senior'];
 const DEGREES          = ['None', 'HS', 'Associates', 'Bachelors', 'Masters', 'PhD'];
 const SENIORITY_LABELS = { entry: 'Entry', junior: 'Junior', mid: 'Mid', senior: 'Senior' };
 const ROLE_TYPE_LABELS = { technical: 'Technical', 'entry-level': 'Entry-level', specialized: 'Specialized' };
+const PAGE_SIZE_OPTIONS = [50, 100, 150, 200];
 
 const BAND_STYLES = {
   'Strong Match':   'bg-ds-successLight text-ds-success',
@@ -104,6 +105,42 @@ function ScoreBar({ score }) {
   );
 }
 
+function CandidatePagination({ page, totalPages, total, pageSize, onPage, onPageSize }) {
+  const start = (page - 1) * pageSize + 1;
+  const end   = Math.min(page * pageSize, total);
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-ds-card border border-ds-border rounded">
+      <p className="text-xs text-ds-textMuted">
+        Showing {start}–{end} of {total}
+      </p>
+      <div className="flex items-center gap-2">
+        <select
+          value={pageSize}
+          onChange={e => onPageSize(Number(e.target.value))}
+          className="text-xs border border-ds-inputBorder rounded px-2 py-1.5 bg-ds-card text-ds-text focus:outline-none focus:ring-1 focus:ring-primary"
+        >
+          {PAGE_SIZE_OPTIONS.map(n => <option key={n} value={n}>{n} per page</option>)}
+        </select>
+        <button
+          disabled={page <= 1}
+          onClick={() => onPage(page - 1)}
+          className="text-xs px-3 py-1.5 border border-ds-border rounded-btn text-ds-text disabled:opacity-40 hover:bg-ds-bg transition-colors"
+        >
+          ← Prev
+        </button>
+        <span className="text-xs text-ds-textMuted font-mono">{page} / {totalPages}</span>
+        <button
+          disabled={page >= totalPages}
+          onClick={() => onPage(page + 1)}
+          className="text-xs px-3 py-1.5 border border-ds-border rounded-btn text-ds-text disabled:opacity-40 hover:bg-ds-bg transition-colors"
+        >
+          Next →
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function JobProfileDetailInner() {
   const { id }      = useParams();
   const router      = useRouter();
@@ -136,6 +173,10 @@ function JobProfileDetailInner() {
   const [savingEdit, setSavingEdit]           = useState(false);
   const [editError, setEditError]             = useState('');
 
+  const [candidateSearch, setCandidateSearch]     = useState('');
+  const [candidatePage, setCandidatePage]         = useState(1);
+  const [candidatePageSize, setCandidatePageSize] = useState(50);
+
   const { data: job, isLoading, error } = useQuery({
     queryKey: ['job', id],
     queryFn: () => getJob(id),
@@ -152,6 +193,8 @@ function JobProfileDetailInner() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [job, searchParams]);
+
+  useEffect(() => { setCandidatePage(1); }, [filterBand, sortBy, candidateSearch]);
 
   const { data: allResumesData } = useQuery({
     queryKey: ['resumes-picker'],
@@ -222,14 +265,14 @@ function JobProfileDetailInner() {
     finally { setRescoring(null); }
   };
 
-  const handleExportExcel = (filteredCandidates) => {
-    const rows = filteredCandidates.map(c => ({
+  const handleExportExcel = (rows) => {
+    const data = rows.map(c => ({
       'Name':          c.candidate_name || c.file_name || '',
       'Email Address': c.email || '',
       'Score':         c.score ? Math.round(c.score.overall_score * 100) : '',
       'Scored On':     c.score?.scored_at ? new Date(c.score.scored_at).toLocaleString() : '',
     }));
-    const ws = XLSX.utils.json_to_sheet(rows);
+    const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Candidates');
     const fileName = `${(job.title || 'candidates').replace(/[^a-z0-9]/gi, '_')}_candidates.xlsx`;
@@ -245,6 +288,28 @@ function JobProfileDetailInner() {
 
   const scored   = candidates.filter(c => c.score);
   const avgScore = scored.length ? Math.round(scored.reduce((s, c) => s + c.score.overall_score, 0) / scored.length * 100) : null;
+
+  const allFilteredAndSorted = candidates
+    .filter(c => filterBand === 'all' || c.score?.band === filterBand)
+    .filter(c => {
+      if (!candidateSearch) return true;
+      const q = candidateSearch.toLowerCase();
+      return (c.candidate_name || c.file_name || '').toLowerCase().includes(q)
+        || (c.email || '').toLowerCase().includes(q);
+    })
+    .sort((a, b) => {
+      if (sortBy === 'score_asc') return (a.score?.overall_score ?? -1) - (b.score?.overall_score ?? -1);
+      if (sortBy === 'name') return (a.candidate_name || a.file_name || '').localeCompare(b.candidate_name || b.file_name || '');
+      if (sortBy === 'date') return new Date(b.created_at) - new Date(a.created_at);
+      return (b.score?.overall_score ?? -1) - (a.score?.overall_score ?? -1);
+    });
+
+  const candidateTotalPages    = Math.max(1, Math.ceil(allFilteredAndSorted.length / candidatePageSize));
+  const effectiveCandidatePage = Math.min(candidatePage, candidateTotalPages);
+  const paginatedCandidates    = allFilteredAndSorted.slice(
+    (effectiveCandidatePage - 1) * candidatePageSize,
+    effectiveCandidatePage * candidatePageSize,
+  );
 
   if (isEditing) {
     return (
@@ -502,6 +567,26 @@ function JobProfileDetailInner() {
 
           {!candidatesLoading && candidates.length > 0 && (
             <>
+              <div className="relative">
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ds-textMuted pointer-events-none"
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                </svg>
+                <input
+                  type="text"
+                  value={candidateSearch}
+                  onChange={e => setCandidateSearch(e.target.value)}
+                  placeholder="Search by name or email…"
+                  className="w-full pl-9 pr-9 py-2 text-sm border border-ds-inputBorder rounded bg-ds-card text-ds-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+                />
+                {candidateSearch && (
+                  <button
+                    onClick={() => setCandidateSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ds-textMuted hover:text-ds-text text-lg leading-none"
+                  >×</button>
+                )}
+              </div>
+
               <div className="flex flex-wrap items-center justify-between gap-3 bg-ds-card border border-ds-border rounded px-4 py-3">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {['all', 'Strong Match', 'Good Match', 'Moderate Match', 'Weak Match'].map(b => (
@@ -522,17 +607,7 @@ function JobProfileDetailInner() {
                     <option value="date">Date: Newest</option>
                   </select>
                   <button
-                    onClick={() => {
-                      const filtered = candidates
-                        .filter(c => filterBand === 'all' || c.score?.band === filterBand)
-                        .sort((a, b) => {
-                          if (sortBy === 'score_asc') return (a.score?.overall_score ?? -1) - (b.score?.overall_score ?? -1);
-                          if (sortBy === 'name') return (a.candidate_name || a.file_name).localeCompare(b.candidate_name || b.file_name);
-                          if (sortBy === 'date') return new Date(b.created_at) - new Date(a.created_at);
-                          return (b.score?.overall_score ?? -1) - (a.score?.overall_score ?? -1);
-                        });
-                      handleExportExcel(filtered);
-                    }}
+                    onClick={() => handleExportExcel(allFilteredAndSorted)}
                     className="text-xs border border-ds-border px-3 py-1.5 rounded-btn text-ds-text hover:bg-ds-bg transition-colors flex items-center gap-1.5"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
@@ -543,20 +618,14 @@ function JobProfileDetailInner() {
                 </div>
               </div>
 
-              {(() => {
-                const filtered = candidates
-                  .filter(c => filterBand === 'all' || c.score?.band === filterBand)
-                  .sort((a, b) => {
-                    if (sortBy === 'score_asc') return (a.score?.overall_score ?? -1) - (b.score?.overall_score ?? -1);
-                    if (sortBy === 'name') return (a.candidate_name || a.file_name).localeCompare(b.candidate_name || b.file_name);
-                    if (sortBy === 'date') return new Date(b.created_at) - new Date(a.created_at);
-                    return (b.score?.overall_score ?? -1) - (a.score?.overall_score ?? -1);
-                  });
-
-                if (filtered.length === 0)
-                  return <p className="text-sm text-ds-textMuted text-center py-8">No candidates match the selected filter.</p>;
-
-                return (
+              {allFilteredAndSorted.length === 0 ? (
+                <p className="text-sm text-ds-textMuted text-center py-8">
+                  {candidateSearch
+                    ? `No candidates match "${candidateSearch}".`
+                    : 'No candidates match the selected filter.'}
+                </p>
+              ) : (
+                <>
                   <div className="bg-ds-card rounded border border-ds-border divide-y divide-ds-border overflow-hidden">
                     <div className="grid grid-cols-[28px_1fr_180px_160px_130px] items-center gap-3 px-4 py-2 bg-ds-bg">
                       <span className="text-xs text-ds-textMuted font-semibold">#</span>
@@ -566,65 +635,79 @@ function JobProfileDetailInner() {
                       <span className="text-xs text-ds-textMuted font-semibold uppercase tracking-wide text-right">Actions</span>
                     </div>
 
-                    {filtered.map((c, idx) => (
-                      <div key={c.resume_id}>
-                        <div className="grid grid-cols-[28px_1fr_180px_160px_130px] items-center gap-3 px-4 py-3 hover:bg-ds-bg transition-colors">
-                          <span className="text-xs font-mono text-ds-textMuted">{idx + 1}</span>
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-ds-text truncate">{c.candidate_name || c.file_name}</p>
-                            {c.email && <p className="text-xs text-ds-textMuted truncate">{c.email}</p>}
+                    {paginatedCandidates.map((c, idx) => {
+                      const rowNum = (effectiveCandidatePage - 1) * candidatePageSize + idx + 1;
+                      return (
+                        <div key={c.resume_id}>
+                          <div className="grid grid-cols-[28px_1fr_180px_160px_130px] items-center gap-3 px-4 py-3 hover:bg-ds-bg transition-colors">
+                            <span className="text-xs font-mono text-ds-textMuted">{rowNum}</span>
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-ds-text truncate">{c.candidate_name || c.file_name}</p>
+                              {c.email && <p className="text-xs text-ds-textMuted truncate">{c.email}</p>}
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {(c.skills || []).slice(0, 3).map(s => (
+                                <span key={s} className="bg-primary-light text-primary text-xs px-1.5 py-0.5 rounded-btn">{s}</span>
+                              ))}
+                              {(c.skills || []).length > 3 && (
+                                <span className="text-xs text-ds-textMuted">+{c.skills.length - 3}</span>
+                              )}
+                            </div>
+                            <div className="space-y-1">
+                              {c.score ? (
+                                <>
+                                  <ScoreBar score={c.score} />
+                                  <span className={`text-xs font-medium px-2 py-0.5 rounded-btn ${BAND_STYLES[c.score.band] || ''}`}>
+                                    {c.score.band}
+                                  </span>
+                                  {c.score.scored_at && (
+                                    <p className="text-xs text-ds-textMuted">
+                                      {new Date(c.score.scored_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                    </p>
+                                  )}
+                                </>
+                              ) : (
+                                <span className="text-xs text-ds-textMuted">Not scored</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1.5 justify-end">
+                              <button onClick={() => setExpandedId(expandedId === c.resume_id ? null : c.resume_id)}
+                                className="text-xs border border-ds-border px-2 py-1 rounded-btn text-ds-text hover:bg-ds-bg transition-colors">
+                                {expandedId === c.resume_id ? 'Hide' : 'Details'}
+                              </button>
+                              <button onClick={() => handleRescore(c.resume_id)} disabled={rescoring === c.resume_id}
+                                className="text-xs border border-ds-border px-2 py-1 rounded-btn text-ds-text hover:bg-ds-bg disabled:opacity-50 transition-colors">
+                                {rescoring === c.resume_id ? '…' : 'Rescore'}
+                              </button>
+                              <Link href={`/resumes/${c.resume_id}`}
+                                className="text-xs bg-primary-light text-primary px-2 py-1 rounded-btn hover:bg-primary hover:text-white transition-colors">
+                                View
+                              </Link>
+                            </div>
                           </div>
-                          <div className="flex flex-wrap gap-1">
-                            {(c.skills || []).slice(0, 3).map(s => (
-                              <span key={s} className="bg-primary-light text-primary text-xs px-1.5 py-0.5 rounded-btn">{s}</span>
-                            ))}
-                            {(c.skills || []).length > 3 && (
-                              <span className="text-xs text-ds-textMuted">+{c.skills.length - 3}</span>
-                            )}
-                          </div>
-                          <div className="space-y-1">
-                            {c.score ? (
-                              <>
-                                <ScoreBar score={c.score} />
-                                <span className={`text-xs font-medium px-2 py-0.5 rounded-btn ${BAND_STYLES[c.score.band] || ''}`}>
-                                  {c.score.band}
-                                </span>
-                                {c.score.scored_at && (
-                                  <p className="text-xs text-ds-textMuted">
-                                    {new Date(c.score.scored_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                  </p>
-                                )}
-                              </>
-                            ) : (
-                              <span className="text-xs text-ds-textMuted">Not scored</span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1.5 justify-end">
-                            <button onClick={() => setExpandedId(expandedId === c.resume_id ? null : c.resume_id)}
-                              className="text-xs border border-ds-border px-2 py-1 rounded-btn text-ds-text hover:bg-ds-bg transition-colors">
-                              {expandedId === c.resume_id ? 'Hide' : 'Details'}
-                            </button>
-                            <button onClick={() => handleRescore(c.resume_id)} disabled={rescoring === c.resume_id}
-                              className="text-xs border border-ds-border px-2 py-1 rounded-btn text-ds-text hover:bg-ds-bg disabled:opacity-50 transition-colors">
-                              {rescoring === c.resume_id ? '…' : 'Rescore'}
-                            </button>
-                            <Link href={`/resumes/${c.resume_id}`}
-                              className="text-xs bg-primary-light text-primary px-2 py-1 rounded-btn hover:bg-primary hover:text-white transition-colors">
-                              View
-                            </Link>
-                          </div>
-                        </div>
 
-                        {expandedId === c.resume_id && c.score && (
-                          <div className="border-t border-ds-border px-6 py-5 bg-ds-bg">
-                            <ScoreBreakdown score={c.score} />
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                          {expandedId === c.resume_id && c.score && (
+                            <div className="border-t border-ds-border px-6 py-5 bg-ds-bg">
+                              <ScoreBreakdown score={c.score} />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })()}
+
+                  {candidateTotalPages > 1 && (
+                    <CandidatePagination
+                      page={effectiveCandidatePage}
+                      totalPages={candidateTotalPages}
+                      total={allFilteredAndSorted.length}
+                      pageSize={candidatePageSize}
+                      onPage={setCandidatePage}
+                      onPageSize={n => { setCandidatePageSize(n); setCandidatePage(1); }}
+                    />
+                  )}
+                </>
+              )}
             </>
           )}
         </div>
