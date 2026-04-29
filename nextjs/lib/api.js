@@ -75,3 +75,13 @@ export const getJobCandidates = (jobId) => req(`/jobs/${jobId}/candidates`).then
 
 export const rescoreCandidate = (jobId, resumeId) =>
   req(`/jobs/${jobId}/score/${resumeId}`, { method: 'POST' }).then(r => r.json());
+
+// Organizations
+export const getOrganizations = () => req('/organizations').then(r => r.json());
+
+export const createOrganization = (name) =>
+  req('/organizations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  }).then(r => r.json());

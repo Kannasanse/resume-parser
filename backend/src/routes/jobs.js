@@ -27,6 +27,7 @@ router.post('/', async (req, res) => {
       required_years_experience = 0, required_degree = 'None',
       required_field = null, required_certs = [],
       custom_weights = null,
+      organization_id = null,
     } = req.body;
     if (!title?.trim()) return res.status(400).json({ error: 'title is required' });
 
@@ -41,6 +42,7 @@ router.post('/', async (req, res) => {
         required_field: required_field?.trim() || null,
         required_certs: required_certs || [],
         custom_weights: custom_weights || null,
+        organization_id: organization_id || null,
       })
       .select()
       .single();
@@ -117,7 +119,7 @@ router.get('/:id/candidates', async (req, res) => {
     // 1. All scores for this job
     const { data: scoreRows, error: scoreErr } = await supabase
       .from('resume_scores')
-      .select('resume_id, overall_score, band, skills_score, experience_score, education_score, title_score, certs_score, projects_score, quality_score, weights_used, candidate_years')
+      .select('resume_id, overall_score, band, skills_score, experience_score, education_score, title_score, certs_score, projects_score, quality_score, weights_used, candidate_years, scored_at')
       .eq('job_profile_id', jobId);
     if (scoreErr) throw scoreErr;
 
@@ -171,6 +173,7 @@ router.get('/:id/candidates', async (req, res) => {
         quality_score:    scoreMap[r.id].quality_score,
         weights_used:     scoreMap[r.id].weights_used,
         candidate_years:  scoreMap[r.id].candidate_years,
+        scored_at:        scoreMap[r.id].scored_at,
       } : null,
     }));
 
@@ -201,6 +204,7 @@ router.put('/:id', async (req, res) => {
       required_years_experience, required_degree,
       required_field, required_certs,
       custom_weights,
+      organization_id,
     } = req.body;
 
     const updates = {};
@@ -213,6 +217,7 @@ router.put('/:id', async (req, res) => {
     if (required_field !== undefined) updates.required_field = required_field?.trim() || null;
     if (required_certs !== undefined) updates.required_certs = required_certs || [];
     if (custom_weights !== undefined) updates.custom_weights = custom_weights || null;
+    if (organization_id !== undefined) updates.organization_id = organization_id || null;
 
     const { error: updateErr } = await supabase
       .from('job_profiles')

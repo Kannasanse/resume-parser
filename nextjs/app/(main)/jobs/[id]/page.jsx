@@ -4,6 +4,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
+import OrganizationSelect from '@/components/OrganizationSelect';
 import { getJob, deleteJob, updateJob, getJobCandidates, rescoreCandidate, getResumes, scoreResume } from '@/lib/api';
 import ScoreBreakdown from '@/components/ScoreBreakdown';
 import RichTextEditor from '@/components/RichTextEditor';
@@ -131,6 +132,7 @@ function JobProfileDetailInner() {
   const [editCerts, setEditCerts]             = useState('');
   const [editSkills, setEditSkills]           = useState([]);
   const [editWeights, setEditWeights]         = useState({});
+  const [editOrganizationId, setEditOrganizationId] = useState(null);
   const [savingEdit, setSavingEdit]           = useState(false);
   const [editError, setEditError]             = useState('');
 
@@ -181,6 +183,7 @@ function JobProfileDetailInner() {
     setEditDegree(job.required_degree || 'None');
     setEditField(job.required_field || '');
     setEditCerts((job.required_certs || []).join(', '));
+    setEditOrganizationId(job.organization_id || null);
     setEditSkills((job.job_skills || []).map(s => ({ skill: s.skill, proficiency: s.proficiency, is_required: s.is_required })));
     const defaultW = WEIGHTS_TABLE[`${job.role_type || 'technical'}.${job.seniority || 'mid'}`] || WEIGHTS_TABLE['technical.mid'];
     setEditWeights(job.custom_weights
@@ -205,7 +208,7 @@ function JobProfileDetailInner() {
     setSavingEdit(true); setEditError('');
     try {
       const certsArray = editCerts.trim() ? editCerts.split(',').map(c => c.trim()).filter(Boolean) : [];
-      await updateJob(id, { title: editTitle, description: editDescription, role_type: editRoleType, seniority: editSeniority, required_years_experience: parseInt(editYears) || 0, required_degree: editDegree, required_field: editField || null, required_certs: certsArray, custom_weights: editWeights, skills: editSkills });
+      await updateJob(id, { title: editTitle, description: editDescription, role_type: editRoleType, seniority: editSeniority, required_years_experience: parseInt(editYears) || 0, required_degree: editDegree, required_field: editField || null, required_certs: certsArray, custom_weights: editWeights, skills: editSkills, organization_id: editOrganizationId || null });
       queryClient.invalidateQueries({ queryKey: ['job', id] });
       setIsEditing(false);
     } catch { setEditError('Failed to save. Please try again.'); }
@@ -224,6 +227,7 @@ function JobProfileDetailInner() {
       'Name':          c.candidate_name || c.file_name || '',
       'Email Address': c.email || '',
       'Score':         c.score ? Math.round(c.score.overall_score * 100) : '',
+      'Scored On':     c.score?.scored_at ? new Date(c.score.scored_at).toLocaleString() : '',
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
@@ -257,9 +261,19 @@ function JobProfileDetailInner() {
         {editError && <p className="text-sm text-ds-danger mb-4">{editError}</p>}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <div className="lg:col-span-3 space-y-5">
-            <div className="bg-ds-card rounded border border-ds-border p-5">
-              <label className="block text-xs font-semibold text-ds-textMuted uppercase tracking-wide mb-2">Job Title</label>
-              <input type="text" value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder="e.g. Senior Frontend Engineer" className={inputCls} />
+            <div className="bg-ds-card rounded border border-ds-border p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-ds-textMuted uppercase tracking-wide mb-2">Job Title</label>
+                <input type="text" value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder="e.g. Senior Frontend Engineer" className={inputCls} />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-ds-textMuted uppercase tracking-wide mb-2">Organization <span className="normal-case font-normal text-ds-textMuted">(optional)</span></label>
+                <OrganizationSelect
+                  value={editOrganizationId}
+                  onChange={(id) => setEditOrganizationId(id)}
+                  inputCls={inputCls}
+                />
+              </div>
             </div>
             <div className="bg-ds-card rounded border border-ds-border p-5 space-y-4">
               <h2 className="text-xs font-semibold text-ds-textMuted uppercase tracking-widest">Scoring Parameters</h2>
@@ -575,6 +589,11 @@ function JobProfileDetailInner() {
                                 <span className={`text-xs font-medium px-2 py-0.5 rounded-btn ${BAND_STYLES[c.score.band] || ''}`}>
                                   {c.score.band}
                                 </span>
+                                {c.score.scored_at && (
+                                  <p className="text-xs text-ds-textMuted">
+                                    {new Date(c.score.scored_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                  </p>
+                                )}
                               </>
                             ) : (
                               <span className="text-xs text-ds-textMuted">Not scored</span>

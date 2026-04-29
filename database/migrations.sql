@@ -38,5 +38,17 @@ CREATE TABLE IF NOT EXISTS resume_scores (
   weights_used JSONB,
   breakdown JSONB,
   created_at TIMESTAMPTZ DEFAULT NOW(),
+  scored_at  TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(resume_id, job_profile_id)
 );
+
+-- 5. Organizations lookup table
+CREATE TABLE IF NOT EXISTS organizations (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name       TEXT NOT NULL UNIQUE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 6. Add organization reference to job_profiles (optional)
+ALTER TABLE job_profiles
+  ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL;

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { parseJobSkills, createJob } from '@/lib/api';
 import RichTextEditor from '@/components/RichTextEditor';
+import OrganizationSelect from '@/components/OrganizationSelect';
 
 function stripHtml(html) {
   const d = document.createElement('div');
@@ -37,6 +38,7 @@ export default function JobProfileCreate() {
   const router = useRouter();
   const [title, setTitle]             = useState('');
   const [description, setDescription] = useState('');
+  const [organizationId, setOrganizationId] = useState(null);
   const [skills, setSkills]           = useState([]);
   const [roleType, setRoleType]       = useState('technical');
   const [seniority, setSeniority]     = useState('mid');
@@ -106,6 +108,7 @@ export default function JobProfileCreate() {
         required_field: requiredField || null,
         required_certs: certsArray,
         custom_weights: customWeights,
+        organization_id: organizationId || null,
       });
       router.push(`/jobs/${id}`);
     } catch {
@@ -123,15 +126,25 @@ export default function JobProfileCreate() {
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         <div className="lg:col-span-3 space-y-5">
-          <div className="bg-ds-card rounded border border-ds-border p-5">
-            <label className="block text-xs font-semibold text-ds-textMuted uppercase tracking-wide mb-2">Job Title</label>
-            <input
-              type="text"
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              placeholder="e.g. Senior Frontend Engineer"
-              className={inputCls}
-            />
+          <div className="bg-ds-card rounded border border-ds-border p-5 space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-ds-textMuted uppercase tracking-wide mb-2">Job Title</label>
+              <input
+                type="text"
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                placeholder="e.g. Senior Frontend Engineer"
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-ds-textMuted uppercase tracking-wide mb-2">Organization <span className="normal-case font-normal text-ds-textMuted">(optional)</span></label>
+              <OrganizationSelect
+                value={organizationId}
+                onChange={(id) => setOrganizationId(id)}
+                inputCls={inputCls}
+              />
+            </div>
           </div>
 
           <div className="bg-ds-card rounded border border-ds-border p-5 space-y-4">

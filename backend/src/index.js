@@ -4,6 +4,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const resumeRoutes = require('./routes/resumes');
 const jobRoutes = require('./routes/jobs');
+const orgRoutes = require('./routes/organizations');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -28,6 +29,7 @@ app.use(morgan('[:date[clf]] :method :url :status :res[content-length] bytes - :
 
 app.use('/api/v1/resumes', resumeRoutes);
 app.use('/api/v1/jobs', jobRoutes);
+app.use('/api/v1/organizations', orgRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 

@@ -527,6 +527,7 @@ async function upsertScore(resumeId, jobProfileId, supabase) {
     candidate_years:  candidateYears,
     weights_used,
     breakdown,
+    scored_at: new Date().toISOString(),
   }, { onConflict: 'resume_id,job_profile_id' });
 
   return result;
