@@ -15,10 +15,11 @@ export default function OrganizationSelect({ value, onChange, inputCls = '' }) {
     queryFn: getOrganizations,
   });
 
-  // Sync display input when value changes externally
+  // Only sync display name from a confirmed selection (non-null value)
   useEffect(() => {
+    if (!value) return;
     const match = orgs.find(o => o.id === value);
-    setInputValue(match ? match.name : '');
+    if (match) setInputValue(match.name);
   }, [value, orgs]);
 
   const filtered = inputValue.trim()
@@ -27,22 +28,22 @@ export default function OrganizationSelect({ value, onChange, inputCls = '' }) {
 
   const exactMatch = orgs.find(o => o.name.toLowerCase() === inputValue.trim().toLowerCase());
 
-  // Close dropdown on outside click
+  // Close dropdown on outside click (outside the whole container)
   useEffect(() => {
     const handler = (e) => { if (!containerRef.current?.contains(e.target)) setOpen(false); };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const select = (org) => {
-    onChange(org.id, org.name);
-    setInputValue(org.name);
+  const handleClear = () => {
+    onChange(null, '');
+    setInputValue('');
     setOpen(false);
   };
 
-  const clear = () => {
-    onChange(null, '');
-    setInputValue('');
+  const select = (org) => {
+    onChange(org.id, org.name);
+    setInputValue(org.name);
     setOpen(false);
   };
 
@@ -83,13 +84,21 @@ export default function OrganizationSelect({ value, onChange, inputCls = '' }) {
           value={inputValue}
           placeholder="Search or type to create…"
           className={inputCls}
-          onChange={e => { setInputValue(e.target.value); setOpen(true); onChange(null, ''); }}
+          onChange={e => { setInputValue(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
+          onBlur={() => {
+            // If user typed but didn't select, reset to the current confirmed selection
+            setTimeout(() => {
+              const match = orgs.find(o => o.id === value);
+              setInputValue(match ? match.name : '');
+              setOpen(false);
+            }, 150);
+          }}
           onKeyDown={handleKeyDown}
           disabled={creating}
         />
         {value && (
-          <button type="button" onClick={clear}
+          <button type="button" onMouseDown={handleClear}
             className="absolute right-2 top-1/2 -translate-y-1/2 text-ds-textMuted hover:text-ds-text text-sm leading-none">
             ✕
           </button>

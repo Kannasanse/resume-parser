@@ -38,9 +38,12 @@ CREATE TABLE IF NOT EXISTS resume_scores (
   weights_used JSONB,
   breakdown JSONB,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  scored_at  TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(resume_id, job_profile_id)
 );
+
+-- 4b. Add scored_at to resume_scores (separate ALTER so it applies when table already exists)
+ALTER TABLE resume_scores ADD COLUMN IF NOT EXISTS scored_at TIMESTAMPTZ;
+UPDATE resume_scores SET scored_at = created_at WHERE scored_at IS NULL;
 
 -- 5. Organizations lookup table
 CREATE TABLE IF NOT EXISTS organizations (
