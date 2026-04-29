@@ -163,7 +163,7 @@ async function parseWithOpenRouter(rawText) {
 
 async function parseWithGroq(rawText) {
   const response = await groq.chat.completions.create({
-    model: 'llama-3.3-70b-versatile',
+    model: 'meta-llama/llama-4-scout-17b-16e-instruct',
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user',   content: `Resume:\n\n${rawText.slice(0, 14000)}` },
