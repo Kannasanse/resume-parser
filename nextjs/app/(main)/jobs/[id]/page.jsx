@@ -49,6 +49,207 @@ const WEIGHTS_TABLE = {
   'entry-level.entry':  { skills: 25, experience: 10, title: 5,  projects: 20, education: 25, certs: 5,  quality: 10 },
 };
 
+const COMPARE_BAND_COLORS = {
+  'Strong Match': '#177A17', 'Good Match': '#0B8BC8',
+  'Moderate Match': '#A26412', 'Weak Match': '#A01535',
+};
+const COMPARE_FACTORS = ['skills', 'experience', 'education', 'title', 'certs', 'projects', 'quality'];
+const COMPARE_FACTOR_LABELS = {
+  skills: 'Skills', experience: 'Experience', education: 'Education',
+  title: 'Title', certs: 'Certs', projects: 'Projects', quality: 'Quality',
+};
+
+function CompareGauge({ score }) {
+  if (!score) return null;
+  const p = Math.round((score.overall_score ?? 0) * 100);
+  const color = COMPARE_BAND_COLORS[score.band] || '#A01535';
+  const r = 22, sw = 4, size = 52;
+  const circ = 2 * Math.PI * r;
+  const dash = (p / 100) * circ;
+  return (
+    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#E5E7ED" strokeWidth={sw} />
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color}
+          strokeWidth={sw} strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" />
+      </svg>
+      <span className="absolute inset-0 flex items-center justify-center text-sm font-bold font-heading text-ds-text">{p}</span>
+    </div>
+  );
+}
+
+function CompareModal({ candidates, onClose }) {
+  const [a, b] = candidates;
+  const cols = [a, b];
+
+  const factorPct = (c, key) => c.score ? Math.round((c.score[`${key}_score`] ?? 0) * 100) : null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div className="relative bg-ds-card rounded-lg border border-ds-border shadow-xl w-full max-w-4xl flex flex-col max-h-[90vh]">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-ds-border flex-shrink-0">
+          <h2 className="font-heading font-bold text-ds-text">Compare Candidates</h2>
+          <button onClick={onClose} className="text-ds-textMuted hover:text-ds-text text-2xl leading-none">×</button>
+        </div>
+
+        <div className="overflow-y-auto flex-1">
+          {/* Candidate headers */}
+          <div className="grid grid-cols-2 border-b border-ds-border">
+            {cols.map((c, i) => (
+              <div key={i} className={`px-6 py-5 flex items-start gap-4 ${i === 0 ? 'border-r border-ds-border' : ''}`}>
+                <CompareGauge score={c.score} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-ds-text truncate">{c.candidate_name || c.file_name}</p>
+                  {c.email && <p className="text-xs text-ds-textMuted mt-0.5">{c.email}</p>}
+                  {c.score && (
+                    <span className={`inline-block mt-1.5 text-xs font-medium px-2 py-0.5 rounded-btn ${BAND_STYLES[c.score.band] || ''}`}>
+                      {c.score.band}
+                    </span>
+                  )}
+                  <div className="flex gap-3 mt-1 flex-wrap">
+                    {c.score?.candidate_years != null && (
+                      <p className="text-xs text-ds-textMuted font-mono">{c.score.candidate_years.toFixed(1)} yrs exp</p>
+                    )}
+                    {c.score?.scored_at && (
+                      <p className="text-xs text-ds-textMuted">
+                        Scored {new Date(c.score.scored_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Score breakdown face-off */}
+          <div className="border-b border-ds-border">
+            <div className="px-6 py-3 bg-ds-bg border-b border-ds-border">
+              <p className="text-xs font-semibold text-ds-textMuted uppercase tracking-widest">Score Breakdown</p>
+            </div>
+            {COMPARE_FACTORS.map(key => {
+              const pa = factorPct(a, key);
+              const pb = factorPct(b, key);
+              const aWins = pa != null && pb != null && pa > pb;
+              const bWins = pa != null && pb != null && pb > pa;
+              return (
+                <div key={key} className="grid grid-cols-[1fr_72px_1fr] items-center border-b border-ds-border last:border-0">
+                  <div className="px-4 py-2.5 flex items-center gap-2">
+                    <span className={`text-xs font-mono w-7 text-right flex-shrink-0 ${aWins ? 'font-bold text-ds-success' : 'text-ds-textMuted'}`}>
+                      {pa != null ? pa : '—'}
+                    </span>
+                    <div className="flex-1 bg-ds-bg rounded-full h-2">
+                      <div className="h-2 rounded-full transition-all"
+                        style={{ width: `${pa ?? 0}%`, backgroundColor: COMPARE_BAND_COLORS[a.score?.band] || '#A01535' }} />
+                    </div>
+                    {aWins && <span className="text-ds-success text-xs flex-shrink-0">▲</span>}
+                  </div>
+                  <div className="border-l border-r border-ds-border text-center py-2.5 px-1">
+                    <p className="text-xs font-medium text-ds-textMuted">{COMPARE_FACTOR_LABELS[key]}</p>
+                  </div>
+                  <div className="px-4 py-2.5 flex items-center gap-2">
+                    {bWins && <span className="text-ds-success text-xs flex-shrink-0">▲</span>}
+                    <div className="flex-1 bg-ds-bg rounded-full h-2">
+                      <div className="h-2 rounded-full transition-all"
+                        style={{ width: `${pb ?? 0}%`, backgroundColor: COMPARE_BAND_COLORS[b.score?.band] || '#A01535' }} />
+                    </div>
+                    <span className={`text-xs font-mono w-7 flex-shrink-0 ${bWins ? 'font-bold text-ds-success' : 'text-ds-textMuted'}`}>
+                      {pb != null ? pb : '—'}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* AI Assessment */}
+          {(a.score?.score_summary || b.score?.score_summary) && (
+            <div className="border-b border-ds-border">
+              <div className="px-6 py-3 bg-ds-bg border-b border-ds-border">
+                <p className="text-xs font-semibold text-ds-textMuted uppercase tracking-widest">AI Assessment</p>
+              </div>
+              <div className="grid grid-cols-2">
+                {cols.map((c, i) => {
+                  const s = c.score?.score_summary;
+                  return (
+                    <div key={i} className={`px-5 py-4 space-y-3 ${i === 0 ? 'border-r border-ds-border' : ''}`}>
+                      {!s && <p className="text-xs text-ds-textMuted italic">No AI assessment available.</p>}
+                      {s?.summary && <p className="text-xs text-ds-textSecondary leading-relaxed">{s.summary}</p>}
+                      {s?.strengths?.length > 0 && (
+                        <div className="bg-ds-successLight rounded p-2.5 space-y-1">
+                          <p className="text-xs font-semibold text-ds-success uppercase tracking-wide">Strong Areas</p>
+                          {s.strengths.map((item, j) => (
+                            <div key={j} className="flex items-start gap-1.5">
+                              <span className="text-ds-success text-xs mt-0.5 flex-shrink-0">✓</span>
+                              <span className="text-xs text-ds-text">{item}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {s?.gaps?.length > 0 && (
+                        <div className="bg-ds-dangerLight rounded p-2.5 space-y-1">
+                          <p className="text-xs font-semibold text-ds-danger uppercase tracking-wide">Areas to Improve</p>
+                          {s.gaps.map((item, j) => (
+                            <div key={j} className="flex items-start gap-1.5">
+                              <span className="text-ds-danger text-xs mt-0.5 flex-shrink-0">✗</span>
+                              <span className="text-xs text-ds-text">{item}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Skills */}
+          <div>
+            <div className="px-6 py-3 bg-ds-bg border-b border-ds-border">
+              <p className="text-xs font-semibold text-ds-textMuted uppercase tracking-widest">Skills</p>
+            </div>
+            <div className="grid grid-cols-2">
+              {cols.map((c, i) => (
+                <div key={i} className={`px-5 py-4 ${i === 0 ? 'border-r border-ds-border' : ''}`}>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(c.skills || []).slice(0, 14).map(s => (
+                      <span key={s} className="text-xs bg-primary-light text-primary px-2 py-0.5 rounded-btn">{s}</span>
+                    ))}
+                    {(c.skills || []).length > 14 && (
+                      <span className="text-xs text-ds-textMuted">+{c.skills.length - 14} more</span>
+                    )}
+                    {(!c.skills || c.skills.length === 0) && (
+                      <p className="text-xs text-ds-textMuted italic">No skills data.</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between px-6 py-4 border-t border-ds-border flex-shrink-0">
+          <div className="flex gap-4">
+            <Link href={`/resumes/${a.resume_id}`} className="text-xs text-primary hover:underline">
+              View {a.candidate_name || 'Candidate A'} →
+            </Link>
+            <Link href={`/resumes/${b.resume_id}`} className="text-xs text-primary hover:underline">
+              View {b.candidate_name || 'Candidate B'} →
+            </Link>
+          </div>
+          <button onClick={onClose}
+            className="text-sm px-4 py-2 border border-ds-border rounded-btn text-ds-textMuted hover:bg-ds-bg transition-colors">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DeleteModal({ onCancel, onDelete }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -177,6 +378,18 @@ function JobProfileDetailInner() {
   const [candidatePage, setCandidatePage]         = useState(1);
   const [candidatePageSize, setCandidatePageSize] = useState(50);
 
+  const [compareIds, setCompareIds]   = useState(new Set());
+  const [showCompare, setShowCompare] = useState(false);
+
+  const toggleCompare = (resumeId) => {
+    setCompareIds(prev => {
+      const next = new Set(prev);
+      if (next.has(resumeId)) { next.delete(resumeId); }
+      else if (next.size < 2)  { next.add(resumeId); }
+      return next;
+    });
+  };
+
   const { data: job, isLoading, error } = useQuery({
     queryKey: ['job', id],
     queryFn: () => getJob(id),
@@ -194,7 +407,7 @@ function JobProfileDetailInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [job, searchParams]);
 
-  useEffect(() => { setCandidatePage(1); }, [filterBand, sortBy, candidateSearch]);
+  useEffect(() => { setCandidatePage(1); setCompareIds(new Set()); }, [filterBand, sortBy, candidateSearch]);
 
   const { data: allResumesData } = useQuery({
     queryKey: ['resumes-picker'],
@@ -425,6 +638,12 @@ function JobProfileDetailInner() {
     <div className="max-w-5xl mx-auto space-y-4">
       {showDeleteModal && <DeleteModal onCancel={() => setShowDeleteModal(false)} onDelete={handleDeleteConfirmed} />}
 
+      {showCompare && compareIds.size === 2 && (() => {
+        const selected = [...compareIds].map(rid => candidates.find(c => c.resume_id === rid)).filter(Boolean);
+        if (selected.length < 2) return null;
+        return <CompareModal candidates={selected} onClose={() => setShowCompare(false)} />;
+      })()}
+
       {showAddModal && (() => {
         const existingIds = new Set(candidates.map(c => c.resume_id));
         const available = (allResumesData?.data || []).filter(r => !existingIds.has(r.id));
@@ -618,6 +837,28 @@ function JobProfileDetailInner() {
                 </div>
               </div>
 
+              {compareIds.size > 0 && (
+                <div className="flex items-center justify-between bg-primary-light border border-primary/20 rounded px-4 py-2.5">
+                  <span className="text-sm text-primary font-medium">
+                    {compareIds.size === 1
+                      ? '1 candidate selected — select one more to compare'
+                      : '2 candidates selected — ready to compare'}
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => setCompareIds(new Set())}
+                      className="text-xs text-primary hover:underline">
+                      Clear
+                    </button>
+                    {compareIds.size === 2 && (
+                      <button onClick={() => setShowCompare(true)}
+                        className="text-sm bg-primary text-white px-4 py-1.5 rounded-btn font-medium hover:bg-primary-dark transition-colors">
+                        Compare →
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {allFilteredAndSorted.length === 0 ? (
                 <p className="text-sm text-ds-textMuted text-center py-8">
                   {candidateSearch
@@ -628,19 +869,28 @@ function JobProfileDetailInner() {
                 <>
                   <div className="bg-ds-card rounded border border-ds-border divide-y divide-ds-border overflow-hidden">
                     <div className="grid grid-cols-[28px_1fr_180px_160px_130px] items-center gap-3 px-4 py-2 bg-ds-bg">
-                      <span className="text-xs text-ds-textMuted font-semibold">#</span>
+                      <span className="text-xs text-ds-textMuted font-semibold text-center">
+                        {compareIds.size > 0 ? `${compareIds.size}/2` : '#'}
+                      </span>
                       <span className="text-xs text-ds-textMuted font-semibold uppercase tracking-wide">Candidate</span>
                       <span className="text-xs text-ds-textMuted font-semibold uppercase tracking-wide">Top Skills</span>
                       <span className="text-xs text-ds-textMuted font-semibold uppercase tracking-wide">Score</span>
                       <span className="text-xs text-ds-textMuted font-semibold uppercase tracking-wide text-right">Actions</span>
                     </div>
 
-                    {paginatedCandidates.map((c, idx) => {
-                      const rowNum = (effectiveCandidatePage - 1) * candidatePageSize + idx + 1;
+                    {paginatedCandidates.map((c) => {
                       return (
                         <div key={c.resume_id}>
                           <div className="grid grid-cols-[28px_1fr_180px_160px_130px] items-center gap-3 px-4 py-3 hover:bg-ds-bg transition-colors">
-                            <span className="text-xs font-mono text-ds-textMuted">{rowNum}</span>
+                            <label className="flex items-center justify-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={compareIds.has(c.resume_id)}
+                                onChange={() => toggleCompare(c.resume_id)}
+                                disabled={compareIds.size >= 2 && !compareIds.has(c.resume_id)}
+                                className="w-3.5 h-3.5 accent-primary cursor-pointer disabled:cursor-not-allowed"
+                              />
+                            </label>
                             <div className="min-w-0">
                               <p className="text-sm font-semibold text-ds-text truncate">{c.candidate_name || c.file_name}</p>
                               {c.email && <p className="text-xs text-ds-textMuted truncate">{c.email}</p>}

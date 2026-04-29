@@ -36,7 +36,7 @@ export async function GET(req, { params }) {
       .select(`
         overall_score, band, skills_score, experience_score, education_score,
         title_score, certs_score, projects_score, quality_score,
-        weights_used, candidate_years, job_profile_id, resume_id, breakdown,
+        weights_used, candidate_years, job_profile_id, resume_id, breakdown, score_summary,
         job_profiles(id, title, role_type, seniority)
       `)
       .in('resume_id', siblingResumeIds)

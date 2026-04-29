@@ -530,6 +530,41 @@ export default function ResumeDetail() {
                     </div>
                   )}
                   <ScoreBreakdown score={activeScore} />
+                  {activeScore.score_summary && (() => {
+                    const s = activeScore.score_summary;
+                    return (
+                      <div className="mt-5 pt-5 border-t border-ds-border space-y-3">
+                        <p className="text-xs font-semibold text-ds-textMuted uppercase tracking-widest">AI Assessment</p>
+                        {s.summary && (
+                          <p className="text-xs text-ds-textSecondary leading-relaxed">{s.summary}</p>
+                        )}
+                        {s.strengths?.length > 0 && (
+                          <div className="bg-ds-successLight rounded p-3 space-y-1.5">
+                            <p className="text-xs font-semibold text-ds-success uppercase tracking-wide">Strong Areas</p>
+                            <ul className="space-y-1">
+                              {s.strengths.map((item, i) => (
+                                <li key={i} className="text-xs text-ds-text flex items-start gap-1.5">
+                                  <span className="text-ds-success mt-0.5 flex-shrink-0">✓</span>{item}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {s.gaps?.length > 0 && (
+                          <div className="bg-ds-dangerLight rounded p-3 space-y-1.5">
+                            <p className="text-xs font-semibold text-ds-danger uppercase tracking-wide">Areas to Improve</p>
+                            <ul className="space-y-1">
+                              {s.gaps.map((item, i) => (
+                                <li key={i} className="text-xs text-ds-text flex items-start gap-1.5">
+                                  <span className="text-ds-danger mt-0.5 flex-shrink-0">✗</span>{item}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>
