@@ -17,8 +17,11 @@ export const uploadResume = async (file, jobId = null) => {
   return { data: await res.json() };
 };
 
-export const getResumes = (page = 1, limit = 10) =>
-  req(`/resumes?page=${page}&limit=${limit}`).then(r => r.json());
+export const getResumes = (page = 1, limit = 50, search = '') => {
+  const params = new URLSearchParams({ page, limit });
+  if (search) params.set('search', search);
+  return req(`/resumes?${params}`).then(r => r.json());
+};
 
 export const getResume = (id) => req(`/resumes/${id}`).then(r => r.json());
 

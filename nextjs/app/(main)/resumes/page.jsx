@@ -27,6 +27,8 @@ const STATUS_LABELS = {
   failed: 'Failed', pending: 'Pending',
 };
 
+const PAGE_SIZE_OPTIONS = [50, 100, 150, 200];
+
 function BulkDeleteModal({ count, onCancel, onDelete }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -137,11 +139,14 @@ function ResumeTable({ items, selectedIds, onToggleSelect, onDelete, onDeleteReq
 }
 
 export default function ResumeList() {
-  const [page, setPage] = useState(1);
+  const [page, setPage]             = useState(1);
+  const [pageSize, setPageSize]     = useState(50);
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch]         = useState('');
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [showBulkModal, setShowBulkModal] = useState(false);
-  const [bulkDeleting, setBulkDeleting] = useState(false);
-  const [viewMode, setViewMode] = useState('grid');
+  const [bulkDeleting, setBulkDeleting]   = useState(false);
+  const [viewMode, setViewMode]     = useState('grid');
   const [singleDeleteId, setSingleDeleteId] = useState(null);
   const queryClient = useQueryClient();
 
@@ -150,20 +155,30 @@ export default function ResumeList() {
     if (saved === 'table' || saved === 'grid') setViewMode(saved);
   }, []);
 
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => { setSearch(searchInput); setPage(1); }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Reset page when page size changes
+  useEffect(() => { setPage(1); }, [pageSize]);
+
   const setView = (mode) => {
     setViewMode(mode);
     localStorage.setItem('profiles-view-mode', mode);
   };
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['resumes', page],
-    queryFn: () => getResumes(page),
+    queryKey: ['resumes', page, pageSize, search],
+    queryFn: () => getResumes(page, pageSize, search),
   });
 
   const deduplicated = deduplicateByEmail(data?.data || []);
-  const totalPages   = Math.ceil((data?.total || 0) / (data?.limit || 10));
-  const allIds       = deduplicated.map(({ resume }) => resume.id);
-  const allSelected  = allIds.length > 0 && allIds.every(id => selectedIds.has(id));
+  const total      = data?.total || 0;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const allIds     = deduplicated.map(({ resume }) => resume.id);
+  const allSelected = allIds.length > 0 && allIds.every(id => selectedIds.has(id));
 
   const toggleSelect = (id) => {
     setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -195,13 +210,15 @@ export default function ResumeList() {
   if (isLoading) return <p className="text-ds-textMuted">Loading resumes...</p>;
   if (error)     return <p className="text-ds-danger">Failed to load resumes.</p>;
 
+  const pageStart = (page - 1) * pageSize + 1;
+  const pageEnd   = Math.min(page * pageSize, total);
+
   return (
     <div className="pb-28">
       {showBulkModal && (
         <BulkDeleteModal count={selectedIds.size} onCancel={() => setShowBulkModal(false)} onDelete={handleBulkDelete} />
       )}
 
-      {/* Single delete modal for table view */}
       {singleDeleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setSingleDeleteId(null)} />
@@ -221,10 +238,14 @@ export default function ResumeList() {
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
         <div className="flex items-center gap-3">
           <h1 className="font-heading text-2xl font-bold text-ds-text">
-            Profiles <span className="text-ds-textMuted font-normal text-lg">({deduplicated.length})</span>
+            Profiles{' '}
+            <span className="text-ds-textMuted font-normal text-lg">
+              ({search ? `${total} found` : total})
+            </span>
           </h1>
           {deduplicated.length > 0 && (
             <button onClick={toggleSelectAll}
@@ -234,18 +255,15 @@ export default function ResumeList() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          {/* View toggle */}
           <div className="flex rounded-btn border border-ds-border overflow-hidden">
-            <button onClick={() => setView('grid')}
-              title="Grid view"
+            <button onClick={() => setView('grid')} title="Grid view"
               className={`px-3 py-2 transition-colors ${viewMode === 'grid' ? 'bg-primary text-white' : 'text-ds-textMuted hover:bg-ds-bg'}`}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
                 <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
               </svg>
             </button>
-            <button onClick={() => setView('table')}
-              title="Table view"
+            <button onClick={() => setView('table')} title="Table view"
               className={`px-3 py-2 transition-colors border-l border-ds-border ${viewMode === 'table' ? 'bg-primary text-white' : 'text-ds-textMuted hover:bg-ds-bg'}`}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
@@ -259,13 +277,45 @@ export default function ResumeList() {
         </div>
       </div>
 
+      {/* Search bar */}
+      <div className="relative mb-6 max-w-sm">
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ds-textMuted pointer-events-none"
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input
+          type="text"
+          value={searchInput}
+          onChange={e => setSearchInput(e.target.value)}
+          placeholder="Search by name or email…"
+          className="w-full pl-9 pr-9 py-2 text-sm border border-ds-inputBorder rounded bg-ds-card text-ds-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+        />
+        {searchInput && (
+          <button
+            onClick={() => { setSearchInput(''); setSearch(''); setPage(1); }}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ds-textMuted hover:text-ds-text text-lg leading-none"
+          >×</button>
+        )}
+      </div>
+
+      {/* Content */}
       {deduplicated.length === 0 ? (
-        <div className="text-center py-20 text-ds-textMuted">
-          <p className="text-base font-medium">No profiles yet.</p>
-          <Link href="/upload" className="text-primary hover:underline text-sm mt-2 inline-block">
-            Upload your first profile →
-          </Link>
-        </div>
+        search ? (
+          <div className="text-center py-16 text-ds-textMuted">
+            <p className="text-base font-medium">No profiles match &quot;{search}&quot;.</p>
+            <button onClick={() => { setSearchInput(''); setSearch(''); setPage(1); }}
+              className="text-primary hover:underline text-sm mt-2 inline-block">
+              Clear search
+            </button>
+          </div>
+        ) : (
+          <div className="text-center py-20 text-ds-textMuted">
+            <p className="text-base font-medium">No profiles yet.</p>
+            <Link href="/upload" className="text-primary hover:underline text-sm mt-2 inline-block">
+              Upload your first profile →
+            </Link>
+          </div>
+        )
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {deduplicated.map(({ resume, jobs }) => (
@@ -283,20 +333,34 @@ export default function ResumeList() {
         />
       )}
 
-      {totalPages > 1 && (
-        <div className="flex justify-center gap-2 mt-8">
-          <button onClick={() => setPage(p => p - 1)} disabled={page === 1}
-            className="px-4 py-2 rounded-btn border border-ds-border text-sm text-ds-text disabled:opacity-40 hover:bg-ds-card transition-colors">
-            ← Previous
-          </button>
-          <span className="px-4 py-2 text-sm text-ds-textMuted">{page} / {totalPages}</span>
-          <button onClick={() => setPage(p => p + 1)} disabled={page === totalPages}
-            className="px-4 py-2 rounded-btn border border-ds-border text-sm text-ds-text disabled:opacity-40 hover:bg-ds-card transition-colors">
-            Next →
-          </button>
+      {/* Pagination — always shown when there are results */}
+      {total > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 mt-6">
+          <p className="text-xs text-ds-textMuted">
+            Showing {pageStart}–{pageEnd} of {total}
+          </p>
+          <div className="flex items-center gap-2">
+            <select
+              value={pageSize}
+              onChange={e => setPageSize(Number(e.target.value))}
+              className="text-xs border border-ds-inputBorder rounded px-2 py-1.5 bg-ds-card text-ds-text focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              {PAGE_SIZE_OPTIONS.map(n => <option key={n} value={n}>{n} per page</option>)}
+            </select>
+            <button onClick={() => setPage(p => p - 1)} disabled={page <= 1}
+              className="text-xs px-3 py-1.5 border border-ds-border rounded-btn text-ds-text disabled:opacity-40 hover:bg-ds-bg transition-colors">
+              ← Prev
+            </button>
+            <span className="text-xs text-ds-textMuted font-mono">{page} / {totalPages}</span>
+            <button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages}
+              className="text-xs px-3 py-1.5 border border-ds-border rounded-btn text-ds-text disabled:opacity-40 hover:bg-ds-bg transition-colors">
+              Next →
+            </button>
+          </div>
         </div>
       )}
 
+      {/* Bulk action bar */}
       {selectedIds.size > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-ds-card border-t border-ds-border shadow-xl px-4 py-3">
           <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
