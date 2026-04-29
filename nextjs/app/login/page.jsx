@@ -46,10 +46,13 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-6">
         {/* Logo */}
         <div className="text-center">
-          <div className="inline-flex items-center gap-1.5 mb-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-primary inline-block" />
+          <div className="inline-flex items-center gap-2 mb-2">
+            <div className="w-[26px] h-[26px] rounded-[6px] bg-primary flex items-center justify-center
+              text-white font-heading font-bold text-[14px] leading-none">
+              R
+            </div>
             <span className="font-heading font-bold text-ds-text text-xl tracking-tight">
-              profile<span className="text-primary"> </span>stream
+              resume<span className="text-primary">.</span>parse
             </span>
           </div>
           <p className="text-sm text-ds-textMuted">

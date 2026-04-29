@@ -175,57 +175,94 @@ export default function JobProfiles() {
         )
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="flex flex-col gap-2.5">
             {paginatedJobs.map(job => {
               const skills    = job.job_skills || [];
-              const topSkills = skills.slice(0, 3);
+              const reqCount  = skills.filter(s => s.is_required).length;
+              const prefCount = skills.filter(s => !s.is_required).length;
+              const topSkills = skills.slice(0, 6);
               const overflow  = skills.length - topSkills.length;
               const orgName   = job.organizations?.name || null;
+              const createdAt = job.created_at
+                ? new Date(job.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                : null;
 
               return (
-                <div key={job.id} className="bg-ds-card rounded border border-ds-border p-5 flex flex-col gap-4 hover:border-ds-borderStrong transition-colors">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-heading font-semibold text-ds-text leading-snug">{job.title}</p>
-                      {orgName && (
-                        <p className="text-xs text-ds-textMuted truncate mt-0.5">{orgName}</p>
-                      )}
+                <div key={job.id} className="bg-ds-card rounded border border-ds-border px-5 py-4 hover:border-ds-borderStrong transition-colors">
+                  <div className="flex items-center gap-4">
+                    {/* Briefcase icon */}
+                    <div className="w-10 h-10 rounded bg-ds-bg border border-ds-border flex items-center justify-center text-ds-textMuted flex-shrink-0">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="7" width="18" height="13" rx="2"/>
+                        <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        <path d="M3 12h18"/>
+                      </svg>
                     </div>
-                    <span className="flex-shrink-0 text-xs font-mono font-semibold bg-primary-light text-primary px-2 py-0.5 rounded-btn">
-                      {job.candidate_count} {job.candidate_count === 1 ? 'candidate' : 'candidates'}
-                    </span>
-                  </div>
 
-                  <div className="flex flex-wrap gap-1.5 min-h-[24px]">
-                    {topSkills.length === 0 && (
-                      <span className="text-xs text-ds-textMuted">No skills defined</span>
-                    )}
-                    {topSkills.map(s => (
-                      <span key={s.skill}
-                        className={`text-xs px-2 py-0.5 rounded-btn font-medium ${PROFICIENCY_COLORS[s.proficiency] || 'bg-ds-bg text-ds-textMuted'}`}>
-                        {s.skill}
-                      </span>
-                    ))}
-                    {overflow > 0 && (
-                      <span className="text-xs px-2 py-0.5 rounded-btn bg-ds-bg text-ds-textMuted font-medium">
-                        +{overflow}
-                      </span>
-                    )}
-                  </div>
+                    {/* Main content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-1 flex-wrap">
+                        <span className="font-heading font-semibold text-ds-text text-base">{job.title}</span>
+                        {orgName && <span className="text-xs text-ds-textMuted">{orgName}</span>}
+                        {createdAt && <span className="font-mono text-xs text-ds-textMuted">{createdAt}</span>}
+                      </div>
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {topSkills.map(s => (
+                          <span key={s.skill}
+                            className={`text-xs px-2 py-0.5 rounded font-medium border border-ds-border ${
+                              s.is_required
+                                ? 'bg-primary-light text-primary'
+                                : 'bg-ds-bg text-ds-textSecondary'
+                            }`}>
+                            {s.skill}
+                          </span>
+                        ))}
+                        {overflow > 0 && (
+                          <span className="font-mono text-xs text-ds-textMuted px-1">+{overflow}</span>
+                        )}
+                      </div>
+                    </div>
 
-                  <div className="flex gap-2 mt-auto">
-                    <Link href={`/jobs/${job.id}`}
-                      className="flex-1 text-center text-sm bg-primary text-white px-3 py-1.5 rounded-btn font-medium hover:bg-primary-dark transition-colors">
-                      View
-                    </Link>
-                    <Link href={`/jobs/${job.id}?edit=1`}
-                      className="text-sm border border-ds-border text-ds-text px-3 py-1.5 rounded-btn hover:bg-ds-bg transition-colors">
-                      Edit
-                    </Link>
-                    <button onClick={() => setDeletingJob({ id: job.id, title: job.title })}
-                      className="text-sm text-ds-danger border border-ds-border px-3 py-1.5 rounded-btn hover:bg-ds-dangerLight transition-colors">
-                      Delete
-                    </button>
+                    {/* Right side: stats + actions */}
+                    <div className="flex items-center gap-4 flex-shrink-0">
+                      <div className="text-right hidden sm:block">
+                        <span className="font-mono text-xs text-primary font-semibold">{reqCount}</span>
+                        <span className="font-mono text-xs text-ds-textMuted"> req</span>
+                        <span className="font-mono text-xs text-ds-textMuted mx-1">·</span>
+                        <span className="font-mono text-xs text-ds-textMuted">{prefCount} pref</span>
+                        {job.candidate_count > 0 && (
+                          <div className="font-mono text-xs text-ds-textMuted mt-0.5">
+                            {job.candidate_count} candidate{job.candidate_count !== 1 ? 's' : ''}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Link href={`/jobs/${job.id}`}
+                          className="text-sm bg-primary text-white px-3 py-1.5 rounded-btn font-medium hover:bg-primary-dark transition-colors">
+                          View
+                        </Link>
+                        <Link href={`/jobs/${job.id}?edit=1`}
+                          className="w-8 h-8 flex items-center justify-center rounded border border-ds-border text-ds-textMuted hover:text-ds-text hover:bg-ds-bg transition-colors"
+                          title="Edit">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 20h9"/>
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/>
+                          </svg>
+                        </Link>
+                        <button onClick={() => setDeletingJob({ id: job.id, title: job.title })}
+                          className="w-8 h-8 flex items-center justify-center rounded border border-ds-border text-ds-textMuted hover:text-ds-danger hover:bg-ds-dangerLight transition-colors"
+                          title="Delete">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 6h18"/>
+                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            <path d="M6 6v14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V6"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
