@@ -232,16 +232,14 @@ export default function JobProfiles() {
             })}
           </div>
 
-          {filteredJobs.length > PAGE_SIZE_OPTIONS[0] || pageSize < filteredJobs.length ? (
-            <Pagination
-              page={effectivePage}
-              totalPages={totalPages}
-              total={filteredJobs.length}
-              pageSize={pageSize}
-              onPage={setPage}
-              onPageSize={n => { setPageSize(n); setPage(1); }}
-            />
-          ) : null}
+          <Pagination
+            page={effectivePage}
+            totalPages={totalPages}
+            total={filteredJobs.length}
+            pageSize={pageSize}
+            onPage={setPage}
+            onPageSize={n => { setPageSize(n); setPage(1); }}
+          />
         </>
       )}
     </div>

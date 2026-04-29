@@ -696,16 +696,14 @@ function JobProfileDetailInner() {
                     })}
                   </div>
 
-                  {candidateTotalPages > 1 && (
-                    <CandidatePagination
-                      page={effectiveCandidatePage}
-                      totalPages={candidateTotalPages}
-                      total={allFilteredAndSorted.length}
-                      pageSize={candidatePageSize}
-                      onPage={setCandidatePage}
-                      onPageSize={n => { setCandidatePageSize(n); setCandidatePage(1); }}
-                    />
-                  )}
+                  <CandidatePagination
+                    page={effectiveCandidatePage}
+                    totalPages={candidateTotalPages}
+                    total={allFilteredAndSorted.length}
+                    pageSize={candidatePageSize}
+                    onPage={setCandidatePage}
+                    onPageSize={n => { setCandidatePageSize(n); setCandidatePage(1); }}
+                  />
                 </>
               )}
             </>
