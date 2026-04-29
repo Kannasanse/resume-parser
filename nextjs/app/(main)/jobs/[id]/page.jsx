@@ -3,6 +3,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
+import * as XLSX from 'xlsx';
 import { getJob, deleteJob, updateJob, getJobCandidates, rescoreCandidate, getResumes, scoreResume } from '@/lib/api';
 import ScoreBreakdown from '@/components/ScoreBreakdown';
 import RichTextEditor from '@/components/RichTextEditor';
@@ -216,6 +217,19 @@ function JobProfileDetailInner() {
     setRescoring(resumeId);
     try { await rescoreCandidate(id, resumeId); queryClient.invalidateQueries({ queryKey: ['job-candidates', id] }); }
     finally { setRescoring(null); }
+  };
+
+  const handleExportExcel = (filteredCandidates) => {
+    const rows = filteredCandidates.map(c => ({
+      'Name':          c.candidate_name || c.file_name || '',
+      'Email Address': c.email || '',
+      'Score':         c.score ? Math.round(c.score.overall_score * 100) : '',
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Candidates');
+    const fileName = `${(job.title || 'candidates').replace(/[^a-z0-9]/gi, '_')}_candidates.xlsx`;
+    XLSX.writeFile(wb, fileName);
   };
 
   if (isLoading) return <p className="text-ds-textMuted">Loading...</p>;
@@ -485,13 +499,34 @@ function JobProfileDetailInner() {
                     </button>
                   ))}
                 </div>
-                <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-                  className="text-xs border border-ds-inputBorder rounded px-2.5 py-1.5 bg-ds-card text-ds-text focus:outline-none focus:ring-1 focus:ring-primary">
-                  <option value="score_desc">Score: High to Low</option>
-                  <option value="score_asc">Score: Low to High</option>
-                  <option value="name">Name A–Z</option>
-                  <option value="date">Date: Newest</option>
-                </select>
+                <div className="flex items-center gap-2">
+                  <select value={sortBy} onChange={e => setSortBy(e.target.value)}
+                    className="text-xs border border-ds-inputBorder rounded px-2.5 py-1.5 bg-ds-card text-ds-text focus:outline-none focus:ring-1 focus:ring-primary">
+                    <option value="score_desc">Score: High to Low</option>
+                    <option value="score_asc">Score: Low to High</option>
+                    <option value="name">Name A–Z</option>
+                    <option value="date">Date: Newest</option>
+                  </select>
+                  <button
+                    onClick={() => {
+                      const filtered = candidates
+                        .filter(c => filterBand === 'all' || c.score?.band === filterBand)
+                        .sort((a, b) => {
+                          if (sortBy === 'score_asc') return (a.score?.overall_score ?? -1) - (b.score?.overall_score ?? -1);
+                          if (sortBy === 'name') return (a.candidate_name || a.file_name).localeCompare(b.candidate_name || b.file_name);
+                          if (sortBy === 'date') return new Date(b.created_at) - new Date(a.created_at);
+                          return (b.score?.overall_score ?? -1) - (a.score?.overall_score ?? -1);
+                        });
+                      handleExportExcel(filtered);
+                    }}
+                    className="text-xs border border-ds-border px-3 py-1.5 rounded-btn text-ds-text hover:bg-ds-bg transition-colors flex items-center gap-1.5"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                    Export
+                  </button>
+                </div>
               </div>
 
               {(() => {
