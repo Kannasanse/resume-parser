@@ -91,7 +91,7 @@ export default function Navbar() {
         {/* Left: logo + nav */}
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center flex-shrink-0">
-            <Image src="/logo.png" alt="resume.parse" width={80} height={44} className="object-contain" priority />
+            <Image src="/logo.png" alt="resume.parse" width={100} height={55} className="object-contain" priority />
           </Link>
 
           <div className="flex items-center gap-0.5">

@@ -48,7 +48,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center">
           <div className="flex justify-center mb-3">
-            <Image src="/logo.png" alt="resume.parse" width={120} height={66} className="object-contain" priority />
+            <Image src="/logo.png" alt="resume.parse" width={160} height={88} className="object-contain" priority />
           </div>
           <p className="text-sm text-ds-textMuted">
             {mode === 'signin' ? 'Sign in to your account' : 'Create a new account'}
