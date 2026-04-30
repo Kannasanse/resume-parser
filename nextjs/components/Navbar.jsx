@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
@@ -89,14 +90,8 @@ export default function Navbar() {
       <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
         {/* Left: logo + nav */}
         <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-            <div className="w-[22px] h-[22px] rounded-[5px] bg-primary flex items-center justify-center
-              text-white font-heading font-bold text-[13px] leading-none flex-shrink-0">
-              R
-            </div>
-            <span className="font-heading font-bold text-ds-text text-[15px] tracking-tight leading-none">
-              resume<span className="text-primary">.</span>parse
-            </span>
+          <Link href="/" className="flex items-center flex-shrink-0">
+            <Image src="/logo.png" alt="resume.parse" width={80} height={44} className="object-contain" priority />
           </Link>
 
           <div className="flex items-center gap-0.5">
