@@ -229,8 +229,7 @@ export default function JobProfiles() {
                       <div className="text-right hidden sm:block">
                         <span className="font-mono text-xs text-primary font-semibold">{reqCount}</span>
                         <span className="font-mono text-xs text-ds-textMuted"> req</span>
-                        <span className="font-mono text-xs text-ds-textMuted mx-1">·</span>
-                        <span className="font-mono text-xs text-ds-textMuted">{prefCount} pref</span>
+                        <span className="font-mono text-xs text-ds-textMuted mx-2">{prefCount} pref</span>
                         {job.candidate_count > 0 && (
                           <div className="font-mono text-xs text-ds-textMuted mt-0.5">
                             {job.candidate_count} candidate{job.candidate_count !== 1 ? 's' : ''}

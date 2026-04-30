@@ -147,6 +147,7 @@ export default function ResumeList() {
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkDeleting, setBulkDeleting]   = useState(false);
   const [viewMode, setViewMode]     = useState('grid');
+  const [sort, setSort]             = useState('');
   const [singleDeleteId, setSingleDeleteId] = useState(null);
   const queryClient = useQueryClient();
 
@@ -170,8 +171,8 @@ export default function ResumeList() {
   };
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['resumes', page, pageSize, search],
-    queryFn: () => getResumes(page, pageSize, search),
+    queryKey: ['resumes', page, pageSize, search, sort],
+    queryFn: () => getResumes(page, pageSize, search, sort),
   });
 
   const deduplicated = deduplicateByEmail(data?.data || []);
@@ -255,6 +256,20 @@ export default function ResumeList() {
           )}
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => { setSort(s => s === 'name_asc' ? '' : 'name_asc'); setPage(1); }}
+            title={sort === 'name_asc' ? 'Currently: A-Z — click to reset' : 'Sort A-Z by name'}
+            className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-btn border transition-colors ${
+              sort === 'name_asc'
+                ? 'bg-primary text-white border-primary'
+                : 'border-ds-border text-ds-textMuted hover:bg-ds-bg hover:text-ds-text'
+            }`}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 6h18M7 12h10M11 18h2"/>
+            </svg>
+            A-Z
+          </button>
           <div className="flex rounded-btn border border-ds-border overflow-hidden">
             <button onClick={() => setView('grid')} title="Grid view"
               className={`px-3 py-2 transition-colors ${viewMode === 'grid' ? 'bg-primary text-white' : 'text-ds-textMuted hover:bg-ds-bg'}`}>
