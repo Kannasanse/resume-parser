@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
 import OrganizationSelect from '@/components/OrganizationSelect';
-import { getJob, deleteJob, updateJob, getJobCandidates, rescoreCandidate, getResumes, scoreResume } from '@/lib/api';
+import { getJob, deleteJob, updateJob, getJobCandidates, rescoreCandidate, getResumes, scoreResume, removeCandidateFromJob } from '@/lib/api';
 import ScoreBreakdown from '@/components/ScoreBreakdown';
 import RichTextEditor from '@/components/RichTextEditor';
 import HoldToDeleteComponent from '@/components/HoldToDelete';
@@ -288,6 +288,46 @@ function DeleteModal({ onCancel, onDelete }) {
   );
 }
 
+function RemoveCandidateModal({ name, jobTitle, onCancel, onConfirm }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onCancel} />
+      <div className="relative bg-ds-card rounded-lg border border-ds-border shadow-xl max-w-md w-full p-6 space-y-4">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-full bg-ds-warningLight flex items-center justify-center flex-shrink-0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ds-warning">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+          <div>
+            <h2 className="font-heading font-bold text-ds-text text-base">Remove from job profile?</h2>
+            <p className="text-sm text-ds-textSecondary mt-1 leading-relaxed">
+              <span className="font-medium">{name}</span> will be unlinked from <span className="font-medium">{jobTitle}</span>.
+              Their resume and profile data will remain intact in the system.
+            </p>
+          </div>
+        </div>
+        <div className="bg-ds-warningLight rounded px-4 py-3">
+          <p className="text-xs text-ds-warning font-medium">Only the job link and score will be removed — the candidate profile is not deleted.</p>
+        </div>
+        <div className="flex gap-2 pt-1">
+          <button onClick={onConfirm}
+            className="flex-1 px-5 py-2.5 text-sm font-semibold bg-ds-warning text-white rounded-btn hover:opacity-90 transition-opacity">
+            Remove from job
+          </button>
+          <button onClick={onCancel}
+            className="flex-1 px-5 py-2.5 text-sm font-medium text-ds-textMuted border border-ds-border rounded-btn hover:bg-ds-bg transition-colors">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ScoreBar({ score }) {
   const pct = Math.round((score?.overall_score ?? 0) * 100);
   const band = score?.band || 'Weak Match';
@@ -380,6 +420,17 @@ function JobProfileDetailInner() {
 
   const [compareIds, setCompareIds]   = useState(new Set());
   const [showCompare, setShowCompare] = useState(false);
+  const [removingCandidate, setRemovingCandidate] = useState(null); // { resumeId, name }
+
+  const handleRemoveCandidate = async () => {
+    if (!removingCandidate) return;
+    try {
+      await removeCandidateFromJob(id, removingCandidate.resumeId);
+      queryClient.invalidateQueries({ queryKey: ['job-candidates', id] });
+    } finally {
+      setRemovingCandidate(null);
+    }
+  };
 
   const toggleCompare = (resumeId) => {
     setCompareIds(prev => {
@@ -637,6 +688,15 @@ function JobProfileDetailInner() {
   return (
     <div className="max-w-5xl mx-auto space-y-4">
       {showDeleteModal && <DeleteModal onCancel={() => setShowDeleteModal(false)} onDelete={handleDeleteConfirmed} />}
+
+      {removingCandidate && (
+        <RemoveCandidateModal
+          name={removingCandidate.name}
+          jobTitle={job.title}
+          onCancel={() => setRemovingCandidate(null)}
+          onConfirm={handleRemoveCandidate}
+        />
+      )}
 
       {showCompare && compareIds.size === 2 && (() => {
         const selected = [...compareIds].map(rid => candidates.find(c => c.resume_id === rid)).filter(Boolean);
@@ -933,6 +993,18 @@ function JobProfileDetailInner() {
                                 className="text-xs bg-primary-light text-primary px-2 py-1 rounded-btn hover:bg-primary hover:text-white transition-colors">
                                 View
                               </Link>
+                              <button
+                                onClick={() => setRemovingCandidate({ resumeId: c.resume_id, name: c.candidate_name || c.file_name || 'this candidate' })}
+                                title="Remove from this job profile"
+                                className="w-6 h-6 flex items-center justify-center rounded text-ds-textMuted hover:text-ds-danger hover:bg-ds-dangerLight transition-colors"
+                              >
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                  <circle cx="9" cy="7" r="4"/>
+                                  <line x1="23" y1="11" x2="17" y2="11"/>
+                                </svg>
+                              </button>
                             </div>
                           </div>
 

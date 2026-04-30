@@ -106,19 +106,6 @@ export default function Navbar() {
 
         {/* Right: search hint + theme + user */}
         <div className="flex items-center gap-2">
-          {/* Search hint */}
-          <div className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded bg-ds-bg border border-ds-border
-            text-xs font-mono text-ds-textMuted select-none">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
-            </svg>
-            <span>Search</span>
-            <span className="px-1.5 py-0.5 bg-ds-card rounded border border-ds-border text-[10px] leading-none">
-              ⌘K
-            </span>
-          </div>
-
           {/* Theme toggle */}
           <button
             onClick={toggleTheme}
