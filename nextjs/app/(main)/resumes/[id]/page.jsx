@@ -297,9 +297,13 @@ export default function ResumeDetail() {
               : 'Re-parse'}
           </button>
           <button onClick={() => handleExport('json')}
-            className="text-sm border border-ds-border px-3 py-1.5 rounded-btn text-ds-text hover:bg-ds-card transition-colors">Export JSON</button>
+            className="text-sm border border-ds-border px-3 py-1.5 rounded-btn text-ds-text hover:bg-ds-card transition-colors">
+            <span className="hidden sm:inline">Export </span>JSON
+          </button>
           <button onClick={() => handleExport('csv')}
-            className="text-sm border border-ds-border px-3 py-1.5 rounded-btn text-ds-text hover:bg-ds-card transition-colors">Export CSV</button>
+            className="text-sm border border-ds-border px-3 py-1.5 rounded-btn text-ds-text hover:bg-ds-card transition-colors">
+            <span className="hidden sm:inline">Export </span>CSV
+          </button>
           <button onClick={() => setShowDeleteModal(true)}
             className="text-sm bg-ds-dangerLight text-ds-danger border border-ds-dangerLight px-3 py-1.5 rounded-btn hover:bg-ds-danger hover:text-white transition-colors">Delete</button>
         </div>

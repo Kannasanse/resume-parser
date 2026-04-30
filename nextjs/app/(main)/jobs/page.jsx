@@ -188,10 +188,10 @@ export default function JobProfiles() {
                 : null;
 
               return (
-                <div key={job.id} className="bg-ds-card rounded border border-ds-border px-5 py-4 hover:border-ds-borderStrong transition-colors">
-                  <div className="flex items-center gap-4">
-                    {/* Briefcase icon */}
-                    <div className="w-10 h-10 rounded bg-ds-bg border border-ds-border flex items-center justify-center text-ds-textMuted flex-shrink-0">
+                <div key={job.id} className="bg-ds-card rounded border border-ds-border px-3 sm:px-5 py-4 hover:border-ds-borderStrong transition-colors">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    {/* Briefcase icon — hidden on mobile */}
+                    <div className="hidden sm:flex w-10 h-10 rounded bg-ds-bg border border-ds-border items-center justify-center text-ds-textMuted flex-shrink-0">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                         strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="7" width="18" height="13" rx="2"/>
@@ -236,7 +236,7 @@ export default function JobProfiles() {
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
                         <Link href={`/jobs/${job.id}`}
                           className="text-sm bg-primary text-white px-3 py-1.5 rounded-btn font-medium hover:bg-primary-dark transition-colors">
                           View

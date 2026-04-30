@@ -71,14 +71,15 @@ export default function Navbar() {
     return (
       <Link
         href={to}
-        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-sm font-medium transition-colors ${
+        title={label}
+        className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded text-sm font-medium transition-colors ${
           active
             ? 'bg-ds-bg text-ds-text'
             : 'text-ds-textMuted hover:text-ds-text hover:bg-ds-bg'
         }`}
       >
         {icon}
-        {label}
+        <span className="hidden sm:inline">{label}</span>
       </Link>
     );
   };

@@ -85,9 +85,9 @@ function CompareModal({ candidates, onClose }) {
   const factorPct = (c, key) => c.score ? Math.round((c.score[`${key}_score`] ?? 0) * 100) : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative bg-ds-card rounded-lg border border-ds-border shadow-xl w-full max-w-4xl flex flex-col max-h-[90vh]">
+      <div className="relative bg-ds-card rounded-lg border border-ds-border shadow-xl w-full max-w-4xl flex flex-col max-h-[95vh] sm:max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-ds-border flex-shrink-0">
           <h2 className="font-heading font-bold text-ds-text">Compare Candidates</h2>
@@ -793,22 +793,27 @@ function JobProfileDetailInner() {
             </div>
           </div>
 
-          <div className="flex items-center gap-4 flex-shrink-0">
-            <div className="text-center">
-              <p className="text-lg font-bold font-mono text-ds-text">{candidates.length}</p>
-              <p className="text-xs text-ds-textMuted">Candidates</p>
-            </div>
-            {avgScore != null && (
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="hidden sm:flex items-center gap-4">
               <div className="text-center">
-                <p className="text-lg font-bold font-mono text-ds-text">{avgScore}</p>
-                <p className="text-xs text-ds-textMuted">Avg Score</p>
+                <p className="text-lg font-bold font-mono text-ds-text">{candidates.length}</p>
+                <p className="text-xs text-ds-textMuted">Candidates</p>
               </div>
-            )}
-            <div className="flex gap-2">
+              {avgScore != null && (
+                <div className="text-center">
+                  <p className="text-lg font-bold font-mono text-ds-text">{avgScore}</p>
+                  <p className="text-xs text-ds-textMuted">Avg Score</p>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2 flex-wrap">
               <button onClick={startEdit}
                 className="text-sm border border-ds-border text-ds-text px-3 py-1.5 rounded-btn hover:bg-ds-bg transition-colors">Edit</button>
               <button onClick={() => { setShowAddModal(true); setAddSearch(''); setSelectedIds(new Set()); }}
-                className="text-sm border border-ds-border text-ds-text px-3 py-1.5 rounded-btn hover:bg-ds-bg transition-colors">Add Existing</button>
+                className="text-sm border border-ds-border text-ds-text px-3 py-1.5 rounded-btn hover:bg-ds-bg transition-colors">
+                <span className="hidden sm:inline">Add Existing</span>
+                <span className="sm:hidden">Add</span>
+              </button>
               <Link href={`/upload?jobId=${id}`}
                 className="text-sm bg-primary text-white px-3 py-1.5 rounded-btn font-medium hover:bg-primary-dark transition-colors">Upload</Link>
               <button onClick={() => setShowDeleteModal(true)}
@@ -928,7 +933,8 @@ function JobProfileDetailInner() {
               ) : (
                 <>
                   <div className="bg-ds-card rounded border border-ds-border divide-y divide-ds-border overflow-hidden">
-                    <div className="grid grid-cols-[28px_1fr_180px_160px_130px] items-center gap-3 px-4 py-2 bg-ds-bg">
+                    {/* Desktop table header — hidden on mobile */}
+                    <div className="hidden sm:grid grid-cols-[28px_1fr_180px_160px_130px] items-center gap-3 px-4 py-2 bg-ds-bg">
                       <span className="text-xs text-ds-textMuted font-semibold text-center">
                         {compareIds.size > 0 ? `${compareIds.size}/2` : '#'}
                       </span>
@@ -941,7 +947,53 @@ function JobProfileDetailInner() {
                     {paginatedCandidates.map((c) => {
                       return (
                         <div key={c.resume_id}>
-                          <div className="grid grid-cols-[28px_1fr_180px_160px_130px] items-center gap-3 px-4 py-3 hover:bg-ds-bg transition-colors">
+                          {/* Mobile card layout */}
+                          <div className="sm:hidden px-4 py-3 space-y-2 hover:bg-ds-bg transition-colors">
+                            <div className="flex items-start gap-2">
+                              <label className="pt-0.5 flex-shrink-0">
+                                <input type="checkbox" checked={compareIds.has(c.resume_id)}
+                                  onChange={() => toggleCompare(c.resume_id)}
+                                  disabled={compareIds.size >= 2 && !compareIds.has(c.resume_id)}
+                                  className="w-3.5 h-3.5 accent-primary cursor-pointer disabled:cursor-not-allowed" />
+                              </label>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-ds-text truncate">{c.candidate_name || c.file_name}</p>
+                                {c.email && <p className="text-xs text-ds-textMuted truncate">{c.email}</p>}
+                              </div>
+                              {c.score && (
+                                <span className={`text-xs font-semibold flex-shrink-0 px-2 py-0.5 rounded-btn ${BAND_STYLES[c.score.band] || ''}`}>
+                                  {Math.round((c.score.overall_score ?? 0) * 100)}
+                                </span>
+                              )}
+                            </div>
+                            {c.score && <ScoreBar score={c.score} />}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <button onClick={() => setExpandedId(expandedId === c.resume_id ? null : c.resume_id)}
+                                className="text-xs border border-ds-border px-2 py-1 rounded-btn text-ds-text hover:bg-ds-bg transition-colors">
+                                {expandedId === c.resume_id ? 'Hide' : 'Details'}
+                              </button>
+                              <button onClick={() => handleRescore(c.resume_id)} disabled={rescoring === c.resume_id}
+                                className="text-xs border border-ds-border px-2 py-1 rounded-btn text-ds-text hover:bg-ds-bg disabled:opacity-50 transition-colors">
+                                {rescoring === c.resume_id ? '…' : 'Rescore'}
+                              </button>
+                              <Link href={`/resumes/${c.resume_id}`}
+                                className="text-xs bg-primary-light text-primary px-2 py-1 rounded-btn hover:bg-primary hover:text-white transition-colors">
+                                View
+                              </Link>
+                              <button
+                                onClick={() => setRemovingCandidate({ resumeId: c.resume_id, name: c.candidate_name || c.file_name || 'this candidate' })}
+                                title="Remove from this job profile"
+                                className="w-6 h-6 flex items-center justify-center rounded text-ds-textMuted hover:text-ds-danger hover:bg-ds-dangerLight transition-colors">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                  <circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/>
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Desktop row */}
+                          <div className="hidden sm:grid grid-cols-[28px_1fr_180px_160px_130px] items-center gap-3 px-4 py-3 hover:bg-ds-bg transition-colors">
                             <label className="flex items-center justify-center cursor-pointer">
                               <input
                                 type="checkbox"
