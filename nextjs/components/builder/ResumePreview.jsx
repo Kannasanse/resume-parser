@@ -445,11 +445,6 @@ export function TemplateThumbnail({ templateId, active = false, label, style: st
 
   return (
     <div className={`relative rounded overflow-hidden border-2 transition-all cursor-pointer ${active ? 'border-primary shadow-md' : 'border-ds-border hover:border-primary/50'}`}>
-      {plan !== 'free' && (
-        <div className="absolute top-1.5 right-1.5 z-10 bg-amber-400 text-amber-900 text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide">
-          {plan}
-        </div>
-      )}
       {active && (
         <div className="absolute top-1.5 left-1.5 z-10 bg-primary text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase">
           Active

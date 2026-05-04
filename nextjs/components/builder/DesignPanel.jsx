@@ -1,5 +1,5 @@
 'use client';
-import { FONTS, COLOR_THEMES, SPACING_OPTIONS, MARGIN_OPTIONS, PAGE_SIZES, FREE_PLAN_FONT_COUNT, FREE_PLAN_THEME_COUNT } from './templates.js';
+import { FONTS, COLOR_THEMES, SPACING_OPTIONS, MARGIN_OPTIONS, PAGE_SIZES } from './templates.js';
 
 function SectionHeader({ title }) {
   return (
@@ -7,24 +7,14 @@ function SectionHeader({ title }) {
   );
 }
 
-function LockIcon() {
-  return (
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-amber-500">
-      <path d="M18 8h-1V6A5 5 0 0 0 7 6v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2zm-6 9a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm3.1-9H8.9V6a3.1 3.1 0 0 1 6.2 0v2z"/>
-    </svg>
-  );
-}
 
-export default function DesignPanel({ design, onChange, plan = 'free' }) {
+export default function DesignPanel({ design, onChange }) {
   const d = design || {};
 
   const set = (key, val) => onChange({ ...d, [key]: val });
 
-  const freeFonts = FONTS.slice(0, FREE_PLAN_FONT_COUNT);
-  const freeThemes = COLOR_THEMES.slice(0, FREE_PLAN_THEME_COUNT);
-
-  const visibleFonts = plan === 'free' ? freeFonts : FONTS;
-  const visibleThemes = plan === 'free' ? freeThemes : COLOR_THEMES;
+  const visibleFonts = FONTS;
+  const visibleThemes = COLOR_THEMES;
 
   return (
     <div className="p-4 space-y-5 overflow-y-auto">
@@ -34,22 +24,17 @@ export default function DesignPanel({ design, onChange, plan = 'free' }) {
         <SectionHeader title="Font" />
         <div className="space-y-1">
           {visibleFonts.map(f => {
-            const locked = plan === 'free' && f.plan !== 'free';
             const active = (d.font || 'source-sans') === f.id;
             return (
               <button
                 key={f.id}
-                disabled={locked}
-                onClick={() => !locked && set('font', f.id)}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded text-sm transition-colors
-                  ${active ? 'bg-primary/10 border border-primary text-primary' : 'border border-ds-border text-ds-text hover:bg-ds-bg'}
-                  ${locked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                `}
+                onClick={() => set('font', f.id)}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded text-sm cursor-pointer transition-colors
+                  ${active ? 'bg-primary/10 border border-primary text-primary' : 'border border-ds-border text-ds-text hover:bg-ds-bg'}`}
                 style={{ fontFamily: f.family }}
               >
                 <span>{f.name}</span>
-                {locked && <LockIcon />}
-                {active && !locked && (
+                {active && (
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
                     <polyline points="20 6 9 17 4 12"/>
                   </svg>
@@ -65,29 +50,20 @@ export default function DesignPanel({ design, onChange, plan = 'free' }) {
         <SectionHeader title="Colour Theme" />
         <div className="grid grid-cols-5 gap-1.5">
           {visibleThemes.map(t => {
-            const locked = plan === 'free' && COLOR_THEMES.indexOf(t) >= FREE_PLAN_THEME_COUNT;
             const active = (d.colorTheme || 'slate-blue') === t.id;
             return (
               <button
                 key={t.id}
-                disabled={locked}
-                onClick={() => !locked && set('colorTheme', t.id)}
+                onClick={() => set('colorTheme', t.id)}
                 title={t.name}
-                className={`relative w-full aspect-square rounded transition-all
-                  ${active ? 'ring-2 ring-primary ring-offset-1' : 'hover:scale-110'}
-                  ${locked ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
-                `}
+                className={`relative w-full aspect-square rounded cursor-pointer transition-all
+                  ${active ? 'ring-2 ring-primary ring-offset-1' : 'hover:scale-110'}`}
                 style={{ background: t.primary }}
               >
                 {active && (
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" className="absolute inset-0 m-auto">
                     <polyline points="20 6 9 17 4 12"/>
                   </svg>
-                )}
-                {locked && (
-                  <span className="absolute bottom-0.5 right-0.5">
-                    <LockIcon />
-                  </span>
                 )}
               </button>
             );

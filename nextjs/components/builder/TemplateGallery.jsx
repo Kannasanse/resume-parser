@@ -123,24 +123,15 @@ export default function TemplateGallery({ currentTemplateId, onSelect, onClose }
 
             {/* Actions */}
             <div className="flex items-center gap-3 px-5 py-4 border-t border-ds-border flex-shrink-0">
-              {previewTpl.plan !== 'free' ? (
-                <button
-                  className="flex-1 px-4 py-2.5 bg-amber-400 text-amber-900 font-medium text-sm rounded-btn opacity-80 cursor-not-allowed"
-                  disabled
-                >
-                  Upgrade to {previewTpl.plan} to use this template
-                </button>
-              ) : (
-                <button
-                  onClick={() => { onSelect(previewTpl.id); setPreview(null); }}
-                  className={`flex-1 px-4 py-2.5 font-medium text-sm rounded-btn transition-colors
-                    ${previewTpl.id === currentTemplateId
-                      ? 'bg-ds-bg border border-ds-border text-ds-textMuted cursor-default'
-                      : 'bg-primary text-white hover:bg-primary/90'}`}
-                >
-                  {previewTpl.id === currentTemplateId ? 'Current template' : 'Use this template'}
-                </button>
-              )}
+              <button
+                onClick={() => { onSelect(previewTpl.id); setPreview(null); }}
+                className={`flex-1 px-4 py-2.5 font-medium text-sm rounded-btn transition-colors
+                  ${previewTpl.id === currentTemplateId
+                    ? 'bg-ds-bg border border-ds-border text-ds-textMuted cursor-default'
+                    : 'bg-primary text-white hover:bg-primary/90'}`}
+              >
+                {previewTpl.id === currentTemplateId ? 'Current template' : 'Use this template'}
+              </button>
             </div>
           </div>
         </div>

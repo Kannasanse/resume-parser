@@ -82,8 +82,8 @@ export default function NewResumePage() {
           {filtered.map(t => (
             <div
               key={t.id}
-              onClick={() => t.plan === 'free' && setSelectedTemplate(t.id)}
-              className={t.plan !== 'free' ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}
+              onClick={() => setSelectedTemplate(t.id)}
+              className="cursor-pointer"
             >
               <TemplateThumbnail
                 templateId={t.id}
