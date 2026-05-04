@@ -151,16 +151,16 @@ export const PAGE_SIZES = [
 ];
 
 export const SECTION_TYPES = [
-  { id: 'summary', label: 'Summary / Profile', icon: '◉', defaultTitle: 'Summary', singleton: true },
-  { id: 'work_experience', label: 'Work Experience', icon: '⊞', defaultTitle: 'Work Experience' },
-  { id: 'education', label: 'Education', icon: '◎', defaultTitle: 'Education' },
-  { id: 'skills', label: 'Skills', icon: '⊛', defaultTitle: 'Skills' },
-  { id: 'certifications', label: 'Certifications', icon: '◈', defaultTitle: 'Certifications' },
-  { id: 'projects', label: 'Projects', icon: '⊟', defaultTitle: 'Projects' },
-  { id: 'languages', label: 'Languages', icon: '◐', defaultTitle: 'Languages' },
-  { id: 'hobbies', label: 'Interests & Hobbies', icon: '◑', defaultTitle: 'Interests' },
-  { id: 'references', label: 'References', icon: '◍', defaultTitle: 'References' },
-  { id: 'custom', label: 'Custom Section', icon: '⊕', defaultTitle: 'Custom Section' },
+  { id: 'summary',        label: 'Summary / Profile',    icon: '◉', defaultTitle: 'Summary',        singleton: true, description: 'Brief professional intro' },
+  { id: 'work_experience',label: 'Work Experience',       icon: '⊞', defaultTitle: 'Work Experience',               description: 'Roles & responsibilities' },
+  { id: 'education',      label: 'Education',             icon: '◎', defaultTitle: 'Education',                     description: 'Degrees & schools' },
+  { id: 'skills',         label: 'Skills',                icon: '⊛', defaultTitle: 'Skills',                        description: 'Technical & soft skills' },
+  { id: 'certifications', label: 'Certifications',        icon: '◈', defaultTitle: 'Certifications',                description: 'Credentials & licenses' },
+  { id: 'projects',       label: 'Projects',              icon: '⊟', defaultTitle: 'Projects',                      description: 'Side projects & work' },
+  { id: 'languages',      label: 'Languages',             icon: '◐', defaultTitle: 'Languages',                     description: 'Spoken languages' },
+  { id: 'hobbies',        label: 'Interests & Hobbies',   icon: '◑', defaultTitle: 'Interests',                     description: 'Interests outside work' },
+  { id: 'references',     label: 'References',            icon: '◍', defaultTitle: 'References',                    description: 'Referees & contacts' },
+  { id: 'custom',         label: 'Custom Section',        icon: '⊕', defaultTitle: 'Custom Section',                description: 'Anything else' },
 ];
 
 export const FREE_PLAN_FONT_COUNT = 3;
