@@ -6,6 +6,7 @@ import { getResume, deleteResume, exportResume, reparseResume, scoreResume, getR
 import { deduplicateByEmail } from '@/lib/resumeUtils';
 import ScoreBreakdown from '@/components/ScoreBreakdown';
 import HoldToDelete from '@/components/HoldToDelete';
+import { Sk } from '@/components/Skeleton';
 
 function DeleteModal({ name, onCancel, onDelete }) {
   return (
@@ -202,7 +203,39 @@ export default function ResumeDetail() {
     URL.revokeObjectURL(url);
   };
 
-  if (isLoading) return <p className="text-ds-textMuted">Loading...</p>;
+  if (isLoading) return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-2 mb-2">
+        <Sk className="h-4 w-28" />
+      </div>
+      <div className="bg-ds-card rounded-lg border border-ds-border p-5 flex items-start gap-5">
+        <Sk className="w-16 h-16 rounded-full flex-shrink-0" />
+        <div className="flex-1 space-y-2.5">
+          <Sk className="h-6 w-48" />
+          <Sk className="h-4 w-36" />
+          <div className="flex gap-2 pt-1">
+            <Sk className="h-5 w-24 rounded-btn" />
+            <Sk className="h-5 w-20 rounded-btn" />
+            <Sk className="h-5 w-16 rounded-btn" />
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Sk className="h-8 w-20 rounded-btn" />
+          <Sk className="h-8 w-20 rounded-btn" />
+        </div>
+      </div>
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className="bg-ds-card rounded-lg border border-ds-border p-5 space-y-3">
+          <Sk className="h-5 w-36" />
+          <div className="space-y-2">
+            <Sk className="h-3 w-full" />
+            <Sk className="h-3 w-5/6" />
+            <Sk className="h-3 w-4/6" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
   if (error || !resume) return <p className="text-ds-danger">Resume not found.</p>;
 
   const pd = resume.parsed_data?.[0];

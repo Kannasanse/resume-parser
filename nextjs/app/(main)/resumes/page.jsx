@@ -7,6 +7,7 @@ import { getResumes, deleteResume, bulkDeleteResumes } from '@/lib/api';
 import { deduplicateByEmail } from '@/lib/resumeUtils';
 import ResumeCard from '@/components/ResumeCard';
 import HoldToDelete from '@/components/HoldToDelete';
+import { Sk } from '@/components/Skeleton';
 
 const BAND_DOT = {
   'Strong Match':   'bg-ds-success',
@@ -208,7 +209,41 @@ export default function ResumeList() {
     }
   };
 
-  if (isLoading) return <p className="text-ds-textMuted">Loading resumes...</p>;
+  if (isLoading) return (
+    <div className="pb-28">
+      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+        <Sk className="h-8 w-48" />
+        <div className="flex items-center gap-2">
+          <Sk className="h-8 w-16" />
+          <Sk className="h-8 w-20" />
+          <Sk className="h-8 w-24" />
+        </div>
+      </div>
+      <Sk className="h-9 w-72 mb-6" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="rounded border border-ds-border bg-ds-card p-4 space-y-3">
+            <div className="flex items-center gap-3">
+              <Sk className="w-9 h-9 rounded-full flex-shrink-0" />
+              <div className="flex-1 space-y-1.5">
+                <Sk className="h-4 w-36" />
+                <Sk className="h-3 w-28" />
+              </div>
+            </div>
+            <div className="flex gap-1.5">
+              <Sk className="h-5 w-16 rounded-btn" />
+              <Sk className="h-5 w-14 rounded-btn" />
+              <Sk className="h-5 w-12 rounded-btn" />
+            </div>
+            <div className="flex items-center justify-between pt-1">
+              <Sk className="h-5 w-16 rounded-btn" />
+              <Sk className="h-6 w-24 rounded-btn" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
   if (error)     return <p className="text-ds-danger">Failed to load resumes.</p>;
 
   const pageStart = (page - 1) * pageSize + 1;

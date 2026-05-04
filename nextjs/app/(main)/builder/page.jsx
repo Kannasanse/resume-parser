@@ -6,6 +6,7 @@ import { getBuilderResumes, deleteBuilderResume, duplicateBuilderResume } from '
 import { TEMPLATES } from '@/components/builder/templates.js';
 import ShareModal from '@/components/builder/ShareModal.jsx';
 import Link from 'next/link';
+import { Sk } from '@/components/Skeleton';
 
 function PlusIcon() {
   return (
@@ -182,7 +183,22 @@ export default function BuilderListPage() {
 
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1,2,3].map(i => <div key={i} className="h-40 bg-ds-card rounded border border-ds-border animate-pulse" />)}
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="bg-ds-card rounded-lg border border-ds-border p-5 space-y-3">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1.5">
+                  <Sk className="h-5 w-40" />
+                  <Sk className="h-3 w-24" />
+                </div>
+                <Sk className="w-7 h-7 rounded" />
+              </div>
+              <Sk className="h-24 w-full rounded" />
+              <div className="flex gap-2 pt-1">
+                <Sk className="flex-1 h-8 rounded-btn" />
+                <Sk className="h-8 w-20 rounded-btn" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : resumes.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">

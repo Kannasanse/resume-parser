@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getBuilderResume, updateBuilderResume, updateBuilderSection, deleteBuilderSection, createBuilderSection } from '@/lib/builderApi';
 import { SECTION_TYPES, getDefaultContent } from '@/components/builder/templates.js';
 import Link from 'next/link';
+import { Sk } from '@/components/Skeleton';
 
 // ── Field-level helpers ───────────────────────────────────────────────────────
 
@@ -371,7 +372,41 @@ export default function ReviewPage() {
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
-  if (isLoading) return <div className="py-12 text-center text-ds-textMuted">Loading…</div>;
+  if (isLoading) return (
+    <div className="max-w-2xl mx-auto space-y-4 py-6">
+      <div className="flex items-center justify-between mb-2">
+        <Sk className="h-7 w-56" />
+        <Sk className="h-5 w-32" />
+      </div>
+      <div className="bg-ds-card rounded-lg border border-ds-border p-5 space-y-3">
+        <Sk className="h-5 w-40" />
+        <div className="grid grid-cols-2 gap-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="space-y-1.5">
+              <Sk className="h-3 w-20" />
+              <Sk className="h-8 w-full rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className="bg-ds-card rounded-lg border border-ds-border p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <Sk className="h-5 w-36" />
+            <Sk className="h-6 w-16 rounded" />
+          </div>
+          <div className="space-y-2">
+            <Sk className="h-3 w-full" />
+            <Sk className="h-3 w-4/5" />
+          </div>
+        </div>
+      ))}
+      <div className="flex gap-3 pt-2">
+        <Sk className="flex-1 h-11 rounded-btn" />
+        <Sk className="h-11 w-32 rounded-btn" />
+      </div>
+    </div>
+  );
   if (error || !resume) {
     return (
       <div className="py-12 text-center space-y-3">

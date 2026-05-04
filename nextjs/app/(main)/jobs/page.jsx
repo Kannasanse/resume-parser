@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { getJobs, deleteJob } from '@/lib/api';
 import HoldToDelete from '@/components/HoldToDelete';
+import { Sk } from '@/components/Skeleton';
 
 const PROFICIENCY_COLORS = {
   Expert:        'bg-purple-50 text-purple-700',
@@ -102,7 +103,40 @@ export default function JobProfiles() {
     setDeletingJob(null);
   };
 
-  if (isLoading) return <p className="text-ds-textMuted">Loading job profiles...</p>;
+  if (isLoading) return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <Sk className="h-8 w-52" />
+        <Sk className="h-9 w-28 rounded-btn" />
+      </div>
+      <Sk className="h-9 w-72 mb-6" />
+      <div className="flex flex-col gap-2.5">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="bg-ds-card rounded border border-ds-border px-5 py-4">
+            <div className="flex items-center gap-4">
+              <Sk className="hidden sm:block w-10 h-10 rounded flex-shrink-0" />
+              <div className="flex-1 min-w-0 space-y-2">
+                <div className="flex items-center gap-3">
+                  <Sk className="h-4 w-48" />
+                  <Sk className="h-3 w-24" />
+                </div>
+                <div className="flex gap-1.5">
+                  <Sk className="h-5 w-16 rounded" />
+                  <Sk className="h-5 w-20 rounded" />
+                  <Sk className="h-5 w-14 rounded" />
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <Sk className="h-8 w-16 rounded-btn" />
+                <Sk className="w-8 h-8 rounded" />
+                <Sk className="w-8 h-8 rounded" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
   if (error)     return <p className="text-ds-danger">Failed to load job profiles.</p>;
 
   const filteredJobs = jobs.filter(j =>

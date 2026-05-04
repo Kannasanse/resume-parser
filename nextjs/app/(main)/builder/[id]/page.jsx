@@ -19,6 +19,7 @@ import ResumePreview from '@/components/builder/ResumePreview.jsx';
 import TemplateGallery from '@/components/builder/TemplateGallery.jsx';
 import ShareModal from '@/components/builder/ShareModal.jsx';
 import Link from 'next/link';
+import { Sk } from '@/components/Skeleton';
 
 // ── Save pill ─────────────────────────────────────────────────────────────────
 
@@ -332,8 +333,67 @@ export default function BuilderEditor() {
 
   if (isLoading) {
     return (
-      <div className="h-[calc(100vh-56px)] flex items-center justify-center text-ds-textMuted text-sm">
-        Loading editor…
+      <div className="flex flex-col" style={{ height: 'calc(100vh - 56px)' }}>
+        {/* Topbar skeleton */}
+        <div className="flex items-center justify-between px-4 py-2 border-b border-ds-border bg-ds-card flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <Sk className="h-4 w-20" />
+            <Sk className="h-4 w-4" />
+            <Sk className="h-4 w-40" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Sk className="h-7 w-28 rounded-full" />
+            <Sk className="h-8 w-24 rounded-btn" />
+            <Sk className="h-8 w-20 rounded-btn" />
+          </div>
+        </div>
+        {/* Body skeleton */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left pane */}
+          <div className="w-[340px] flex-shrink-0 border-r border-ds-border bg-ds-bg overflow-y-auto p-3 space-y-2.5">
+            {/* PersonalInfoCard skeleton */}
+            <div className="rounded-lg border border-ds-border bg-ds-card overflow-hidden">
+              <div className="flex items-center gap-2.5 px-3.5 py-3 border-b border-ds-border">
+                <Sk className="w-8 h-8 rounded-md" />
+                <Sk className="h-4 w-32" />
+              </div>
+              <div className="p-4 grid grid-cols-2 gap-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="space-y-1.5">
+                    <Sk className="h-3 w-20" />
+                    <Sk className="h-8 w-full rounded-md" />
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Section card skeletons */}
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-lg border border-ds-border bg-ds-card overflow-hidden">
+                <div className="flex items-center gap-2.5 px-3.5 py-3">
+                  <Sk className="w-8 h-8 rounded-md flex-shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <Sk className="h-4 w-32" />
+                    <Sk className="h-3 w-20" />
+                  </div>
+                  <Sk className="w-4 h-4 rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* Right pane — preview */}
+          <div className="flex-1 bg-gray-100 flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-ds-border bg-ds-card flex-shrink-0">
+              <Sk className="h-4 w-28" />
+              <div className="flex items-center gap-2">
+                <Sk className="h-7 w-24 rounded-full" />
+                <Sk className="h-7 w-20 rounded-btn" />
+              </div>
+            </div>
+            <div className="flex-1 flex items-start justify-center pt-8 overflow-auto">
+              <Sk className="rounded shadow-lg" style={{ width: 480, height: 680 }} />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

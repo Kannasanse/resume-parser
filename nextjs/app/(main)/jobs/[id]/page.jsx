@@ -9,6 +9,7 @@ import { getJob, deleteJob, updateJob, getJobCandidates, rescoreCandidate, getRe
 import ScoreBreakdown from '@/components/ScoreBreakdown';
 import RichTextEditor from '@/components/RichTextEditor';
 import HoldToDeleteComponent from '@/components/HoldToDelete';
+import { Sk } from '@/components/Skeleton';
 
 const PROFICIENCY_OPTIONS = ['Expert', 'Advanced', 'Intermediate', 'Beginner', 'Nice-to-have'];
 const PROFICIENCY_COLORS  = {
@@ -543,7 +544,52 @@ function JobProfileDetailInner() {
     XLSX.writeFile(wb, fileName);
   };
 
-  if (isLoading) return <p className="text-ds-textMuted">Loading...</p>;
+  if (isLoading) return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-2 mb-1">
+        <Sk className="h-4 w-20" />
+        <Sk className="h-4 w-4" />
+        <Sk className="h-4 w-40" />
+      </div>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="space-y-2">
+          <Sk className="h-7 w-64" />
+          <div className="flex gap-2">
+            <Sk className="h-5 w-20 rounded-btn" />
+            <Sk className="h-5 w-16 rounded-btn" />
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Sk className="h-9 w-24 rounded-btn" />
+          <Sk className="h-9 w-20 rounded-btn" />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="bg-ds-card rounded border border-ds-border p-4 space-y-2">
+            <Sk className="h-3 w-24" />
+            <Sk className="h-7 w-16" />
+          </div>
+        ))}
+      </div>
+      <div className="bg-ds-card rounded border border-ds-border">
+        <div className="px-4 py-3 border-b border-ds-border">
+          <Sk className="h-5 w-32" />
+        </div>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-ds-border last:border-0">
+            <Sk className="w-8 h-8 rounded-full flex-shrink-0" />
+            <div className="flex-1 space-y-1.5">
+              <Sk className="h-4 w-40" />
+              <Sk className="h-3 w-28" />
+            </div>
+            <Sk className="h-6 w-16 rounded-btn" />
+            <Sk className="h-6 w-20 rounded-btn" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
   if (error || !job) return <p className="text-ds-danger">Job profile not found.</p>;
 
   const required   = job.job_skills?.filter(s => s.is_required)  || [];
@@ -1177,7 +1223,17 @@ function JobProfileDetailInner() {
 
 export default function JobProfileDetail() {
   return (
-    <Suspense fallback={<p className="text-ds-textMuted">Loading...</p>}>
+    <Suspense fallback={
+      <div className="space-y-5">
+        <Sk className="h-7 w-64" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[1,2,3].map(i => <div key={i} className="bg-ds-card rounded border border-ds-border p-4 space-y-2"><Sk className="h-3 w-24" /><Sk className="h-7 w-16" /></div>)}
+        </div>
+        <div className="bg-ds-card rounded border border-ds-border">
+          {Array.from({length:5}).map((_,i) => <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-ds-border last:border-0"><Sk className="w-8 h-8 rounded-full" /><div className="flex-1 space-y-1.5"><Sk className="h-4 w-40" /><Sk className="h-3 w-28" /></div></div>)}
+        </div>
+      </div>
+    }>
       <JobProfileDetailInner />
     </Suspense>
   );
