@@ -17,6 +17,7 @@ import SectionEditor from '@/components/builder/SectionEditor.jsx';
 import DesignPanel from '@/components/builder/DesignPanel.jsx';
 import ResumePreview from '@/components/builder/ResumePreview.jsx';
 import TemplateGallery from '@/components/builder/TemplateGallery.jsx';
+import ShareModal from '@/components/builder/ShareModal.jsx';
 import Link from 'next/link';
 
 // ── Personal info editor ──────────────────────────────────────────────────────
@@ -94,6 +95,7 @@ export default function BuilderEditor() {
   const [activeSectionId, setActiveSectionId] = useState(null);
   const [showGallery, setShowGallery] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const [importFile, setImportFile] = useState(null);
   const [sectionSaveStatus, setSectionSaveStatus] = useState({});
   const [toast, setToast] = useState(null);
@@ -387,6 +389,27 @@ export default function BuilderEditor() {
             </svg>
             Templates
           </button>
+          {/* Share */}
+          <button
+            onClick={() => setShowShare(true)}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-ds-border text-ds-text rounded hover:bg-ds-bg transition-colors"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+            Share
+          </button>
+          {/* Download PDF */}
+          <button
+            onClick={() => window.open(`/print/${id}`, '_blank')}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-white rounded hover:bg-primary/90 transition-colors"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            PDF
+          </button>
         </div>
       </div>
 
@@ -519,6 +542,9 @@ export default function BuilderEditor() {
           </div>
         </div>
       )}
+
+      {/* Share modal */}
+      {showShare && <ShareModal resumeId={id} onClose={() => setShowShare(false)} />}
 
       {/* Toast */}
       {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}

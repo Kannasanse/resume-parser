@@ -31,8 +31,14 @@ export async function middleware(request) {
     return NextResponse.redirect(new URL('/resumes', request.url));
   }
 
-  // Unauthenticated → block
-  if (!user && pathname !== '/login' && !pathname.startsWith('/auth/')) {
+  // Unauthenticated → block (allow public share pages and public API)
+  if (
+    !user &&
+    pathname !== '/login' &&
+    !pathname.startsWith('/auth/') &&
+    !pathname.startsWith('/r/') &&
+    !pathname.startsWith('/api/public/')
+  ) {
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

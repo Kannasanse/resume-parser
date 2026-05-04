@@ -45,7 +45,7 @@ export default function NewResumePage() {
       return resumeId;
     },
     onSuccess: (id) => {
-      router.push(`/builder/${id}`);
+      router.push(importMode === 'import' ? `/builder/${id}/review` : `/builder/${id}`);
     },
   });
 

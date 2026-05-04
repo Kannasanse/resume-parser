@@ -35,3 +35,7 @@ export const importResumeFile = (resumeId, file) => {
   form.append('file', file);
   return req(`/${resumeId}/import`, { method: 'POST', body: form });
 };
+
+// Duplicate
+export const duplicateBuilderResume = (id) =>
+  req(`/${id}/duplicate`, { method: 'POST' });
