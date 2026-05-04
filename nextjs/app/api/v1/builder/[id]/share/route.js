@@ -4,12 +4,13 @@ import { getAuthUser } from '@/lib/authUtils.js';
 export const dynamic = 'force-dynamic';
 
 async function ownerCheck(user, id) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('builder_resumes')
     .select('id, share_token, share_enabled')
     .eq('id', id)
     .eq('user_id', user.id)
     .single();
+  if (error && error.code !== 'PGRST116') throw error; // PGRST116 = row not found
   return data;
 }
 
