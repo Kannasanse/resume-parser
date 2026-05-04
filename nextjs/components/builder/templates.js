@@ -81,9 +81,41 @@ export const TEMPLATES = [
     description: 'Decorative header with refined spacing.',
     accent: '#4a235a',
   },
+  {
+    id: 'heritage',
+    name: 'Heritage',
+    style: 'Serif',
+    plan: 'free',
+    description: 'Centered serif name, full-width hairline rules, right-aligned dates.',
+    accent: '#1a1a1a',
+  },
+  {
+    id: 'beacon',
+    name: 'Beacon',
+    style: 'Modern',
+    plan: 'free',
+    description: 'Dark navy sidebar with contact details, clean white main column.',
+    accent: '#1f2a3a',
+  },
+  {
+    id: 'banded',
+    name: 'Banded',
+    style: 'Modern',
+    plan: 'free',
+    description: 'Gray rounded header, gray title bands, left-rail dates.',
+    accent: '#2d3540',
+  },
+  {
+    id: 'foundry',
+    name: 'Foundry',
+    style: 'Modern',
+    plan: 'free',
+    description: 'Bordered header card with avatar, pill bands, multi-column lists.',
+    accent: '#283b3a',
+  },
 ];
 
-export const TEMPLATE_CATEGORIES = ['All', 'Classic', 'Modern', 'Creative', 'Minimal', 'ATS-Friendly', 'Executive'];
+export const TEMPLATE_CATEGORIES = ['All', 'Classic', 'Modern', 'Creative', 'Minimal', 'ATS-Friendly', 'Executive', 'Serif'];
 
 export const FONTS = [
   { id: 'source-sans', name: 'Source Sans', family: "'Source Sans 3', 'Helvetica Neue', sans-serif", plan: 'free' },
