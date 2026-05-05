@@ -798,6 +798,359 @@ function Foundry({ resume, design }) {
   );
 }
 
+// ── Template: Creative Edge ───────────────────────────────────────────────────
+
+function CreativeEdge({ resume, design }) {
+  const { font, theme, spacing, margins } = design;
+  const m = margins.value;
+  const sg = spacing.sectionGap;
+  const ig = spacing.itemGap;
+  const lh = spacing.lineHeight;
+  const pi = resume.personal_info || {};
+  const sections = (resume.sections || []).filter(s => s.enabled !== false);
+  const sidebarTypes = ['skills', 'languages', 'certifications'];
+  const mainSecs = sections.filter(s => !sidebarTypes.includes(s.type));
+  const sideSecs = sections.filter(s => sidebarTypes.includes(s.type));
+  const accent = theme.primary;
+
+  return (
+    <div style={{ fontFamily: font.family, color: theme.text, fontSize: '10pt', lineHeight: lh, background: '#fff', display: 'flex', minHeight: '100%' }}>
+      {/* Sidebar */}
+      <div style={{ width: 210, background: accent, color: '#fff', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+        {/* Top accent bar */}
+        <div style={{ background: 'rgba(0,0,0,0.25)', height: 6 }} />
+        <div style={{ padding: `${m}px ${m * 0.75}px`, flex: 1 }}>
+          {/* Avatar */}
+          <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', border: '3px solid rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22pt', fontWeight: 700, marginBottom: 12 }}>
+            {(pi.name || 'Y').charAt(0).toUpperCase()}
+          </div>
+          <div style={{ fontSize: '14pt', fontWeight: 700, lineHeight: 1.2, marginBottom: 4 }}>{pi.name || 'Your Name'}</div>
+          {pi.title && <div style={{ fontSize: '9pt', opacity: 0.8, marginBottom: sg * 0.8, fontStyle: 'italic' }}>{pi.title}</div>}
+
+          {/* Contact */}
+          <div style={{ marginBottom: sg, borderTop: '1px solid rgba(255,255,255,0.3)', paddingTop: sg * 0.5 }}>
+            <div style={{ fontSize: '7.5pt', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, opacity: 0.65, marginBottom: 6 }}>Contact</div>
+            {[pi.email, pi.phone, pi.location, pi.linkedin, pi.github, pi.website].filter(Boolean).map((v, i) => (
+              <div key={i} style={{ fontSize: '8.5pt', opacity: 0.9, marginBottom: 4, wordBreak: 'break-all' }}>{v}</div>
+            ))}
+          </div>
+
+          {/* Sidebar sections */}
+          {sideSecs.map(sec => (
+            <div key={sec.id} style={{ marginBottom: sg, borderTop: '1px solid rgba(255,255,255,0.3)', paddingTop: sg * 0.5 }}>
+              <div style={{ fontSize: '7.5pt', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, opacity: 0.65, marginBottom: 6 }}>{sec.title}</div>
+              <SidebarSection sec={sec} lh={lh} ig={ig} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Main */}
+      <div style={{ flex: 1, padding: `${m}px ${m * 0.9}px` }}>
+        {pi.summary && (
+          <div style={{ marginBottom: sg }}>
+            <div style={{ fontSize: '8.5pt', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: accent, marginBottom: 6 }}>Profile</div>
+            <p style={{ fontSize: '9.5pt', color: theme.subtext, lineHeight: lh }}>{pi.summary}</p>
+            <div style={{ height: 2, background: `linear-gradient(90deg, ${accent}, transparent)`, marginTop: sg * 0.5 }} />
+          </div>
+        )}
+        {mainSecs.map(sec => (
+          <div key={sec.id} style={{ marginBottom: sg }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: ig }}>
+              <div style={{ width: 4, height: 16, background: accent, borderRadius: 2, flexShrink: 0 }} />
+              <div style={{ fontSize: '9pt', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: accent }}>{sec.title}</div>
+            </div>
+            <SectionContent sec={sec} theme={theme} ig={ig} lh={lh} style="modern" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Template: Executive Navy ──────────────────────────────────────────────────
+
+function ExecutiveNavy({ resume, design }) {
+  const { font, theme, spacing, margins } = design;
+  const m = margins.value;
+  const sg = spacing.sectionGap;
+  const ig = spacing.itemGap;
+  const lh = spacing.lineHeight;
+  const pi = resume.personal_info || {};
+  const sections = (resume.sections || []).filter(s => s.enabled !== false);
+  const navy = theme.primary;
+
+  return (
+    <div style={{ fontFamily: font.family, color: theme.text, fontSize: '10pt', lineHeight: lh, background: '#fff', minHeight: '100%' }}>
+      {/* Dark header band */}
+      <div style={{ background: navy, color: '#fff', padding: `${m * 1.1}px ${m * 1.2}px` }}>
+        <div style={{ fontSize: '24pt', fontWeight: 700, letterSpacing: '0.02em' }}>{pi.name || 'Your Name'}</div>
+        {pi.title && <div style={{ fontSize: '11pt', opacity: 0.75, marginTop: 3, fontStyle: 'italic' }}>{pi.title}</div>}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, marginTop: 10, fontSize: '8.5pt', opacity: 0.85 }}>
+          {[pi.email, pi.phone, pi.location, pi.linkedin, pi.github].filter(Boolean).map((v, i) => (
+            <span key={i}>{v}</span>
+          ))}
+        </div>
+      </div>
+      {/* Thin accent bar */}
+      <div style={{ height: 4, background: theme.accent || navy }} />
+
+      <div style={{ padding: `${sg}px ${m * 1.2}px` }}>
+        {pi.summary && (
+          <div style={{ marginBottom: sg, paddingBottom: sg * 0.6, borderBottom: `1px solid ${theme.border || '#e0e0e0'}` }}>
+            <p style={{ fontSize: '9.5pt', color: theme.subtext, lineHeight: lh, fontStyle: 'italic' }}>{pi.summary}</p>
+          </div>
+        )}
+        {sections.map(sec => (
+          <div key={sec.id} style={{ marginBottom: sg }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: ig }}>
+              <div style={{ fontSize: '10pt', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: navy }}>{sec.title}</div>
+              <div style={{ flex: 1, height: 1, background: `${navy}30` }} />
+            </div>
+            <SectionContent sec={sec} theme={theme} ig={ig} lh={lh} style="classic" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Template: Tech Stack ──────────────────────────────────────────────────────
+
+function TechStack({ resume, design }) {
+  const { font, theme, spacing, margins } = design;
+  const m = margins.value;
+  const sg = spacing.sectionGap;
+  const ig = spacing.itemGap;
+  const lh = spacing.lineHeight;
+  const pi = resume.personal_info || {};
+  const sections = (resume.sections || []).filter(s => s.enabled !== false);
+  const sidebarTypes = ['skills', 'languages', 'certifications'];
+  const mainSecs = sections.filter(s => !sidebarTypes.includes(s.type));
+  const sideSecs = sections.filter(s => sidebarTypes.includes(s.type));
+  const mono = `'Courier New', 'Consolas', monospace`;
+  const blue = theme.primary;
+
+  return (
+    <div style={{ fontFamily: font.family, color: theme.text, fontSize: '10pt', lineHeight: lh, background: '#fff', minHeight: '100%' }}>
+      {/* Header */}
+      <div style={{ background: blue, color: '#fff', padding: `${m * 0.9}px ${m * 1.1}px`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div>
+          <div style={{ fontSize: '20pt', fontWeight: 700 }}>{pi.name || 'Your Name'}</div>
+          {pi.title && <div style={{ fontFamily: mono, fontSize: '9pt', opacity: 0.8, marginTop: 2 }}>{`<${pi.title}>`}</div>}
+        </div>
+        <div style={{ fontSize: '8.5pt', opacity: 0.85, textAlign: 'right' }}>
+          {[pi.email, pi.phone, pi.github].filter(Boolean).map((v, i) => (
+            <div key={i}>{v}</div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex' }}>
+        {/* Sidebar */}
+        <div style={{ width: 190, background: '#f5f7fa', borderRight: `3px solid ${blue}`, padding: `${sg * 0.8}px ${m * 0.7}px`, flexShrink: 0 }}>
+          {pi.location && <div style={{ fontSize: '8.5pt', color: theme.subtext, marginBottom: sg * 0.5 }}>{pi.location}</div>}
+          {sideSecs.map(sec => (
+            <div key={sec.id} style={{ marginBottom: sg }}>
+              <div style={{ fontFamily: mono, fontSize: '8pt', fontWeight: 700, color: blue, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6, borderBottom: `1px dashed ${blue}40`, paddingBottom: 3 }}>
+                {sec.title}
+              </div>
+              {sec.type === 'skills' && (sec.content?.entries || []).map((e, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: blue, flexShrink: 0 }} />
+                  <span style={{ fontSize: '8.5pt' }}>{e.skill}</span>
+                </div>
+              ))}
+              {sec.type !== 'skills' && <SidebarSection sec={sec} lh={lh} ig={ig} />}
+            </div>
+          ))}
+        </div>
+
+        {/* Main */}
+        <div style={{ flex: 1, padding: `${sg * 0.8}px ${m * 0.8}px` }}>
+          {pi.summary && (
+            <div style={{ marginBottom: sg, background: `${blue}08`, border: `1px solid ${blue}20`, borderRadius: 4, padding: '8px 12px' }}>
+              <div style={{ fontFamily: mono, fontSize: '8pt', color: blue, marginBottom: 4 }}>// summary</div>
+              <p style={{ fontSize: '9.5pt', color: theme.subtext, lineHeight: lh }}>{pi.summary}</p>
+            </div>
+          )}
+          {mainSecs.map(sec => (
+            <div key={sec.id} style={{ marginBottom: sg }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: ig }}>
+                <span style={{ fontFamily: mono, fontSize: '8pt', color: blue, opacity: 0.6 }}>{'>'}</span>
+                <div style={{ fontSize: '9pt', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: blue }}>{sec.title}</div>
+                <div style={{ flex: 1, height: 1, background: `${blue}25` }} />
+              </div>
+              <SectionContent sec={sec} theme={theme} ig={ig} lh={lh} style="modern" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Template: Soft Gradient ───────────────────────────────────────────────────
+
+function SoftGradient({ resume, design }) {
+  const { font, theme, spacing, margins } = design;
+  const m = margins.value;
+  const sg = spacing.sectionGap;
+  const ig = spacing.itemGap;
+  const lh = spacing.lineHeight;
+  const pi = resume.personal_info || {};
+  const sections = (resume.sections || []).filter(s => s.enabled !== false);
+  const p = theme.primary;
+  const a = theme.accent || theme.primary;
+
+  return (
+    <div style={{ fontFamily: font.family, color: theme.text, fontSize: '10pt', lineHeight: lh, background: '#fff', minHeight: '100%' }}>
+      {/* Gradient header */}
+      <div style={{ background: `linear-gradient(135deg, ${p} 0%, ${a} 100%)`, color: '#fff', padding: `${m * 1.2}px ${m * 1.3}px`, position: 'relative', overflow: 'hidden' }}>
+        {/* Decorative circle */}
+        <div style={{ position: 'absolute', right: -30, top: -30, width: 140, height: 140, borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
+        <div style={{ position: 'absolute', right: 30, bottom: -40, width: 90, height: 90, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
+        <div style={{ position: 'relative' }}>
+          <div style={{ fontSize: '24pt', fontWeight: 700, letterSpacing: '-0.2px' }}>{pi.name || 'Your Name'}</div>
+          {pi.title && <div style={{ fontSize: '10.5pt', opacity: 0.85, marginTop: 2 }}>{pi.title}</div>}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginTop: 10, fontSize: '8.5pt', opacity: 0.9 }}>
+            {[pi.email, pi.phone, pi.location, pi.linkedin, pi.github].filter(Boolean).map((v, i) => (
+              <span key={i}>{v}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding: `${sg}px ${m * 1.3}px` }}>
+        {pi.summary && (
+          <div style={{ marginBottom: sg, borderLeft: `3px solid ${a}`, paddingLeft: 14, background: `${p}06`, padding: '10px 14px', borderRadius: '0 6px 6px 0' }}>
+            <p style={{ fontSize: '9.5pt', color: theme.subtext, lineHeight: lh }}>{pi.summary}</p>
+          </div>
+        )}
+        {sections.map(sec => (
+          <div key={sec.id} style={{ marginBottom: sg }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: ig }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: `linear-gradient(135deg, ${p}, ${a})`, flexShrink: 0 }} />
+              <div style={{ fontSize: '10pt', fontWeight: 700, color: p }}>{sec.title}</div>
+              <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${p}40, transparent)` }} />
+            </div>
+            <SectionContent sec={sec} theme={theme} ig={ig} lh={lh} style="modern" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Template: Bold Impact ─────────────────────────────────────────────────────
+
+function BoldImpact({ resume, design }) {
+  const { font, theme, spacing, margins } = design;
+  const m = margins.value;
+  const sg = spacing.sectionGap;
+  const ig = spacing.itemGap;
+  const lh = spacing.lineHeight;
+  const pi = resume.personal_info || {};
+  const sections = (resume.sections || []).filter(s => s.enabled !== false);
+  const primary = theme.primary;
+
+  return (
+    <div style={{ fontFamily: font.family, color: theme.text, fontSize: '10pt', lineHeight: lh, background: '#fff', minHeight: '100%' }}>
+      {/* Full-width bold header */}
+      <div style={{ background: primary, padding: `${m * 1.1}px ${m * 1.2}px` }}>
+        <div style={{ fontSize: '28pt', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px', textTransform: 'uppercase' }}>
+          {pi.name || 'YOUR NAME'}
+        </div>
+        {pi.title && (
+          <div style={{ fontSize: '11pt', fontWeight: 600, color: 'rgba(255,255,255,0.75)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.15em' }}>
+            {pi.title}
+          </div>
+        )}
+      </div>
+      {/* Contact bar */}
+      <div style={{ background: '#1a1a1a', padding: `7px ${m * 1.2}px`, display: 'flex', flexWrap: 'wrap', gap: 20 }}>
+        {[pi.email, pi.phone, pi.location, pi.linkedin, pi.github].filter(Boolean).map((v, i) => (
+          <span key={i} style={{ fontSize: '8.5pt', color: 'rgba(255,255,255,0.8)' }}>{v}</span>
+        ))}
+      </div>
+
+      <div style={{ padding: `${sg}px ${m * 1.2}px` }}>
+        {pi.summary && (
+          <div style={{ marginBottom: sg, padding: '10px 14px', borderLeft: `4px solid ${primary}` }}>
+            <p style={{ fontSize: '9.5pt', color: theme.subtext, lineHeight: lh }}>{pi.summary}</p>
+          </div>
+        )}
+        {sections.map(sec => (
+          <div key={sec.id} style={{ marginBottom: sg }}>
+            <div style={{ fontSize: '11pt', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#fff', background: primary, padding: '4px 10px', display: 'inline-block', marginBottom: ig }}>
+              {sec.title}
+            </div>
+            <SectionContent sec={sec} theme={theme} ig={ig} lh={lh} style="classic" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Template: Elegant Script ──────────────────────────────────────────────────
+
+function ElegantScript({ resume, design }) {
+  const { font, theme, spacing, margins } = design;
+  const m = margins.value;
+  const sg = spacing.sectionGap;
+  const ig = spacing.itemGap;
+  const lh = spacing.lineHeight;
+  const pi = resume.personal_info || {};
+  const sections = (resume.sections || []).filter(s => s.enabled !== false);
+  const serif = `Georgia, "Times New Roman", serif`;
+  const p = theme.primary;
+
+  return (
+    <div style={{ fontFamily: font.family, color: theme.text, fontSize: '10pt', lineHeight: lh, background: '#fff', padding: `${m * 1.3}px ${m * 1.5}px`, minHeight: '100%' }}>
+      {/* Decorative header */}
+      <div style={{ textAlign: 'center', marginBottom: sg }}>
+        <div style={{ fontSize: '4pt', letterSpacing: '0.5em', color: p, textTransform: 'uppercase', marginBottom: 8 }}>✦ ✦ ✦</div>
+        <div style={{ fontFamily: serif, fontSize: '26pt', fontWeight: 400, color: '#111', letterSpacing: '0.04em' }}>
+          {pi.name || 'Your Name'}
+        </div>
+        {pi.title && (
+          <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: '12pt', color: p, marginTop: 4 }}>{pi.title}</div>
+        )}
+        {/* Ornamental divider */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, margin: '12px auto', maxWidth: 400 }}>
+          <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, transparent, ${p})` }} />
+          <div style={{ fontSize: '8pt', color: p }}>◆</div>
+          <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${p}, transparent)` }} />
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 16, fontSize: '9pt', color: theme.subtext }}>
+          {[pi.email, pi.phone, pi.location, pi.linkedin, pi.github].filter(Boolean).map((v, i, arr) => (
+            <span key={i}>{v}{i < arr.length - 1 ? '' : ''}</span>
+          ))}
+        </div>
+      </div>
+
+      {pi.summary && (
+        <div style={{ marginBottom: sg, textAlign: 'center', maxWidth: 520, margin: `0 auto ${sg}px` }}>
+          <p style={{ fontFamily: serif, fontStyle: 'italic', fontSize: '10pt', color: theme.subtext, lineHeight: lh }}>{pi.summary}</p>
+        </div>
+      )}
+
+      {sections.map(sec => (
+        <div key={sec.id} style={{ marginBottom: sg }}>
+          {/* Elegant section heading */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: ig }}>
+            <div style={{ flex: 1, height: 1, background: `${p}50` }} />
+            <div style={{ fontFamily: serif, fontSize: '11pt', fontStyle: 'italic', color: p, letterSpacing: '0.04em' }}>{sec.title}</div>
+            <div style={{ flex: 1, height: 1, background: `${p}50` }} />
+          </div>
+          <SectionContent sec={sec} theme={theme} ig={ig} lh={lh} style="minimal" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Template registry ─────────────────────────────────────────────────────────
 
 const TEMPLATE_COMPONENTS = {
@@ -809,6 +1162,12 @@ const TEMPLATE_COMPONENTS = {
   'beacon': Beacon,
   'banded': Banded,
   'foundry': Foundry,
+  'creative-edge': CreativeEdge,
+  'executive-navy': ExecutiveNavy,
+  'tech-stack': TechStack,
+  'soft-gradient': SoftGradient,
+  'bold-impact': BoldImpact,
+  'elegant-script': ElegantScript,
 };
 
 // ── ResumePreview component ───────────────────────────────────────────────────
