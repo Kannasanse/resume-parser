@@ -25,7 +25,8 @@ export async function GET(request, { params }) {
     const { data: test } = await supabase
       .from('tests')
       .select(`
-        id, title, description, timer_enabled, time_limit_minutes, allow_copy_paste,
+        id, title, description, timer_enabled, time_limit_minutes,
+        disable_copy_paste, tab_switch_monitoring, tab_switch_threshold, tab_switch_action,
         test_questions(
           id, type, question_text, position, points,
           test_options(id, option_text, position)

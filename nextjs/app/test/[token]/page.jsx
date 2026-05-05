@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 
-// ─── Timer component ──────────────────────────────────────────────────────────
+// ─── Timer ────────────────────────────────────────────────────────────────────
 function Timer({ secondsLeft, onExpire }) {
   const mins = Math.floor(secondsLeft / 60);
   const secs = secondsLeft % 60;
@@ -27,8 +27,69 @@ function Timer({ secondsLeft, onExpire }) {
   );
 }
 
+// ─── Full-screen tab-switch overlay (non-dismissable until user clicks) ───────
+function TabSwitchOverlay({ count, threshold, action, thresholdHit, onContinue }) {
+  const atThreshold = count >= threshold;
+
+  return (
+    <div className="fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-7 space-y-5 text-center">
+        <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto ${
+          atThreshold ? 'bg-red-100' : 'bg-yellow-100'
+        }`}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+            stroke={atThreshold ? '#dc2626' : '#d97706'} strokeWidth="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+
+        <div className="space-y-2">
+          <h2 className={`text-lg font-bold ${atThreshold ? 'text-red-700' : 'text-gray-900'}`}>
+            {atThreshold && action === 'flag'
+              ? 'Attempt Flagged'
+              : 'Tab Switch Detected'}
+          </h2>
+
+          <p className="text-sm text-gray-600">
+            You left the test window.{' '}
+            <span className="font-semibold text-gray-800">
+              This has been recorded ({count} time{count !== 1 ? 's' : ''}).
+            </span>
+          </p>
+
+          {atThreshold && action === 'flag' && (
+            <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700 text-left">
+              <p className="font-semibold mb-0.5">Integrity threshold reached</p>
+              <p>Your attempt has been flagged for review. You may continue the test, but this violation has been permanently recorded.</p>
+            </div>
+          )}
+
+          {!atThreshold && (
+            <p className="text-xs text-gray-400">
+              {threshold - count} more tab switch{threshold - count !== 1 ? 'es' : ''} will trigger a {action === 'auto_submit' ? 'forced submission' : 'flag for review'}.
+            </p>
+          )}
+        </div>
+
+        <button
+          onClick={onContinue}
+          className={`w-full py-2.5 rounded-lg font-semibold text-sm transition-colors ${
+            atThreshold && action === 'flag'
+              ? 'bg-red-600 hover:bg-red-700 text-white'
+              : 'bg-blue-600 hover:bg-blue-700 text-white'
+          }`}>
+          I understand — Continue Test
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Question renderer ────────────────────────────────────────────────────────
-function QuestionView({ question, index, response, onChange }) {
+function QuestionView({ question, index, response, onChange, disableCopyPaste }) {
+  const noSelectStyle = disableCopyPaste ? { userSelect: 'none', WebkitUserSelect: 'none' } : {};
+
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-5 space-y-4">
       <div className="flex items-start gap-3">
@@ -36,7 +97,13 @@ function QuestionView({ question, index, response, onChange }) {
           {index + 1}
         </span>
         <div className="flex-1">
-          <p className="text-gray-900 font-medium leading-relaxed">{question.question_text}</p>
+          <p
+            className="text-gray-900 font-medium leading-relaxed"
+            style={noSelectStyle}
+            data-no-copy={disableCopyPaste ? 'true' : undefined}
+          >
+            {question.question_text}
+          </p>
           <span className="text-xs text-gray-400 mt-0.5 inline-block">
             {question.points} pt{question.points !== 1 ? 's' : ''} ·{' '}
             {question.type === 'mcq' ? 'Multiple choice' : question.type === 'true_false' ? 'True / False' : 'Short answer'}
@@ -44,16 +111,18 @@ function QuestionView({ question, index, response, onChange }) {
         </div>
       </div>
 
-      {/* MCQ or True/False */}
       {(question.type === 'mcq' || question.type === 'true_false') && (
         <div className="pl-10 space-y-2">
           {question.test_options.map(opt => (
             <label key={opt.id}
-              className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors select-none ${
+              className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
                 response?.selected_option_id === opt.id
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-              }`}>
+              }`}
+              style={noSelectStyle}
+              data-no-copy={disableCopyPaste ? 'true' : undefined}
+            >
               <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
                 response?.selected_option_id === opt.id ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
               }`}>
@@ -73,7 +142,6 @@ function QuestionView({ question, index, response, onChange }) {
         </div>
       )}
 
-      {/* Short answer */}
       {question.type === 'short_answer' && (
         <div className="pl-10">
           <textarea
@@ -92,18 +160,20 @@ function QuestionView({ question, index, response, onChange }) {
 // ─── Error screens ────────────────────────────────────────────────────────────
 function ErrorScreen({ type }) {
   const messages = {
-    REVOKED:    { title: 'Link Revoked', body: 'This test link has been revoked. Please contact the person who sent it.' },
-    COMPLETED:  { title: 'Already Submitted', body: 'You have already completed this test.' },
-    EXPIRED:    { title: 'Link Expired', body: 'This test link has expired. Please contact the sender for a new link.' },
-    NOT_FOUND:  { title: 'Not Found', body: 'This test link is invalid or does not exist.' },
-    GENERIC:    { title: 'Something Went Wrong', body: 'An unexpected error occurred. Please try again.' },
+    REVOKED:   { title: 'Link Revoked',       body: 'This test link has been revoked. Please contact the person who sent it.' },
+    COMPLETED: { title: 'Already Submitted',  body: 'You have already completed this test.' },
+    EXPIRED:   { title: 'Link Expired',       body: 'This test link has expired. Please contact the sender for a new link.' },
+    NOT_FOUND: { title: 'Not Found',          body: 'This test link is invalid or does not exist.' },
+    GENERIC:   { title: 'Something Went Wrong', body: 'An unexpected error occurred. Please try again.' },
   };
   const { title, body } = messages[type] || messages.GENERIC;
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-8 max-w-md w-full text-center space-y-3">
         <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+          </svg>
         </div>
         <h1 className="text-lg font-bold text-gray-900">{title}</h1>
         <p className="text-sm text-gray-500">{body}</p>
@@ -113,43 +183,42 @@ function ErrorScreen({ type }) {
 }
 
 // ─── Completion screen ────────────────────────────────────────────────────────
-function CompletionScreen({ score, maxScore, autoSubmitted }) {
+function CompletionScreen({ score, maxScore, autoSubmitted, autoSubmitReason }) {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-8 max-w-md w-full text-center space-y-4">
         <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
         </div>
         <h1 className="text-xl font-bold text-gray-900">Test Submitted!</h1>
-        {autoSubmitted && (
+        {autoSubmitted && autoSubmitReason === 'timer' && (
           <p className="text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-2">
             The test was automatically submitted when the time expired.
           </p>
         )}
+        {autoSubmitted && autoSubmitReason === 'tab_switch' && (
+          <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-2">
+            The test was automatically submitted due to repeated tab switching.
+          </p>
+        )}
         {score !== null && score !== undefined ? (
           <div className="bg-gray-50 border border-gray-200 rounded-lg px-6 py-4">
-            <p className="text-3xl font-bold text-gray-900">{score} <span className="text-lg text-gray-400">/ {maxScore}</span></p>
+            <p className="text-3xl font-bold text-gray-900">
+              {score} <span className="text-lg text-gray-400">/ {maxScore}</span>
+            </p>
             <p className="text-sm text-gray-500 mt-1">
               {maxScore > 0 ? `${Math.round((score / maxScore) * 100)}%` : '—'}
             </p>
           </div>
         ) : (
-          <p className="text-sm text-gray-500">Your responses have been recorded. Results will be available after manual grading.</p>
+          <p className="text-sm text-gray-500">
+            Your responses have been recorded. Results will be available after manual grading.
+          </p>
         )}
         <p className="text-sm text-gray-400">You may now close this window.</p>
       </div>
-    </div>
-  );
-}
-
-// ─── Tab-switch warning ───────────────────────────────────────────────────────
-function TabSwitchWarning({ count, onDismiss }) {
-  if (!count) return null;
-  return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-yellow-50 border border-yellow-300 rounded-lg px-5 py-3 shadow-md flex items-center gap-3 text-sm text-yellow-800">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <span>Tab switch detected ({count} time{count !== 1 ? 's' : ''}). This is being logged.</span>
-      <button onClick={onDismiss} className="ml-2 text-yellow-600 hover:text-yellow-800 font-medium text-xs">Dismiss</button>
     </div>
   );
 }
@@ -158,42 +227,43 @@ function TabSwitchWarning({ count, onDismiss }) {
 export default function TakeTest() {
   const { token } = useParams();
 
-  const [state, setState]   = useState('loading'); // loading | error | start | taking | submitted
-  const [errorType, setErrorType] = useState('');
-  const [testData, setTestData]   = useState(null);
-  const [attemptId, setAttemptId] = useState(null);
-  const [responses, setResponses] = useState({});
-  const [timeLeft, setTimeLeft]   = useState(null);
-  const [tabSwitches, setTabSwitches] = useState(0);
-  const [showTabWarning, setShowTabWarning] = useState(false);
-  const [submitResult, setSubmitResult] = useState(null);
-  const [submitting, setSubmitting]     = useState(false);
+  const [state, setState]           = useState('loading');
+  const [errorType, setErrorType]   = useState('');
+  const [testData, setTestData]     = useState(null);
+  const [attemptId, setAttemptId]   = useState(null);
+  const [responses, setResponses]   = useState({});
+  const [timeLeft, setTimeLeft]     = useState(null);
+  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const [showTabOverlay, setShowTabOverlay] = useState(false);
+  const [thresholdHit, setThresholdHit]     = useState(false);
+  const [submitResult, setSubmitResult]     = useState(null);
+  const [submitting, setSubmitting]         = useState(false);
 
-  const timerRef    = useRef(null);
-  const autoSaveRef = useRef(null);
-  const attemptRef  = useRef(null);
-  const responsesRef = useRef({});
-  const timeLeftRef = useRef(null);
+  const timerRef       = useRef(null);
+  const autoSaveRef    = useRef(null);
+  const attemptRef     = useRef(null);
+  const responsesRef   = useRef({});
+  const timeLeftRef    = useRef(null);
+  const wasHiddenRef   = useRef(false);
+  const tabCountRef    = useRef(0);
+  const submittingRef  = useRef(false);
 
   responsesRef.current = responses;
   timeLeftRef.current  = timeLeft;
+  submittingRef.current = submitting;
 
   // ── Load test ──────────────────────────────────────────────────────────────
   useEffect(() => {
     fetch(`/api/v1/test/${token}`)
-      .then(r => r.json().then(d => ({ ok: r.ok, status: r.status, data: d })))
-      .then(({ ok, status, data }) => {
+      .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
+      .then(({ ok, data }) => {
         if (!ok) {
-          const errType = data.error === 'REVOKED' ? 'REVOKED' :
-                          data.error === 'COMPLETED' ? 'COMPLETED' :
-                          data.error === 'EXPIRED'   ? 'EXPIRED' : 'NOT_FOUND';
+          const errType = ['REVOKED','COMPLETED','EXPIRED'].includes(data.error) ? data.error : 'NOT_FOUND';
           setErrorType(errType);
           setState('error');
           return;
         }
         setTestData(data);
-
-        // If resuming an in-progress attempt
         if (data.attempt) {
           setAttemptId(data.attempt.id);
           attemptRef.current = data.attempt.id;
@@ -202,11 +272,8 @@ export default function TakeTest() {
           } else if (data.test.timer_enabled) {
             setTimeLeft(data.test.time_limit_minutes * 60);
           }
-          // Restore saved responses
           const saved = {};
-          for (const [qid, r] of Object.entries(data.saved_responses || {})) {
-            saved[qid] = r;
-          }
+          for (const [qid, r] of Object.entries(data.saved_responses || {})) saved[qid] = r;
           setResponses(saved);
           setState('taking');
         } else {
@@ -227,13 +294,11 @@ export default function TakeTest() {
     if (!r.ok) { setErrorType('GENERIC'); setState('error'); return; }
     setAttemptId(d.attempt_id);
     attemptRef.current = d.attempt_id;
-    if (testData.test.timer_enabled) {
-      setTimeLeft(testData.test.time_limit_minutes * 60);
-    }
+    if (testData.test.timer_enabled) setTimeLeft(testData.test.time_limit_minutes * 60);
     setState('taking');
   };
 
-  // ── Timer tick ──────────────────────────────────────────────────────────────
+  // ── Timer tick ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (state !== 'taking' || !testData?.test?.timer_enabled) return;
     timerRef.current = setInterval(() => {
@@ -251,32 +316,25 @@ export default function TakeTest() {
     if (state !== 'taking') return;
     autoSaveRef.current = setInterval(async () => {
       if (!attemptRef.current) return;
-      const responseArray = Object.entries(responsesRef.current).map(([question_id, r]) => ({
-        question_id, ...r,
-      }));
+      const responseArray = Object.entries(responsesRef.current).map(([question_id, r]) => ({ question_id, ...r }));
       await fetch(`/api/v1/test/${token}/save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          attempt_id: attemptRef.current,
-          responses: responseArray,
-          time_remaining_seconds: timeLeftRef.current,
-        }),
+        body: JSON.stringify({ attempt_id: attemptRef.current, responses: responseArray, time_remaining_seconds: timeLeftRef.current }),
       }).catch(() => {});
     }, 30000);
     return () => clearInterval(autoSaveRef.current);
   }, [state, token]);
 
   // ── Submit ─────────────────────────────────────────────────────────────────
-  const submitTest = useCallback(async (autoSubmitted = false) => {
-    if (submitting) return;
+  const submitTest = useCallback(async (autoSubmitted = false, reason = 'manual') => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setSubmitting(true);
     clearInterval(timerRef.current);
     clearInterval(autoSaveRef.current);
 
-    const responseArray = Object.entries(responsesRef.current).map(([question_id, r]) => ({
-      question_id, ...r,
-    }));
+    const responseArray = Object.entries(responsesRef.current).map(([question_id, r]) => ({ question_id, ...r }));
     try {
       const r = await fetch(`/api/v1/test/${token}`, {
         method: 'POST',
@@ -290,89 +348,101 @@ export default function TakeTest() {
         }),
       });
       const d = await r.json();
-      setSubmitResult({ score: d.score, maxScore: d.max_score, autoSubmitted });
+      setSubmitResult({ score: d.score, maxScore: d.max_score, autoSubmitted, autoSubmitReason: reason });
       setState('submitted');
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
-  }, [submitting, token]);
+  }, [token]);
 
-  // ── Auto-submit on timer expiry ────────────────────────────────────────────
   const handleTimerExpire = useCallback(() => {
-    if (state === 'taking') submitTest(true);
+    if (state === 'taking') submitTest(true, 'timer');
   }, [state, submitTest]);
 
-  // ── Anti-cheat: tab switch / focus / visibility ────────────────────────────
+  // ── Integrity logger ───────────────────────────────────────────────────────
+  const logIntegrity = useCallback((event_type) => {
+    if (!attemptRef.current) return;
+    fetch(`/api/v1/test/${token}/integrity`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ attempt_id: attemptRef.current, event_type }),
+    }).catch(() => {});
+  }, [token]);
+
+  // ── Anti-cheat: tab-switch monitoring ─────────────────────────────────────
   useEffect(() => {
     if (state !== 'taking') return;
-    const copyPasteAllowed = testData?.test?.allow_copy_paste;
+    const test = testData?.test;
+    if (!test?.tab_switch_monitoring) return;
 
-    const logIntegrity = (event_type) => {
-      if (!attemptRef.current) return;
-      fetch(`/api/v1/test/${token}/integrity`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ attempt_id: attemptRef.current, event_type }),
-      }).catch(() => {});
-    };
+    const threshold = test.tab_switch_threshold || 3;
+    const action    = test.tab_switch_action || 'flag';
 
     const onVisibilityChange = () => {
       if (document.hidden) {
-        setTabSwitches(n => n + 1);
-        setShowTabWarning(true);
+        wasHiddenRef.current = true;
         logIntegrity('tab_switch');
-        logIntegrity('visibility_change');
-      } else {
-        logIntegrity('focus_regained');
+      } else if (wasHiddenRef.current) {
+        wasHiddenRef.current = false;
+        tabCountRef.current += 1;
+        const count = tabCountRef.current;
+        setTabSwitchCount(count);
+
+        if (count >= threshold) {
+          if (action === 'auto_submit') {
+            logIntegrity('threshold_reached');
+            submitTest(true, 'tab_switch');
+            return;
+          } else {
+            logIntegrity('threshold_reached');
+            setThresholdHit(true);
+          }
+        }
+
+        setShowTabOverlay(true);
       }
     };
 
-    const onBlur = () => logIntegrity('focus_lost');
-    const onFocus = () => logIntegrity('focus_regained');
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, [state, testData, logIntegrity, submitTest]);
 
-    const onCopy = (e) => {
-      if (copyPasteAllowed) return;
-      e.preventDefault();
-      logIntegrity('copy_attempt');
-    };
+  // ── Anti-cheat: copy-paste enforcement ────────────────────────────────────
+  useEffect(() => {
+    if (state !== 'taking') return;
+    const test = testData?.test;
+    if (!test?.disable_copy_paste) return;
+
+    // Block paste everywhere (including textareas)
     const onPaste = (e) => {
-      if (copyPasteAllowed) return;
-      if (e.target?.tagName === 'TEXTAREA') return;
       e.preventDefault();
       logIntegrity('paste_attempt');
     };
+
+    // Block copy only on question/option text (elements with data-no-copy)
+    const onCopy = (e) => {
+      if (e.target?.closest?.('[data-no-copy]')) {
+        e.preventDefault();
+        logIntegrity('copy_attempt');
+      }
+    };
+
+    // Block right-click everywhere
     const onContextMenu = (e) => {
-      if (copyPasteAllowed) return;
       e.preventDefault();
       logIntegrity('right_click');
     };
 
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    window.addEventListener('blur', onBlur);
-    window.addEventListener('focus', onFocus);
-    document.addEventListener('copy', onCopy);
     document.addEventListener('paste', onPaste);
+    document.addEventListener('copy', onCopy);
     document.addEventListener('contextmenu', onContextMenu);
-
     return () => {
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-      window.removeEventListener('blur', onBlur);
-      window.removeEventListener('focus', onFocus);
-      document.removeEventListener('copy', onCopy);
       document.removeEventListener('paste', onPaste);
+      document.removeEventListener('copy', onCopy);
       document.removeEventListener('contextmenu', onContextMenu);
     };
-  }, [state, token]);
-
-  // ── User selection prevention (skipped when copy/paste is allowed) ────────
-  useEffect(() => {
-    if (state !== 'taking' || testData?.test?.allow_copy_paste) return;
-    const style = document.createElement('style');
-    style.id = 'anti-select';
-    style.textContent = 'body { -webkit-user-select: none; user-select: none; } textarea { -webkit-user-select: text !important; user-select: text !important; }';
-    document.head.appendChild(style);
-    return () => document.getElementById('anti-select')?.remove();
-  }, [state, testData]);
+  }, [state, testData, logIntegrity]);
 
   const updateResponse = (questionId, value) => {
     setResponses(prev => ({ ...prev, [questionId]: { ...(prev[questionId] || {}), ...value } }));
@@ -383,7 +453,7 @@ export default function TakeTest() {
     return r.selected_option_id || r.text_response?.trim();
   }).length;
 
-  // ── Render states ──────────────────────────────────────────────────────────
+  // ── Render: loading ────────────────────────────────────────────────────────
   if (state === 'loading') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -398,18 +468,33 @@ export default function TakeTest() {
   if (state === 'error') return <ErrorScreen type={errorType} />;
 
   if (state === 'submitted') {
-    return <CompletionScreen score={submitResult?.score} maxScore={submitResult?.maxScore} autoSubmitted={submitResult?.autoSubmitted} />;
+    return (
+      <CompletionScreen
+        score={submitResult?.score}
+        maxScore={submitResult?.maxScore}
+        autoSubmitted={submitResult?.autoSubmitted}
+        autoSubmitReason={submitResult?.autoSubmitReason}
+      />
+    );
   }
 
+  // ── Render: start screen ───────────────────────────────────────────────────
   if (state === 'start') {
     const { test, link } = testData;
+    const disableCopyPaste   = test.disable_copy_paste;
+    const tabMonitoring      = test.tab_switch_monitoring;
+    const tabThreshold       = test.tab_switch_threshold || 3;
+    const tabAction          = test.tab_switch_action || 'flag';
+
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-8 max-w-lg w-full space-y-5">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{test.title}</h1>
             {link.recipient_name && (
-              <p className="text-sm text-gray-500 mt-1">Hi <span className="font-medium text-gray-700">{link.recipient_name}</span></p>
+              <p className="text-sm text-gray-500 mt-1">
+                Hi <span className="font-medium text-gray-700">{link.recipient_name}</span>
+              </p>
             )}
           </div>
 
@@ -439,12 +524,23 @@ export default function TakeTest() {
           </div>
 
           <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-xs text-amber-800 space-y-1">
-            <p className="font-semibold">Important</p>
+            <p className="font-semibold">Important — Please Read</p>
             <ul className="list-disc list-inside space-y-0.5 text-amber-700">
-              <li>Do not switch tabs or windows during the test.</li>
-              {!test.allow_copy_paste && <li>Copy/paste and right-click are disabled.</li>}
               <li>Your progress is saved automatically every 30 seconds.</li>
               {test.timer_enabled && <li>The test will auto-submit when the time expires.</li>}
+              {disableCopyPaste && (
+                <li>
+                  Copy-paste is disabled. Pasting into answers is blocked. Question text cannot be copied.
+                  Right-click is disabled.
+                </li>
+              )}
+              {tabMonitoring && (
+                <li>
+                  Leaving this window or switching tabs is monitored.
+                  After {tabThreshold} violation{tabThreshold !== 1 ? 's' : ''},
+                  your attempt will be {tabAction === 'auto_submit' ? 'automatically submitted' : 'flagged for review'}.
+                </li>
+              )}
             </ul>
           </div>
 
@@ -457,16 +553,23 @@ export default function TakeTest() {
     );
   }
 
-  // Taking state
+  // ── Render: taking ─────────────────────────────────────────────────────────
   const { test } = testData;
   const questions = test.test_questions || [];
   const totalQuestions = questions.length;
+  const disableCopyPaste = test.disable_copy_paste;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Anti-cheat warning */}
-      {showTabWarning && (
-        <TabSwitchWarning count={tabSwitches} onDismiss={() => setShowTabWarning(false)} />
+      {/* Full-screen tab-switch overlay */}
+      {showTabOverlay && (
+        <TabSwitchOverlay
+          count={tabSwitchCount}
+          threshold={test.tab_switch_threshold || 3}
+          action={test.tab_switch_action || 'flag'}
+          thresholdHit={thresholdHit}
+          onContinue={() => setShowTabOverlay(false)}
+        />
       )}
 
       {/* Sticky header */}
@@ -494,8 +597,6 @@ export default function TakeTest() {
             </button>
           </div>
         </div>
-
-        {/* Progress bar */}
         <div className="h-0.5 bg-gray-100">
           <div
             className="h-full bg-blue-500 transition-all duration-300"
@@ -513,10 +614,10 @@ export default function TakeTest() {
             index={idx}
             response={responses[q.id]}
             onChange={updateResponse}
+            disableCopyPaste={disableCopyPaste}
           />
         ))}
 
-        {/* Bottom submit */}
         <div className="pt-4 pb-8 text-center">
           <button
             onClick={() => {

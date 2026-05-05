@@ -2,7 +2,10 @@ import supabase from '@/lib/supabase.js';
 
 export const dynamic = 'force-dynamic';
 
-const VALID_EVENTS = ['tab_switch', 'copy_attempt', 'paste_attempt', 'right_click', 'focus_lost', 'focus_regained', 'visibility_change'];
+const VALID_EVENTS = [
+  'tab_switch', 'copy_attempt', 'paste_attempt', 'right_click',
+  'focus_lost', 'focus_regained', 'threshold_reached',
+];
 
 export async function POST(request, { params }) {
   try {
@@ -30,6 +33,11 @@ export async function POST(request, { params }) {
     if (!attempt) return Response.json({ error: 'Attempt not found' }, { status: 404 });
 
     await supabase.from('test_integrity_events').insert({ attempt_id, event_type });
+
+    // Flag the attempt when threshold is reached
+    if (event_type === 'threshold_reached') {
+      await supabase.from('test_attempts').update({ flagged: true }).eq('id', attempt_id);
+    }
 
     return Response.json({ message: 'Logged' });
   } catch (err) {

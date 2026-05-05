@@ -16,7 +16,7 @@ export async function GET(request) {
 
     let query = supabase
       .from('tests')
-      .select('id, title, description, status, timer_enabled, time_limit_minutes, allow_copy_paste, created_at, updated_at, job_profile_id, job_profiles(title)', { count: 'exact' });
+      .select('id, title, description, status, timer_enabled, time_limit_minutes, disable_copy_paste, tab_switch_monitoring, tab_switch_threshold, tab_switch_action, created_at, updated_at, job_profile_id, job_profiles(title)', { count: 'exact' });
 
     if (search) {
       query = query.ilike('title', `%${search}%`);
@@ -63,9 +63,17 @@ export async function POST(request) {
   try {
     const { user } = await requireAdmin(request);
     const body = await request.json();
-    const { title, description, job_profile_id, timer_enabled, time_limit_minutes, allow_copy_paste } = body;
+    const {
+      title, description, job_profile_id, timer_enabled, time_limit_minutes,
+      disable_copy_paste, tab_switch_monitoring, tab_switch_threshold, tab_switch_action,
+    } = body;
 
     if (!title?.trim()) return Response.json({ error: 'title is required' }, { status: 400 });
+
+    const threshold = parseInt(tab_switch_threshold);
+    if (tab_switch_threshold !== undefined && (isNaN(threshold) || threshold < 1 || threshold > 10)) {
+      return Response.json({ error: 'tab_switch_threshold must be a whole number between 1 and 10' }, { status: 400 });
+    }
 
     const { data, error } = await supabase
       .from('tests')
@@ -75,7 +83,10 @@ export async function POST(request) {
         job_profile_id: job_profile_id || null,
         timer_enabled: !!timer_enabled,
         time_limit_minutes: parseInt(time_limit_minutes) || 30,
-        allow_copy_paste: !!allow_copy_paste,
+        disable_copy_paste: !!disable_copy_paste,
+        tab_switch_monitoring: !!tab_switch_monitoring,
+        tab_switch_threshold: threshold || 3,
+        tab_switch_action: ['flag', 'auto_submit'].includes(tab_switch_action) ? tab_switch_action : 'flag',
         status: 'draft',
         created_by: user.id,
       })

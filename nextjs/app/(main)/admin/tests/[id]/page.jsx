@@ -14,6 +14,37 @@ function DragIcon() {
   );
 }
 
+function Toggle({ value, onChange, disabled }) {
+  return (
+    <div
+      onClick={() => !disabled && onChange(!value)}
+      className={`rounded-full relative transition-colors flex-shrink-0 ${value ? 'bg-primary' : 'bg-ds-border'} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+      style={{ width: 40, height: 22 }}
+    >
+      <div
+        className="absolute rounded-full bg-white shadow transition-transform"
+        style={{ width: 18, height: 18, top: 2, transform: value ? 'translateX(20px)' : 'translateX(2px)' }}
+      />
+    </div>
+  );
+}
+
+// ─── Integrity summary strip ──────────────────────────────────────────────────
+function IntegritySummary({ test }) {
+  const parts = [];
+  parts.push(test.disable_copy_paste ? 'Copy-paste: Disabled' : 'Copy-paste: Allowed');
+  if (test.tab_switch_monitoring) {
+    parts.push(`Tab monitoring: On · Threshold: ${test.tab_switch_threshold} · Action: ${test.tab_switch_action === 'auto_submit' ? 'Auto-submit' : 'Flag for review'}`);
+  } else {
+    parts.push('Tab monitoring: Off');
+  }
+  return (
+    <p className="text-xs text-ds-textMuted mt-0.5">
+      {parts.join(' · ')}
+    </p>
+  );
+}
+
 // ─── Add Question Modal ───────────────────────────────────────────────────────
 function AddQuestionModal({ testId, onAdd, onClose }) {
   const [type, setType] = useState('mcq');
@@ -78,7 +109,6 @@ function AddQuestionModal({ testId, onAdd, onClose }) {
             <div className="bg-ds-dangerLight border border-ds-danger/30 text-ds-danger text-sm rounded px-3 py-2">{error}</div>
           )}
 
-          {/* Question type */}
           <div>
             <label className="block text-xs font-semibold text-ds-textMuted uppercase tracking-wide mb-2">Type</label>
             <div className="flex gap-2">
@@ -92,7 +122,6 @@ function AddQuestionModal({ testId, onAdd, onClose }) {
             </div>
           </div>
 
-          {/* Question text */}
           <div>
             <label className="block text-sm font-medium text-ds-text mb-1.5">Question <span className="text-ds-danger">*</span></label>
             <textarea
@@ -104,7 +133,6 @@ function AddQuestionModal({ testId, onAdd, onClose }) {
             />
           </div>
 
-          {/* Points */}
           <div>
             <label className="block text-sm font-medium text-ds-text mb-1.5">Points</label>
             <input
@@ -115,7 +143,6 @@ function AddQuestionModal({ testId, onAdd, onClose }) {
             />
           </div>
 
-          {/* MCQ options */}
           {type === 'mcq' && (
             <div>
               <label className="block text-sm font-medium text-ds-text mb-2">Answer Options <span className="text-ds-textMuted text-xs font-normal">(click radio to mark correct)</span></label>
@@ -144,7 +171,6 @@ function AddQuestionModal({ testId, onAdd, onClose }) {
             </div>
           )}
 
-          {/* True / False */}
           {type === 'true_false' && (
             <div>
               <label className="block text-sm font-medium text-ds-text mb-2">Correct Answer</label>
@@ -182,7 +208,7 @@ function AddQuestionModal({ testId, onAdd, onClose }) {
   );
 }
 
-// ─── Edit Question Inline ─────────────────────────────────────────────────────
+// ─── Question Card ────────────────────────────────────────────────────────────
 function QuestionCard({ q, testId, onDelete, onUpdate, index, onDragStart, onDragOver, onDrop }) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(q.question_text);
@@ -315,7 +341,6 @@ function QuestionCard({ q, testId, onDelete, onUpdate, index, onDragStart, onDra
             </div>
           )}
 
-          {/* Show options in view mode */}
           {!editing && q.type === 'mcq' && q.test_options?.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {q.test_options.map(opt => (
@@ -355,6 +380,187 @@ function QuestionCard({ q, testId, onDelete, onUpdate, index, onDragStart, onDra
   );
 }
 
+// ─── Settings Modal ───────────────────────────────────────────────────────────
+function SettingsModal({ test, onClose, onSave }) {
+  const isPublished = test.status === 'published';
+  const [form, setForm] = useState({
+    title: test.title || '',
+    description: test.description || '',
+    job_profile_id: test.job_profile_id || '',
+    timer_enabled: test.timer_enabled || false,
+    time_limit_minutes: test.time_limit_minutes || 30,
+    disable_copy_paste: test.disable_copy_paste || false,
+    tab_switch_monitoring: test.tab_switch_monitoring || false,
+    tab_switch_threshold: test.tab_switch_threshold || 3,
+    tab_switch_action: test.tab_switch_action || 'flag',
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const threshold = parseInt(form.tab_switch_threshold);
+    if (isNaN(threshold) || threshold < 1 || threshold > 10) {
+      setError('Tab-switch threshold must be a whole number between 1 and 10');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      const r = await fetch(`/api/v1/admin/tests/${test.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, tab_switch_threshold: threshold }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Failed to save settings');
+      onSave({ ...form, tab_switch_threshold: threshold });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative bg-ds-card border border-ds-border rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-ds-card border-b border-ds-border px-5 py-4 flex items-center justify-between">
+          <h2 className="font-heading font-bold text-ds-text">Test Settings</h2>
+          <button onClick={onClose} className="text-ds-textMuted hover:text-ds-text text-xl leading-none">×</button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-5 space-y-5">
+          {error && (
+            <div className="bg-ds-dangerLight border border-ds-danger/30 text-ds-danger text-sm rounded px-3 py-2">{error}</div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-ds-text mb-1.5">Title</label>
+            <input value={form.title} onChange={e => set('title', e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-ds-inputBorder rounded bg-ds-bg text-ds-text focus:outline-none focus:ring-2 focus:ring-primary" />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-ds-text mb-1.5">Description</label>
+            <textarea value={form.description} onChange={e => set('description', e.target.value)}
+              rows={2} className="w-full px-3 py-2 text-sm border border-ds-inputBorder rounded bg-ds-bg text-ds-text focus:outline-none focus:ring-2 focus:ring-primary resize-none" />
+          </div>
+
+          {/* Timer */}
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-ds-text">Timer</p>
+            <div className="flex items-center gap-3">
+              <Toggle value={form.timer_enabled} onChange={v => set('timer_enabled', v)} disabled={isPublished} />
+              <span className="text-sm text-ds-text">{form.timer_enabled ? 'Timer enabled' : 'No timer'}</span>
+            </div>
+            {form.timer_enabled && !isPublished && (
+              <div className="flex items-center gap-2">
+                <input type="number" min="1" max="480" value={form.time_limit_minutes}
+                  onChange={e => set('time_limit_minutes', e.target.value)}
+                  className="w-20 px-3 py-2 text-sm border border-ds-inputBorder rounded bg-ds-bg text-ds-text focus:outline-none focus:ring-2 focus:ring-primary" />
+                <span className="text-sm text-ds-textMuted">minutes</span>
+              </div>
+            )}
+          </div>
+
+          {/* Integrity Controls */}
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm font-medium text-ds-text">Integrity Controls</p>
+              {isPublished ? (
+                <p className="text-xs text-ds-warning bg-ds-warningLight border border-ds-warning/30 rounded px-3 py-1.5 mt-1.5">
+                  Integrity settings cannot be changed while the test is published.
+                </p>
+              ) : (
+                <p className="text-xs text-ds-textMuted mt-0.5">Changes take effect for new attempts only.</p>
+              )}
+            </div>
+
+            {/* Disable copy-paste */}
+            <div className="flex items-start gap-3">
+              <Toggle value={form.disable_copy_paste} onChange={v => set('disable_copy_paste', v)} disabled={isPublished} />
+              <div>
+                <p className="text-sm text-ds-text font-medium">Disable Copy-Paste</p>
+                <p className="text-xs text-ds-textMuted mt-0.5">
+                  {form.disable_copy_paste
+                    ? 'Paste is blocked in all answer fields. Copy and right-click are blocked on question text.'
+                    : 'Candidates can freely copy and paste.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Tab-switch monitoring */}
+            <div className="flex items-start gap-3">
+              <Toggle value={form.tab_switch_monitoring} onChange={v => set('tab_switch_monitoring', v)} disabled={isPublished} />
+              <div className="flex-1">
+                <p className="text-sm text-ds-text font-medium">Tab-Switch Monitoring</p>
+                <p className="text-xs text-ds-textMuted mt-0.5">
+                  {form.tab_switch_monitoring
+                    ? 'Each time the candidate leaves and returns, they see a full-screen warning.'
+                    : 'Tab switches are not monitored.'}
+                </p>
+
+                {form.tab_switch_monitoring && !isPublished && (
+                  <div className="mt-3 space-y-3 pl-1">
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs text-ds-text font-medium whitespace-nowrap">Threshold (switches):</label>
+                      <input
+                        type="number" min="1" max="10"
+                        value={form.tab_switch_threshold}
+                        onChange={e => set('tab_switch_threshold', e.target.value)}
+                        className="w-16 px-2 py-1.5 text-sm border border-ds-inputBorder rounded bg-ds-bg text-ds-text focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                      <span className="text-xs text-ds-textMuted">(1–10)</span>
+                    </div>
+                    <div className="space-y-1.5">
+                      <p className="text-xs text-ds-text font-medium">Action when threshold reached:</p>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="tab_action" value="flag"
+                          checked={form.tab_switch_action === 'flag'}
+                          onChange={() => set('tab_switch_action', 'flag')}
+                          className="accent-primary" />
+                        <span className="text-xs text-ds-text">Flag for review — test continues, attempt is marked flagged</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="tab_action" value="auto_submit"
+                          checked={form.tab_switch_action === 'auto_submit'}
+                          onChange={() => set('tab_switch_action', 'auto_submit')}
+                          className="accent-primary" />
+                        <span className="text-xs text-ds-text">Auto-submit — test is immediately submitted</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+                {form.tab_switch_monitoring && isPublished && (
+                  <p className="mt-1.5 text-xs text-ds-textMuted font-mono">
+                    Threshold: {form.tab_switch_threshold} · Action: {form.tab_switch_action === 'auto_submit' ? 'Auto-submit' : 'Flag for review'}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-1">
+            <button type="submit" disabled={saving}
+              className="bg-primary text-white px-5 py-2 rounded-btn text-sm font-medium hover:bg-primary-dark disabled:opacity-50 transition-colors">
+              {saving ? 'Saving…' : 'Save Settings'}
+            </button>
+            <button type="button" onClick={onClose}
+              className="px-5 py-2 rounded-btn text-sm font-medium text-ds-textMuted border border-ds-border hover:bg-ds-bg transition-colors">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function TestDetail() {
   const { id } = useParams();
@@ -365,7 +571,6 @@ export default function TestDetail() {
   const [questions, setQuestions] = useState([]);
   const [statusSaving, setStatusSaving] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsForm, setSettingsForm] = useState({});
   const dragIdx = useRef(null);
 
   const load = useCallback(async () => {
@@ -376,14 +581,6 @@ export default function TestDetail() {
       if (!r.ok) { router.push('/admin/tests'); return; }
       setTest(d.test);
       setQuestions(d.test.test_questions || []);
-      setSettingsForm({
-        title: d.test.title,
-        description: d.test.description || '',
-        job_profile_id: d.test.job_profile_id || '',
-        timer_enabled: d.test.timer_enabled,
-        time_limit_minutes: d.test.time_limit_minutes,
-        allow_copy_paste: d.test.allow_copy_paste || false,
-      });
     } finally {
       setLoading(false);
     }
@@ -406,20 +603,8 @@ export default function TestDetail() {
     setStatusSaving(false);
   };
 
-  const saveSettings = async (e) => {
-    e.preventDefault();
-    await fetch(`/api/v1/admin/tests/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(settingsForm),
-    });
-    setTest(t => ({ ...t, ...settingsForm }));
-    setSettingsOpen(false);
-  };
-
-  // Drag-and-drop reorder
   const handleDragStart = (idx) => { dragIdx.current = idx; };
-  const handleDragOver  = (idx) => {};
+  const handleDragOver  = () => {};
   const handleDrop = async (dropIdx) => {
     if (dragIdx.current === null || dragIdx.current === dropIdx) return;
     const newOrder = [...questions];
@@ -482,6 +667,7 @@ export default function TestDetail() {
               )}
               <span className="text-xs text-ds-textMuted font-mono">{totalPoints} pts total</span>
             </div>
+            <IntegritySummary test={test} />
           </div>
         </div>
 
@@ -555,7 +741,6 @@ export default function TestDetail() {
         )}
       </div>
 
-      {/* Add Question Modal */}
       {showAdd && (
         <AddQuestionModal
           testId={id}
@@ -564,79 +749,15 @@ export default function TestDetail() {
         />
       )}
 
-      {/* Settings Drawer / Modal */}
-      {settingsOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setSettingsOpen(false)} />
-          <div className="relative bg-ds-card border border-ds-border rounded-lg shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-ds-border">
-              <h2 className="font-heading font-bold text-ds-text">Test Settings</h2>
-              <button onClick={() => setSettingsOpen(false)} className="text-ds-textMuted hover:text-ds-text text-xl leading-none">×</button>
-            </div>
-            <form onSubmit={saveSettings} className="p-5 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-ds-text mb-1.5">Title</label>
-                <input value={settingsForm.title || ''} onChange={e => setSettingsForm(f => ({ ...f, title: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm border border-ds-inputBorder rounded bg-ds-bg text-ds-text focus:outline-none focus:ring-2 focus:ring-primary" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-ds-text mb-1.5">Description</label>
-                <textarea value={settingsForm.description || ''} onChange={e => setSettingsForm(f => ({ ...f, description: e.target.value }))}
-                  rows={2} className="w-full px-3 py-2 text-sm border border-ds-inputBorder rounded bg-ds-bg text-ds-text focus:outline-none focus:ring-2 focus:ring-primary resize-none" />
-              </div>
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-ds-text">Timer</label>
-                {isPublished && (
-                  <p className="text-xs text-ds-warning bg-ds-warningLight border border-ds-warning/30 rounded px-3 py-1.5">
-                    Timer settings cannot be changed on a published test.
-                  </p>
-                )}
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <div onClick={() => !isPublished && setSettingsForm(f => ({ ...f, timer_enabled: !f.timer_enabled }))}
-                    className={`rounded-full relative transition-colors ${settingsForm.timer_enabled ? 'bg-primary' : 'bg-ds-border'} ${isPublished ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                    style={{ width: 40, height: 22 }}>
-                    <div className="absolute rounded-full bg-white shadow transition-transform"
-                      style={{ width: 18, height: 18, top: 2, transform: settingsForm.timer_enabled ? 'translateX(20px)' : 'translateX(2px)' }} />
-                  </div>
-                  <span className="text-sm text-ds-text">{settingsForm.timer_enabled ? 'Timer enabled' : 'No timer'}</span>
-                </label>
-                {settingsForm.timer_enabled && !isPublished && (
-                  <div className="flex items-center gap-2">
-                    <input type="number" min="1" max="480" value={settingsForm.time_limit_minutes || 30}
-                      onChange={e => setSettingsForm(f => ({ ...f, time_limit_minutes: e.target.value }))}
-                      className="w-20 px-3 py-2 text-sm border border-ds-inputBorder rounded bg-ds-bg text-ds-text focus:outline-none focus:ring-2 focus:ring-primary" />
-                    <span className="text-sm text-ds-textMuted">minutes</span>
-                  </div>
-                )}
-              </div>
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-ds-text">Anti-cheat</label>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <div onClick={() => setSettingsForm(f => ({ ...f, allow_copy_paste: !f.allow_copy_paste }))}
-                    className={`rounded-full relative transition-colors cursor-pointer ${settingsForm.allow_copy_paste ? 'bg-ds-warning' : 'bg-primary'}`}
-                    style={{ width: 40, height: 22 }}>
-                    <div className="absolute rounded-full bg-white shadow transition-transform"
-                      style={{ width: 18, height: 18, top: 2, transform: settingsForm.allow_copy_paste ? 'translateX(20px)' : 'translateX(2px)' }} />
-                  </div>
-                  <div>
-                    <span className="text-sm text-ds-text">{settingsForm.allow_copy_paste ? 'Copy/paste allowed' : 'Copy/paste blocked'}</span>
-                    <p className="text-xs text-ds-textMuted mt-0.5">{settingsForm.allow_copy_paste ? 'Candidates can copy and paste during test' : 'Copy, paste and right-click disabled during test'}</p>
-                  </div>
-                </label>
-              </div>
-              <div className="flex gap-3 pt-1">
-                <button type="submit"
-                  className="bg-primary text-white px-5 py-2 rounded-btn text-sm font-medium hover:bg-primary-dark transition-colors">
-                  Save Settings
-                </button>
-                <button type="button" onClick={() => setSettingsOpen(false)}
-                  className="px-5 py-2 rounded-btn text-sm font-medium text-ds-textMuted border border-ds-border hover:bg-ds-bg transition-colors">
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {settingsOpen && test && (
+        <SettingsModal
+          test={test}
+          onClose={() => setSettingsOpen(false)}
+          onSave={(updated) => {
+            setTest(t => ({ ...t, ...updated }));
+            setSettingsOpen(false);
+          }}
+        />
       )}
     </div>
   );

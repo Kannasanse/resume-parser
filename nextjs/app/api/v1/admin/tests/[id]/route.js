@@ -11,7 +11,8 @@ export async function GET(request, { params }) {
     const { data, error } = await supabase
       .from('tests')
       .select(`
-        id, title, description, status, timer_enabled, time_limit_minutes, allow_copy_paste,
+        id, title, description, status, timer_enabled, time_limit_minutes,
+        disable_copy_paste, tab_switch_monitoring, tab_switch_threshold, tab_switch_action,
         created_at, updated_at, job_profile_id,
         job_profiles(id, title),
         test_questions(
@@ -48,21 +49,33 @@ export async function PATCH(request, { params }) {
     const { data: existing } = await supabase.from('tests').select('status').eq('id', id).single();
     if (!existing) return Response.json({ error: 'Test not found' }, { status: 404 });
 
-    const allowed = ['title', 'description', 'job_profile_id', 'timer_enabled', 'time_limit_minutes', 'allow_copy_paste', 'status'];
+    const INTEGRITY_KEYS = ['disable_copy_paste', 'tab_switch_monitoring', 'tab_switch_threshold', 'tab_switch_action'];
+    const allowed = ['title', 'description', 'job_profile_id', 'timer_enabled', 'time_limit_minutes', 'status', ...INTEGRITY_KEYS];
     const updates = { updated_at: new Date().toISOString() };
+
+    // Validate threshold if provided
+    if ('tab_switch_threshold' in body) {
+      const t = parseInt(body.tab_switch_threshold);
+      if (isNaN(t) || t < 1 || t > 10) {
+        return Response.json({ error: 'tab_switch_threshold must be a whole number between 1 and 10' }, { status: 400 });
+      }
+    }
+
+    // Prevent changing timer or integrity settings when published
+    const lockedKeys = ['timer_enabled', 'time_limit_minutes', ...INTEGRITY_KEYS];
+    if (existing.status === 'published' && lockedKeys.some(k => k in body)) {
+      return Response.json({ error: 'Integrity settings cannot be changed while the test is published' }, { status: 409 });
+    }
 
     for (const key of allowed) {
       if (key in body) {
         if (key === 'title') updates.title = body.title?.trim();
         else if (key === 'description') updates.description = body.description?.trim() || null;
         else if (key === 'time_limit_minutes') updates.time_limit_minutes = parseInt(body.time_limit_minutes) || 30;
+        else if (key === 'tab_switch_threshold') updates.tab_switch_threshold = parseInt(body.tab_switch_threshold);
+        else if (key === 'tab_switch_action') updates.tab_switch_action = ['flag', 'auto_submit'].includes(body.tab_switch_action) ? body.tab_switch_action : 'flag';
         else updates[key] = body[key];
       }
-    }
-
-    // Prevent changing timer settings when published
-    if (existing.status === 'published' && ('timer_enabled' in body || 'time_limit_minutes' in body)) {
-      return Response.json({ error: 'Cannot change timer settings on a published test' }, { status: 409 });
     }
 
     const { data, error } = await supabase.from('tests').update(updates).eq('id', id).select().single();
