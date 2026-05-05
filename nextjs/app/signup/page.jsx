@@ -2,6 +2,19 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { createClient } from '@/lib/supabase-browser';
+
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      <path fill="none" d="M0 0h48v48H0z"/>
+    </svg>
+  );
+}
 
 function passwordStrength(pwd) {
   let score = 0;
@@ -9,21 +22,32 @@ function passwordStrength(pwd) {
   if (/[A-Z]/.test(pwd))                  score++;
   if (/[0-9]/.test(pwd))                  score++;
   if (/[^A-Za-z0-9]/.test(pwd))           score++;
-  return score; // 0-4
+  return score;
 }
 
 const STRENGTH_LABELS = ['', 'Weak', 'Fair', 'Good', 'Strong'];
 const STRENGTH_COLORS = ['', 'bg-ds-danger', 'bg-amber-400', 'bg-ds-warning', 'bg-ds-success'];
 
 export default function SignUpPage() {
-  const [form, setForm]     = useState({ firstName: '', lastName: '', email: '', password: '', confirm: '' });
-  const [errors, setErrors] = useState({});
+  const [form, setForm]       = useState({ firstName: '', lastName: '', email: '', password: '', confirm: '' });
+  const [errors, setErrors]   = useState({});
   const [loading, setLoading] = useState(false);
-  const [done, setDone]     = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [done, setDone]       = useState(false);
   const [serverError, setServerError] = useState('');
   const [showPwd, setShowPwd] = useState(false);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleGoogle = async () => {
+    setGoogleLoading(true);
+    setServerError('');
+    const supabase = createClient();
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+  };
 
   function validate() {
     const e = {};
@@ -124,6 +148,21 @@ export default function SignUpPage() {
         </div>
 
         <div className="bg-ds-card rounded-lg border border-ds-border p-6 space-y-4">
+          {/* Google SSO */}
+          <button onClick={handleGoogle} disabled={googleLoading || loading}
+            className="w-full flex items-center justify-center gap-3 border border-ds-border rounded-btn py-2.5 text-sm font-medium text-ds-text bg-ds-bg hover:bg-ds-bg/80 hover:border-ds-borderStrong disabled:opacity-50 transition-colors">
+            {googleLoading
+              ? <span className="w-4 h-4 border-2 border-ds-border border-t-primary rounded-full animate-spin" />
+              : <GoogleIcon />}
+            Continue with Google
+          </button>
+
+          <div className="flex items-center gap-3">
+            <div className="flex-1 border-t border-ds-border" />
+            <span className="text-xs text-ds-textMuted">or sign up with email</span>
+            <div className="flex-1 border-t border-ds-border" />
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -182,7 +221,7 @@ export default function SignUpPage() {
               <p className="text-sm text-ds-danger bg-ds-dangerLight rounded px-3 py-2">{serverError}</p>
             )}
 
-            <button type="submit" disabled={loading}
+            <button type="submit" disabled={loading || googleLoading}
               className="w-full bg-primary text-white py-2.5 rounded-btn text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors">
               {loading
                 ? <span className="flex items-center justify-center gap-2"><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Creating account…</span>

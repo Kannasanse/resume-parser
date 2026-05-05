@@ -89,8 +89,18 @@ begin
   values (
     new.id,
     new.email,
-    coalesce(new.raw_user_meta_data->>'first_name', ''),
-    coalesce(new.raw_user_meta_data->>'last_name', ''),
+    coalesce(
+      new.raw_user_meta_data->>'first_name',
+      new.raw_user_meta_data->>'given_name',
+      split_part(coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', ''), ' ', 1),
+      ''
+    ),
+    coalesce(
+      new.raw_user_meta_data->>'last_name',
+      new.raw_user_meta_data->>'family_name',
+      nullif(substring(coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', '') from position(' ' in coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', '')) + 1), ''),
+      ''
+    ),
     coalesce(new.raw_user_meta_data->>'role', 'user'),
     case
       when new.email_confirmed_at is not null then 'active'
