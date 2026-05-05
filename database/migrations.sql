@@ -58,3 +58,21 @@ ALTER TABLE job_profiles
 
 -- 7. Add AI score summary to resume_scores
 ALTER TABLE resume_scores ADD COLUMN IF NOT EXISTS score_summary JSONB DEFAULT NULL;
+
+-- ─── tests: integrity control columns ────────────────────────────────────────
+ALTER TABLE public.tests
+  ADD COLUMN IF NOT EXISTS disable_copy_paste    boolean NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS tab_switch_monitoring boolean NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS tab_switch_threshold  int     NOT NULL DEFAULT 3
+    CHECK (tab_switch_threshold BETWEEN 1 AND 10),
+  ADD COLUMN IF NOT EXISTS tab_switch_action     text    NOT NULL DEFAULT 'flag'
+    CHECK (tab_switch_action IN ('flag', 'auto_submit'));
+
+-- ─── test_attempts: flag column ───────────────────────────────────────────────
+ALTER TABLE public.test_attempts
+  ADD COLUMN IF NOT EXISTS flagged boolean NOT NULL DEFAULT false;
+
+-- ─── question_library: difficulty column ─────────────────────────────────────
+ALTER TABLE public.question_library
+  ADD COLUMN IF NOT EXISTS difficulty text
+    CHECK (difficulty IN ('easy', 'medium', 'hard'));
