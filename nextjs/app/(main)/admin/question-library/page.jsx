@@ -10,10 +10,26 @@ const TYPE_COLORS = {
   short_answer: 'bg-teal-50   text-teal-700   border-teal-200',
 };
 
+const DIFFICULTY_LABELS = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
+const DIFFICULTY_COLORS = {
+  easy:   'bg-green-50  text-green-700  border-green-200',
+  medium: 'bg-amber-50  text-amber-700  border-amber-200',
+  hard:   'bg-red-50    text-red-700    border-red-200',
+};
+
 function TypeBadge({ type }) {
   return (
     <span className={`text-xs px-1.5 py-0.5 rounded border font-medium ${TYPE_COLORS[type] || 'bg-ds-bg text-ds-textMuted border-ds-border'}`}>
       {TYPE_LABELS[type] || type}
+    </span>
+  );
+}
+
+function DifficultyBadge({ difficulty }) {
+  if (!difficulty) return null;
+  return (
+    <span className={`text-xs px-1.5 py-0.5 rounded border font-medium ${DIFFICULTY_COLORS[difficulty] || 'bg-ds-bg text-ds-textMuted border-ds-border'}`}>
+      {DIFFICULTY_LABELS[difficulty] || difficulty}
     </span>
   );
 }
@@ -60,6 +76,7 @@ function PreviewModal({ question, onClose, onDelete }) {
         <div className="sticky top-0 bg-ds-card border-b border-ds-border px-5 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <TypeBadge type={question.type} />
+            {question.difficulty && <DifficultyBadge difficulty={question.difficulty} />}
             {question.ai_generated && (
               <span className="text-xs px-1.5 py-0.5 rounded border bg-amber-50 text-amber-700 border-amber-200 font-medium">AI</span>
             )}
@@ -307,36 +324,74 @@ function CreateModal({ onClose, onCreate }) {
 
 // ─── AI Generate modal ────────────────────────────────────────────────────────
 function AIGenerateModal({ onClose, onSaved }) {
-  const [step, setStep]       = useState('input'); // input | generating | review | saving
+  const [step, setStep]           = useState('input');
   const [inputType, setInputType] = useState('skills');
-  const [input, setInput]     = useState('');
-  const [count, setCount]     = useState(10);
-  const [types, setTypes]     = useState(['mcq', 'true_false']);
+  const [input, setInput]         = useState('');
+  const [count, setCount]         = useState(10);
+  const [types, setTypes]         = useState(['mcq', 'true_false']);
+  const [difficultyMode, setDifficultyMode] = useState('single');
+  const [difficulty, setDifficulty]         = useState(null);
+  const [distribution, setDistribution]     = useState({ easy: 0, medium: 0, hard: 0 });
   const [questions, setQuestions] = useState([]);
   const [accepted, setAccepted]   = useState(new Set());
-  const [edited, setEdited]       = useState({}); // id(index) → edited question
-  const [error, setError]     = useState('');
-  const [saveMsg, setSaveMsg] = useState('');
-  const [genInfo, setGenInfo] = useState(null);
+  const [edited, setEdited]       = useState({});
+  const [error, setError]         = useState('');
+  const [genInfo, setGenInfo]     = useState(null);
 
   const toggleType = (t) => setTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
+
+  const switchMode = (mode) => {
+    if (mode === difficultyMode) return;
+    const hasValues = difficultyMode === 'single' ? !!difficulty : Object.values(distribution).some(v => v > 0);
+    if (hasValues && !window.confirm('Switch difficulty mode? Your current selections will be cleared.')) return;
+    setDifficultyMode(mode);
+    setDifficulty(null);
+    setDistribution({ easy: 0, medium: 0, hard: 0 });
+  };
+
+  const distTotal = Object.values(distribution).reduce((s, v) => s + (parseInt(v) || 0), 0);
+  const mixedValid = distTotal === count && distTotal > 0;
+  const mixedError = distTotal > 0 && distTotal !== count
+    ? `Total (${distTotal}) must equal the requested count (${count})`
+    : distTotal === 0 && difficultyMode === 'mixed'
+    ? 'Enter at least one difficulty count'
+    : '';
+
+  const canGenerate = types.length > 0 && !!input.trim() && (
+    difficultyMode === 'single' ? !!difficulty : mixedValid
+  );
 
   const generate = async () => {
     if (!input.trim()) { setError('Please enter skills or paste content.'); return; }
     if (!types.length) { setError('Select at least one question type.'); return; }
+    if (difficultyMode === 'single' && !difficulty) { setError('Select a difficulty level.'); return; }
+    if (difficultyMode === 'mixed' && !mixedValid) { setError(mixedError || 'Distribution total must equal requested count.'); return; }
+
     setError(''); setStep('generating');
     try {
+      const body = { input_type: inputType, input, count, types, difficulty_mode: difficultyMode };
+      if (difficultyMode === 'single') body.difficulty = difficulty;
+      else body.distribution = distribution;
+
       const r = await fetch('/api/v1/admin/question-library/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input_type: inputType, input, count, types }),
+        body: JSON.stringify(body),
       });
       const d = await r.json();
       if (!r.ok) { setError(d.error); setStep('input'); return; }
+
       setQuestions(d.questions);
       setAccepted(new Set(d.questions.map((_, i) => i)));
       setEdited({});
-      setGenInfo({ requested: d.requested, generated: d.generated });
+      setGenInfo({
+        requested: d.requested,
+        generated: d.generated,
+        difficultyMode,
+        difficulty,
+        actualDistribution: d.actualDistribution,
+        shortfalls: d.shortfalls,
+      });
       setStep('review');
     } catch {
       setError('Question generation failed. Please try again.');
@@ -361,7 +416,6 @@ function AIGenerateModal({ onClose, onSaved }) {
       });
       const d = await r.json();
       if (!r.ok) { setError(d.error || 'Failed to save questions.'); setStep('review'); return; }
-      setSaveMsg(`${d.questions.length} question${d.questions.length !== 1 ? 's' : ''} added to the Question Library.`);
       onSaved(d.questions);
       onClose();
     } catch {
@@ -382,7 +436,7 @@ function AIGenerateModal({ onClose, onSaved }) {
       <div className="relative bg-ds-card border border-ds-border rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-ds-border flex-shrink-0">
           <h2 className="font-heading font-bold text-ds-text">
-            {step === 'review' ? `Review Generated Questions` : 'AI Generate Questions'}
+            {step === 'review' ? 'Review Generated Questions' : 'AI Generate Questions'}
           </h2>
           <button onClick={onClose} className="text-ds-textMuted hover:text-ds-text text-xl leading-none">×</button>
         </div>
@@ -445,8 +499,59 @@ function AIGenerateModal({ onClose, onSaved }) {
               </div>
             </div>
 
+            {/* Difficulty */}
+            <div className="border border-ds-border rounded-lg p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-ds-text">Difficulty <span className="text-ds-danger">*</span></label>
+                <div className="flex rounded border border-ds-border overflow-hidden text-xs">
+                  {[['single','Single'],['mixed','Mixed']].map(([v,l]) => (
+                    <button key={v} type="button" onClick={() => switchMode(v)}
+                      className={`px-3 py-1 transition-colors ${difficultyMode === v ? 'bg-primary text-white font-medium' : 'text-ds-textMuted hover:bg-ds-bg'}`}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {difficultyMode === 'single' ? (
+                <div className="flex gap-2">
+                  {[['easy','Easy'],['medium','Medium'],['hard','Hard']].map(([v,l]) => (
+                    <button key={v} type="button" onClick={() => setDifficulty(v)}
+                      className={`flex-1 py-2 text-sm rounded border transition-colors font-medium ${
+                        difficulty === v
+                          ? v === 'easy'   ? 'border-green-400 bg-green-50 text-green-700'
+                          : v === 'medium' ? 'border-amber-400 bg-amber-50 text-amber-700'
+                          :                  'border-red-400   bg-red-50   text-red-700'
+                          : 'border-ds-border text-ds-textMuted hover:bg-ds-bg'
+                      }`}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {[['easy','Easy','text-green-700'],['medium','Medium','text-amber-700'],['hard','Hard','text-red-700']].map(([v,l,cls]) => (
+                    <div key={v} className="flex items-center gap-3">
+                      <span className={`text-sm font-medium w-16 flex-shrink-0 ${cls}`}>{l}</span>
+                      <input
+                        type="number" min="0" max="50"
+                        value={distribution[v]}
+                        onChange={e => setDistribution(d => ({ ...d, [v]: parseInt(e.target.value) || 0 }))}
+                        className="w-20 px-3 py-1.5 text-sm border border-ds-inputBorder rounded bg-ds-bg text-ds-text focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                  ))}
+                  <div className={`flex items-center gap-2 pt-1 text-xs ${mixedValid ? 'text-ds-success' : distTotal > 0 ? 'text-ds-danger' : 'text-ds-textMuted'}`}>
+                    <span>Total: {distTotal} / {count}</span>
+                    {mixedValid && <span>✓</span>}
+                    {mixedError && <span>{mixedError}</span>}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-3 pt-1">
-              <button onClick={generate} disabled={!types.length || !input.trim()}
+              <button onClick={generate} disabled={!canGenerate}
                 className="bg-primary text-white px-5 py-2 rounded-btn text-sm font-medium hover:bg-primary-dark disabled:opacity-50 transition-colors">
                 Generate →
               </button>
@@ -482,7 +587,7 @@ function AIGenerateModal({ onClose, onSaved }) {
                 <span className="text-sm text-ds-text">
                   <span className="font-semibold">{accepted.size}</span> of {questions.length} selected
                 </span>
-                {genInfo && genInfo.generated < genInfo.requested && (
+                {genInfo?.generated < genInfo?.requested && (
                   <span className="text-xs text-ds-warning bg-ds-warningLight border border-ds-warning/30 px-2 py-0.5 rounded">
                     Generated {genInfo.generated} of {genInfo.requested} requested
                   </span>
@@ -496,6 +601,26 @@ function AIGenerateModal({ onClose, onSaved }) {
                   className="text-xs text-primary hover:underline">Deselect all</button>
               </div>
             </div>
+
+            {/* Shortfall notices */}
+            {genInfo?.shortfalls && Object.keys(genInfo.shortfalls).length > 0 && (
+              <div className="mx-5 mt-3 bg-ds-warningLight border border-ds-warning/30 rounded px-4 py-2.5 space-y-1">
+                {genInfo.difficultyMode === 'single' ? (
+                  <p className="text-xs text-ds-warning font-medium">
+                    We could only generate {genInfo.generated} of {genInfo.requested} {DIFFICULTY_LABELS[genInfo.difficulty]} questions.
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-xs text-ds-warning font-medium">Some difficulty slots could not be fully filled:</p>
+                    {Object.entries(genInfo.shortfalls).map(([diff, { requested, generated }]) => (
+                      <p key={diff} className="text-xs text-ds-warning">
+                        {DIFFICULTY_LABELS[diff]}: {generated} generated (requested {requested})
+                      </p>
+                    ))}
+                  </>
+                )}
+              </div>
+            )}
 
             {error && (
               <div className="mx-5 mt-3 bg-ds-dangerLight border border-ds-danger/30 text-ds-danger text-sm rounded px-3 py-2">{error}</div>
@@ -565,11 +690,24 @@ function ReviewCard({ question, accepted, onToggle, onEdit }) {
       <div className="flex items-start gap-3">
         <input type="checkbox" checked={accepted} onChange={onToggle} className="mt-0.5 accent-primary flex-shrink-0" />
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1.5">
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
             <TypeBadge type={question.type} />
+            {question.difficulty && <DifficultyBadge difficulty={question.difficulty} />}
             <span className="text-xs text-ds-textMuted font-mono">{question.points || 1}pt</span>
+            {/* Difficulty override */}
+            <select
+              value={question.difficulty || ''}
+              onChange={e => onEdit({ difficulty: e.target.value || null })}
+              onClick={e => e.stopPropagation()}
+              className="ml-auto text-xs border border-ds-border rounded bg-ds-bg text-ds-textMuted px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="">No difficulty</option>
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
             {!editing && (
-              <button onClick={startEdit} className="ml-auto text-xs text-primary hover:underline flex-shrink-0">Edit</button>
+              <button onClick={startEdit} className="text-xs text-primary hover:underline flex-shrink-0">Edit</button>
             )}
           </div>
 
@@ -644,9 +782,10 @@ export default function QuestionLibrary() {
   const [loadError, setLoadError] = useState('');
   const [page, setPage]           = useState(1);
   const [search, setSearch]       = useState('');
-  const [filterType, setFilterType]   = useState('');
-  const [filterSkill, setFilterSkill] = useState('');
-  const [filterAI, setFilterAI]       = useState('');
+  const [filterType, setFilterType]           = useState('');
+  const [filterSkill, setFilterSkill]         = useState('');
+  const [filterAI, setFilterAI]               = useState('');
+  const [filterDifficulty, setFilterDifficulty] = useState('');
   const [skillTags, setSkillTags] = useState([]);
   const [preview, setPreview]     = useState(null);
   const [showCreate, setShowCreate]   = useState(false);
@@ -660,10 +799,11 @@ export default function QuestionLibrary() {
     setLoadError('');
     try {
       const params = new URLSearchParams({ page: p, limit });
-      if (search)      params.set('search', search);
-      if (filterType)  params.set('type', filterType);
-      if (filterSkill) params.set('skill_tag', filterSkill);
-      if (filterAI)    params.set('ai_generated', filterAI);
+      if (search)           params.set('search', search);
+      if (filterType)       params.set('type', filterType);
+      if (filterSkill)      params.set('skill_tag', filterSkill);
+      if (filterAI)         params.set('ai_generated', filterAI);
+      if (filterDifficulty) params.set('difficulty', filterDifficulty);
 
       const r = await fetch(`/api/v1/admin/question-library?${params}`);
       const d = await r.json();
@@ -676,9 +816,9 @@ export default function QuestionLibrary() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, filterType, filterSkill, filterAI]);
+  }, [page, search, filterType, filterSkill, filterAI, filterDifficulty]);
 
-  useEffect(() => { load(page); }, [page, filterType, filterSkill, filterAI]);
+  useEffect(() => { load(page); }, [page, filterType, filterSkill, filterAI, filterDifficulty]);
 
   // Debounce search
   useEffect(() => {
@@ -736,6 +876,13 @@ export default function QuestionLibrary() {
           <option value="true_false">True/False</option>
           <option value="short_answer">Short Answer</option>
         </select>
+        <select value={filterDifficulty} onChange={e => { setFilterDifficulty(e.target.value); setPage(1); }}
+          className="px-3 py-2 text-sm border border-ds-inputBorder rounded bg-ds-bg text-ds-text focus:outline-none focus:ring-2 focus:ring-primary">
+          <option value="">All difficulties</option>
+          <option value="easy">Easy</option>
+          <option value="medium">Medium</option>
+          <option value="hard">Hard</option>
+        </select>
         {skillTags.length > 0 && (
           <select value={filterSkill} onChange={e => { setFilterSkill(e.target.value); setPage(1); }}
             className="px-3 py-2 text-sm border border-ds-inputBorder rounded bg-ds-bg text-ds-text focus:outline-none focus:ring-2 focus:ring-primary">
@@ -773,7 +920,7 @@ export default function QuestionLibrary() {
         </div>
       ) : questions.length === 0 ? (
         <div className="text-center py-20 bg-ds-card border border-dashed border-ds-border rounded-lg">
-          {search || filterType || filterSkill || filterAI ? (
+          {search || filterType || filterSkill || filterAI || filterDifficulty ? (
             <p className="text-ds-textMuted text-sm">No questions found matching your search.</p>
           ) : (
             <div className="space-y-2">
@@ -790,8 +937,9 @@ export default function QuestionLibrary() {
             <div key={q.id}
               className="bg-ds-card border border-ds-border rounded-lg px-4 py-3.5 hover:border-ds-borderStrong transition-colors">
               <div className="flex items-start gap-3">
-                <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
+                <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5 flex-wrap">
                   <TypeBadge type={q.type} />
+                  {q.difficulty && <DifficultyBadge difficulty={q.difficulty} />}
                   {q.ai_generated && (
                     <span className="text-xs px-1.5 py-0.5 rounded border bg-amber-50 text-amber-700 border-amber-200">AI</span>
                   )}

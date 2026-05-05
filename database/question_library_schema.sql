@@ -9,6 +9,7 @@ create table if not exists public.question_library (
   skill_tag     text,
   topic         text,
   ai_generated  boolean not null default false,
+  difficulty    text check (difficulty in ('easy', 'medium', 'hard')),
   created_by    uuid references auth.users(id) on delete set null,
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()

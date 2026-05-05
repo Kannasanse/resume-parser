@@ -11,19 +11,21 @@ export async function GET(request) {
     const type        = searchParams.get('type') || '';
     const skill_tag   = searchParams.get('skill_tag') || '';
     const ai_generated = searchParams.get('ai_generated') || '';
+    const difficulty  = searchParams.get('difficulty') || '';
     const page        = parseInt(searchParams.get('page') || '1');
     const limit       = Math.min(parseInt(searchParams.get('limit') || '50'), 200);
     const offset      = (page - 1) * limit;
 
     let query = supabase
       .from('question_library')
-      .select('id, type, question_text, points, skill_tag, topic, ai_generated, created_at, question_library_options(id, option_text, is_correct, position)', { count: 'exact' });
+      .select('id, type, question_text, points, skill_tag, topic, ai_generated, difficulty, created_at, question_library_options(id, option_text, is_correct, position)', { count: 'exact' });
 
     if (search) query = query.ilike('question_text', `%${search}%`);
     if (type)   query = query.eq('type', type);
     if (skill_tag) query = query.eq('skill_tag', skill_tag);
     if (ai_generated === 'true')  query = query.eq('ai_generated', true);
     if (ai_generated === 'false') query = query.eq('ai_generated', false);
+    if (difficulty) query = query.eq('difficulty', difficulty);
 
     const { data, error, count } = await query
       .order('created_at', { ascending: false })
@@ -79,7 +81,7 @@ export async function POST(request) {
 }
 
 async function insertOne(body, userId) {
-  const { type, question_text, points, skill_tag, topic, options = [], correct_answer, ai_generated = false } = body;
+  const { type, question_text, points, skill_tag, topic, options = [], correct_answer, ai_generated = false, difficulty = null } = body;
 
   if (!type || !question_text?.trim()) throw new Error('type and question_text are required');
   if (!['mcq', 'true_false', 'short_answer'].includes(type)) throw new Error('Invalid type');
@@ -93,6 +95,7 @@ async function insertOne(body, userId) {
       skill_tag: skill_tag?.trim() || null,
       topic: topic?.trim() || null,
       ai_generated: !!ai_generated,
+      difficulty: ['easy', 'medium', 'hard'].includes(difficulty) ? difficulty : null,
       created_by: userId,
     })
     .select()

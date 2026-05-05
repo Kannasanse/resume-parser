@@ -12,6 +12,11 @@ Rules:
 - Do NOT repeat similar questions
 - Return ONLY valid JSON — no prose, no markdown
 
+Difficulty calibration:
+- easy: basic recall and definitions; a junior developer should know this without looking it up
+- medium: applied understanding; requires knowing how things work, not just what they are called
+- hard: advanced concepts, edge cases, architecture decisions, subtle gotchas; senior-level knowledge
+
 Return this exact JSON structure:
 {
   "questions": [
@@ -41,14 +46,20 @@ Return this exact JSON structure:
   ]
 }`;
 
+const DIFF_LABELS = {
+  easy:   'Easy (basic recall and definitions, junior-level)',
+  medium: 'Medium (applied understanding, intermediate-level)',
+  hard:   'Hard (advanced concepts and edge cases, senior-level)',
+};
+
+const TYPE_LABELS = { mcq: 'Multiple Choice (MCQ)', true_false: 'True/False', short_answer: 'Short Answer' };
+
 export async function POST(request) {
   try {
     await requireAdmin(request);
-    const { input_type, input, count, types } = await request.json();
+    const { input_type, input, count, types, difficulty_mode = 'single', difficulty, distribution } = await request.json();
 
-    if (!input?.trim()) {
-      return Response.json({ error: 'input is required' }, { status: 400 });
-    }
+    if (!input?.trim()) return Response.json({ error: 'input is required' }, { status: 400 });
     if (input_type === 'content' && input.trim().length < 50) {
       return Response.json({ error: 'Please paste more content for the AI to generate meaningful questions.' }, { status: 400 });
     }
@@ -56,47 +67,90 @@ export async function POST(request) {
       return Response.json({ error: 'Content is too long. Please limit to 10,000 characters.' }, { status: 400 });
     }
     const n = parseInt(count);
-    if (isNaN(n) || n < 1 || n > 50) {
-      return Response.json({ error: 'Please select between 1 and 50 questions.' }, { status: 400 });
+    if (isNaN(n) || n < 1 || n > 50) return Response.json({ error: 'Please select between 1 and 50 questions.' }, { status: 400 });
+    if (!Array.isArray(types) || !types.length) return Response.json({ error: 'Select at least one question type.' }, { status: 400 });
+
+    if (difficulty_mode === 'mixed') {
+      const slots = Object.entries(distribution || {})
+        .filter(([k, v]) => ['easy', 'medium', 'hard'].includes(k) && v > 0)
+        .map(([k, v]) => [k, parseInt(v)]);
+
+      if (!slots.length) {
+        return Response.json({ error: 'Specify at least one difficulty count in the distribution.' }, { status: 400 });
+      }
+
+      const results = await Promise.allSettled(
+        slots.map(([diff, diffCount]) => runGeneration(input_type, input, diffCount, types, diff))
+      );
+
+      const allQuestions = [];
+      const actualDistribution = {};
+      const shortfalls = {};
+
+      for (let i = 0; i < slots.length; i++) {
+        const [diff, requested] = slots[i];
+        const qs = results[i].status === 'fulfilled' ? results[i].value : [];
+        const tagged = qs.map(q => ({ ...q, difficulty: diff }));
+        allQuestions.push(...tagged);
+        actualDistribution[diff] = tagged.length;
+        if (tagged.length < requested) shortfalls[diff] = { requested, generated: tagged.length };
+      }
+
+      if (!allQuestions.length) {
+        return Response.json({ error: "We couldn't generate questions from this content. Try adding more detail or different keywords." }, { status: 422 });
+      }
+
+      return Response.json({
+        questions: allQuestions,
+        requested: n,
+        generated: allQuestions.length,
+        actualDistribution,
+        ...(Object.keys(shortfalls).length && { shortfalls }),
+      });
     }
-    if (!Array.isArray(types) || !types.length) {
-      return Response.json({ error: 'Select at least one question type.' }, { status: 400 });
+
+    // Single difficulty mode
+    if (!difficulty || !DIFF_LABELS[difficulty]) {
+      return Response.json({ error: 'Select a difficulty level.' }, { status: 400 });
     }
 
-    const typeLabels = { mcq: 'Multiple Choice (MCQ)', true_false: 'True/False', short_answer: 'Short Answer' };
-    const typeList   = types.map(t => typeLabels[t]).join(', ');
-    const userPrompt = input_type === 'skills'
-      ? `Generate exactly ${n} questions about these skills/topics: ${input.trim()}\nQuestion types to use (distribute evenly): ${typeList}`
-      : `Generate exactly ${n} questions based on this content:\n\n${input.trim()}\n\nQuestion types to use (distribute evenly): ${typeList}`;
+    const qs = await runGeneration(input_type, input, n, types, difficulty);
+    const tagged = (qs || []).map(q => ({ ...q, difficulty }));
 
-    const generated = await callAI(userPrompt);
-
-    if (!generated?.questions?.length) {
+    if (!tagged.length) {
       return Response.json({ error: "We couldn't generate questions from this content. Try adding more detail or different keywords." }, { status: 422 });
     }
 
-    // Filter to only requested types and validate structure
-    const valid = generated.questions.filter(q => {
-      if (!types.includes(q.type)) return false;
-      if (!q.question_text?.trim()) return false;
-      if (q.type === 'mcq' && (!Array.isArray(q.options) || q.options.length < 2)) return false;
-      if (q.type === 'mcq' && !q.options.some(o => o.is_correct)) return false;
-      return true;
-    }).slice(0, n);
-
-    if (!valid.length) {
-      return Response.json({ error: "The AI returned malformed questions. Please try again." }, { status: 422 });
-    }
-
     return Response.json({
-      questions: valid,
+      questions: tagged,
       requested: n,
-      generated: valid.length,
+      generated: tagged.length,
+      ...(tagged.length < n && { shortfalls: { [difficulty]: { requested: n, generated: tagged.length } } }),
     });
   } catch (err) {
     if (err instanceof Response) return err;
     return Response.json({ error: 'Question generation failed. Please try again.' }, { status: 500 });
   }
+}
+
+async function runGeneration(input_type, input, count, types, difficulty) {
+  const typeList = types.map(t => TYPE_LABELS[t]).join(', ');
+  const diffLabel = DIFF_LABELS[difficulty] || difficulty;
+
+  const userPrompt = input_type === 'skills'
+    ? `Generate exactly ${count} ${diffLabel} questions about these skills/topics: ${input.trim()}\nQuestion types to use (distribute evenly): ${typeList}`
+    : `Generate exactly ${count} ${diffLabel} questions based on this content:\n\n${input.trim()}\n\nQuestion types to use (distribute evenly): ${typeList}`;
+
+  const generated = await callAI(userPrompt);
+  if (!generated?.questions?.length) return [];
+
+  return generated.questions.filter(q => {
+    if (!types.includes(q.type)) return false;
+    if (!q.question_text?.trim()) return false;
+    if (q.type === 'mcq' && (!Array.isArray(q.options) || q.options.length < 2)) return false;
+    if (q.type === 'mcq' && !q.options.some(o => o.is_correct)) return false;
+    return true;
+  }).slice(0, count);
 }
 
 async function callAI(userContent) {
