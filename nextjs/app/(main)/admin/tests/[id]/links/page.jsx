@@ -218,32 +218,146 @@ export default function TestLinks() {
   );
 }
 
+// ─── Candidate search/create picker ──────────────────────────────────────────
+function CandidatePicker({ selected, onAdd, onRemove }) {
+  const [query, setQuery]       = useState('');
+  const [results, setResults]   = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [showDrop, setShowDrop] = useState(false);
+  const [manualName, setManualName] = useState('');
+
+  useEffect(() => {
+    if (!query.trim()) { setResults([]); setShowDrop(false); return; }
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const r = await fetch(`/api/v1/admin/users?search=${encodeURIComponent(query)}&limit=8`);
+        const d = await r.json();
+        setResults(d.users || []);
+        setShowDrop(true);
+      } finally {
+        setSearching(false);
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const isEmail = query.includes('@');
+  const alreadySelected = selected.some(s => s.email.toLowerCase() === query.trim().toLowerCase());
+
+  const addFromResult = (u) => {
+    const full = [u.first_name, u.last_name].filter(Boolean).join(' ');
+    onAdd({ email: u.email, name: full || u.email });
+    setQuery(''); setShowDrop(false);
+  };
+
+  const addManual = () => {
+    if (!isEmail || alreadySelected) return;
+    onAdd({ email: query.trim().toLowerCase(), name: manualName.trim() });
+    setQuery(''); setManualName(''); setShowDrop(false);
+  };
+
+  return (
+    <div className="space-y-3">
+      <label className="block text-sm font-medium text-ds-text">
+        Recipients <span className="text-ds-danger">*</span>
+      </label>
+
+      {/* Selected chips */}
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 p-2 border border-ds-border rounded bg-ds-bg">
+          {selected.map(s => (
+            <span key={s.email} className="inline-flex items-center gap-1 bg-ds-card border border-ds-border text-xs px-2 py-1 rounded-full text-ds-text">
+              <span className="max-w-[140px] truncate">{s.name || s.email}</span>
+              <button onClick={() => onRemove(s.email)} className="text-ds-textMuted hover:text-ds-danger leading-none">×</button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Search input */}
+      <div className="relative">
+        <input
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && isEmail && !alreadySelected) { e.preventDefault(); addManual(); } }}
+          placeholder="Search by name or email, or type a new email…"
+          className="w-full px-3 py-2 text-sm border border-ds-inputBorder rounded bg-ds-bg text-ds-text focus:outline-none focus:ring-2 focus:ring-primary placeholder-ds-textMuted"
+        />
+        {searching && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+
+        {/* Dropdown */}
+        {showDrop && (results.length > 0 || isEmail) && (
+          <div className="absolute left-0 right-0 top-full mt-1 bg-ds-card border border-ds-border rounded-lg shadow-lg z-10 overflow-hidden">
+            {results.map(u => {
+              const full = [u.first_name, u.last_name].filter(Boolean).join(' ');
+              const already = selected.some(s => s.email === u.email);
+              return (
+                <button key={u.id} onClick={() => !already && addFromResult(u)} disabled={already}
+                  className={`w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 transition-colors ${already ? 'opacity-50 cursor-default' : 'hover:bg-ds-bg'}`}>
+                  <div className="w-7 h-7 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center flex-shrink-0">
+                    {(full || u.email)[0]?.toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    {full && <p className="font-medium text-ds-text truncate">{full}</p>}
+                    <p className="text-ds-textMuted truncate text-xs">{u.email}</p>
+                  </div>
+                  {already && <span className="text-xs text-ds-textMuted">Added</span>}
+                </button>
+              );
+            })}
+            {/* Create new option */}
+            {isEmail && !alreadySelected && !results.some(r => r.email === query.trim().toLowerCase()) && (
+              <div className="border-t border-ds-border p-2 space-y-2">
+                <p className="text-xs text-ds-textMuted px-1">New recipient — not in user list</p>
+                <input
+                  value={manualName}
+                  onChange={e => setManualName(e.target.value)}
+                  placeholder="Full name (optional)"
+                  className="w-full px-2 py-1.5 text-xs border border-ds-inputBorder rounded bg-ds-bg text-ds-text focus:outline-none focus:ring-1 focus:ring-primary placeholder-ds-textMuted"
+                />
+                <button onClick={addManual}
+                  className="w-full text-xs bg-primary text-white py-1.5 rounded font-medium hover:bg-primary-dark transition-colors">
+                  Add {query.trim()}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      <p className="text-xs text-ds-textMuted">Search existing users or type an email to add a new recipient. Press Enter to add.</p>
+    </div>
+  );
+}
+
 // ─── Generate Links Modal ─────────────────────────────────────────────────────
 function GenerateLinksModal({ testId, onClose, onGenerated }) {
-  const [mode, setMode]   = useState('single'); // 'single' | 'bulk'
-  const [email, setEmail] = useState('');
-  const [name, setName]   = useState('');
-  const [bulkText, setBulkText] = useState('');
+  const [recipients, setRecipients] = useState([]);
+  const [bulkText, setBulkText]     = useState('');
+  const [mode, setMode]             = useState('search'); // 'search' | 'bulk'
   const [expiryDays, setExpiryDays] = useState(7);
-  const [saving, setSaving] = useState(false);
-  const [error, setError]   = useState('');
+  const [saving, setSaving]         = useState(false);
+  const [error, setError]           = useState('');
 
-  const parseBulk = () => {
-    return bulkText.split('\n')
-      .map(line => {
-        const [e, n] = line.split(',').map(s => s.trim());
-        return e?.includes('@') ? { email: e, name: n || '' } : null;
-      })
-      .filter(Boolean);
+  const addRecipient = (r) => {
+    if (!recipients.some(x => x.email === r.email)) setRecipients(prev => [...prev, r]);
   };
+  const removeRecipient = (email) => setRecipients(prev => prev.filter(r => r.email !== email));
+
+  const parseBulk = () => bulkText.split('\n')
+    .map(line => {
+      const [e, n] = line.split(',').map(s => s.trim());
+      return e?.includes('@') ? { email: e, name: n || '' } : null;
+    }).filter(Boolean);
 
   const submit = async () => {
     setError('');
-    const recipients = mode === 'single'
-      ? (email.includes('@') ? [{ email: email.trim(), name: name.trim() }] : [])
-      : parseBulk();
-
-    if (!recipients.length) { setError('No valid email addresses'); return; }
+    const list = mode === 'search' ? recipients : parseBulk();
+    if (!list.length) { setError('No valid recipients'); return; }
 
     setSaving(true);
     try {
@@ -251,7 +365,7 @@ function GenerateLinksModal({ testId, onClose, onGenerated }) {
       const r = await fetch(`/api/v1/admin/tests/${testId}/links`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipients, expires_at: expiresAt }),
+        body: JSON.stringify({ recipients: list, expires_at: expiresAt }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'Failed');
@@ -266,20 +380,20 @@ function GenerateLinksModal({ testId, onClose, onGenerated }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-ds-card border border-ds-border rounded-lg shadow-xl w-full max-w-md">
+      <div className="relative bg-ds-card border border-ds-border rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-5 py-4 border-b border-ds-border">
           <h2 className="font-heading font-bold text-ds-text">Generate Test Links</h2>
           <button onClick={onClose} className="text-ds-textMuted hover:text-ds-text text-xl leading-none">×</button>
         </div>
 
-        <div className="p-5 space-y-4">
+        <div className="p-5 space-y-5">
           {error && (
             <div className="bg-ds-dangerLight border border-ds-danger/30 text-ds-danger text-sm rounded px-3 py-2">{error}</div>
           )}
 
           {/* Mode toggle */}
           <div className="flex gap-2">
-            {[['single', 'Single recipient'], ['bulk', 'Multiple (CSV)']].map(([val, label]) => (
+            {[['search', 'Search / Add'], ['bulk', 'Paste CSV']].map(([val, label]) => (
               <button key={val} type="button" onClick={() => setMode(val)}
                 className={`text-xs px-3 py-1.5 rounded border transition-colors ${mode === val ? 'border-primary bg-primary/10 text-primary font-medium' : 'border-ds-border text-ds-textMuted hover:bg-ds-bg'}`}>
                 {label}
@@ -287,27 +401,18 @@ function GenerateLinksModal({ testId, onClose, onGenerated }) {
             ))}
           </div>
 
-          {mode === 'single' ? (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-ds-text mb-1.5">Email <span className="text-ds-danger">*</span></label>
-                <input value={email} onChange={e => setEmail(e.target.value)}
-                  placeholder="candidate@example.com"
-                  className="w-full px-3 py-2 text-sm border border-ds-inputBorder rounded bg-ds-bg text-ds-text focus:outline-none focus:ring-2 focus:ring-primary placeholder-ds-textMuted" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-ds-text mb-1.5">Name</label>
-                <input value={name} onChange={e => setName(e.target.value)}
-                  placeholder="Candidate name (optional)"
-                  className="w-full px-3 py-2 text-sm border border-ds-inputBorder rounded bg-ds-bg text-ds-text focus:outline-none focus:ring-2 focus:ring-primary placeholder-ds-textMuted" />
-              </div>
-            </>
+          {mode === 'search' ? (
+            <CandidatePicker
+              selected={recipients}
+              onAdd={addRecipient}
+              onRemove={removeRecipient}
+            />
           ) : (
             <div>
               <label className="block text-sm font-medium text-ds-text mb-1.5">Recipients</label>
               <p className="text-xs text-ds-textMuted mb-2">One per line: <code className="bg-ds-bg px-1 rounded">email, name</code></p>
               <textarea value={bulkText} onChange={e => setBulkText(e.target.value)}
-                rows={5}
+                rows={6}
                 placeholder={"alice@example.com, Alice\nbob@example.com, Bob"}
                 className="w-full px-3 py-2 text-sm border border-ds-inputBorder rounded bg-ds-bg text-ds-text focus:outline-none focus:ring-2 focus:ring-primary font-mono resize-none placeholder-ds-textMuted" />
               <p className="text-xs text-ds-textMuted mt-1">{parseBulk().length} valid recipient{parseBulk().length !== 1 ? 's' : ''}</p>
@@ -324,9 +429,9 @@ function GenerateLinksModal({ testId, onClose, onGenerated }) {
           </div>
 
           <div className="flex gap-3 pt-1">
-            <button onClick={submit} disabled={saving}
+            <button onClick={submit} disabled={saving || (mode === 'search' ? !recipients.length : !parseBulk().length)}
               className="bg-primary text-white px-5 py-2 rounded-btn text-sm font-medium hover:bg-primary-dark disabled:opacity-50 transition-colors">
-              {saving ? 'Generating…' : 'Generate'}
+              {saving ? 'Generating…' : `Generate ${mode === 'search' ? recipients.length || '' : parseBulk().length || ''} Link${(mode === 'search' ? recipients.length : parseBulk().length) !== 1 ? 's' : ''}`}
             </button>
             <button onClick={onClose}
               className="px-5 py-2 rounded-btn text-sm font-medium text-ds-textMuted border border-ds-border hover:bg-ds-bg transition-colors">

@@ -16,7 +16,7 @@ export async function GET(request) {
 
     let query = supabase
       .from('tests')
-      .select('id, title, description, status, timer_enabled, time_limit_minutes, created_at, updated_at, job_profile_id, job_profiles(title)', { count: 'exact' });
+      .select('id, title, description, status, timer_enabled, time_limit_minutes, allow_copy_paste, created_at, updated_at, job_profile_id, job_profiles(title)', { count: 'exact' });
 
     if (search) {
       query = query.ilike('title', `%${search}%`);
@@ -63,7 +63,7 @@ export async function POST(request) {
   try {
     const { user } = await requireAdmin(request);
     const body = await request.json();
-    const { title, description, job_profile_id, timer_enabled, time_limit_minutes } = body;
+    const { title, description, job_profile_id, timer_enabled, time_limit_minutes, allow_copy_paste } = body;
 
     if (!title?.trim()) return Response.json({ error: 'title is required' }, { status: 400 });
 
@@ -75,6 +75,7 @@ export async function POST(request) {
         job_profile_id: job_profile_id || null,
         timer_enabled: !!timer_enabled,
         time_limit_minutes: parseInt(time_limit_minutes) || 30,
+        allow_copy_paste: !!allow_copy_paste,
         status: 'draft',
         created_by: user.id,
       })

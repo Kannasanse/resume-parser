@@ -11,7 +11,7 @@ export async function GET(request, { params }) {
     const { data, error } = await supabase
       .from('tests')
       .select(`
-        id, title, description, status, timer_enabled, time_limit_minutes,
+        id, title, description, status, timer_enabled, time_limit_minutes, allow_copy_paste,
         created_at, updated_at, job_profile_id,
         job_profiles(id, title),
         test_questions(
@@ -48,7 +48,7 @@ export async function PATCH(request, { params }) {
     const { data: existing } = await supabase.from('tests').select('status').eq('id', id).single();
     if (!existing) return Response.json({ error: 'Test not found' }, { status: 404 });
 
-    const allowed = ['title', 'description', 'job_profile_id', 'timer_enabled', 'time_limit_minutes', 'status'];
+    const allowed = ['title', 'description', 'job_profile_id', 'timer_enabled', 'time_limit_minutes', 'allow_copy_paste', 'status'];
     const updates = { updated_at: new Date().toISOString() };
 
     for (const key of allowed) {

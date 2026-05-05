@@ -12,6 +12,7 @@ export default function NewTest() {
     job_profile_id: '',
     timer_enabled: false,
     time_limit_minutes: 30,
+    allow_copy_paste: false,
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -130,6 +131,24 @@ export default function NewTest() {
               <span className="text-sm text-ds-textMuted">minutes</span>
             </div>
           )}
+        </div>
+
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-ds-text">Anti-cheat</label>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <div
+              onClick={() => set('allow_copy_paste', !form.allow_copy_paste)}
+              className={`rounded-full relative transition-colors cursor-pointer ${form.allow_copy_paste ? 'bg-ds-warning' : 'bg-primary'}`}
+              style={{ width: 40, height: 22 }}
+            >
+              <div className="absolute rounded-full bg-white shadow transition-transform"
+                style={{ width: 18, height: 18, top: 2, transform: form.allow_copy_paste ? 'translateX(20px)' : 'translateX(2px)' }} />
+            </div>
+            <div>
+              <span className="text-sm text-ds-text">{form.allow_copy_paste ? 'Copy/paste allowed' : 'Copy/paste blocked'}</span>
+              <p className="text-xs text-ds-textMuted mt-0.5">{form.allow_copy_paste ? 'Candidates can copy and paste text' : 'Copy, paste and right-click are disabled during the test'}</p>
+            </div>
+          </label>
         </div>
 
         <div className="flex gap-3 pt-2">

@@ -305,6 +305,7 @@ export default function TakeTest() {
   // ── Anti-cheat: tab switch / focus / visibility ────────────────────────────
   useEffect(() => {
     if (state !== 'taking') return;
+    const copyPasteAllowed = testData?.test?.allow_copy_paste;
 
     const logIntegrity = (event_type) => {
       if (!attemptRef.current) return;
@@ -330,16 +331,18 @@ export default function TakeTest() {
     const onFocus = () => logIntegrity('focus_regained');
 
     const onCopy = (e) => {
+      if (copyPasteAllowed) return;
       e.preventDefault();
       logIntegrity('copy_attempt');
     };
     const onPaste = (e) => {
-      // Allow paste in short answer, block elsewhere
+      if (copyPasteAllowed) return;
       if (e.target?.tagName === 'TEXTAREA') return;
       e.preventDefault();
       logIntegrity('paste_attempt');
     };
     const onContextMenu = (e) => {
+      if (copyPasteAllowed) return;
       e.preventDefault();
       logIntegrity('right_click');
     };
@@ -361,15 +364,15 @@ export default function TakeTest() {
     };
   }, [state, token]);
 
-  // ── User selection prevention ───────────────────────────────────────────────
+  // ── User selection prevention (skipped when copy/paste is allowed) ────────
   useEffect(() => {
-    if (state !== 'taking') return;
+    if (state !== 'taking' || testData?.test?.allow_copy_paste) return;
     const style = document.createElement('style');
     style.id = 'anti-select';
     style.textContent = 'body { -webkit-user-select: none; user-select: none; } textarea { -webkit-user-select: text !important; user-select: text !important; }';
     document.head.appendChild(style);
     return () => document.getElementById('anti-select')?.remove();
-  }, [state]);
+  }, [state, testData]);
 
   const updateResponse = (questionId, value) => {
     setResponses(prev => ({ ...prev, [questionId]: { ...(prev[questionId] || {}), ...value } }));
@@ -439,7 +442,7 @@ export default function TakeTest() {
             <p className="font-semibold">Important</p>
             <ul className="list-disc list-inside space-y-0.5 text-amber-700">
               <li>Do not switch tabs or windows during the test.</li>
-              <li>Copy/paste and right-click are disabled.</li>
+              {!test.allow_copy_paste && <li>Copy/paste and right-click are disabled.</li>}
               <li>Your progress is saved automatically every 30 seconds.</li>
               {test.timer_enabled && <li>The test will auto-submit when the time expires.</li>}
             </ul>

@@ -382,6 +382,7 @@ export default function TestDetail() {
         job_profile_id: d.test.job_profile_id || '',
         timer_enabled: d.test.timer_enabled,
         time_limit_minutes: d.test.time_limit_minutes,
+        allow_copy_paste: d.test.allow_copy_paste || false,
       });
     } finally {
       setLoading(false);
@@ -493,6 +494,10 @@ export default function TestDetail() {
             className="text-sm border border-ds-border text-ds-textMuted px-3 py-1.5 rounded-btn hover:bg-ds-bg hover:text-ds-text transition-colors">
             Links
           </Link>
+          <Link href={`/admin/tests/${id}/results`}
+            className="text-sm border border-ds-border text-ds-textMuted px-3 py-1.5 rounded-btn hover:bg-ds-bg hover:text-ds-text transition-colors">
+            Results
+          </Link>
           {!isArchived && (
             <button
               disabled={statusSaving}
@@ -603,6 +608,21 @@ export default function TestDetail() {
                     <span className="text-sm text-ds-textMuted">minutes</span>
                   </div>
                 )}
+              </div>
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-ds-text">Anti-cheat</label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <div onClick={() => setSettingsForm(f => ({ ...f, allow_copy_paste: !f.allow_copy_paste }))}
+                    className={`rounded-full relative transition-colors cursor-pointer ${settingsForm.allow_copy_paste ? 'bg-ds-warning' : 'bg-primary'}`}
+                    style={{ width: 40, height: 22 }}>
+                    <div className="absolute rounded-full bg-white shadow transition-transform"
+                      style={{ width: 18, height: 18, top: 2, transform: settingsForm.allow_copy_paste ? 'translateX(20px)' : 'translateX(2px)' }} />
+                  </div>
+                  <div>
+                    <span className="text-sm text-ds-text">{settingsForm.allow_copy_paste ? 'Copy/paste allowed' : 'Copy/paste blocked'}</span>
+                    <p className="text-xs text-ds-textMuted mt-0.5">{settingsForm.allow_copy_paste ? 'Candidates can copy and paste during test' : 'Copy, paste and right-click disabled during test'}</p>
+                  </div>
+                </label>
               </div>
               <div className="flex gap-3 pt-1">
                 <button type="submit"
