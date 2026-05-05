@@ -380,6 +380,191 @@ function QuestionCard({ q, testId, onDelete, onUpdate, index, onDragStart, onDra
   );
 }
 
+// ─── Library Picker Modal ─────────────────────────────────────────────────────
+function LibraryPickerModal({ testId, existingLibraryIds, onAdd, onClose }) {
+  const [questions, setQuestions] = useState([]);
+  const [total, setTotal]         = useState(0);
+  const [loading, setLoading]     = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [search, setSearch]       = useState('');
+  const [filterType, setFilterType] = useState('');
+  const [page, setPage]           = useState(1);
+  const [selected, setSelected]   = useState(new Set());
+  const [adding, setAdding]       = useState(false);
+  const [addError, setAddError]   = useState('');
+  const limit = 20;
+  const searchRef = useRef(null);
+  const debounceRef = useRef(null);
+
+  const load = useCallback(async (p = 1, s = search, t = filterType) => {
+    setLoading(true); setLoadError('');
+    try {
+      const params = new URLSearchParams({ page: p, limit });
+      if (s) params.set('search', s);
+      if (t) params.set('type', t);
+      const r = await fetch(`/api/v1/admin/question-library?${params}`);
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error);
+      setQuestions(d.questions);
+      setTotal(d.total);
+    } catch {
+      setLoadError('Something went wrong while filtering questions. Please try again.');
+    } finally { setLoading(false); }
+  }, [search, filterType]);
+
+  useEffect(() => { load(1, search, filterType); }, [filterType]);
+
+  const handleSearchChange = (v) => {
+    setSearch(v);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => load(1, v, filterType), 300);
+  };
+
+  const toggle = (id) => setSelected(prev => {
+    const s = new Set(prev);
+    s.has(id) ? s.delete(id) : s.add(id);
+    return s;
+  });
+
+  const handleAdd = async () => {
+    if (!selected.size) return;
+    setAdding(true); setAddError('');
+    try {
+      const r = await fetch(`/api/v1/admin/tests/${testId}/questions/from-library`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question_ids: [...selected] }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Failed to add questions');
+      onAdd(d.added || []);
+      onClose();
+    } catch (err) {
+      setAddError('Failed to add question to the test. Please try again.');
+    } finally { setAdding(false); }
+  };
+
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const TYPE_LABELS = { mcq: 'MCQ', true_false: 'True/False', short_answer: 'Short Answer' };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative bg-ds-card border border-ds-border rounded-lg shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+        <div className="sticky top-0 bg-ds-card border-b border-ds-border px-5 py-4 flex items-center justify-between flex-shrink-0">
+          <h2 className="font-heading font-bold text-ds-text">Add from Library</h2>
+          <button onClick={onClose} className="text-ds-textMuted hover:text-ds-text text-xl leading-none">×</button>
+        </div>
+
+        <div className="px-5 pt-3 pb-2 flex gap-2 flex-shrink-0">
+          <input
+            ref={searchRef}
+            value={search}
+            onChange={e => handleSearchChange(e.target.value)}
+            placeholder="Search questions…"
+            className="flex-1 px-3 py-2 text-sm border border-ds-inputBorder rounded bg-ds-bg text-ds-text focus:outline-none focus:ring-2 focus:ring-primary placeholder-ds-textMuted"
+          />
+          <select value={filterType} onChange={e => { setFilterType(e.target.value); setPage(1); }}
+            className="px-3 py-2 text-sm border border-ds-inputBorder rounded bg-ds-bg text-ds-text focus:outline-none focus:ring-2 focus:ring-primary">
+            <option value="">All types</option>
+            <option value="mcq">MCQ</option>
+            <option value="true_false">True/False</option>
+            <option value="short_answer">Short Answer</option>
+          </select>
+        </div>
+
+        {addError && (
+          <div className="mx-5 mb-2 bg-ds-dangerLight border border-ds-danger/30 text-ds-danger text-sm rounded px-3 py-2">{addError}</div>
+        )}
+
+        <div className="overflow-y-auto flex-1 px-5 pb-2 space-y-1.5">
+          {loadError ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-ds-danger">{loadError}</p>
+              <button onClick={() => load(page)} className="text-xs text-ds-danger hover:underline mt-1">Retry</button>
+            </div>
+          ) : loading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 py-2">
+                <div className="w-4 h-4 bg-ds-border/50 rounded flex-shrink-0" />
+                <div className="flex-1 h-4 bg-ds-border/40 rounded" />
+                <div className="w-12 h-4 bg-ds-border/30 rounded" />
+              </div>
+            ))
+          ) : questions.length === 0 ? (
+            <div className="text-center py-10">
+              <p className="text-sm text-ds-textMuted">
+                {search ? 'No questions found matching your search.' : 'No questions in the library yet.'}
+              </p>
+            </div>
+          ) : (
+            questions.map(q => {
+              const alreadyIn  = existingLibraryIds.has(q.id);
+              const isSelected = selected.has(q.id);
+              return (
+                <label key={q.id}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
+                    alreadyIn  ? 'border-ds-border bg-ds-bg opacity-50 cursor-not-allowed' :
+                    isSelected ? 'border-primary bg-primary/5' : 'border-ds-border hover:border-ds-borderStrong'
+                  }`}>
+                  <input
+                    type="checkbox"
+                    checked={isSelected || alreadyIn}
+                    disabled={alreadyIn}
+                    onChange={() => !alreadyIn && toggle(q.id)}
+                    className="accent-primary flex-shrink-0"
+                  />
+                  <span className="flex-1 min-w-0 text-sm text-ds-text line-clamp-1">{q.question_text}</span>
+                  {alreadyIn && (
+                    <span className="text-xs text-ds-textMuted flex-shrink-0">Already added</span>
+                  )}
+                  {!alreadyIn && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded border font-medium flex-shrink-0 ${
+                      q.type === 'mcq'          ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                      q.type === 'true_false'   ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                      'bg-teal-50 text-teal-700 border-teal-200'
+                    }`}>{TYPE_LABELS[q.type]}</span>
+                  )}
+                </label>
+              );
+            })
+          )}
+        </div>
+
+        {totalPages > 1 && (
+          <div className="px-5 py-2 flex items-center justify-center gap-2 border-t border-ds-border flex-shrink-0">
+            <button disabled={page <= 1} onClick={() => { setPage(p => p-1); load(page-1); }}
+              className="text-xs px-3 py-1.5 border border-ds-border rounded-btn text-ds-text disabled:opacity-40 hover:bg-ds-bg transition-colors">
+              ← Prev
+            </button>
+            <span className="text-xs text-ds-textMuted">Page {page} of {totalPages}</span>
+            <button disabled={page >= totalPages} onClick={() => { setPage(p => p+1); load(page+1); }}
+              className="text-xs px-3 py-1.5 border border-ds-border rounded-btn text-ds-text disabled:opacity-40 hover:bg-ds-bg transition-colors">
+              Next →
+            </button>
+          </div>
+        )}
+
+        <div className="px-5 py-4 border-t border-ds-border flex items-center justify-between flex-shrink-0">
+          <span className="text-xs text-ds-textMuted">
+            {selected.size > 0 ? `${selected.size} selected` : 'Select questions to add'}
+          </span>
+          <div className="flex gap-2">
+            <button onClick={onClose}
+              className="px-4 py-2 rounded-btn text-sm font-medium text-ds-textMuted border border-ds-border hover:bg-ds-bg transition-colors">
+              Cancel
+            </button>
+            <button onClick={handleAdd} disabled={!selected.size || adding}
+              className="bg-primary text-white px-4 py-2 rounded-btn text-sm font-medium hover:bg-primary-dark disabled:opacity-50 transition-colors">
+              {adding ? 'Adding…' : `Add ${selected.size > 0 ? selected.size : ''} to Test`}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Settings Modal ───────────────────────────────────────────────────────────
 function SettingsModal({ test, onClose, onSave }) {
   const isPublished = test.status === 'published';
@@ -567,8 +752,9 @@ export default function TestDetail() {
   const router = useRouter();
   const [test, setTest]       = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showAdd, setShowAdd] = useState(false);
-  const [questions, setQuestions] = useState([]);
+  const [showAdd, setShowAdd]       = useState(false);
+  const [showLibrary, setShowLibrary] = useState(false);
+  const [questions, setQuestions]   = useState([]);
   const [statusSaving, setStatusSaving] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const dragIdx = useRef(null);
@@ -706,10 +892,16 @@ export default function TestDetail() {
             Questions ({questions.length})
           </h2>
           {!isArchived && (
-            <button onClick={() => setShowAdd(true)}
-              className="text-sm text-primary hover:underline font-medium flex items-center gap-1">
-              + Add Question
-            </button>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setShowLibrary(true)}
+                className="text-xs border border-ds-border text-ds-textMuted px-2.5 py-1 rounded-btn hover:bg-ds-bg hover:text-ds-text transition-colors">
+                Add from Library
+              </button>
+              <button onClick={() => setShowAdd(true)}
+                className="text-sm text-primary hover:underline font-medium flex items-center gap-1">
+                + Add Question
+              </button>
+            </div>
           )}
         </div>
 
@@ -746,6 +938,15 @@ export default function TestDetail() {
           testId={id}
           onAdd={(q) => setQuestions(prev => [...prev, q])}
           onClose={() => setShowAdd(false)}
+        />
+      )}
+
+      {showLibrary && (
+        <LibraryPickerModal
+          testId={id}
+          existingLibraryIds={new Set(questions.map(q => q.library_question_id).filter(Boolean))}
+          onAdd={(added) => setQuestions(prev => [...prev, ...added])}
+          onClose={() => setShowLibrary(false)}
         />
       )}
 
