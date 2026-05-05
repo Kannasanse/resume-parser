@@ -22,10 +22,12 @@ export default function AdminDashboard() {
     Promise.all([
       fetch('/api/v1/admin/users?limit=1').then(r => r.json()),
       fetch('/api/v1/admin/invite?limit=1').then(r => r.json()),
-    ]).then(([usersData, inviteData]) => {
+      fetch('/api/v1/admin/tests?limit=1').then(r => r.json()),
+    ]).then(([usersData, inviteData, testsData]) => {
       const total = usersData.total ?? 0;
       const pending = inviteData.invites?.filter(i => !i.used_at && new Date(i.expires_at) > new Date()).length ?? 0;
-      setStats({ total, pending });
+      const tests = testsData.total ?? 0;
+      setStats({ total, pending, tests });
     }).catch(() => setStats({}))
       .finally(() => setLoading(false));
   }, []);
@@ -40,6 +42,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard label="Total Users" value={stats?.total} href="/admin/users" loading={loading} />
         <StatCard label="Pending Invites" value={stats?.pending} href="/admin/invite" loading={loading} />
+        <StatCard label="Tests" value={stats?.tests} href="/admin/tests" loading={loading} />
       </div>
 
       <div>
@@ -68,6 +71,12 @@ export default function AdminDashboard() {
               </Link>
             </div>
           </div>
+
+          <Link href="/admin/tests"
+            className="bg-ds-card border border-ds-border rounded-lg p-4 hover:border-ds-borderStrong transition-colors group">
+            <p className="text-sm font-semibold text-ds-text group-hover:text-primary transition-colors">Manage Tests</p>
+            <p className="text-xs text-ds-textMuted mt-0.5">Create and manage assessments for candidates.</p>
+          </Link>
 
         </div>
       </div>

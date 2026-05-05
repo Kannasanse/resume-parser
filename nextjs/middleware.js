@@ -33,7 +33,10 @@ export async function middleware(request) {
   const isPublicShare   = pathname.startsWith('/r/') || pathname.startsWith('/api/public/');
   const isPublicApiAuth = pathname.startsWith('/api/v1/auth/');
 
-  if (isPublicShare || isPublicApiAuth) return supabaseResponse;
+  // Public test-taking pages and their API routes
+  const isPublicTest = pathname.startsWith('/test/') || pathname.startsWith('/api/v1/test/');
+
+  if (isPublicShare || isPublicApiAuth || isPublicTest) return supabaseResponse;
 
   // ── Unauthenticated ────────────────────────────────────────────────────────
   if (!user) {
