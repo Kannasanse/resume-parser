@@ -63,6 +63,7 @@ create table if not exists public.test_links (
 
 alter table public.test_links enable row level security;
 -- Anonymous test-takers read their own link by token
+drop policy if exists "Anyone reads test link by token" on public.test_links;
 create policy "Anyone reads test link by token" on public.test_links
   for select using (true);
 
@@ -82,6 +83,7 @@ create table if not exists public.test_attempts (
 );
 
 alter table public.test_attempts enable row level security;
+drop policy if exists "Anyone manages their attempt" on public.test_attempts;
 create policy "Anyone manages their attempt" on public.test_attempts
   for all using (true);
 
@@ -98,6 +100,7 @@ create table if not exists public.test_responses (
 );
 
 alter table public.test_responses enable row level security;
+drop policy if exists "Anyone manages their responses" on public.test_responses;
 create policy "Anyone manages their responses" on public.test_responses
   for all using (true);
 
@@ -113,8 +116,10 @@ create table if not exists public.test_integrity_events (
 );
 
 alter table public.test_integrity_events enable row level security;
+drop policy if exists "Anyone inserts integrity events" on public.test_integrity_events;
 create policy "Anyone inserts integrity events" on public.test_integrity_events
   for insert with check (true);
+drop policy if exists "Admins read integrity events" on public.test_integrity_events;
 create policy "Admins read integrity events" on public.test_integrity_events
   for select using (true);
 
