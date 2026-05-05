@@ -114,6 +114,7 @@ export default function Navbar() {
               <>
                 {navLink('/resumes', 'Profiles', <FileIcon />)}
                 {navLink('/jobs', 'Job Profiles', <BriefcaseIcon />)}
+                {navLink('/builder', 'Builder', <PenIcon />)}
                 {navLink('/upload', 'Upload', <UploadIcon />)}
                 {navLink('/admin', 'Admin', <AdminIcon />)}
               </>
