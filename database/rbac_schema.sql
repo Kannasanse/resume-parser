@@ -37,7 +37,8 @@ create table if not exists public.invite_tokens (
   role          text not null default 'user'
                   check (role in ('user', 'admin')),
   token         text not null unique,
-  created_by    uuid references auth.users(id) on delete set null,
+  invited_by    uuid references auth.users(id) on delete set null,
+  accepted_by   uuid references auth.users(id) on delete set null,
   created_at    timestamptz not null default now(),
   expires_at    timestamptz not null default (now() + interval '7 days'),
   used_at       timestamptz,
