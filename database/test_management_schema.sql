@@ -2,17 +2,21 @@
 
 -- ─── tests ───────────────────────────────────────────────────────────────────
 create table if not exists public.tests (
-  id                   uuid primary key default gen_random_uuid(),
-  title                text not null,
-  description          text,
-  job_profile_id       uuid references public.job_profiles(id) on delete set null,
-  timer_enabled        boolean not null default false,
-  time_limit_minutes   int not null default 30 check (time_limit_minutes > 0),
-  status               text not null default 'draft'
-                         check (status in ('draft', 'published', 'archived')),
-  created_by           uuid references auth.users(id) on delete set null,
-  created_at           timestamptz not null default now(),
-  updated_at           timestamptz not null default now()
+  id                     uuid primary key default gen_random_uuid(),
+  title                  text not null,
+  description            text,
+  job_profile_id         uuid references public.job_profiles(id) on delete set null,
+  timer_enabled          boolean not null default false,
+  time_limit_minutes     int not null default 30 check (time_limit_minutes > 0),
+  disable_copy_paste     boolean not null default false,
+  tab_switch_monitoring  boolean not null default false,
+  tab_switch_threshold   int not null default 3 check (tab_switch_threshold between 1 and 10),
+  tab_switch_action      text not null default 'flag' check (tab_switch_action in ('flag', 'auto_submit')),
+  status                 text not null default 'draft'
+                           check (status in ('draft', 'published', 'archived')),
+  created_by             uuid references auth.users(id) on delete set null,
+  created_at             timestamptz not null default now(),
+  updated_at             timestamptz not null default now()
 );
 
 alter table public.tests enable row level security;
@@ -70,6 +74,7 @@ create table if not exists public.test_attempts (
   submitted_at           timestamptz,
   time_remaining_seconds int,
   auto_submitted         boolean not null default false,
+  flagged                boolean not null default false,
   score                  numeric(6,2),
   max_score              int,
   graded_at              timestamptz,
@@ -102,7 +107,7 @@ create table if not exists public.test_integrity_events (
   attempt_id  uuid not null references public.test_attempts(id) on delete cascade,
   event_type  text not null check (event_type in (
                 'tab_switch', 'copy_attempt', 'paste_attempt',
-                'right_click', 'focus_lost', 'focus_regained', 'visibility_change'
+                'right_click', 'focus_lost', 'focus_regained', 'threshold_reached'
               )),
   occurred_at timestamptz not null default now()
 );
@@ -113,7 +118,7 @@ create policy "Anyone inserts integrity events" on public.test_integrity_events
 create policy "Admins read integrity events" on public.test_integrity_events
   for select using (true);
 
--- ─── Indexes for common lookups ───────────────────────────────────────────────
+-- ─── Indexes ──────────────────────────────────────────────────────────────────
 create index if not exists idx_test_questions_test_id     on public.test_questions(test_id);
 create index if not exists idx_test_options_question_id   on public.test_options(question_id);
 create index if not exists idx_test_links_token           on public.test_links(token);
