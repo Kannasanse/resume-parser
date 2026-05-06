@@ -183,7 +183,7 @@ function ErrorScreen({ type }) {
 }
 
 // ─── Completion screen ────────────────────────────────────────────────────────
-function CompletionScreen({ score, maxScore, autoSubmitted, autoSubmitReason }) {
+function CompletionScreen({ score, maxScore, autoSubmitted, autoSubmitReason, attemptId, allowReview }) {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-8 max-w-md w-full text-center space-y-4">
@@ -216,6 +216,14 @@ function CompletionScreen({ score, maxScore, autoSubmitted, autoSubmitReason }) 
           <p className="text-sm text-gray-500">
             Your responses have been recorded. Results will be available after manual grading.
           </p>
+        )}
+        {allowReview && attemptId && (
+          <a
+            href={`/review/${attemptId}`}
+            className="inline-block bg-blue-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
+          >
+            Review Attempt →
+          </a>
         )}
         <p className="text-sm text-gray-400">You may now close this window.</p>
       </div>
@@ -348,7 +356,7 @@ export default function TakeTest() {
         }),
       });
       const d = await r.json();
-      setSubmitResult({ score: d.score, maxScore: d.max_score, autoSubmitted, autoSubmitReason: reason });
+      setSubmitResult({ score: d.score, maxScore: d.max_score, autoSubmitted, autoSubmitReason: reason, attemptId: d.attempt_id, allowReview: d.allow_review });
       setState('submitted');
     } finally {
       submittingRef.current = false;
@@ -474,6 +482,8 @@ export default function TakeTest() {
         maxScore={submitResult?.maxScore}
         autoSubmitted={submitResult?.autoSubmitted}
         autoSubmitReason={submitResult?.autoSubmitReason}
+        attemptId={submitResult?.attemptId}
+        allowReview={submitResult?.allowReview}
       />
     );
   }

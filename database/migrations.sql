@@ -76,3 +76,15 @@ ALTER TABLE public.test_attempts
 ALTER TABLE public.question_library
   ADD COLUMN IF NOT EXISTS difficulty text
     CHECK (difficulty IN ('easy', 'medium', 'hard'));
+
+-- ─── tests: allow_review toggle (TM-008) ─────────────────────────────────────
+ALTER TABLE public.tests
+  ADD COLUMN IF NOT EXISTS allow_review boolean NOT NULL DEFAULT false;
+
+-- ─── test_responses: correct answer snapshot at submission time (TM-008) ──────
+ALTER TABLE public.test_responses
+  ADD COLUMN IF NOT EXISTS correct_answer_snapshot text;
+
+-- ─── test_questions: optional model answer for short answer questions ──────────
+ALTER TABLE public.test_questions
+  ADD COLUMN IF NOT EXISTS expected_answer text;

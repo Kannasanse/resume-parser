@@ -161,11 +161,13 @@ export async function POST(request, { params }) {
       if (!attempt) return Response.json({ error: 'Attempt not found' }, { status: 404 });
       if (attempt.submitted_at) return Response.json({ error: 'Already submitted' }, { status: 409 });
 
-      // Load questions with correct answers for auto-grading
-      const { data: questions } = await supabase
-        .from('test_questions')
-        .select('id, type, points, test_options(id, is_correct)')
-        .eq('test_id', link.test_id);
+      // Load questions with correct answers for auto-grading + snapshot
+      const [{ data: questions }, { data: testMeta }] = await Promise.all([
+        supabase.from('test_questions')
+          .select('id, type, points, expected_answer, test_options(id, option_text, is_correct)')
+          .eq('test_id', link.test_id),
+        supabase.from('tests').select('allow_review').eq('id', link.test_id).single(),
+      ]);
 
       const qMap = {};
       for (const q of questions || []) qMap[q.id] = q;
@@ -182,16 +184,20 @@ export async function POST(request, { params }) {
 
         let is_correct = null;
         let points_awarded = 0;
+        let correct_answer_snapshot = null;
 
         if (q.type === 'mcq' || q.type === 'true_false') {
+          const correctOpt = q.test_options.find(o => o.is_correct);
+          correct_answer_snapshot = correctOpt?.option_text || null;
           if (r.selected_option_id) {
-            const correctOpt = q.test_options.find(o => o.is_correct);
             is_correct = correctOpt?.id === r.selected_option_id;
             if (is_correct) {
               points_awarded = q.points;
               totalScore += q.points;
             }
           }
+        } else if (q.type === 'short_answer') {
+          correct_answer_snapshot = q.expected_answer || null;
         }
 
         responseRows.push({
@@ -201,6 +207,7 @@ export async function POST(request, { params }) {
           text_response: r.text_response || null,
           is_correct,
           points_awarded,
+          correct_answer_snapshot,
         });
       }
 
@@ -222,7 +229,13 @@ export async function POST(request, { params }) {
 
       await supabase.from('test_links').update({ status: 'completed' }).eq('id', link.id);
 
-      return Response.json({ message: 'Test submitted', score: hasShortAnswer ? null : totalScore, max_score: maxScore });
+      return Response.json({
+        message:      'Test submitted',
+        score:        hasShortAnswer ? null : totalScore,
+        max_score:    maxScore,
+        attempt_id,
+        allow_review: testMeta?.allow_review || false,
+      });
     }
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });

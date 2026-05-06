@@ -38,6 +38,7 @@ function IntegritySummary({ test }) {
   } else {
     parts.push('Tab monitoring: Off');
   }
+  parts.push(test.allow_review ? 'Review: Enabled' : 'Review: Disabled');
   return (
     <p className="text-xs text-ds-textMuted mt-0.5">
       {parts.join(' · ')}
@@ -578,6 +579,7 @@ function SettingsModal({ test, onClose, onSave }) {
     tab_switch_monitoring: test.tab_switch_monitoring || false,
     tab_switch_threshold: test.tab_switch_threshold || 3,
     tab_switch_action: test.tab_switch_action || 'flag',
+    allow_review: test.allow_review || false,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -728,6 +730,20 @@ function SettingsModal({ test, onClose, onSave }) {
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Attempt review */}
+          <div className="space-y-3 pt-3 border-t border-ds-border">
+            <p className="text-sm font-medium text-ds-text">Attempt Review</p>
+            <div className="flex items-center gap-3">
+              <Toggle value={form.allow_review} onChange={v => set('allow_review', v)} />
+              <span className="text-sm text-ds-text">
+                {form.allow_review ? 'Allow users to review their attempt' : 'Review disabled'}
+              </span>
+            </div>
+            <p className="text-xs text-ds-textMuted">
+              When enabled, a "Review Attempt" button appears after submission showing correct and incorrect answers. Can be changed at any time.
+            </p>
           </div>
 
           <div className="flex gap-3 pt-1">
