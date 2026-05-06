@@ -1151,6 +1151,635 @@ function ElegantScript({ resume, design }) {
   );
 }
 
+// ── Template: Corporate Serif ─────────────────────────────────────────────────
+// Centered name in EB Garamond, spaced-caps section headers with full-width hairline rules.
+
+function CorporateSerif({ resume, design }) {
+  const { theme, spacing, margins } = design;
+  const m = margins.value;
+  const sg = spacing.sectionGap;
+  const ig = spacing.itemGap;
+  const lh = spacing.lineHeight;
+  const pi = resume.personal_info || {};
+  const sections = (resume.sections || []).filter(s => s.enabled !== false);
+  const serif = `'EB Garamond', Georgia, serif`;
+  const col = theme.primary;
+
+  const SectionHdr = ({ children }) => (
+    <div style={{ textAlign: 'center', margin: `${sg * 0.6}px 0 ${ig}px` }}>
+      <span style={{ fontFamily: serif, fontSize: '11pt', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: col, paddingBottom: 3, borderBottom: `1px solid ${col}` }}>
+        {children}
+      </span>
+    </div>
+  );
+
+  return (
+    <div style={{ fontFamily: serif, color: theme.text, fontSize: '11pt', lineHeight: lh, background: '#fff', padding: `${m * 1.2}px ${m * 1.4}px`, minHeight: '100%' }}>
+      {/* Header */}
+      <div style={{ textAlign: 'center', paddingBottom: sg * 0.5, marginBottom: sg * 0.3, borderBottom: `1px solid ${col}` }}>
+        <div style={{ fontSize: '26pt', fontWeight: 700, color: col, letterSpacing: '0.01em', marginBottom: 3 }}>
+          {pi.name || 'Your Name'}
+        </div>
+        {pi.title && <div style={{ fontSize: '13pt', fontStyle: 'italic', color: theme.subtext, marginBottom: 10 }}>{pi.title}</div>}
+        <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 18, fontSize: '10.5pt' }}>
+          {[pi.location, pi.email, pi.phone, pi.linkedin].filter(Boolean).map((v, i) => (
+            <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>{v}</span>
+          ))}
+        </div>
+      </div>
+
+      {pi.summary && (
+        <>
+          <SectionHdr>Summary</SectionHdr>
+          <p style={{ textAlign: 'center', fontSize: '11pt', lineHeight: lh, padding: '0 8px', marginBottom: sg * 0.4 }}>{pi.summary}</p>
+        </>
+      )}
+
+      {sections.map(sec => {
+        const c = sec.content || {};
+        const entries = c.entries || [];
+        return (
+          <div key={sec.id}>
+            <SectionHdr>{sec.title}</SectionHdr>
+
+            {(sec.type === 'summary' || sec.type === 'hobbies' || sec.type === 'references') && (
+              <p style={{ textAlign: 'center', fontSize: '11pt', lineHeight: lh }}>{c.text || ''}</p>
+            )}
+
+            {sec.type === 'work_experience' && entries.map((e, i) => (
+              <div key={i} style={{ marginBottom: ig }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto' }}>
+                  <span style={{ fontWeight: 700 }}>{e.company}</span>
+                  <span style={{ textAlign: 'right', fontSize: '10.5pt' }}>{dateRange(e.start_date, e.end_date, e.current)}</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto' }}>
+                  <span style={{ fontStyle: 'italic', color: theme.subtext, fontSize: '10.5pt' }}>{e.title}</span>
+                  <span style={{ textAlign: 'right', fontStyle: 'italic', color: theme.subtext, fontSize: '10.5pt' }}>{e.location}</span>
+                </div>
+                {e.description && (
+                  <div style={{ marginTop: 3, fontSize: '10.5pt', lineHeight: lh, whiteSpace: 'pre-line', paddingLeft: 4 }}>{e.description}</div>
+                )}
+              </div>
+            ))}
+
+            {sec.type === 'education' && entries.map((e, i) => (
+              <div key={i} style={{ marginBottom: ig }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto' }}>
+                  <span style={{ fontWeight: 700 }}>{e.institution}</span>
+                  <span style={{ textAlign: 'right', fontSize: '10.5pt' }}>{dateRange(e.start_date, e.end_date, false)}</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto' }}>
+                  <span style={{ fontStyle: 'italic', color: theme.subtext, fontSize: '10.5pt' }}>{e.degree}{e.field ? `, ${e.field}` : ''}</span>
+                  <span style={{ textAlign: 'right', fontStyle: 'italic', color: theme.subtext, fontSize: '10.5pt' }}>{e.location}</span>
+                </div>
+              </div>
+            ))}
+
+            {sec.type === 'skills' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '3px 24px', marginBottom: ig }}>
+                {entries.map((e, i) => <div key={i} style={{ fontSize: '10.5pt' }}>• {e.skill}</div>)}
+              </div>
+            )}
+
+            {sec.type === 'certifications' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '3px 24px', marginBottom: ig }}>
+                {entries.map((e, i) => <div key={i} style={{ fontSize: '10.5pt' }}>• {e.name}</div>)}
+              </div>
+            )}
+
+            {sec.type === 'languages' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px 32px', marginBottom: ig }}>
+                {entries.map((e, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10.5pt' }}>
+                    <span>{e.language}</span>
+                    {e.level && <span style={{ color: theme.subtext }}>{e.level}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {sec.type === 'projects' && entries.map((e, i) => (
+              <div key={i} style={{ marginBottom: ig }}>
+                <div style={{ fontWeight: 700 }}>{e.name}</div>
+                {e.description && <div style={{ fontSize: '10.5pt', lineHeight: lh, whiteSpace: 'pre-line' }}>{e.description}</div>}
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Template: Silver Banner ───────────────────────────────────────────────────
+// Left-aligned name with full-width silver/themed banner section headers.
+
+function SilverBanner({ resume, design }) {
+  const { theme, spacing, margins } = design;
+  const m = margins.value;
+  const sg = spacing.sectionGap;
+  const ig = spacing.itemGap;
+  const lh = spacing.lineHeight;
+  const pi = resume.personal_info || {};
+  const sections = (resume.sections || []).filter(s => s.enabled !== false);
+  const serif = `'EB Garamond', Georgia, serif`;
+  const bannerBg = `${theme.primary}22`;
+  const bannerText = theme.primary;
+
+  const Banner = ({ children }) => (
+    <div style={{ background: bannerBg, color: bannerText, textAlign: 'center', padding: '5px 0', fontWeight: 700, fontSize: '11pt', borderRadius: 1, margin: `${sg * 0.5}px 0 ${ig}px`, fontFamily: serif, letterSpacing: '0.02em' }}>
+      {children}
+    </div>
+  );
+
+  return (
+    <div style={{ fontFamily: serif, color: theme.text, fontSize: '11pt', lineHeight: lh, background: '#fff', padding: `${m * 1.1}px ${m * 1.2}px`, minHeight: '100%' }}>
+      {/* Header */}
+      <div style={{ marginBottom: sg * 0.8 }}>
+        <div style={{ fontSize: '22pt', fontWeight: 700, color: theme.primary, letterSpacing: '0.01em' }}>{pi.name || 'Your Name'}</div>
+        {pi.title && <div style={{ fontSize: '13pt', color: theme.text, marginBottom: 10 }}>{pi.title}</div>}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', rowGap: 4, columnGap: 24, fontSize: '10.5pt' }}>
+          {[pi.location, pi.email, pi.phone, pi.linkedin].filter(Boolean).map((v, i) => <span key={i}>{v}</span>)}
+        </div>
+      </div>
+
+      {pi.summary && (
+        <>
+          <Banner>Summary</Banner>
+          <p style={{ fontSize: '11pt', lineHeight: lh, marginBottom: sg * 0.4 }}>{pi.summary}</p>
+        </>
+      )}
+
+      {sections.map(sec => {
+        const c = sec.content || {};
+        const entries = c.entries || [];
+        return (
+          <div key={sec.id}>
+            <Banner>{sec.title}</Banner>
+
+            {(sec.type === 'summary' || sec.type === 'hobbies' || sec.type === 'references') && (
+              <p style={{ fontSize: '11pt', lineHeight: lh }}>{c.text || ''}</p>
+            )}
+
+            {sec.type === 'work_experience' && entries.map((e, i) => (
+              <div key={i} style={{ marginBottom: ig }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto' }}>
+                  <span style={{ fontWeight: 700 }}>{e.title}{e.company ? `, ${e.company}` : ''}</span>
+                  <span style={{ fontSize: '10pt', color: theme.subtext }}>{dateRange(e.start_date, e.end_date, e.current)}</span>
+                </div>
+                {e.location && <div style={{ textAlign: 'right', fontSize: '10pt', color: theme.subtext }}>{e.location}</div>}
+                {e.description && <div style={{ marginTop: 3, fontSize: '10.5pt', lineHeight: lh, whiteSpace: 'pre-line' }}>{e.description}</div>}
+              </div>
+            ))}
+
+            {sec.type === 'education' && entries.map((e, i) => (
+              <div key={i} style={{ marginBottom: ig }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto' }}>
+                  <span style={{ fontWeight: 700 }}>{e.degree}{e.field ? `, ${e.field}` : ''}{e.institution ? `, ${e.institution}` : ''}</span>
+                  <span style={{ fontSize: '10pt', color: theme.subtext }}>{dateRange(e.start_date, e.end_date, false)}</span>
+                </div>
+                {e.location && <div style={{ textAlign: 'right', fontSize: '10pt', color: theme.subtext }}>{e.location}</div>}
+              </div>
+            ))}
+
+            {sec.type === 'skills' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 24px', marginBottom: ig }}>
+                {entries.map((e, i) => <div key={i} style={{ fontSize: '10.5pt' }}>• {e.skill}</div>)}
+              </div>
+            )}
+
+            {sec.type === 'certifications' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 24px', marginBottom: ig }}>
+                {entries.map((e, i) => <div key={i} style={{ fontSize: '10.5pt' }}>• {e.name}</div>)}
+              </div>
+            )}
+
+            {sec.type === 'languages' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px 32px', marginBottom: ig }}>
+                {entries.map((e, i) => (
+                  <div key={i} style={{ fontSize: '10.5pt' }}>• {e.language}{e.level ? ` — ${e.level}` : ''}</div>
+                ))}
+              </div>
+            )}
+
+            {sec.type === 'projects' && entries.map((e, i) => (
+              <div key={i} style={{ marginBottom: ig }}>
+                <div style={{ fontWeight: 700 }}>{e.name}</div>
+                {e.description && <div style={{ fontSize: '10.5pt', lineHeight: lh, whiteSpace: 'pre-line' }}>{e.description}</div>}
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Template: Teal Sidebar ────────────────────────────────────────────────────
+// Lora-serif main column left, bold colored right sidebar for skills/certs/languages.
+
+function TealSidebarTemplate({ resume, design }) {
+  const { theme, spacing, margins } = design;
+  const m = margins.value;
+  const sg = spacing.sectionGap;
+  const ig = spacing.itemGap;
+  const lh = spacing.lineHeight;
+  const pi = resume.personal_info || {};
+  const sections = (resume.sections || []).filter(s => s.enabled !== false);
+  const sideTypes = ['skills', 'languages', 'certifications'];
+  const mainSecs = sections.filter(s => !sideTypes.includes(s.type));
+  const sideSecs = sections.filter(s => sideTypes.includes(s.type));
+  const serif = `'Lora', Georgia, serif`;
+  const sans = `'Montserrat', system-ui, sans-serif`;
+  const sidebarBg = theme.primary;
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1.55fr 1fr', fontFamily: serif, fontSize: '10.5pt', lineHeight: lh, color: theme.text, background: '#fff', minHeight: '100%', overflow: 'hidden' }}>
+      {/* Main */}
+      <div style={{ padding: `${m * 1.1}px ${m * 0.85}px ${m}px ${m * 1.1}px` }}>
+        <div style={{ fontFamily: sans, fontSize: '22pt', fontWeight: 800, color: theme.primary, letterSpacing: '0.01em', lineHeight: 1.1, marginBottom: 3 }}>{pi.name || 'Your Name'}</div>
+        {pi.title && <div style={{ color: theme.accent || theme.primary, fontSize: '11pt', fontWeight: 600, marginBottom: 8 }}>{pi.title}</div>}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, fontSize: '10pt', color: theme.text, marginBottom: sg * 0.5 }}>
+          {[pi.phone, pi.email, pi.linkedin, pi.location].filter(Boolean).map((v, i) => <span key={i}>{v}</span>)}
+        </div>
+
+        {pi.summary && (
+          <>
+            <div style={{ fontFamily: sans, color: theme.primary, fontWeight: 700, fontSize: '10pt', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: sg * 0.6, marginBottom: 5 }}>Summary</div>
+            <p style={{ fontSize: '10.5pt', lineHeight: lh, marginBottom: sg * 0.4 }}>{pi.summary}</p>
+          </>
+        )}
+
+        {mainSecs.map(sec => {
+          const c = sec.content || {};
+          const entries = c.entries || [];
+          return (
+            <div key={sec.id} style={{ marginBottom: sg * 0.5 }}>
+              <div style={{ fontFamily: sans, color: theme.primary, fontWeight: 700, fontSize: '10pt', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: sg * 0.5, marginBottom: 5 }}>
+                {sec.title}
+              </div>
+
+              {(sec.type === 'summary' || sec.type === 'hobbies' || sec.type === 'references') && (
+                <p style={{ fontSize: '10.5pt', lineHeight: lh }}>{c.text || ''}</p>
+              )}
+
+              {sec.type === 'work_experience' && entries.map((e, i) => (
+                <div key={i} style={{ marginBottom: ig }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto' }}>
+                    <span style={{ fontWeight: 700, fontSize: '11pt', color: theme.primary }}>{e.title}</span>
+                    <span style={{ fontSize: '10pt', color: theme.subtext }}>{dateRange(e.start_date, e.end_date, e.current)}</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto' }}>
+                    <span style={{ color: theme.accent || theme.primary, fontWeight: 600, fontSize: '10.5pt' }}>{e.company}</span>
+                    <span style={{ fontSize: '10pt', color: theme.subtext }}>{e.location}</span>
+                  </div>
+                  {e.description && <div style={{ marginTop: 3, fontSize: '10pt', lineHeight: lh, whiteSpace: 'pre-line' }}>{e.description}</div>}
+                </div>
+              ))}
+
+              {sec.type === 'education' && entries.map((e, i) => (
+                <div key={i} style={{ marginBottom: ig }}>
+                  <div style={{ fontWeight: 700, color: theme.primary }}>{e.degree}{e.field ? `, ${e.field}` : ''}</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10pt', color: theme.subtext }}>
+                    <span>{e.institution}</span>
+                    <span>{dateRange(e.start_date, e.end_date, false)}</span>
+                  </div>
+                </div>
+              ))}
+
+              {sec.type === 'projects' && entries.map((e, i) => (
+                <div key={i} style={{ marginBottom: ig }}>
+                  <div style={{ fontWeight: 700 }}>{e.name}</div>
+                  {e.description && <div style={{ fontSize: '10pt', lineHeight: lh, whiteSpace: 'pre-line' }}>{e.description}</div>}
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Sidebar */}
+      <div style={{ background: sidebarBg, color: '#fff', padding: `${m * 1.1}px ${m * 0.85}px` }}>
+        {/* Avatar initials */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: sg * 0.7 }}>
+          <div style={{ width: 90, height: 90, borderRadius: '50%', background: 'rgba(255,255,255,0.18)', border: '3px solid rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22pt', fontWeight: 700, fontFamily: sans, color: '#fff' }}>
+            {(pi.name || 'Y').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+          </div>
+        </div>
+
+        {sideSecs.map(sec => {
+          const c = sec.content || {};
+          const entries = c.entries || [];
+          return (
+            <div key={sec.id} style={{ marginBottom: sg * 0.6 }}>
+              <div style={{ fontFamily: sans, fontWeight: 700, fontSize: '9.5pt', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.35)', paddingBottom: 4, marginBottom: 8 }}>
+                {sec.title}
+              </div>
+              {sec.type === 'skills' && (
+                <div style={{ color: '#fff', fontSize: '10pt', lineHeight: 1.7 }}>
+                  {entries.map((e, i) => <span key={i}>{e.skill}{i < entries.length - 1 ? ' · ' : ''}</span>)}
+                </div>
+              )}
+              {sec.type === 'languages' && entries.map((e, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: '10pt', color: 'rgba(255,255,255,0.9)' }}>
+                  <strong>{e.language}</strong>
+                  {e.level && <span style={{ opacity: 0.7 }}>{e.level}</span>}
+                </div>
+              ))}
+              {sec.type === 'certifications' && entries.map((e, i) => (
+                <div key={i} style={{ marginBottom: 6, fontSize: '10pt', color: 'rgba(255,255,255,0.9)' }}>
+                  <div style={{ fontWeight: 600 }}>{e.name}</div>
+                  {e.issuer && <div style={{ opacity: 0.7, fontSize: '9.5pt' }}>{e.issuer}</div>}
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Template: Timeline ────────────────────────────────────────────────────────
+// Vertical accent rail with circle dots and a left date-column.
+
+function TimelineTemplate({ resume, design }) {
+  const { theme, spacing, margins } = design;
+  const m = margins.value;
+  const sg = spacing.sectionGap;
+  const ig = spacing.itemGap;
+  const lh = spacing.lineHeight;
+  const pi = resume.personal_info || {};
+  const sections = (resume.sections || []).filter(s => s.enabled !== false);
+  const serif = `'Lora', Georgia, serif`;
+  const sans = `'Montserrat', system-ui, sans-serif`;
+  const accent = theme.accent || theme.primary;
+
+  return (
+    <div style={{ fontFamily: serif, color: theme.text, fontSize: '10.5pt', lineHeight: lh, background: '#fff', padding: `${m * 1.1}px ${m * 1.2}px`, minHeight: '100%' }}>
+      {/* Header */}
+      <div style={{ marginBottom: sg * 0.7 }}>
+        <div style={{ fontFamily: sans, fontSize: '22pt', fontWeight: 800, color: theme.primary, letterSpacing: '0.02em', textTransform: 'uppercase' }}>{pi.name || 'Your Name'}</div>
+        {pi.title && <div style={{ color: accent, fontSize: '11pt', fontWeight: 600, marginTop: 2, marginBottom: 6 }}>{pi.title}</div>}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, fontSize: '10pt', marginBottom: 4 }}>
+          {[pi.phone, pi.email, pi.linkedin, pi.location].filter(Boolean).map((v, i) => <span key={i}>{v}</span>)}
+        </div>
+      </div>
+
+      {pi.summary && (
+        <>
+          <div style={{ fontFamily: sans, color: theme.primary, fontWeight: 700, fontSize: '11pt', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>Summary</div>
+          <p style={{ fontSize: '10.5pt', lineHeight: lh, marginBottom: sg * 0.5 }}>{pi.summary}</p>
+        </>
+      )}
+
+      {sections.map(sec => {
+        const c = sec.content || {};
+        const entries = c.entries || [];
+
+        return (
+          <div key={sec.id} style={{ marginBottom: sg * 0.6 }}>
+            <div style={{ fontFamily: sans, color: theme.primary, fontWeight: 700, fontSize: '11pt', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: sg * 0.5, marginBottom: 8 }}>
+              {sec.title}
+            </div>
+
+            {(sec.type === 'summary' || sec.type === 'hobbies' || sec.type === 'references') && (
+              <p style={{ fontSize: '10.5pt', lineHeight: lh }}>{c.text || ''}</p>
+            )}
+
+            {(sec.type === 'work_experience' || sec.type === 'education' || sec.type === 'projects') && (
+              <div>
+                {entries.map((e, i) => {
+                  const isLast = i === entries.length - 1;
+                  const dateStr = sec.type === 'education'
+                    ? dateRange(e.start_date, e.end_date, false)
+                    : dateRange(e.start_date, e.end_date, e.current);
+                  const loc = e.location || '';
+                  return (
+                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '100px 20px 1fr', columnGap: 10, marginBottom: ig }}>
+                      {/* Date */}
+                      <div style={{ fontSize: '10pt', textAlign: 'left', lineHeight: 1.4 }}>
+                        <div style={{ fontWeight: 700, color: theme.primary, fontSize: '10.5pt' }}>{dateStr}</div>
+                        {loc && <div style={{ color: theme.subtext, fontSize: '9.5pt', marginTop: 2 }}>{loc}</div>}
+                      </div>
+                      {/* Rail */}
+                      <div style={{ position: 'relative' }}>
+                        <div style={{ width: 10, height: 10, borderRadius: '50%', background: accent, margin: '4px auto 0' }} />
+                        {!isLast && <div style={{ position: 'absolute', top: 14, bottom: -ig, left: '50%', width: 2, background: accent, opacity: 0.3, transform: 'translateX(-1px)' }} />}
+                      </div>
+                      {/* Content */}
+                      <div>
+                        {sec.type === 'work_experience' && (
+                          <>
+                            <div style={{ fontWeight: 700, color: theme.text, fontSize: '11pt' }}>{e.title}</div>
+                            <div style={{ color: accent, fontWeight: 700, marginBottom: 3 }}>{e.company}</div>
+                          </>
+                        )}
+                        {sec.type === 'education' && (
+                          <>
+                            <div style={{ fontWeight: 700, color: theme.text, fontSize: '11pt' }}>{e.degree}{e.field ? `, ${e.field}` : ''}</div>
+                            <div style={{ color: accent, fontWeight: 600 }}>{e.institution}</div>
+                          </>
+                        )}
+                        {sec.type === 'projects' && (
+                          <div style={{ fontWeight: 700 }}>{e.name}</div>
+                        )}
+                        {e.description && <div style={{ fontSize: '10pt', lineHeight: lh, whiteSpace: 'pre-line', marginTop: 2 }}>{e.description}</div>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {sec.type === 'skills' && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: ig * 0.5 }}>
+                {entries.map((e, i) => (
+                  <span key={i} style={{ display: 'inline-block', padding: '4px 10px', border: `1px solid ${theme.subtext}`, borderRadius: 4, fontSize: '10pt', color: theme.text }}>
+                    {e.skill}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {sec.type === 'certifications' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: ig / 2, marginBottom: ig * 0.5 }}>
+                {entries.map((e, i) => (
+                  <div key={i}>
+                    <div style={{ fontWeight: 600 }}>{e.name}</div>
+                    {e.issuer && <div style={{ fontSize: '9.5pt', color: theme.subtext }}>{e.issuer}</div>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {sec.type === 'languages' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: ig * 0.5 }}>
+                {entries.map((e, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontWeight: 700, color: theme.primary }}>{e.language}</span>
+                    {e.level && <span style={{ fontSize: '9.5pt', color: theme.subtext }}>{e.level}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Template: Photo Sidebar ───────────────────────────────────────────────────
+// Left sidebar with photo placeholder, contacts, skills; right Lora-serif main column.
+
+function PhotoSidebarTemplate({ resume, design }) {
+  const { theme, spacing, margins } = design;
+  const m = margins.value;
+  const sg = spacing.sectionGap;
+  const ig = spacing.itemGap;
+  const lh = spacing.lineHeight;
+  const pi = resume.personal_info || {};
+  const sections = (resume.sections || []).filter(s => s.enabled !== false);
+  const sideTypes = ['skills', 'languages', 'certifications'];
+  const mainSecs = sections.filter(s => !sideTypes.includes(s.type));
+  const sideSecs = sections.filter(s => sideTypes.includes(s.type));
+  const serif = `'Lora', Georgia, serif`;
+  const sans = `'Montserrat', system-ui, sans-serif`;
+  const accent = theme.accent || theme.primary;
+  const pillColor = `${accent}33`;
+  const initials = (pi.name || 'Y').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.85fr', fontFamily: serif, fontSize: '10.5pt', lineHeight: lh, color: theme.text, background: '#fff', minHeight: '100%', overflow: 'hidden' }}>
+      {/* Sidebar */}
+      <div style={{ padding: `${m * 1.1}px ${m * 0.7}px ${m}px ${m * 0.9}px`, background: '#fff', borderRight: `1px solid #e8eaee` }}>
+        {/* Photo placeholder */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: sg * 0.7, position: 'relative' }}>
+          <div style={{ position: 'relative' }}>
+            <div style={{ position: 'absolute', top: -8, left: -10, width: 40, height: 40, borderRadius: '50%', background: pillColor, opacity: 0.8 }} />
+            <div style={{ position: 'absolute', bottom: -5, right: -4, width: 24, height: 24, borderRadius: '50%', background: pillColor, opacity: 0.8 }} />
+            <div style={{ width: 110, height: 110, borderRadius: '50%', background: pillColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22pt', fontWeight: 700, fontFamily: sans, color: accent, position: 'relative' }}>
+              {initials}
+            </div>
+          </div>
+        </div>
+
+        {/* Contacts section */}
+        <div style={{ marginBottom: sg * 0.6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: sans, color: theme.primary, fontWeight: 700, fontSize: '10.5pt', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 7 }}>
+            <span style={{ color: accent }}>✉</span> Contacts
+          </div>
+          {[pi.phone, pi.email, pi.linkedin, pi.location].filter(Boolean).map((v, i) => (
+            <div key={i} style={{ display: 'flex', gap: 5, marginBottom: 4, fontSize: '10pt' }}>{v}</div>
+          ))}
+        </div>
+
+        {sideSecs.map(sec => {
+          const c = sec.content || {};
+          const entries = c.entries || [];
+          return (
+            <div key={sec.id} style={{ marginBottom: sg * 0.6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: sans, color: theme.primary, fontWeight: 700, fontSize: '10.5pt', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 7 }}>
+                <span style={{ color: accent }}>✦</span> {sec.title}
+              </div>
+              {sec.type === 'skills' && (
+                <div style={{ fontSize: '10pt', lineHeight: 1.7 }}>
+                  {entries.map((e, i) => <span key={i}>{e.skill}{i < entries.length - 1 ? ' · ' : ''}</span>)}
+                </div>
+              )}
+              {sec.type === 'languages' && entries.map((e, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, fontSize: '10pt' }}>
+                  <span style={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '9.5pt' }}>{e.language}</span>
+                  {e.level && <span style={{ color: theme.subtext, fontSize: '9.5pt' }}>{e.level}</span>}
+                  <span style={{ display: 'inline-flex', gap: 2, marginLeft: 'auto' }}>
+                    {[1,2,3,4,5].map(n => <span key={n} style={{ width: 6, height: 6, borderRadius: '50%', background: accent, opacity: 0.3 + (n <= 3 ? 0.7 : 0) }} />)}
+                  </span>
+                </div>
+              ))}
+              {sec.type === 'certifications' && entries.map((e, i) => (
+                <div key={i} style={{ marginBottom: 5, fontSize: '10pt' }}>
+                  <div style={{ fontWeight: 600 }}>{e.name}</div>
+                  {e.issuer && <div style={{ color: theme.subtext, fontSize: '9.5pt' }}>{e.issuer}</div>}
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Main */}
+      <div style={{ padding: `${m * 1.1}px ${m * 1.1}px ${m}px ${m * 0.85}px` }}>
+        <div style={{ fontFamily: sans, fontSize: '22pt', fontWeight: 800, color: theme.primary, letterSpacing: '0.02em', lineHeight: 1.05, textTransform: 'uppercase', marginBottom: 8 }}>{pi.name || 'Your Name'}</div>
+        {pi.title && (
+          <div style={{ background: pillColor, color: theme.primary, fontFamily: sans, fontWeight: 700, fontSize: '10pt', letterSpacing: '0.07em', textTransform: 'uppercase', padding: '8px 14px', borderRadius: 5, marginBottom: sg * 0.6, lineHeight: 1.3 }}>
+            {pi.title}
+          </div>
+        )}
+
+        {pi.summary && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: sans, color: theme.primary, fontWeight: 700, fontSize: '10.5pt', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 6 }}>
+              <span style={{ color: accent }}>▹</span> Summary
+            </div>
+            <p style={{ fontSize: '10.5pt', lineHeight: lh, marginBottom: sg * 0.5 }}>{pi.summary}</p>
+          </>
+        )}
+
+        {mainSecs.map(sec => {
+          const c = sec.content || {};
+          const entries = c.entries || [];
+          return (
+            <div key={sec.id} style={{ marginBottom: sg * 0.5 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: sans, color: theme.primary, fontWeight: 700, fontSize: '11pt', letterSpacing: '0.07em', textTransform: 'uppercase', marginTop: sg * 0.5, marginBottom: 8 }}>
+                <span style={{ color: accent }}>▹</span> {sec.title}
+              </div>
+
+              {(sec.type === 'summary' || sec.type === 'hobbies' || sec.type === 'references') && (
+                <p style={{ fontSize: '10.5pt', lineHeight: lh }}>{c.text || ''}</p>
+              )}
+
+              {sec.type === 'work_experience' && entries.map((e, i) => (
+                <div key={i} style={{ marginBottom: ig }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto' }}>
+                    <span style={{ fontWeight: 700, color: theme.primary, fontSize: '11pt' }}>{e.company}</span>
+                    <span style={{ fontSize: '9.5pt', color: theme.subtext }}>{e.location}</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto' }}>
+                    <span style={{ fontSize: '10.5pt' }}>{e.title}</span>
+                    <span style={{ fontSize: '9.5pt', color: theme.subtext }}>{dateRange(e.start_date, e.end_date, e.current)}</span>
+                  </div>
+                  {e.description && <div style={{ marginTop: 3, fontSize: '10pt', lineHeight: lh, whiteSpace: 'pre-line' }}>{e.description}</div>}
+                </div>
+              ))}
+
+              {sec.type === 'education' && entries.map((e, i) => (
+                <div key={i} style={{ marginBottom: ig }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto' }}>
+                    <span style={{ fontWeight: 700, color: theme.primary }}>{e.institution}</span>
+                    <span style={{ fontSize: '9.5pt', color: theme.subtext }}>{e.location}</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto' }}>
+                    <span style={{ fontSize: '10.5pt' }}>{e.degree}{e.field ? `, ${e.field}` : ''}</span>
+                    <span style={{ fontSize: '9.5pt', color: theme.subtext }}>{dateRange(e.start_date, e.end_date, false)}</span>
+                  </div>
+                </div>
+              ))}
+
+              {sec.type === 'projects' && entries.map((e, i) => (
+                <div key={i} style={{ marginBottom: ig }}>
+                  <div style={{ fontWeight: 700, color: theme.primary }}>{e.name}</div>
+                  {e.description && <div style={{ fontSize: '10pt', lineHeight: lh, whiteSpace: 'pre-line', marginTop: 2 }}>{e.description}</div>}
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Template registry ─────────────────────────────────────────────────────────
 
 const TEMPLATE_COMPONENTS = {
@@ -1168,6 +1797,11 @@ const TEMPLATE_COMPONENTS = {
   'soft-gradient': SoftGradient,
   'bold-impact': BoldImpact,
   'elegant-script': ElegantScript,
+  'corporate-serif': CorporateSerif,
+  'silver-banner': SilverBanner,
+  'teal-sidebar': TealSidebarTemplate,
+  'timeline': TimelineTemplate,
+  'photo-sidebar': PhotoSidebarTemplate,
 };
 
 // ── ResumePreview component ───────────────────────────────────────────────────
