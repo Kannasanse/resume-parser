@@ -169,12 +169,29 @@ export async function POST(request) {
     };
     if (input_type === 'jd') insertRow.jd_skills = jd_skills;
 
-    const { data: session, error: sErr } = await supabase
-      .from('self_test_sessions')
-      .insert(insertRow)
-      .select('id, input_type, question_count, difficulty, timer_minutes, status, created_at')
-      .single();
-    if (sErr) throw sErr;
+    let session;
+    {
+      const { data, error: sErr } = await supabase
+        .from('self_test_sessions')
+        .insert(insertRow)
+        .select('id, input_type, question_count, difficulty, timer_minutes, status, created_at')
+        .single();
+
+      // Graceful fallback: if jd_skills column not yet migrated, retry without it
+      if (sErr && input_type === 'jd' && sErr.message?.includes('jd_skills')) {
+        const { jd_skills: _drop, ...rowWithout } = insertRow;
+        const { data: d2, error: e2 } = await supabase
+          .from('self_test_sessions')
+          .insert(rowWithout)
+          .select('id, input_type, question_count, difficulty, timer_minutes, status, created_at')
+          .single();
+        if (e2) throw e2;
+        session = d2;
+      } else {
+        if (sErr) throw sErr;
+        session = data;
+      }
+    }
 
     return Response.json({ session }, { status: 201 });
   } catch (err) {

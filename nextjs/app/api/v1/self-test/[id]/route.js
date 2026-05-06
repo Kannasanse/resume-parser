@@ -10,12 +10,25 @@ export async function GET(request, { params }) {
 
     const { data: session, error } = await supabase
       .from('self_test_sessions')
-      .select('id, input_type, input_data, jd_skills, difficulty, timer_minutes, questions, question_count, status, created_at, user_id')
+      .select('id, input_type, input_data, difficulty, timer_minutes, questions, question_count, status, created_at, user_id')
       .eq('id', id)
       .single();
 
     if (error || !session) return Response.json({ error: 'Test not found' }, { status: 404 });
     if (session.user_id !== user.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
+
+    // Fetch jd_skills separately — column added in migration; graceful fallback if not yet applied
+    let jd_skills = null;
+    if (session.input_type === 'jd') {
+      try {
+        const { data: jdRow } = await supabase
+          .from('self_test_sessions')
+          .select('jd_skills')
+          .eq('id', id)
+          .single();
+        jd_skills = jdRow?.jd_skills ?? null;
+      } catch {}
+    }
 
     // Fetch attempt if exists
     const { data: attempt } = await supabase
@@ -30,7 +43,7 @@ export async function GET(request, { params }) {
     if (attempt?.submitted_at) {
       // Return full questions for results display
       return Response.json({
-        session: { id: session.id, input_type: session.input_type, input_data: session.input_data, jd_skills: session.jd_skills ?? null, difficulty: session.difficulty, timer_minutes: session.timer_minutes, question_count: session.question_count, status: session.status },
+        session: { id: session.id, input_type: session.input_type, input_data: session.input_data, jd_skills, difficulty: session.difficulty, timer_minutes: session.timer_minutes, question_count: session.question_count, status: session.status },
         questions: session.questions,
         attempt,
       });
@@ -49,7 +62,7 @@ export async function GET(request, { params }) {
     });
 
     return Response.json({
-      session: { id: session.id, input_type: session.input_type, input_data: session.input_data, jd_skills: session.jd_skills ?? null, difficulty: session.difficulty, timer_minutes: session.timer_minutes, question_count: session.question_count, status: session.status },
+      session: { id: session.id, input_type: session.input_type, input_data: session.input_data, jd_skills, difficulty: session.difficulty, timer_minutes: session.timer_minutes, question_count: session.question_count, status: session.status },
       questions: stripped,
       attempt: null,
     });
