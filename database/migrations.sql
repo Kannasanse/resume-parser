@@ -88,3 +88,15 @@ ALTER TABLE public.test_responses
 -- ─── test_questions: optional model answer for short answer questions ──────────
 ALTER TABLE public.test_questions
   ADD COLUMN IF NOT EXISTS expected_answer text;
+
+-- ─── self_test_sessions: JD input type and extracted skills (ST-001–004) ───────
+-- Drop and recreate the check constraint to include 'jd'
+ALTER TABLE public.self_test_sessions
+  DROP CONSTRAINT IF EXISTS self_test_sessions_input_type_check;
+ALTER TABLE public.self_test_sessions
+  ADD CONSTRAINT self_test_sessions_input_type_check
+  CHECK (input_type IN ('skills', 'content', 'jd'));
+
+-- Store extracted JD skills [{name, type, confidence}] for retake and per-skill scoring
+ALTER TABLE public.self_test_sessions
+  ADD COLUMN IF NOT EXISTS jd_skills JSONB DEFAULT NULL;

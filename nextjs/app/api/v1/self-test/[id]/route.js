@@ -10,7 +10,7 @@ export async function GET(request, { params }) {
 
     const { data: session, error } = await supabase
       .from('self_test_sessions')
-      .select('id, input_type, input_data, difficulty, timer_minutes, questions, question_count, status, created_at, user_id')
+      .select('id, input_type, input_data, jd_skills, difficulty, timer_minutes, questions, question_count, status, created_at, user_id')
       .eq('id', id)
       .single();
 
@@ -30,7 +30,7 @@ export async function GET(request, { params }) {
     if (attempt?.submitted_at) {
       // Return full questions for results display
       return Response.json({
-        session: { id: session.id, input_type: session.input_type, input_data: session.input_data, difficulty: session.difficulty, timer_minutes: session.timer_minutes, question_count: session.question_count, status: session.status },
+        session: { id: session.id, input_type: session.input_type, input_data: session.input_data, jd_skills: session.jd_skills ?? null, difficulty: session.difficulty, timer_minutes: session.timer_minutes, question_count: session.question_count, status: session.status },
         questions: session.questions,
         attempt,
       });
@@ -49,7 +49,7 @@ export async function GET(request, { params }) {
     });
 
     return Response.json({
-      session: { id: session.id, input_type: session.input_type, input_data: session.input_data, difficulty: session.difficulty, timer_minutes: session.timer_minutes, question_count: session.question_count, status: session.status },
+      session: { id: session.id, input_type: session.input_type, input_data: session.input_data, jd_skills: session.jd_skills ?? null, difficulty: session.difficulty, timer_minutes: session.timer_minutes, question_count: session.question_count, status: session.status },
       questions: stripped,
       attempt: null,
     });

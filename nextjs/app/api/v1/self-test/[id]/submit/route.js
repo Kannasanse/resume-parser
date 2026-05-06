@@ -80,6 +80,7 @@ function calculateScore(questions, answers) {
     return {
       correct,
       answer: ans ?? null,
+      skill: q.skill ?? null,
       correct_index: q.type === 'mcq' ? q.options?.findIndex(o => o.is_correct) : undefined,
       correct_answer: q.type === 'true_false' ? q.correct_answer : undefined,
     };

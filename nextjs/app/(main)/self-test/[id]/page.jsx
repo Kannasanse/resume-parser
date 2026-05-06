@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -285,7 +285,40 @@ export default function SelfTestPage() {
   // ── Results ────────────────────────────────────────────────────────────────
   if (state === 'results' && results) {
     const pct = results.max_score > 0 ? Math.round((results.score / results.max_score) * 100) : 0;
-    const band = pct >= 80 ? 'Great work!' : pct >= 60 ? 'Good effort!' : 'Keep practising!';
+    const isJd = session?.input_type === 'jd';
+
+    const band = isJd
+      ? (pct >= 80 ? { label: 'Strong Match',       cls: 'text-ds-success bg-ds-successLight border border-ds-success/30' }
+       : pct >= 50 ? { label: 'Partial Match',       cls: 'text-amber-700 bg-amber-50 border border-amber-200' }
+                   : { label: 'Needs Improvement',   cls: 'text-ds-danger bg-ds-dangerLight border border-ds-danger/30' })
+      : { label: pct >= 80 ? 'Great work!' : pct >= 60 ? 'Good effort!' : 'Keep practising!', cls: '' };
+
+    // Per-skill breakdown (JD mode only)
+    const perSkill = isJd ? (() => {
+      const map = {};
+      (results.questions || []).forEach((q, i) => {
+        const skill = q.skill;
+        if (!skill) return;
+        if (!map[skill]) map[skill] = { correct: 0, total: 0 };
+        map[skill].total++;
+        if (results.results?.[i]?.correct) map[skill].correct++;
+      });
+      return Object.entries(map)
+        .map(([name, { correct, total }]) => ({ name, correct, total, pct: total > 0 ? Math.round((correct / total) * 100) : 0 }))
+        .sort((a, b) => b.pct - a.pct);
+    })() : null;
+
+    const handleRetake = () => {
+      if (session?.jd_skills) {
+        try {
+          sessionStorage.setItem('jd_retake', JSON.stringify({
+            skills: session.jd_skills,
+            jdText: session.input_data || '',
+          }));
+        } catch {}
+      }
+      router.push('/self-test');
+    };
 
     return (
       <div className="max-w-2xl mx-auto space-y-6">
@@ -293,7 +326,15 @@ export default function SelfTestPage() {
         <div className="bg-ds-card border border-ds-border rounded-lg p-6 text-center space-y-3">
           <p className="text-sm text-ds-textMuted font-medium uppercase tracking-wide">Your Score</p>
           <p className="text-5xl font-bold text-ds-text font-heading">{pct}%</p>
-          <p className="text-sm text-ds-textMuted">{results.score} / {results.max_score} points — {band}</p>
+          <p className="text-sm text-ds-textMuted">{results.score} / {results.max_score} points</p>
+          {isJd && (
+            <span className={`inline-block text-xs font-semibold px-3 py-1 rounded-full ${band.cls}`}>
+              {band.label}
+            </span>
+          )}
+          {!isJd && band.label && (
+            <p className="text-sm text-ds-textMuted">{band.label}</p>
+          )}
           {results.auto_submitted && (
             <span className="inline-block text-xs bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded">
               Auto-submitted when timer expired
@@ -309,10 +350,38 @@ export default function SelfTestPage() {
           )}
         </div>
 
+        {/* Per-skill breakdown (JD mode) */}
+        {isJd && perSkill && perSkill.length > 0 && (
+          <div className="bg-ds-card border border-ds-border rounded-lg p-5 space-y-3">
+            <h2 className="text-sm font-semibold text-ds-text">Skill Breakdown</h2>
+            <div className="space-y-2">
+              {perSkill.map(s => {
+                const skillBand = s.pct >= 80 ? { cls: 'bg-ds-successLight', bar: 'bg-ds-success' }
+                  : s.pct >= 50 ? { cls: 'bg-amber-50', bar: 'bg-amber-400' }
+                  : { cls: 'bg-ds-dangerLight', bar: 'bg-ds-danger' };
+                return (
+                  <div key={s.name} className={`rounded-lg px-3 py-2.5 ${skillBand.cls}`}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-sm font-medium text-ds-text">{s.name}</span>
+                      <span className="text-xs text-ds-textMuted">{s.correct}/{s.total} correct — {s.pct}%</span>
+                    </div>
+                    <div className="h-1.5 bg-black/10 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full ${skillBand.bar}`} style={{ width: `${s.pct}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Per-question breakdown */}
         <div className="space-y-3">
           {(results.questions || []).map((q, i) => (
             <div key={i} className="bg-ds-card border border-ds-border rounded-lg p-4">
+              {isJd && q.skill && (
+                <p className="text-[10px] font-semibold text-ds-textMuted uppercase tracking-wide mb-2">{q.skill}</p>
+              )}
               <QuestionView
                 question={q}
                 index={i}
@@ -329,14 +398,33 @@ export default function SelfTestPage() {
         </div>
 
         <div className="flex gap-3 pb-6">
-          <Link href="/self-test"
-            className="flex-1 text-center bg-primary text-white py-2.5 rounded-btn text-sm font-semibold hover:bg-primary-dark transition-colors">
-            Practice Again
-          </Link>
-          <Link href="/builder"
-            className="flex-1 text-center py-2.5 rounded-btn text-sm font-medium text-ds-textMuted border border-ds-border hover:bg-ds-bg transition-colors">
-            Back to Builder
-          </Link>
+          {isJd ? (
+            <>
+              <button
+                onClick={handleRetake}
+                className="flex-1 text-center bg-primary text-white py-2.5 rounded-btn text-sm font-semibold hover:bg-primary-dark transition-colors"
+              >
+                Retake Test
+              </button>
+              <button
+                onClick={() => router.push('/self-test')}
+                className="flex-1 text-center py-2.5 rounded-btn text-sm font-medium text-ds-textMuted border border-ds-border hover:bg-ds-bg transition-colors"
+              >
+                Try Different JD
+              </button>
+            </>
+          ) : (
+            <>
+              <Link href="/self-test"
+                className="flex-1 text-center bg-primary text-white py-2.5 rounded-btn text-sm font-semibold hover:bg-primary-dark transition-colors">
+                Practice Again
+              </Link>
+              <Link href="/builder"
+                className="flex-1 text-center py-2.5 rounded-btn text-sm font-medium text-ds-textMuted border border-ds-border hover:bg-ds-bg transition-colors">
+                Back to Builder
+              </Link>
+            </>
+          )}
         </div>
       </div>
     );
