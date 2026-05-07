@@ -21,6 +21,82 @@ function dateRange(start, end, current) {
 
 // ── Template: Classic Professional ───────────────────────────────────────────
 
+// ── Layout helpers ────────────────────────────────────────────────────────────
+
+const TITLE_SIZE_MAP = { small: '9pt', medium: '11pt', large: '13pt' };
+
+function renderSectionsWithLayout(sections, layoutSettings, renderSection) {
+  const ls = layoutSettings || {};
+  const pageBreaks = ls.pageBreaks || [];
+  const colLayout = ls.columnLayout || 'one';
+  const sectionCols = ls.sectionColumns || {};
+
+  if (colLayout === 'two') {
+    const leftSecs = sections.filter(s => (sectionCols[s.id] || 'left') === 'left');
+    const rightSecs = sections.filter(s => sectionCols[s.id] === 'right');
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div>{leftSecs.map(sec => renderSection(sec))}</div>
+        <div>{rightSecs.map(sec => renderSection(sec))}</div>
+      </div>
+    );
+  }
+
+  if (colLayout === 'mix') {
+    const rows = [];
+    let halfBuf = [];
+    sections.forEach((sec) => {
+      const isHalf = sectionCols[sec.id] === 'half';
+      if (isHalf) {
+        halfBuf.push(sec);
+        if (halfBuf.length === 2) {
+          rows.push({ type: 'two', secs: halfBuf });
+          halfBuf = [];
+        }
+      } else {
+        if (halfBuf.length) { rows.push({ type: 'two', secs: halfBuf }); halfBuf = []; }
+        rows.push({ type: 'one', secs: [sec] });
+      }
+    });
+    if (halfBuf.length) rows.push({ type: 'two', secs: halfBuf });
+    return (
+      <>
+        {rows.map((row, i) => {
+          const afterThis = pageBreaks.includes(sections.indexOf(row.secs[row.secs.length - 1]));
+          return (
+            <div key={i}>
+              {row.type === 'two' ? (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  {row.secs.map(sec => renderSection(sec))}
+                </div>
+              ) : renderSection(row.secs[0])}
+              {afterThis && <div style={{ borderTop: '1px dashed #ccc', margin: '8px 0', paddingTop: 2 }}>
+                <span style={{ fontSize: '7pt', color: '#bbb', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Page break</span>
+              </div>}
+            </div>
+          );
+        })}
+      </>
+    );
+  }
+
+  // One column — respect page breaks
+  return (
+    <>
+      {sections.map((sec, idx) => (
+        <div key={sec.id}>
+          {renderSection(sec)}
+          {pageBreaks.includes(idx) && (
+            <div style={{ borderTop: '1px dashed #ccc', margin: '8px 0 6px', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: '7pt', color: '#bbb', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Page break</span>
+            </div>
+          )}
+        </div>
+      ))}
+    </>
+  );
+}
+
 function ClassicProfessional({ resume, design }) {
   const { font, theme, spacing, margins } = design;
   const m = margins.value;
@@ -29,6 +105,7 @@ function ClassicProfessional({ resume, design }) {
   const lh = spacing.lineHeight;
   const pi = resume.personal_info || {};
   const sections = (resume.sections || []).filter(s => s.enabled !== false);
+  const ls = resume.layout_settings || {};
 
   const base = {
     fontFamily: font.family,
@@ -59,8 +136,8 @@ function ClassicProfessional({ resume, design }) {
         )}
       </div>
 
-      {sections.map(sec => (
-        <SectionBlock key={sec.id} sec={sec} theme={theme} sg={sg} ig={ig} lh={lh} style="classic" />
+      {renderSectionsWithLayout(sections, ls, sec => (
+        <SectionBlock key={sec.id} sec={sec} theme={theme} sg={sg} ig={ig} lh={lh} style="classic" layoutSettings={ls} />
       ))}
     </div>
   );
@@ -187,40 +264,124 @@ function ATSClean({ resume, design }) {
 
 // ── Shared section renderer ───────────────────────────────────────────────────
 
-function SectionBlock({ sec, theme, sg, ig, lh, style }) {
+function HeadingIcon({ iconStyle, color }) {
+  if (!iconStyle || iconStyle === 'none') return null;
+  const filled = iconStyle === 'filled';
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginRight: 5 }}>
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+    </svg>
+  );
+}
+
+function SectionBlock({ sec, theme, sg, ig, lh, style, layoutSettings }) {
+  const ls = layoutSettings || {};
+  const titleFontSize = TITLE_SIZE_MAP[ls.titleSize || 'medium'] || '11pt';
+  const iconStyle = ls.headingIcon || 'none';
+
   const headerStyle = {
     classic: {
-      fontSize: '11pt', fontWeight: 700, color: theme.primary,
+      fontSize: titleFontSize, fontWeight: 700, color: theme.primary,
       textTransform: 'uppercase', letterSpacing: '0.06em',
       borderBottom: `1px solid ${theme.border || '#ddd'}`,
       paddingBottom: 3, marginBottom: ig,
+      display: 'flex', alignItems: 'center',
     },
     modern: {
-      fontSize: '8pt', fontWeight: 700, color: theme.primary,
+      fontSize: TITLE_SIZE_MAP[ls.titleSize || 'small'] || '8pt', fontWeight: 700, color: theme.primary,
       textTransform: 'uppercase', letterSpacing: '0.1em',
-      marginBottom: ig,
+      marginBottom: ig, display: 'flex', alignItems: 'center',
     },
     minimal: {
-      fontSize: '10pt', fontWeight: 600, color: '#111',
+      fontSize: titleFontSize, fontWeight: 600, color: '#111',
       textTransform: 'uppercase', letterSpacing: '0.08em',
-      marginBottom: ig,
+      marginBottom: ig, display: 'flex', alignItems: 'center',
     },
     ats: {
-      fontSize: '11pt', fontWeight: 700, textTransform: 'uppercase',
+      fontSize: titleFontSize, fontWeight: 700, textTransform: 'uppercase',
       borderBottom: '1px solid #000', paddingBottom: 2, marginBottom: ig,
+      display: 'flex', alignItems: 'center',
     },
   }[style] || {};
 
   return (
     <div style={{ marginBottom: sg }}>
-      <div style={headerStyle}>{sec.title}</div>
-      <SectionContent sec={sec} theme={theme} ig={ig} lh={lh} style={style} />
+      <div style={headerStyle}>
+        <HeadingIcon iconStyle={iconStyle} color={headerStyle.color || theme.primary} />
+        {sec.title}
+      </div>
+      <SectionContent sec={sec} theme={theme} ig={ig} lh={lh} style={style} listStyle={ls.listStyle} />
     </div>
   );
 }
 
-function SectionContent({ sec, theme, ig, lh, style }) {
+function SkillsContent({ entries, theme, style, skillsStyle, bullet = '•' }) {
+  const ss = skillsStyle || 'rows';
+
+  if (ss === 'bubble') {
+    return (
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {entries.map((e, i) => (
+          <span key={i} style={{ fontSize: '9pt', background: style === 'ats' ? 'transparent' : `${theme.primary}18`, color: style === 'ats' ? theme.text : theme.primary, padding: '2px 8px', borderRadius: 12, border: style === 'ats' ? '1px solid #ccc' : `1px solid ${theme.primary}40` }}>
+            {e.skill}
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  if (ss === 'grid') {
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px 16px' }}>
+        {entries.map((e, i) => (
+          <span key={i} style={{ fontSize: '9pt', color: theme.text }}>{bullet} {e.skill}</span>
+        ))}
+      </div>
+    );
+  }
+
+  if (ss === 'compact') {
+    return (
+      <div style={{ fontSize: '9pt', color: theme.text, lineHeight: 1.4 }}>
+        {entries.map(e => e.skill).join(' · ')}
+      </div>
+    );
+  }
+
+  if (ss === 'level') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {entries.map((e, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '9pt' }}>
+            <span style={{ flex: 1, color: theme.text }}>{e.skill}</span>
+            <div style={{ display: 'flex', gap: 2 }}>
+              {[1, 2, 3, 4, 5].map(dot => {
+                const lvl = e.proficiency ? parseInt(e.proficiency) || 0 : 0;
+                return (
+                  <div key={dot} style={{ width: 8, height: 8, borderRadius: '50%', background: dot <= lvl ? theme.primary : `${theme.primary}30` }} />
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Default: rows
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {entries.map((e, i) => (
+        <span key={i} style={{ fontSize: '9pt', color: theme.text }}>{bullet} {e.skill}{e.proficiency && style !== 'ats' ? ` (${e.proficiency})` : ''}</span>
+      ))}
+    </div>
+  );
+}
+
+function SectionContent({ sec, theme, ig, lh, style, listStyle }) {
   const c = sec.content || {};
+  const ds = sec.display_settings || {};
+  const bullet = listStyle === 'hyphen' ? '–' : '•';
 
   if (sec.type === 'summary' || sec.type === 'hobbies' || sec.type === 'references') {
     return <p style={{ fontSize: '9.5pt', color: theme.subtext, lineHeight: lh }}>{c.text || ''}</p>;
@@ -228,15 +389,7 @@ function SectionContent({ sec, theme, ig, lh, style }) {
 
   if (sec.type === 'skills') {
     const entries = c.entries || [];
-    return (
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-        {entries.map((e, i) => (
-          <span key={i} style={{ fontSize: '9pt', background: style === 'ats' ? 'transparent' : `${theme.primary}18`, color: style === 'ats' ? theme.text : theme.primary, padding: '2px 8px', borderRadius: 3, border: style === 'ats' ? '1px solid #ccc' : 'none' }}>
-            {e.skill}{e.proficiency && style !== 'ats' ? ` (${e.proficiency})` : ''}
-          </span>
-        ))}
-      </div>
-    );
+    return <SkillsContent entries={entries} theme={theme} style={style} skillsStyle={ds.skillsStyle} bullet={bullet} />;
   }
 
   if (sec.type === 'languages') {
@@ -273,7 +426,7 @@ function SectionContent({ sec, theme, ig, lh, style }) {
     const entries = c.entries || [];
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: ig }}>
-        {entries.map((e, i) => <EntryItem key={i} entry={e} type={sec.type} theme={theme} lh={lh} style={style} />)}
+        {entries.map((e, i) => <EntryItem key={i} entry={e} type={sec.type} theme={theme} lh={lh} style={style} displaySettings={ds} />)}
       </div>
     );
   }
@@ -281,14 +434,17 @@ function SectionContent({ sec, theme, ig, lh, style }) {
   return null;
 }
 
-function EntryItem({ entry: e, type, theme, lh, style }) {
+function EntryItem({ entry: e, type, theme, lh, style, displaySettings = {} }) {
   if (type === 'work_experience') {
+    const employerFirst = displaySettings.workOrder === 'employer-first';
+    const primary = employerFirst ? (e.company || '') : (e.title || '');
+    const secondary = employerFirst ? (e.title || '') : (e.company || '');
     return (
       <div style={{ borderLeft: style === 'classic' || style === 'modern' ? `2px solid ${theme.accent || theme.primary}30` : 'none', paddingLeft: style === 'classic' || style === 'modern' ? 10 : 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: '10pt' }}>{e.title}</div>
-            <div style={{ fontSize: '9pt', color: theme.subtext }}>{e.company}{e.location ? ` · ${e.location}` : ''}</div>
+            {primary && <div style={{ fontWeight: 700, fontSize: '10pt' }}>{primary}</div>}
+            {secondary && <div style={{ fontSize: '9pt', color: theme.subtext }}>{secondary}{e.location ? ` · ${e.location}` : ''}</div>}
           </div>
           <div style={{ fontSize: '8.5pt', color: theme.subtext, flexShrink: 0, marginLeft: 8 }}>
             {dateRange(e.start_date, e.end_date, e.current)}
@@ -304,15 +460,19 @@ function EntryItem({ entry: e, type, theme, lh, style }) {
   }
 
   if (type === 'education') {
+    const degreeFirst = displaySettings.eduOrder === 'degree-first';
+    const primary = degreeFirst
+      ? [e.degree, e.field].filter(Boolean).join(', ')
+      : e.institution;
+    const secondary = degreeFirst
+      ? e.institution
+      : [e.degree, e.field].filter(Boolean).join(', ') + (e.grade ? ` · ${e.grade}` : '');
     return (
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: '10pt' }}>{e.institution}</div>
-            <div style={{ fontSize: '9pt', color: theme.subtext }}>
-              {[e.degree, e.field].filter(Boolean).join(', ')}
-              {e.grade ? ` · ${e.grade}` : ''}
-            </div>
+            {primary && <div style={{ fontWeight: 700, fontSize: '10pt' }}>{primary}</div>}
+            {secondary && <div style={{ fontSize: '9pt', color: theme.subtext }}>{secondary}</div>}
           </div>
           <div style={{ fontSize: '8.5pt', color: theme.subtext, flexShrink: 0 }}>
             {dateRange(e.start_date, e.end_date, false)}
@@ -1806,10 +1966,65 @@ const TEMPLATE_COMPONENTS = {
 
 // ── ResumePreview component ───────────────────────────────────────────────────
 
+// ── Footer renderer ───────────────────────────────────────────────────────────
+
+function ResumeFooter({ footerSettings, personalInfo, pageNumber }) {
+  const fs = footerSettings || {};
+  const pi = personalInfo || {};
+  const parts = [];
+  if (fs.name && pi.name) parts.push(pi.name);
+  if (fs.email && pi.email) parts.push(pi.email);
+  if (fs.pageNumbers) parts.push(`Page ${pageNumber}`);
+  if (!parts.length) return null;
+
+  return (
+    <div style={{
+      borderTop: '1px solid #e0e0e0',
+      marginTop: 'auto',
+      padding: '6px 20px',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      fontSize: '8pt',
+      color: '#888',
+      background: '#fff',
+    }}>
+      <span>{[fs.name && pi.name, fs.email && pi.email].filter(Boolean).join(' · ')}</span>
+      {fs.pageNumbers && <span>Page {pageNumber}</span>}
+    </div>
+  );
+}
+
+// ── Spacing settings → design override ───────────────────────────────────────
+
+const MM_TO_PX = 3.7795;
+
+function applySpacingSettings(design, spacingSettings) {
+  if (!spacingSettings) return design;
+  const ss = spacingSettings;
+  return {
+    ...design,
+    spacing: {
+      ...design.spacing,
+      lineHeight: ss.lineHeight ?? design.spacing.lineHeight,
+    },
+    margins: {
+      ...design.margins,
+      value: Math.round(ss.marginLeft * MM_TO_PX),
+      top: Math.round(ss.marginTop * MM_TO_PX),
+      bottom: Math.round(ss.marginBottom * MM_TO_PX),
+      right: Math.round(ss.marginRight * MM_TO_PX),
+      itemGap: ss.entrySpacing ? ss.entrySpacing * 4 : design.spacing.itemGap,
+    },
+    fontSize: ss.fontSize ? `${ss.fontSize}pt` : null,
+  };
+}
+
 export default function ResumePreview({ resume, designSettings = {}, scale = null, className = '' }) {
   const containerRef = useRef(null);
   const [computedScale, setComputedScale] = useState(scale || 0.6);
-  const design = resolveDesign(designSettings);
+  const baseDesign = resolveDesign(designSettings);
+  const design = applySpacingSettings(baseDesign, resume?.spacing_settings);
   const page = design.page;
   const TemplateComp = TEMPLATE_COMPONENTS[resume?.template_id] || ClassicProfessional;
 
@@ -1827,6 +2042,8 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
   }, [updateScale]);
 
   const s = scale !== null ? scale : computedScale;
+  const fs = resume?.footer_settings;
+  const hasFooter = fs && (fs.pageNumbers || (fs.email && resume?.personal_info?.email) || (fs.name && resume?.personal_info?.name));
 
   return (
     <div ref={containerRef} className={`overflow-auto ${className}`} style={{ background: '#e5e7eb' }}>
@@ -1840,9 +2057,20 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
             boxShadow: '0 1px 8px rgba(0,0,0,0.18)',
             background: '#fff',
             marginBottom: `${(s - 1) * page.height}px`,
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
-          <TemplateComp resume={resume || {}} design={design} />
+          <div style={{ flex: 1, fontSize: design.fontSize || undefined }}>
+            <TemplateComp resume={resume || {}} design={design} />
+          </div>
+          {hasFooter && (
+            <ResumeFooter
+              footerSettings={fs}
+              personalInfo={resume?.personal_info}
+              pageNumber={1}
+            />
+          )}
         </div>
       </div>
     </div>

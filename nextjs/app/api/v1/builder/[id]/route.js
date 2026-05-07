@@ -49,7 +49,7 @@ export async function PATCH(req, { params }) {
       return Response.json({ error: 'Resume not found.' }, { status: 404 });
 
     const body = await req.json().catch(() => ({}));
-    const allowed = ['title', 'template_id', 'design_settings', 'personal_info'];
+    const allowed = ['title', 'template_id', 'design_settings', 'personal_info', 'footer_settings', 'spacing_settings', 'layout_settings'];
     const update = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)));
 
     const { data, error } = await supabase

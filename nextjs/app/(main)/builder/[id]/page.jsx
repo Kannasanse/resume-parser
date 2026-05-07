@@ -141,7 +141,9 @@ export default function BuilderEditor() {
   const resume = data?.data;
   const sections = resume?.sections || [];
   const personalInfo = resume?.personal_info || {};
-  const designSettings = resume?.design_settings || {};
+  const footerSettings = resume?.footer_settings || { pageNumbers: false, email: false, name: false };
+  const spacingSettings = resume?.spacing_settings || { fontSize: 11, lineHeight: 1.15, marginTop: 15, marginBottom: 15, marginLeft: 15, marginRight: 15, entrySpacing: 2 };
+  const layoutSettings = resume?.layout_settings || { columnLayout: 'one', sectionColumns: {}, pageBreaks: [], titleSize: 'medium', subtitleSize: 'medium', listStyle: 'bullet', headingIcon: 'none' };
 
   const [previewResume, setPreviewResume] = useState(null);
   useEffect(() => { if (resume) setPreviewResume(resume); }, [resume]);
@@ -280,6 +282,41 @@ export default function BuilderEditor() {
       updateResumeMutation.mutate({ design_settings: ds });
     }, 800);
   }, [updateResumeMutation]);
+
+  const footerDebounceRef = useRef(null);
+  const handleFooterChange = useCallback((fs) => {
+    setPreviewResume(prev => prev ? { ...prev, footer_settings: fs } : prev);
+    if (footerDebounceRef.current) clearTimeout(footerDebounceRef.current);
+    footerDebounceRef.current = setTimeout(() => {
+      updateResumeMutation.mutate({ footer_settings: fs });
+    }, 800);
+  }, [updateResumeMutation]);
+
+  const spacingDebounceRef = useRef(null);
+  const handleSpacingChange = useCallback((ss) => {
+    setPreviewResume(prev => prev ? { ...prev, spacing_settings: ss } : prev);
+    if (spacingDebounceRef.current) clearTimeout(spacingDebounceRef.current);
+    spacingDebounceRef.current = setTimeout(() => {
+      updateResumeMutation.mutate({ spacing_settings: ss });
+    }, 800);
+  }, [updateResumeMutation]);
+
+  const layoutDebounceRef = useRef(null);
+  const handleLayoutChange = useCallback((ls) => {
+    setPreviewResume(prev => prev ? { ...prev, layout_settings: ls } : prev);
+    if (layoutDebounceRef.current) clearTimeout(layoutDebounceRef.current);
+    layoutDebounceRef.current = setTimeout(() => {
+      updateResumeMutation.mutate({ layout_settings: ls });
+    }, 800);
+  }, [updateResumeMutation]);
+
+  const handleSectionDisplayChange = useCallback((sectionId, displaySettings) => {
+    setPreviewResume(prev => {
+      if (!prev) return prev;
+      return { ...prev, sections: prev.sections.map(s => s.id === sectionId ? { ...s, display_settings: displaySettings } : s) };
+    });
+    debouncedSaveSection(sectionId, { display_settings: displaySettings });
+  }, [debouncedSaveSection]);
 
   // ── Template change ───────────────────────────────────────────────────────
 
@@ -604,7 +641,19 @@ export default function BuilderEditor() {
               </button>
             </div>
             <div className="flex-1 overflow-y-auto">
-              <DesignPanel design={designSettings} onChange={handleDesignChange} />
+              <DesignPanel
+                design={previewData.design_settings || {}}
+                onChange={handleDesignChange}
+                footerSettings={previewData.footer_settings || footerSettings}
+                onFooterChange={handleFooterChange}
+                spacingSettings={previewData.spacing_settings || spacingSettings}
+                onSpacingChange={handleSpacingChange}
+                layoutSettings={previewData.layout_settings || layoutSettings}
+                onLayoutChange={handleLayoutChange}
+                personalInfo={previewData.personal_info || {}}
+                sections={previewData.sections || []}
+                onSectionDisplayChange={handleSectionDisplayChange}
+              />
             </div>
           </div>
         )}

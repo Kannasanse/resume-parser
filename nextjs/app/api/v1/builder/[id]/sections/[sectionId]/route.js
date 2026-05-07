@@ -21,7 +21,7 @@ export async function PATCH(req, { params }) {
       return Response.json({ error: 'Section not found.' }, { status: 404 });
 
     const body = await req.json().catch(() => ({}));
-    const allowed = ['title', 'content', 'position', 'enabled'];
+    const allowed = ['title', 'content', 'position', 'enabled', 'display_settings'];
     const update = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)));
 
     const { data, error } = await supabase

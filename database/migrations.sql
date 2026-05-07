@@ -89,6 +89,22 @@ ALTER TABLE public.test_responses
 ALTER TABLE public.test_questions
   ADD COLUMN IF NOT EXISTS expected_answer text;
 
+-- ─── builder_resumes: footer_settings (Story 3) ──────────────────────────────
+ALTER TABLE public.builder_resumes
+  ADD COLUMN IF NOT EXISTS footer_settings JSONB DEFAULT '{"pageNumbers": false, "email": false, "name": false}'::jsonb;
+
+-- ─── builder_resumes: spacing_settings (Story 2) ─────────────────────────────
+ALTER TABLE public.builder_resumes
+  ADD COLUMN IF NOT EXISTS spacing_settings JSONB DEFAULT '{"fontSize": 11, "lineHeight": 1.15, "marginTop": 15, "marginBottom": 15, "marginLeft": 15, "marginRight": 15, "entrySpacing": 2}'::jsonb;
+
+-- ─── builder_sections: display_settings (Story 4) ────────────────────────────
+ALTER TABLE public.builder_sections
+  ADD COLUMN IF NOT EXISTS display_settings JSONB DEFAULT '{}'::jsonb;
+
+-- ─── builder_resumes: layout_settings (Story 1) ──────────────────────────────
+ALTER TABLE public.builder_resumes
+  ADD COLUMN IF NOT EXISTS layout_settings JSONB DEFAULT '{"columnLayout": "one", "sectionColumns": {}, "pageBreaks": [], "titleSize": "medium", "subtitleSize": "medium", "listStyle": "bullet", "headingIcon": "none"}'::jsonb;
+
 -- ─── self_test_sessions: JD input type and extracted skills (ST-001–004) ───────
 -- Drop and recreate the check constraint to include 'jd'
 ALTER TABLE public.self_test_sessions
