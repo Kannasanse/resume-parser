@@ -157,7 +157,7 @@ Authentication supports email/password and Google SSO. Role-based access control
 - Auto-save on every change (debounced)
 
 #### FR-BUILDER-03 — Resume Templates
-Eight templates available to all users:
+Twenty templates available to all users:
 
 | Template             | Style   | Description                                                            |
 |----------------------|---------|------------------------------------------------------------------------|
@@ -169,6 +169,59 @@ Eight templates available to all users:
 | Beacon               | Modern  | Dark navy sidebar with initials avatar + contact, white main column    |
 | Banded               | Modern  | Gray rounded header card, gray title bands, left-rail date column      |
 | Foundry              | Modern  | Bordered header card with initials circle, pill section bands, multi-column skills |
+| Corporate            | Serif   | EB Garamond, spaced-caps section headers with centered hairline rules  |
+| Silver Banner        | Serif   | Left-aligned name with full-width silver/themed banner section headers |
+| Teal Sidebar         | Modern  | Lora serif main column with bold colored right sidebar                 |
+| Timeline             | Modern  | Left-rail timeline with date dots and bordered entry cards             |
+| Photo Sidebar        | Modern  | Right sidebar with avatar placeholder, contact, and skills             |
+| Creative Edge        | Modern  | Bold accent sidebar, avatar initial, top accent bar                    |
+| Executive Navy       | Classic | Dark navy header bar, spaced typography, left-aligned dates            |
+| Tech Stack           | Modern  | Monospace accents, code-styled section headers, left sidebar           |
+| Soft Gradient        | Modern  | Gradient header band with decorative circles                           |
+| Bold Impact          | Bold    | Full-width colour header, uppercase 900-weight name, black contact bar |
+| Elegant Script       | Serif   | Ornamental dividers, serif italic section titles, centred header       |
+| Beacon Dark          | Modern  | Variant of Beacon with darker sidebar accent                           |
+
+#### FR-BUILDER-06 — Layout Customization
+- **Column layout**: choose One Column, Two Column, or Mix
+  - Two Column: assign each section to left or right column via per-section toggle
+  - Mix: set each section independently to one-column or two-column width
+- **Page breaks**: insert a visible page-break marker between any two sections; remove via delete control on the indicator
+- **Section title size**: Small / Medium / Large — applied globally across all section headings
+- **Subtitle size**: Small / Medium / Large — applied globally; system warns if subtitle exceeds title size
+- **List style**: Bullet (•) or Hyphen (–) — applied globally to all list items
+- **Heading icon**: None, Outline, or Filled — applied to all section heading rows simultaneously
+- All changes reflected in the live preview immediately; all settings persisted per resume
+- Switching column layouts preserves all section content; removing page breaks preserves all content
+
+#### FR-BUILDER-07 — Spacing Customization
+- **Font size**: 9–14 pt (slider + numeric input, step 0.5)
+- **Line height**: 1.0–1.16 (slider + numeric input, step 0.01)
+- **Left / right margin**: 10–25 mm (independent sliders)
+- **Top / bottom margin**: 10–25 mm (independent sliders)
+- **Entry spacing**: 1–10 lines (slider, integer only)
+- Out-of-range values clamped with inline notice; non-numeric input rejected with `"Please enter a valid number."`
+- All values visible in the live preview in real time; persisted per resume
+- Defaults: font size 11 pt, line height 1.15, all margins 15 mm, entry spacing 2 lines
+- Resetting resume to defaults restores all spacing values to the above defaults
+
+#### FR-BUILDER-08 — Footer Options
+- Three independently toggleable checkboxes: **Page Numbers**, **Email**, **Name**
+- Any combination (including none) is valid
+- Footer appears on every resume page, visually separated from body with a hairline rule
+- Email and Name are pulled dynamically from the resume's contact data (not static copies)
+- If Email is checked but no email exists: inline warning `"No email address found. Please add one to your contact details."` — checkbox stays checked, nothing renders in footer
+- If Name is checked but no name exists: inline warning `"No name found. Please add your name to the resume."`
+- All checkbox states persisted per resume; reset to defaults unchecks all three
+
+#### FR-BUILDER-09 — Section-Specific Display Options
+- **Skills layout** (5 styles): Rows (default), Grid, Compact, Bubble, Level
+  - Level: shows skill proficiency as dot indicators; inline warning when no proficiency data is set
+- **Education order**: School → Degree (default) or Degree → School
+- **Work Experience order**: Job Title → Employer (default) or Employer → Job Title
+- Missing title/subtitle field (e.g. no employer): renders only available field, no blank line shown
+- All display settings applied instantly in preview; persisted per resume per section
+- Resetting to defaults: Skills → Rows, Education → School → Degree, Work → Job Title → Employer
 
 #### FR-BUILDER-04 — Review & Export
 - Review page shows full resume preview in selected template
@@ -309,8 +362,11 @@ resume_scores    id, resume_id* (CASCADE), job_profile_id* (CASCADE), overall_sc
 
 -- Builder
 builder_resumes  id (UUID PK), user_id* (CASCADE → auth.users), title, template_id,
-                 created_at, updated_at
-builder_sections id, resume_id* (CASCADE), type, title, order_index, content (JSONB), created_at, updated_at
+                 design_settings (JSONB), personal_info (JSONB),
+                 footer_settings (JSONB), spacing_settings (JSONB), layout_settings (JSONB),
+                 share_token (UUID), share_enabled (BOOLEAN), created_at, updated_at
+builder_sections id, resume_id* (CASCADE), type, title, position, enabled (BOOL),
+                 content (JSONB), display_settings (JSONB), created_at, updated_at
 
 -- RBAC
 profiles         id (UUID PK, → auth.users CASCADE), email, first_name, last_name,
@@ -382,11 +438,11 @@ Triggers: `on_auth_user_created` auto-creates `profiles` row on signup (handles 
 | GET    | /api/v1/builder                             | List user's resumes                      |
 | POST   | /api/v1/builder                             | Create new resume                        |
 | GET    | /api/v1/builder/:id                         | Get resume with sections                 |
-| PATCH  | /api/v1/builder/:id                         | Update resume (title, template)          |
+| PATCH  | /api/v1/builder/:id                         | Update resume (title, template, design_settings, personal_info, footer_settings, spacing_settings, layout_settings) |
 | DELETE | /api/v1/builder/:id                         | Delete resume                            |
 | GET    | /api/v1/builder/:id/sections                | List sections                            |
 | POST   | /api/v1/builder/:id/sections                | Add section                              |
-| PATCH  | /api/v1/builder/:id/sections/:sectionId     | Update section content                   |
+| PATCH  | /api/v1/builder/:id/sections/:sectionId     | Update section (title, content, enabled, display_settings) |
 | DELETE | /api/v1/builder/:id/sections/:sectionId     | Remove section                           |
 | POST   | /api/v1/builder/:id/duplicate               | Duplicate resume                         |
 | POST   | /api/v1/builder/:id/import                  | Import from parsed resume                |
