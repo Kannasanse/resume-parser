@@ -5,8 +5,8 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary:   { DEFAULT: '#FF7814', dark: '#A04400', light: '#FFF0E5' },
-        secondary: { DEFAULT: '#0B8BC8', light: '#EAF0F8' },
+        primary:   { DEFAULT: '#185FA5', dark: '#0C447C', light: '#E6F1FB' },
+        secondary: { DEFAULT: '#1D9E75', light: '#E6F5F0' },
         ds: {
           bg:           'var(--ds-bg)',
           card:         'var(--ds-card)',

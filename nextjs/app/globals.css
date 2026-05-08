@@ -8,15 +8,15 @@
   :root {
     --ds-bg:           #F2F3F5;
     --ds-card:         #FFFFFF;
-    --ds-border:       #E5E7ED;
-    --ds-borderStrong: #D4D6DE;
-    --ds-inputBorder:  #B0B7C1;
-    --ds-text:         #171A45;
-    --ds-textSecondary:#323836;
-    --ds-textTertiary: #555698;
-    --ds-textMuted:    #8A8DA3;
-    --ds-success:      #177A17;
-    --ds-successLight: #E8F9E2;
+    --ds-border:       #E4E8EE;
+    --ds-borderStrong: #CDD4DC;
+    --ds-inputBorder:  #A8B4C0;
+    --ds-text:         #2C2C2A;
+    --ds-textSecondary:#484846;
+    --ds-textTertiary: #6A6A68;
+    --ds-textMuted:    #8A8A88;
+    --ds-success:      #1D9E75;
+    --ds-successLight: #E6F5F0;
     --ds-warning:      #A26412;
     --ds-warningLight: #FFF3E0;
     --ds-danger:       #A01535;
@@ -25,16 +25,16 @@
 
   .dark {
     --ds-bg:           #0F1117;
-    --ds-card:         #1A1D2E;
-    --ds-border:       #2D3148;
-    --ds-borderStrong: #3D4168;
-    --ds-inputBorder:  #4D5178;
-    --ds-text:         #E8E9F3;
-    --ds-textSecondary:#C8CAD8;
-    --ds-textTertiary: #9CA3C8;
-    --ds-textMuted:    #6B6E8A;
-    --ds-success:      #4ADE80;
-    --ds-successLight: #052e16;
+    --ds-card:         #1A1D1E;
+    --ds-border:       #2D2D2B;
+    --ds-borderStrong: #3D3D3B;
+    --ds-inputBorder:  #4D4D4B;
+    --ds-text:         #E8E8E6;
+    --ds-textSecondary:#C4C4C2;
+    --ds-textTertiary: #9A9A98;
+    --ds-textMuted:    #6B6B69;
+    --ds-success:      #2DC893;
+    --ds-successLight: #062E22;
     --ds-warning:      #FFA726;
     --ds-warningLight: #1c1200;
     --ds-danger:       #F87171;
