@@ -39,7 +39,6 @@ function LoginContent() {
       provider: 'google',
       options: { redirectTo: callbackUrl },
     });
-    // Page will redirect — no finally needed
   };
 
   const handleSubmit = async (ev) => {
@@ -79,53 +78,40 @@ function LoginContent() {
   };
 
   const inputCls = (hasError) =>
-    `w-full border rounded px-3 py-2.5 text-sm bg-ds-bg text-ds-text placeholder-ds-textMuted focus:outline-none focus:ring-2 focus:ring-primary transition-colors ${hasError ? 'border-ds-danger' : 'border-ds-inputBorder focus:border-primary'}`;
+    `w-full border rounded-lg px-3 py-2.5 text-sm bg-ds-bg text-ds-text placeholder-ds-textMuted focus:outline-none focus:ring-2 focus:ring-primary transition-colors ${hasError ? 'border-ds-danger' : 'border-ds-inputBorder focus:border-primary'}`;
 
   return (
-    <div className="min-h-screen bg-ds-bg flex items-center justify-center px-4">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center">
-          <div className="flex justify-center mb-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/login-hero.png" alt="Proflect" className="w-full max-w-xs object-contain" />
-          </div>
-          <p className="text-sm text-ds-textMuted">Sign in to your account</p>
+    <div className="min-h-screen bg-ds-bg flex items-center justify-center px-4 py-8">
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-8">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/login-hero.png" alt="Proflect" className="mx-auto max-w-[220px] object-contain" />
         </div>
 
-        <div className="bg-ds-card rounded-lg border border-ds-border p-6 space-y-4">
-          {/* Google SSO */}
-          <button onClick={handleGoogle} disabled={googleLoading || loading}
-            className="w-full flex items-center justify-center gap-3 border border-ds-border rounded-btn py-2.5 text-sm font-medium text-ds-text bg-ds-bg hover:bg-ds-bg/80 hover:border-ds-borderStrong disabled:opacity-50 transition-colors">
-            {googleLoading
-              ? <span className="w-4 h-4 border-2 border-ds-border border-t-primary rounded-full animate-spin" />
-              : <GoogleIcon />}
-            Continue with Google
-          </button>
-
-          <div className="flex items-center gap-3">
-            <div className="flex-1 border-t border-ds-border" />
-            <span className="text-xs text-ds-textMuted">or</span>
-            <div className="flex-1 border-t border-ds-border" />
+        <div className="bg-ds-card rounded-2xl border border-ds-border shadow-lg p-10 space-y-5">
+          <div className="text-center space-y-1">
+            <h1 className="text-xl font-bold text-ds-text font-heading">Welcome back</h1>
+            <p className="text-sm text-ds-textSecondary">Sign in to your account</p>
           </div>
 
           {lockoutMins > 0 && (
-            <div className="text-sm text-ds-danger bg-ds-dangerLight rounded px-3 py-2">
-              Account temporarily locked. Try again in <strong>{lockoutMins} minute{lockoutMins !== 1 ? 's' : ''}</strong>.
+            <div className="text-sm text-ds-danger bg-ds-dangerLight rounded-lg px-4 py-3">
+              Account locked. Try again in <strong>{lockoutMins} minute{lockoutMins !== 1 ? 's' : ''}</strong>.
             </div>
           )}
 
           {unverified && (
-            <div className="text-sm text-ds-textMuted bg-ds-bg border border-ds-border rounded px-3 py-2 space-y-1">
-              <p>Please verify your email before logging in.</p>
-              <Link href={`/verify-email?email=${encodeURIComponent(email)}`} className="text-primary hover:underline text-xs font-medium">
-                Resend verification email →
+            <div className="text-sm text-ds-warning bg-ds-warningLight rounded-lg px-4 py-3">
+              Please verify your email.{' '}
+              <Link href={`/verify-email?email=${encodeURIComponent(email)}`} className="underline font-medium">
+                Resend link
               </Link>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <div>
-              <label className="block text-xs font-semibold text-ds-textMuted uppercase tracking-wide mb-1.5">Email</label>
+              <label className="block text-xs font-semibold text-ds-textSecondary uppercase tracking-wide mb-1.5">Email</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)}
                 placeholder="you@example.com" autoComplete="email"
                 className={inputCls(!!error && !lockoutMins && !unverified)} />
@@ -133,7 +119,7 @@ function LoginContent() {
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-semibold text-ds-textMuted uppercase tracking-wide">Password</label>
+                <label className="block text-xs font-semibold text-ds-textSecondary uppercase tracking-wide">Password</label>
                 <Link href="/forgot-password" className="text-xs text-primary hover:underline">Forgot password?</Link>
               </div>
               <div className="relative">
@@ -148,23 +134,35 @@ function LoginContent() {
             </div>
 
             {error && !lockoutMins && !unverified && (
-              <p className="text-sm text-ds-danger bg-ds-dangerLight rounded px-3 py-2">{error}</p>
+              <div className="text-sm text-ds-danger bg-ds-dangerLight rounded-lg px-4 py-3">{error}</div>
             )}
 
             <button type="submit" disabled={loading || googleLoading || lockoutMins > 0}
-              className="w-full bg-primary text-white py-2.5 rounded-btn text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+              className="w-full bg-primary text-white py-2.5 rounded-btn text-sm font-semibold hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
               {loading
                 ? <span className="flex items-center justify-center gap-2"><span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Signing in…</span>
                 : 'Sign In'}
             </button>
           </form>
 
-          <div className="border-t border-ds-border pt-4 text-center">
-            <p className="text-xs text-ds-textMuted">
-              Don't have an account?{' '}
-              <Link href="/signup" className="text-primary hover:underline font-medium">Create one</Link>
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="flex-1 border-t border-ds-border" />
+            <span className="text-xs text-ds-textMuted">or</span>
+            <div className="flex-1 border-t border-ds-border" />
           </div>
+
+          <button onClick={handleGoogle} disabled={googleLoading || loading}
+            className="w-full flex items-center justify-center gap-3 border border-ds-border rounded-btn py-2.5 text-sm font-medium text-ds-text bg-ds-card hover:bg-ds-bg hover:border-ds-borderStrong disabled:opacity-50 transition-colors">
+            {googleLoading
+              ? <span className="w-4 h-4 border-2 border-ds-border border-t-primary rounded-full animate-spin" />
+              : <GoogleIcon />}
+            Continue with Google
+          </button>
+
+          <p className="text-sm text-center text-ds-textSecondary">
+            Don't have an account?{' '}
+            <Link href="/signup" className="text-primary hover:underline font-medium">Sign up</Link>
+          </p>
         </div>
       </div>
     </div>

@@ -120,7 +120,7 @@ export default function Navbar() {
         href={to}
         title={label}
         className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded text-sm font-medium transition-colors ${
-          active ? 'bg-ds-bg text-ds-text' : 'text-ds-textMuted hover:text-ds-text hover:bg-ds-bg'
+          active ? 'bg-primary-light text-primary' : 'text-ds-text hover:text-primary hover:bg-primary-light'
         }`}
       >
         {icon}
@@ -131,7 +131,7 @@ export default function Navbar() {
 
   return (
     <nav className="bg-ds-card border-b border-ds-border">
-      <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
         <div className="flex items-center gap-6">
           <Link href={isAdmin ? '/resumes' : '/builder'} className="flex items-center flex-shrink-0">
             <Image src="/logo.png" alt="Proflect" width={120} height={133} className="object-contain" priority unoptimized />

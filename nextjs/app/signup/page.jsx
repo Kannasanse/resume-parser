@@ -26,7 +26,8 @@ function passwordStrength(pwd) {
 }
 
 const STRENGTH_LABELS = ['', 'Weak', 'Fair', 'Good', 'Strong'];
-const STRENGTH_COLORS = ['', 'bg-ds-danger', 'bg-amber-400', 'bg-ds-warning', 'bg-ds-success'];
+const STRENGTH_COLORS = ['', 'bg-error', 'bg-amber-400', 'bg-warning', 'bg-success'];
+const STRENGTH_TEXT   = ['', 'text-error', 'text-amber-500', 'text-warning', 'text-success'];
 
 export default function SignUpPage() {
   const [form, setForm]       = useState({ firstName: '', lastName: '', email: '', password: '', confirm: '' });
@@ -109,19 +110,19 @@ export default function SignUpPage() {
 
   const strength = passwordStrength(form.password);
   const inputCls = (field) =>
-    `w-full border rounded px-3 py-2.5 text-sm bg-ds-bg text-ds-text placeholder-ds-textMuted focus:outline-none focus:ring-2 focus:ring-primary transition-colors ${errors[field] ? 'border-ds-danger' : 'border-ds-inputBorder focus:border-primary'}`;
+    `w-full border rounded-lg px-3 py-2.5 text-sm bg-ds-bg text-ds-text placeholder-ds-textMuted focus:outline-none focus:ring-2 focus:ring-primary transition-colors ${errors[field] ? 'border-ds-danger' : 'border-ds-inputBorder focus:border-primary'}`;
 
   if (done) {
     return (
       <div className="min-h-screen bg-ds-bg flex items-center justify-center px-4">
         <div className="w-full max-w-sm text-center space-y-4">
-          <div className="w-14 h-14 rounded-full bg-ds-successLight flex items-center justify-center mx-auto">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-ds-success">
+          <div className="w-16 h-16 rounded-full bg-ds-successLight flex items-center justify-center mx-auto">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-ds-success">
               <path d="M3 8l7.89 5.26a2 2 0 0 0 2.22 0L21 8M5 19h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2z"/>
             </svg>
           </div>
           <h1 className="font-heading text-xl font-bold text-ds-text">Check your inbox!</h1>
-          <p className="text-sm text-ds-textMuted">
+          <p className="text-sm text-ds-textSecondary">
             We've sent a verification link to <strong className="text-ds-text">{form.email}</strong>.<br />
             Click the link to activate your account.
           </p>
@@ -139,40 +140,27 @@ export default function SignUpPage() {
 
   return (
     <div className="min-h-screen bg-ds-bg flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center">
-          <div className="flex justify-center mb-3">
-            <Image src="/logo.png" alt="Proflect" width={120} height={133} className="object-contain" priority unoptimized />
-          </div>
-          <p className="text-sm text-ds-textMuted">Create your account</p>
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-8">
+          <Image src="/logo.png" alt="Proflect" width={120} height={133} className="object-contain mx-auto" priority unoptimized />
         </div>
 
-        <div className="bg-ds-card rounded-lg border border-ds-border p-6 space-y-4">
-          {/* Google SSO */}
-          <button onClick={handleGoogle} disabled={googleLoading || loading}
-            className="w-full flex items-center justify-center gap-3 border border-ds-border rounded-btn py-2.5 text-sm font-medium text-ds-text bg-ds-bg hover:bg-ds-bg/80 hover:border-ds-borderStrong disabled:opacity-50 transition-colors">
-            {googleLoading
-              ? <span className="w-4 h-4 border-2 border-ds-border border-t-primary rounded-full animate-spin" />
-              : <GoogleIcon />}
-            Continue with Google
-          </button>
-
-          <div className="flex items-center gap-3">
-            <div className="flex-1 border-t border-ds-border" />
-            <span className="text-xs text-ds-textMuted">or sign up with email</span>
-            <div className="flex-1 border-t border-ds-border" />
+        <div className="bg-ds-card rounded-2xl border border-ds-border shadow-lg p-10 space-y-5">
+          <div className="text-center space-y-1">
+            <h1 className="text-xl font-bold text-ds-text font-heading">Create your account</h1>
+            <p className="text-sm text-ds-textSecondary">Join Proflect today</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-ds-textMuted uppercase tracking-wide mb-1.5">First Name</label>
+                <label className="block text-xs font-semibold text-ds-textSecondary uppercase tracking-wide mb-1.5">First Name</label>
                 <input value={form.firstName} onChange={e => set('firstName', e.target.value)} placeholder="Jane"
                   className={inputCls('firstName')} maxLength={100} />
                 {errors.firstName && <p className="text-xs text-ds-danger mt-1">{errors.firstName}</p>}
               </div>
               <div>
-                <label className="block text-xs font-semibold text-ds-textMuted uppercase tracking-wide mb-1.5">Last Name</label>
+                <label className="block text-xs font-semibold text-ds-textSecondary uppercase tracking-wide mb-1.5">Last Name</label>
                 <input value={form.lastName} onChange={e => set('lastName', e.target.value)} placeholder="Smith"
                   className={inputCls('lastName')} maxLength={100} />
                 {errors.lastName && <p className="text-xs text-ds-danger mt-1">{errors.lastName}</p>}
@@ -180,14 +168,14 @@ export default function SignUpPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-ds-textMuted uppercase tracking-wide mb-1.5">Email Address</label>
+              <label className="block text-xs font-semibold text-ds-textSecondary uppercase tracking-wide mb-1.5">Email Address</label>
               <input type="email" value={form.email} onChange={e => set('email', e.target.value)}
                 placeholder="jane@example.com" autoComplete="email" className={inputCls('email')} />
               {errors.email && <p className="text-xs text-ds-danger mt-1">{errors.email}</p>}
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-ds-textMuted uppercase tracking-wide mb-1.5">Password</label>
+              <label className="block text-xs font-semibold text-ds-textSecondary uppercase tracking-wide mb-1.5">Password</label>
               <div className="relative">
                 <input type={showPwd ? 'text' : 'password'} value={form.password}
                   onChange={e => set('password', e.target.value)}
@@ -201,40 +189,52 @@ export default function SignUpPage() {
                 <div className="mt-2 space-y-1">
                   <div className="flex gap-1">
                     {[1,2,3,4].map(i => (
-                      <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${i <= strength ? STRENGTH_COLORS[strength] : 'bg-ds-border'}`} />
+                      <div key={i} className={`h-1.5 flex-1 rounded-full transition-colors ${i <= strength ? STRENGTH_COLORS[strength] : 'bg-ds-border'}`} />
                     ))}
                   </div>
-                  <p className="text-xs text-ds-textMuted">{STRENGTH_LABELS[strength]}</p>
+                  <p className={`text-xs font-medium ${STRENGTH_TEXT[strength]}`}>{STRENGTH_LABELS[strength]}</p>
                 </div>
               )}
               {errors.password && <p className="text-xs text-ds-danger mt-1">{errors.password}</p>}
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-ds-textMuted uppercase tracking-wide mb-1.5">Confirm Password</label>
+              <label className="block text-xs font-semibold text-ds-textSecondary uppercase tracking-wide mb-1.5">Confirm Password</label>
               <input type="password" value={form.confirm} onChange={e => set('confirm', e.target.value)}
                 placeholder="••••••••" autoComplete="new-password" className={inputCls('confirm')} />
               {errors.confirm && <p className="text-xs text-ds-danger mt-1">{errors.confirm}</p>}
             </div>
 
             {serverError && (
-              <p className="text-sm text-ds-danger bg-ds-dangerLight rounded px-3 py-2">{serverError}</p>
+              <div className="text-sm text-ds-danger bg-ds-dangerLight rounded-lg px-4 py-3">{serverError}</div>
             )}
 
             <button type="submit" disabled={loading || googleLoading}
-              className="w-full bg-primary text-white py-2.5 rounded-btn text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors">
+              className="w-full bg-primary text-white py-2.5 rounded-btn text-sm font-semibold hover:bg-primary-dark disabled:opacity-50 transition-colors">
               {loading
                 ? <span className="flex items-center justify-center gap-2"><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Creating account…</span>
                 : 'Create Account'}
             </button>
           </form>
 
-          <div className="border-t border-ds-border pt-4 text-center">
-            <p className="text-xs text-ds-textMuted">
-              Already have an account?{' '}
-              <Link href="/login" className="text-primary hover:underline font-medium">Sign in</Link>
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="flex-1 border-t border-ds-border" />
+            <span className="text-xs text-ds-textMuted">or</span>
+            <div className="flex-1 border-t border-ds-border" />
           </div>
+
+          <button onClick={handleGoogle} disabled={googleLoading || loading}
+            className="w-full flex items-center justify-center gap-3 border border-ds-border rounded-btn py-2.5 text-sm font-medium text-ds-text bg-ds-card hover:bg-ds-bg hover:border-ds-borderStrong disabled:opacity-50 transition-colors">
+            {googleLoading
+              ? <span className="w-4 h-4 border-2 border-ds-border border-t-primary rounded-full animate-spin" />
+              : <GoogleIcon />}
+            Continue with Google
+          </button>
+
+          <p className="text-sm text-center text-ds-textSecondary">
+            Already have an account?{' '}
+            <Link href="/login" className="text-primary hover:underline font-medium">Sign in</Link>
+          </p>
         </div>
       </div>
     </div>
