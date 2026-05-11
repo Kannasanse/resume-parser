@@ -124,8 +124,8 @@ function ClassicProfessional({ resume, design }) {
         const arrangement = ds.detailsArrangement || 1;
         const contactItems = [pi.email, pi.phone, pi.location, pi.linkedin, pi.github, pi.website].filter(Boolean);
         const sepChar = separator === 'bar' ? ' | ' : separator === 'bullet' ? ' • ' : ' · ';
-        const nameColor = theme.name || theme.primary;
-        const headingLineColor = theme.headingsLine || theme.border || theme.primary;
+        const nameColor = theme.name ?? theme.primary;
+        const headingLineColor = theme.headingsLine ?? theme.border ?? theme.primary;
 
         let contactBlock;
         if (arrangement === 2 || arrangement === '2') {
@@ -312,14 +312,14 @@ function SectionBlock({ sec, theme, sg, ig, lh, style, layoutSettings }) {
 
   const headerStyle = {
     classic: {
-      fontSize: titleFontSize, fontWeight: 700, color: theme.headings || theme.primary,
+      fontSize: titleFontSize, fontWeight: 700, color: theme.headings ?? theme.primary,
       textTransform: 'uppercase', letterSpacing: '0.06em',
-      borderBottom: `1px solid ${theme.headingsLine || theme.border || '#ddd'}`,
+      borderBottom: `1px solid ${theme.headingsLine ?? theme.border ?? '#ddd'}`,
       paddingBottom: 3, marginBottom: ig,
       display: 'flex', alignItems: 'center',
     },
     modern: {
-      fontSize: TITLE_SIZE_MAP[ls.titleSize || 'small'] || '8pt', fontWeight: 700, color: theme.headings || theme.primary,
+      fontSize: TITLE_SIZE_MAP[ls.titleSize || 'small'] || '8pt', fontWeight: 700, color: theme.headings ?? theme.primary,
       textTransform: 'uppercase', letterSpacing: '0.1em',
       marginBottom: ig, display: 'flex', alignItems: 'center',
     },
@@ -2083,20 +2083,28 @@ function ResumeFooter({ footerSettings, personalInfo, pageNumber }) {
 
 function resolveColors(theme, rawDesignSettings) {
   const { colorMode = 'accent', accentColor, accentTargets = {}, multiColors = {}, borderColor } = rawDesignSettings || {};
+
+  // Global primary: in accent mode any picked color overrides theme.primary broadly
+  const primary = accentColor && colorMode === 'accent' ? accentColor : theme.primary;
+  const border = borderColor || theme.border || '#ddd';
+
+  // Per-element: only override when explicitly targeted (accent mode) or in multi mode
   const getColor = (target, fallback) => {
     if (colorMode === 'multi') return multiColors[target] || fallback;
-    if (accentColor && accentTargets[target]) return accentColor;
-    return fallback;
+    if (colorMode === 'accent' && accentColor && accentTargets[target]) return accentColor;
+    return null; // null = use primary from theme (not a specific override)
   };
+
   return {
-    name: getColor('name', theme.primary),
-    headings: getColor('headings', theme.primary),
-    headingsLine: getColor('headingsLine', theme.border || '#ddd'),
-    dotsBarsBubbles: getColor('dotsBarsBubbles', theme.primary),
-    dates: getColor('dates', theme.subtext),
-    entrySubtitle: getColor('entrySubtitle', theme.subtext),
-    border: borderColor || theme.border || '#ddd',
-    primary: accentColor && colorMode === 'accent' ? accentColor : theme.primary,
+    primary,
+    border,
+    // Only set these when they are an explicit override; null means "inherit from theme.primary"
+    name: getColor('name', null),
+    headings: getColor('headings', null),
+    headingsLine: getColor('headingsLine', null),
+    dotsBarsBubbles: getColor('dotsBarsBubbles', null),
+    dates: getColor('dates', null),
+    entrySubtitle: getColor('entrySubtitle', null),
   };
 }
 
@@ -2137,12 +2145,13 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
       ...spacedDesign.theme,
       primary: colors.primary,
       border: colors.border,
-      name: colors.name,
-      headings: colors.headings,
-      headingsLine: colors.headingsLine,
-      dotsBarsBubbles: colors.dotsBarsBubbles,
-      dates: colors.dates,
-      entrySubtitle: colors.entrySubtitle,
+      // Only inject targeted overrides when explicitly set (non-null)
+      ...(colors.name !== null && { name: colors.name }),
+      ...(colors.headings !== null && { headings: colors.headings }),
+      ...(colors.headingsLine !== null && { headingsLine: colors.headingsLine }),
+      ...(colors.dotsBarsBubbles !== null && { dotsBarsBubbles: colors.dotsBarsBubbles }),
+      ...(colors.dates !== null && { dates: colors.dates }),
+      ...(colors.entrySubtitle !== null && { entrySubtitle: colors.entrySubtitle }),
     },
   };
   const page = design.page;

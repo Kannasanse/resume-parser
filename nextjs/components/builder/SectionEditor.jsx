@@ -298,10 +298,47 @@ function EducationEditor({ content, onChange }) {
   );
 }
 
+function SkillRow({ entry, idx, onUpdate, onRemove }) {
+  const [skill, setSkill] = useState(entry.skill || '');
+  const [category, setCategory] = useState(entry.category || '');
+  const profOptions = ['Expert', 'Advanced', 'Intermediate', 'Beginner'];
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-2">
+        <input
+          value={skill}
+          onChange={(e) => setSkill(e.target.value.replace(/<[^>]*>/g, ''))}
+          onBlur={() => skill.trim() && onUpdate(idx, { skill: skill.trim() })}
+          maxLength={80}
+          className="flex-1 px-2.5 py-1 text-sm border border-ds-inputBorder rounded bg-ds-card text-ds-text focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
+        />
+        <select
+          value={entry.proficiency || 'Intermediate'}
+          onChange={(ev) => onUpdate(idx, { proficiency: ev.target.value })}
+          className="text-xs border border-ds-inputBorder rounded px-1.5 py-1 bg-ds-card text-ds-text focus:outline-none"
+        >
+          {profOptions.map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+        <button onClick={() => onRemove(idx)} className="w-5 h-5 flex items-center justify-center text-ds-textMuted hover:text-ds-danger transition-colors flex-shrink-0">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <input
+        value={category}
+        onChange={(e) => setCategory(e.target.value.replace(/<[^>]*>/g, ''))}
+        onBlur={() => onUpdate(idx, { category: category.trim() })}
+        placeholder="Category (optional)"
+        maxLength={50}
+        className="w-full px-2 py-1 text-xs border border-ds-inputBorder rounded bg-ds-card text-ds-textMuted placeholder:text-ds-textMuted/60 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
+      />
+    </div>
+  );
+}
+
 function SkillsEditor({ content, onChange }) {
   const entries = content.entries || [];
   const [newSkill, setNewSkill] = useState('');
-  const profOptions = ['Expert', 'Advanced', 'Intermediate', 'Beginner'].map(v => ({ value: v, label: v }));
 
   const add = () => {
     const sk = newSkill.trim().replace(/<[^>]*>/g, '');
@@ -328,28 +365,7 @@ function SkillsEditor({ content, onChange }) {
       </div>
       <div className="space-y-2 max-h-64 overflow-y-auto">
         {entries.map((e, idx) => (
-          <div key={idx} className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="flex-1 text-sm bg-primary/5 text-primary px-2.5 py-1 rounded-full truncate">{e.skill}</span>
-              <select
-                value={e.proficiency || 'Intermediate'}
-                onChange={(ev) => update(idx, { proficiency: ev.target.value })}
-                className="text-xs border border-ds-inputBorder rounded px-1.5 py-1 bg-ds-card text-ds-text focus:outline-none"
-              >
-                {profOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-              <button onClick={() => remove(idx)} className="w-5 h-5 flex items-center justify-center text-ds-textMuted hover:text-ds-danger transition-colors flex-shrink-0">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
-            </div>
-            <input
-              value={e.category || ''}
-              onChange={(ev) => update(idx, { category: ev.target.value.replace(/<[^>]*>/g, '') })}
-              placeholder="Category (optional)"
-              maxLength={50}
-              className="w-full px-2 py-1 text-xs border border-ds-inputBorder rounded bg-ds-card text-ds-textMuted placeholder:text-ds-textMuted/60 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
-            />
-          </div>
+          <SkillRow key={idx} entry={e} idx={idx} onUpdate={update} onRemove={remove} />
         ))}
       </div>
     </div>
