@@ -121,19 +121,43 @@ function ClassicProfessional({ resume, design }) {
         const ds = resume.design_settings || {};
         const headerAlign = ds.headerAlignment || 'left';
         const separator = ds.detailsSeparator || 'icon';
+        const arrangement = ds.detailsArrangement || 1;
         const contactItems = [pi.email, pi.phone, pi.location, pi.linkedin, pi.github, pi.website].filter(Boolean);
         const sepChar = separator === 'bar' ? ' | ' : separator === 'bullet' ? ' • ' : ' · ';
-        const contactLine = contactItems.join(sepChar);
+        const nameColor = theme.name || theme.primary;
+        const headingLineColor = theme.headingsLine || theme.border || theme.primary;
+
+        let contactBlock;
+        if (arrangement === 2 || arrangement === '2') {
+          const half = Math.ceil(contactItems.length / 2);
+          const row1 = contactItems.slice(0, half);
+          const row2 = contactItems.slice(half);
+          contactBlock = (
+            <div style={{ marginTop: 4, fontSize: '9pt', color: theme.subtext }}>
+              <div>{row1.join(sepChar)}</div>
+              {row2.length > 0 && <div>{row2.join(sepChar)}</div>}
+            </div>
+          );
+        } else if (arrangement === 3 || arrangement === '3') {
+          contactBlock = (
+            <div style={{ marginTop: 4, fontSize: '9pt', color: theme.subtext }}>
+              {contactItems.map((c, i) => <div key={i}>{c}</div>)}
+            </div>
+          );
+        } else {
+          contactBlock = (
+            <div style={{ marginTop: 4, fontSize: '9pt', color: theme.subtext }}>
+              {contactItems.join(sepChar)}
+            </div>
+          );
+        }
+
         return (
-          <div style={{ borderBottom: `2px solid ${theme.primary}`, paddingBottom: sg / 2, marginBottom: sg, textAlign: headerAlign }}>
-            <div style={{ fontSize: '22pt', fontWeight: 700, color: theme.primary, letterSpacing: '-0.3px' }}>
+          <div style={{ borderBottom: `2px solid ${headingLineColor}`, paddingBottom: sg / 2, marginBottom: sg, textAlign: headerAlign }}>
+            <div style={{ fontSize: '22pt', fontWeight: 700, color: nameColor, letterSpacing: '-0.3px' }}>
               {pi.name || 'Your Name'}
             </div>
-            {contactItems.length > 0 && (
-              <div style={{ marginTop: 4, fontSize: '9pt', color: theme.subtext }}>
-                {contactLine}
-              </div>
-            )}
+            {contactItems.length > 0 && contactBlock}
             {pi.summary && (
               <p style={{ marginTop: 8, fontSize: '9.5pt', color: theme.subtext, lineHeight: lh }}>
                 {pi.summary}
@@ -288,14 +312,14 @@ function SectionBlock({ sec, theme, sg, ig, lh, style, layoutSettings }) {
 
   const headerStyle = {
     classic: {
-      fontSize: titleFontSize, fontWeight: 700, color: theme.primary,
+      fontSize: titleFontSize, fontWeight: 700, color: theme.headings || theme.primary,
       textTransform: 'uppercase', letterSpacing: '0.06em',
-      borderBottom: `1px solid ${theme.border || '#ddd'}`,
+      borderBottom: `1px solid ${theme.headingsLine || theme.border || '#ddd'}`,
       paddingBottom: 3, marginBottom: ig,
       display: 'flex', alignItems: 'center',
     },
     modern: {
-      fontSize: TITLE_SIZE_MAP[ls.titleSize || 'small'] || '8pt', fontWeight: 700, color: theme.primary,
+      fontSize: TITLE_SIZE_MAP[ls.titleSize || 'small'] || '8pt', fontWeight: 700, color: theme.headings || theme.primary,
       textTransform: 'uppercase', letterSpacing: '0.1em',
       marginBottom: ig, display: 'flex', alignItems: 'center',
     },
@@ -378,7 +402,7 @@ function SkillsContent({ entries, theme, style, displaySettings, skillsStyle, bu
         {grouped.map((g, i) => {
           const text = formatGroup(g.cat, g.skills, subinfoStyle);
           return (
-            <span key={i} style={{ fontSize: '9pt', background: style === 'ats' ? 'transparent' : `${theme.primary}18`, color: style === 'ats' ? theme.text : theme.primary, padding: '4px 10px', borderRadius: 6, border: style === 'ats' ? '1px solid #ccc' : `1px solid ${theme.primary}40`, flexWrap: 'wrap' }}>
+            <span key={i} style={{ fontSize: '9pt', background: style === 'ats' ? 'transparent' : `${(theme.dotsBarsBubbles || theme.primary)}18`, color: style === 'ats' ? theme.text : (theme.dotsBarsBubbles || theme.primary), padding: '4px 10px', borderRadius: 6, border: style === 'ats' ? '1px solid #ccc' : `1px solid ${(theme.dotsBarsBubbles || theme.primary)}40`, flexWrap: 'wrap' }}>
               {text}
             </span>
           );
@@ -400,18 +424,18 @@ function SkillsContent({ entries, theme, style, displaySettings, skillsStyle, bu
               {e.proficiency && (
                 <>
                   {levelStyle === 'text' && (
-                    <span style={{ fontSize: '8pt', color: theme.primary }}>{e.proficiency}</span>
+                    <span style={{ fontSize: '8pt', color: theme.dotsBarsBubbles || theme.primary }}>{e.proficiency}</span>
                   )}
                   {levelStyle === 'dots' && (
                     <div style={{ display: 'flex', gap: 2 }}>
                       {[1,2,3,4,5].map(dot => (
-                        <div key={dot} style={{ width: 8, height: 8, borderRadius: '50%', background: dot <= lvl ? theme.primary : `${theme.primary}30` }} />
+                        <div key={dot} style={{ width: 8, height: 8, borderRadius: '50%', background: dot <= lvl ? (theme.dotsBarsBubbles || theme.primary) : `${theme.dotsBarsBubbles || theme.primary}30` }} />
                       ))}
                     </div>
                   )}
                   {levelStyle === 'bar' && (
-                    <div style={{ width: 60, height: 6, borderRadius: 3, background: `${theme.primary}25`, overflow: 'hidden' }}>
-                      <div style={{ width: `${(lvl / 5) * 100}%`, height: '100%', background: theme.primary, borderRadius: 3 }} />
+                    <div style={{ width: 60, height: 6, borderRadius: 3, background: `${theme.dotsBarsBubbles || theme.primary}25`, overflow: 'hidden' }}>
+                      <div style={{ width: `${(lvl / 5) * 100}%`, height: '100%', background: theme.dotsBarsBubbles || theme.primary, borderRadius: 3 }} />
                     </div>
                   )}
                 </>
@@ -2055,6 +2079,27 @@ function ResumeFooter({ footerSettings, personalInfo, pageNumber }) {
   );
 }
 
+// ── Color resolution ─────────────────────────────────────────────────────────
+
+function resolveColors(theme, rawDesignSettings) {
+  const { colorMode = 'accent', accentColor, accentTargets = {}, multiColors = {}, borderColor } = rawDesignSettings || {};
+  const getColor = (target, fallback) => {
+    if (colorMode === 'multi') return multiColors[target] || fallback;
+    if (accentColor && accentTargets[target]) return accentColor;
+    return fallback;
+  };
+  return {
+    name: getColor('name', theme.primary),
+    headings: getColor('headings', theme.primary),
+    headingsLine: getColor('headingsLine', theme.border || '#ddd'),
+    dotsBarsBubbles: getColor('dotsBarsBubbles', theme.primary),
+    dates: getColor('dates', theme.subtext),
+    entrySubtitle: getColor('entrySubtitle', theme.subtext),
+    border: borderColor || theme.border || '#ddd',
+    primary: accentColor && colorMode === 'accent' ? accentColor : theme.primary,
+  };
+}
+
 // ── Spacing settings → design override ───────────────────────────────────────
 
 const MM_TO_PX = 3.7795;
@@ -2084,7 +2129,22 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
   const containerRef = useRef(null);
   const [computedScale, setComputedScale] = useState(scale || 0.6);
   const baseDesign = resolveDesign(designSettings);
-  const design = applySpacingSettings(baseDesign, resume?.spacing_settings);
+  const spacedDesign = applySpacingSettings(baseDesign, resume?.spacing_settings);
+  const colors = resolveColors(spacedDesign.theme, designSettings);
+  const design = {
+    ...spacedDesign,
+    theme: {
+      ...spacedDesign.theme,
+      primary: colors.primary,
+      border: colors.border,
+      name: colors.name,
+      headings: colors.headings,
+      headingsLine: colors.headingsLine,
+      dotsBarsBubbles: colors.dotsBarsBubbles,
+      dates: colors.dates,
+      entrySubtitle: colors.entrySubtitle,
+    },
+  };
   const page = design.page;
   const TemplateComp = TEMPLATE_COMPONENTS[resume?.template_id] || ClassicProfessional;
 
