@@ -153,6 +153,7 @@ export default function ResumeDetail() {
   const queryClient = useQueryClient();
   const [selectedScoreIdx, setSelectedScoreIdx] = useState(0);
   const [reparsing, setReparsing] = useState(false);
+  const [reparseError, setReparseError] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const { data: resume, isLoading, error } = useQuery({
@@ -179,17 +180,18 @@ export default function ResumeDetail() {
 
   const handleReparse = async () => {
     setReparsing(true);
+    setReparseError('');
     try {
-      // Phase 1: parse
       const result = await reparseResume(id);
       queryClient.invalidateQueries({ queryKey: ['resume', id] });
       queryClient.invalidateQueries({ queryKey: ['resumes'] });
 
-      // Phase 2: score (if resume has a linked job)
       if (result?.job_id) {
         await scoreResume(id, result.job_id).catch(() => {});
         queryClient.invalidateQueries({ queryKey: ['resume', id] });
       }
+    } catch (err) {
+      setReparseError(err?.data?.error || err?.message || 'Re-parse failed. Please try again.');
     } finally {
       setReparsing(false);
     }
@@ -323,12 +325,17 @@ export default function ResumeDetail() {
           )}
         </div>
         <div className="flex gap-2 flex-wrap">
-          <button onClick={handleReparse} disabled={reparsing}
-            className="text-sm border border-ds-border px-3 py-1.5 rounded-btn text-ds-text hover:bg-ds-card disabled:opacity-50 transition-colors">
-            {reparsing
-              ? <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />Re-parsing…</span>
-              : 'Re-parse'}
-          </button>
+          <div className="flex flex-col items-end gap-1">
+            <button onClick={handleReparse} disabled={reparsing}
+              className="text-sm border border-ds-border px-3 py-1.5 rounded-btn text-ds-text hover:bg-ds-card disabled:opacity-50 transition-colors">
+              {reparsing
+                ? <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />Re-parsing…</span>
+                : 'Re-parse'}
+            </button>
+            {reparseError && (
+              <p className="text-xs text-ds-danger">{reparseError}</p>
+            )}
+          </div>
           <button onClick={() => handleExport('json')}
             className="text-sm border border-ds-border px-3 py-1.5 rounded-btn text-ds-text hover:bg-ds-card transition-colors">
             <span className="hidden sm:inline">Export </span>JSON
