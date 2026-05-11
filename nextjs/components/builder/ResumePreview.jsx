@@ -100,6 +100,9 @@ function renderSectionsWithLayout(sections, layoutSettings, renderSection) {
 function ClassicProfessional({ resume, design }) {
   const { font, theme, spacing, margins } = design;
   const m = margins.value;
+  const mt = margins.top ?? m;
+  const mb = margins.bottom ?? m;
+  const fs = design.fontSize || '10pt';
   const sg = spacing.sectionGap;
   const ig = spacing.itemGap;
   const lh = spacing.lineHeight;
@@ -110,12 +113,12 @@ function ClassicProfessional({ resume, design }) {
   const base = {
     fontFamily: font.family,
     color: theme.text,
-    fontSize: '10pt',
+    fontSize: fs,
     lineHeight: lh,
   };
 
   return (
-    <div style={{ ...base, padding: `${m}px`, background: '#fff', minHeight: '100%' }}>
+    <div style={{ ...base, paddingLeft: m, paddingRight: m, paddingTop: mt, paddingBottom: mb, background: '#fff', minHeight: '100%' }}>
       {/* Header */}
       {(() => {
         const ds = resume.design_settings || {};
@@ -179,6 +182,9 @@ function ClassicProfessional({ resume, design }) {
 function ModernSlate({ resume, design }) {
   const { font, theme, spacing, margins } = design;
   const m = margins.value;
+  const mt = margins.top ?? m;
+  const mb = margins.bottom ?? m;
+  const fs = design.fontSize || '10pt';
   const sg = spacing.sectionGap;
   const ig = spacing.itemGap;
   const lh = spacing.lineHeight;
@@ -189,7 +195,7 @@ function ModernSlate({ resume, design }) {
   const sideSecs = sections.filter(s => sidebarTypes.includes(s.type));
 
   return (
-    <div style={{ fontFamily: font.family, color: theme.text, fontSize: '10pt', lineHeight: lh, background: '#fff', display: 'flex', minHeight: '100%' }}>
+    <div style={{ fontFamily: font.family, color: theme.text, fontSize: fs, lineHeight: lh, background: '#fff', display: 'flex', minHeight: '100%' }}>
       {/* Sidebar */}
       <div style={{ width: 200, background: theme.primary, color: '#fff', padding: `${m}px ${m * 0.7}px`, flexShrink: 0 }}>
         <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18pt', fontWeight: 700, marginBottom: 12 }}>
@@ -232,6 +238,9 @@ function ModernSlate({ resume, design }) {
 function MinimalWhite({ resume, design }) {
   const { font, theme, spacing, margins } = design;
   const m = margins.value;
+  const mt = margins.top ?? m;
+  const mb = margins.bottom ?? m;
+  const fs = design.fontSize || '10pt';
   const sg = spacing.sectionGap;
   const ig = spacing.itemGap;
   const lh = spacing.lineHeight;
@@ -239,7 +248,7 @@ function MinimalWhite({ resume, design }) {
   const sections = (resume.sections || []).filter(s => s.enabled !== false);
 
   return (
-    <div style={{ fontFamily: font.family, color: theme.text, fontSize: '10pt', lineHeight: lh, background: '#fff', padding: `${m * 1.2}px ${m * 1.4}px`, minHeight: '100%' }}>
+    <div style={{ fontFamily: font.family, color: theme.text, fontSize: fs, lineHeight: lh, background: '#fff', paddingLeft: Math.round(m * 1.4), paddingRight: Math.round(m * 1.4), paddingTop: Math.round(mt * 1.2), paddingBottom: Math.round(mb * 1.2), minHeight: '100%' }}>
       {/* Minimal header */}
       <div style={{ marginBottom: sg * 1.2 }}>
         <div style={{ fontSize: '24pt', fontWeight: 300, letterSpacing: '-0.5px', color: '#111' }}>{pi.name || 'Your Name'}</div>
@@ -266,6 +275,9 @@ function MinimalWhite({ resume, design }) {
 function ATSClean({ resume, design }) {
   const { font, spacing, margins } = design;
   const m = margins.value;
+  const mt = margins.top ?? m;
+  const mb = margins.bottom ?? m;
+  const fs = design.fontSize || '10pt';
   const sg = spacing.sectionGap;
   const ig = spacing.itemGap;
   const lh = spacing.lineHeight;
@@ -273,7 +285,7 @@ function ATSClean({ resume, design }) {
   const sections = (resume.sections || []).filter(s => s.enabled !== false);
 
   return (
-    <div style={{ fontFamily: font.family, color: '#000', fontSize: '11pt', lineHeight: lh, background: '#fff', padding: `${m}px`, minHeight: '100%' }}>
+    <div style={{ fontFamily: font.family, color: '#000', fontSize: fs, lineHeight: lh, background: '#fff', paddingLeft: m, paddingRight: m, paddingTop: mt, paddingBottom: mb, minHeight: '100%' }}>
       <div style={{ textAlign: 'center', marginBottom: sg }}>
         <div style={{ fontSize: '16pt', fontWeight: 700 }}>{pi.name || 'Your Name'}</div>
         <div style={{ fontSize: '9pt', marginTop: 4, color: '#333' }}>
@@ -625,6 +637,9 @@ function SidebarSection({ sec, lh, ig }) {
 function Heritage({ resume, design }) {
   const { spacing, margins } = design;
   const m = margins.value;
+  const mt = margins.top ?? m;
+  const mb = margins.bottom ?? m;
+  const fs = design.fontSize || '10pt';
   const sg = spacing.sectionGap;
   const ig = spacing.itemGap;
   const lh = spacing.lineHeight;
@@ -633,7 +648,7 @@ function Heritage({ resume, design }) {
   const serif = '"Playfair Display", Georgia, "Times New Roman", serif';
 
   return (
-    <div style={{ fontFamily: `Georgia, "Times New Roman", serif`, color: '#1c1c1c', fontSize: '10.5pt', lineHeight: lh, padding: `${m * 1.3}px ${m * 1.5}px`, background: '#fff', minHeight: '100%' }}>
+    <div style={{ fontFamily: `Georgia, "Times New Roman", serif`, color: '#1c1c1c', fontSize: fs, lineHeight: lh, paddingLeft: Math.round(m * 1.5), paddingRight: Math.round(m * 1.5), paddingTop: Math.round(mt * 1.3), paddingBottom: Math.round(mb * 1.3), background: '#fff', minHeight: '100%' }}>
       <div style={{ textAlign: 'center', paddingBottom: sg * 0.6, marginBottom: sg, borderBottom: '1px solid #1c1c1c' }}>
         <div style={{ fontFamily: serif, fontSize: '26pt', fontWeight: 700, letterSpacing: '0.01em', color: '#111' }}>
           {pi.name || 'Your Name'}
@@ -728,6 +743,9 @@ function Heritage({ resume, design }) {
 function Beacon({ resume, design }) {
   const { font, spacing, margins } = design;
   const m = margins.value;
+  const mt = margins.top ?? m;
+  const mb = margins.bottom ?? m;
+  const fs = design.fontSize || '10pt';
   const sg = spacing.sectionGap;
   const ig = spacing.itemGap;
   const lh = spacing.lineHeight;
@@ -742,7 +760,7 @@ function Beacon({ resume, design }) {
   const navy = '#1f2a3a';
 
   return (
-    <div style={{ display: 'flex', fontFamily: font.family, fontSize: '10pt', lineHeight: lh, background: '#fff', minHeight: '100%' }}>
+    <div style={{ display: 'flex', fontFamily: font.family, fontSize: fs, lineHeight: lh, background: '#fff', minHeight: '100%' }}>
       {/* Sidebar */}
       <div style={{ width: sidebarW, flexShrink: 0, background: navy, color: '#e6ebf2', padding: `${m}px ${m * 0.8}px`, fontSize: '9.5pt' }}>
         <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22pt', fontWeight: 700, color: '#fff', margin: '0 auto 14px' }}>
@@ -846,6 +864,9 @@ function Beacon({ resume, design }) {
 function Banded({ resume, design }) {
   const { font, spacing, margins } = design;
   const m = margins.value;
+  const mt = margins.top ?? m;
+  const mb = margins.bottom ?? m;
+  const fs = design.fontSize || '10pt';
   const sg = spacing.sectionGap;
   const ig = spacing.itemGap;
   const lh = spacing.lineHeight;
@@ -854,7 +875,7 @@ function Banded({ resume, design }) {
   const initials = (pi.name || 'Y').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
   return (
-    <div style={{ fontFamily: font.family, color: '#2b2f37', fontSize: '10pt', lineHeight: lh, padding: `${m}px`, background: '#fff', minHeight: '100%' }}>
+    <div style={{ fontFamily: font.family, color: '#2b2f37', fontSize: fs, lineHeight: lh, paddingLeft: m, paddingRight: m, paddingTop: mt, paddingBottom: mb, background: '#fff', minHeight: '100%' }}>
       {/* Gray card header */}
       <div style={{ background: '#e1e3e6', borderRadius: 6, padding: `18px 22px`, display: 'flex', gap: 18, alignItems: 'center', marginBottom: sg }}>
         <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#b0b5bc', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20pt', fontWeight: 700, color: '#fff' }}>
@@ -949,6 +970,9 @@ function Banded({ resume, design }) {
 function Foundry({ resume, design }) {
   const { font, spacing, margins } = design;
   const m = margins.value;
+  const mt = margins.top ?? m;
+  const mb = margins.bottom ?? m;
+  const fs = design.fontSize || '10pt';
   const sg = spacing.sectionGap;
   const ig = spacing.itemGap;
   const lh = spacing.lineHeight;
@@ -957,7 +981,7 @@ function Foundry({ resume, design }) {
   const initials = (pi.name || 'Y').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
   return (
-    <div style={{ fontFamily: font.family, color: '#232730', fontSize: '10pt', lineHeight: lh, padding: `${m}px ${m * 1.1}px`, background: '#fff', minHeight: '100%' }}>
+    <div style={{ fontFamily: font.family, color: '#232730', fontSize: fs, lineHeight: lh, paddingLeft: Math.round(m * 1.1), paddingRight: Math.round(m * 1.1), paddingTop: mt, paddingBottom: mb, background: '#fff', minHeight: '100%' }}>
       {/* Bordered header card */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 20, alignItems: 'center', padding: '16px 20px', border: '1px solid #e6e7eb', borderRadius: 8, marginBottom: sg }}>
         <div>
@@ -1047,6 +1071,9 @@ function Foundry({ resume, design }) {
 function CreativeEdge({ resume, design }) {
   const { font, theme, spacing, margins } = design;
   const m = margins.value;
+  const mt = margins.top ?? m;
+  const mb = margins.bottom ?? m;
+  const fs = design.fontSize || '10pt';
   const sg = spacing.sectionGap;
   const ig = spacing.itemGap;
   const lh = spacing.lineHeight;
@@ -1058,7 +1085,7 @@ function CreativeEdge({ resume, design }) {
   const accent = theme.primary;
 
   return (
-    <div style={{ fontFamily: font.family, color: theme.text, fontSize: '10pt', lineHeight: lh, background: '#fff', display: 'flex', minHeight: '100%' }}>
+    <div style={{ fontFamily: font.family, color: theme.text, fontSize: fs, lineHeight: lh, background: '#fff', display: 'flex', minHeight: '100%' }}>
       {/* Sidebar */}
       <div style={{ width: 210, background: accent, color: '#fff', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
         {/* Top accent bar */}
@@ -1117,6 +1144,9 @@ function CreativeEdge({ resume, design }) {
 function ExecutiveNavy({ resume, design }) {
   const { font, theme, spacing, margins } = design;
   const m = margins.value;
+  const mt = margins.top ?? m;
+  const mb = margins.bottom ?? m;
+  const fs = design.fontSize || '10pt';
   const sg = spacing.sectionGap;
   const ig = spacing.itemGap;
   const lh = spacing.lineHeight;
@@ -1125,7 +1155,7 @@ function ExecutiveNavy({ resume, design }) {
   const navy = theme.primary;
 
   return (
-    <div style={{ fontFamily: font.family, color: theme.text, fontSize: '10pt', lineHeight: lh, background: '#fff', minHeight: '100%' }}>
+    <div style={{ fontFamily: font.family, color: theme.text, fontSize: fs, lineHeight: lh, background: '#fff', minHeight: '100%' }}>
       {/* Dark header band */}
       <div style={{ background: navy, color: '#fff', padding: `${m * 1.1}px ${m * 1.2}px` }}>
         <div style={{ fontSize: '24pt', fontWeight: 700, letterSpacing: '0.02em' }}>{pi.name || 'Your Name'}</div>
@@ -1164,6 +1194,9 @@ function ExecutiveNavy({ resume, design }) {
 function TechStack({ resume, design }) {
   const { font, theme, spacing, margins } = design;
   const m = margins.value;
+  const mt = margins.top ?? m;
+  const mb = margins.bottom ?? m;
+  const fs = design.fontSize || '10pt';
   const sg = spacing.sectionGap;
   const ig = spacing.itemGap;
   const lh = spacing.lineHeight;
@@ -1176,7 +1209,7 @@ function TechStack({ resume, design }) {
   const blue = theme.primary;
 
   return (
-    <div style={{ fontFamily: font.family, color: theme.text, fontSize: '10pt', lineHeight: lh, background: '#fff', minHeight: '100%' }}>
+    <div style={{ fontFamily: font.family, color: theme.text, fontSize: fs, lineHeight: lh, background: '#fff', minHeight: '100%' }}>
       {/* Header */}
       <div style={{ background: blue, color: '#fff', padding: `${m * 0.9}px ${m * 1.1}px`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
@@ -1239,6 +1272,9 @@ function TechStack({ resume, design }) {
 function SoftGradient({ resume, design }) {
   const { font, theme, spacing, margins } = design;
   const m = margins.value;
+  const mt = margins.top ?? m;
+  const mb = margins.bottom ?? m;
+  const fs = design.fontSize || '10pt';
   const sg = spacing.sectionGap;
   const ig = spacing.itemGap;
   const lh = spacing.lineHeight;
@@ -1248,7 +1284,7 @@ function SoftGradient({ resume, design }) {
   const a = theme.accent || theme.primary;
 
   return (
-    <div style={{ fontFamily: font.family, color: theme.text, fontSize: '10pt', lineHeight: lh, background: '#fff', minHeight: '100%' }}>
+    <div style={{ fontFamily: font.family, color: theme.text, fontSize: fs, lineHeight: lh, background: '#fff', minHeight: '100%' }}>
       {/* Gradient header */}
       <div style={{ background: `linear-gradient(135deg, ${p} 0%, ${a} 100%)`, color: '#fff', padding: `${m * 1.2}px ${m * 1.3}px`, position: 'relative', overflow: 'hidden' }}>
         {/* Decorative circle */}
@@ -1291,6 +1327,9 @@ function SoftGradient({ resume, design }) {
 function BoldImpact({ resume, design }) {
   const { font, theme, spacing, margins } = design;
   const m = margins.value;
+  const mt = margins.top ?? m;
+  const mb = margins.bottom ?? m;
+  const fs = design.fontSize || '10pt';
   const sg = spacing.sectionGap;
   const ig = spacing.itemGap;
   const lh = spacing.lineHeight;
@@ -1299,7 +1338,7 @@ function BoldImpact({ resume, design }) {
   const primary = theme.primary;
 
   return (
-    <div style={{ fontFamily: font.family, color: theme.text, fontSize: '10pt', lineHeight: lh, background: '#fff', minHeight: '100%' }}>
+    <div style={{ fontFamily: font.family, color: theme.text, fontSize: fs, lineHeight: lh, background: '#fff', minHeight: '100%' }}>
       {/* Full-width bold header */}
       <div style={{ background: primary, padding: `${m * 1.1}px ${m * 1.2}px` }}>
         <div style={{ fontSize: '28pt', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px', textTransform: 'uppercase' }}>
@@ -1342,6 +1381,9 @@ function BoldImpact({ resume, design }) {
 function ElegantScript({ resume, design }) {
   const { font, theme, spacing, margins } = design;
   const m = margins.value;
+  const mt = margins.top ?? m;
+  const mb = margins.bottom ?? m;
+  const fs = design.fontSize || '10pt';
   const sg = spacing.sectionGap;
   const ig = spacing.itemGap;
   const lh = spacing.lineHeight;
@@ -1351,7 +1393,7 @@ function ElegantScript({ resume, design }) {
   const p = theme.primary;
 
   return (
-    <div style={{ fontFamily: font.family, color: theme.text, fontSize: '10pt', lineHeight: lh, background: '#fff', padding: `${m * 1.3}px ${m * 1.5}px`, minHeight: '100%' }}>
+    <div style={{ fontFamily: font.family, color: theme.text, fontSize: fs, lineHeight: lh, background: '#fff', paddingLeft: Math.round(m * 1.5), paddingRight: Math.round(m * 1.5), paddingTop: Math.round(mt * 1.3), paddingBottom: Math.round(mb * 1.3), minHeight: '100%' }}>
       {/* Decorative header */}
       <div style={{ textAlign: 'center', marginBottom: sg }}>
         <div style={{ fontSize: '4pt', letterSpacing: '0.5em', color: p, textTransform: 'uppercase', marginBottom: 8 }}>✦ ✦ ✦</div>
@@ -1401,6 +1443,9 @@ function ElegantScript({ resume, design }) {
 function CorporateSerif({ resume, design }) {
   const { theme, spacing, margins } = design;
   const m = margins.value;
+  const mt = margins.top ?? m;
+  const mb = margins.bottom ?? m;
+  const fs = design.fontSize || '10pt';
   const sg = spacing.sectionGap;
   const ig = spacing.itemGap;
   const lh = spacing.lineHeight;
@@ -1418,7 +1463,7 @@ function CorporateSerif({ resume, design }) {
   );
 
   return (
-    <div style={{ fontFamily: serif, color: theme.text, fontSize: '11pt', lineHeight: lh, background: '#fff', padding: `${m * 1.2}px ${m * 1.4}px`, minHeight: '100%' }}>
+    <div style={{ fontFamily: serif, color: theme.text, fontSize: fs, lineHeight: lh, background: '#fff', paddingLeft: Math.round(m * 1.4), paddingRight: Math.round(m * 1.4), paddingTop: Math.round(mt * 1.2), paddingBottom: Math.round(mb * 1.2), minHeight: '100%' }}>
       {/* Header */}
       <div style={{ textAlign: 'center', paddingBottom: sg * 0.5, marginBottom: sg * 0.3, borderBottom: `1px solid ${col}` }}>
         <div style={{ fontSize: '26pt', fontWeight: 700, color: col, letterSpacing: '0.01em', marginBottom: 3 }}>
@@ -1521,6 +1566,9 @@ function CorporateSerif({ resume, design }) {
 function SilverBanner({ resume, design }) {
   const { theme, spacing, margins } = design;
   const m = margins.value;
+  const mt = margins.top ?? m;
+  const mb = margins.bottom ?? m;
+  const fs = design.fontSize || '10pt';
   const sg = spacing.sectionGap;
   const ig = spacing.itemGap;
   const lh = spacing.lineHeight;
@@ -1537,7 +1585,7 @@ function SilverBanner({ resume, design }) {
   );
 
   return (
-    <div style={{ fontFamily: serif, color: theme.text, fontSize: '11pt', lineHeight: lh, background: '#fff', padding: `${m * 1.1}px ${m * 1.2}px`, minHeight: '100%' }}>
+    <div style={{ fontFamily: serif, color: theme.text, fontSize: fs, lineHeight: lh, background: '#fff', paddingLeft: Math.round(m * 1.2), paddingRight: Math.round(m * 1.2), paddingTop: Math.round(mt * 1.1), paddingBottom: Math.round(mb * 1.1), minHeight: '100%' }}>
       {/* Header */}
       <div style={{ marginBottom: sg * 0.8 }}>
         <div style={{ fontSize: '22pt', fontWeight: 700, color: theme.primary, letterSpacing: '0.01em' }}>{pi.name || 'Your Name'}</div>
@@ -1625,6 +1673,9 @@ function SilverBanner({ resume, design }) {
 function TealSidebarTemplate({ resume, design }) {
   const { theme, spacing, margins } = design;
   const m = margins.value;
+  const mt = margins.top ?? m;
+  const mb = margins.bottom ?? m;
+  const fs = design.fontSize || '10pt';
   const sg = spacing.sectionGap;
   const ig = spacing.itemGap;
   const lh = spacing.lineHeight;
@@ -1638,7 +1689,7 @@ function TealSidebarTemplate({ resume, design }) {
   const sidebarBg = theme.primary;
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1.55fr 1fr', fontFamily: serif, fontSize: '10.5pt', lineHeight: lh, color: theme.text, background: '#fff', minHeight: '100%', overflow: 'hidden' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1.55fr 1fr', fontFamily: serif, fontSize: fs, lineHeight: lh, color: theme.text, background: '#fff', minHeight: '100%', overflow: 'hidden' }}>
       {/* Main */}
       <div style={{ padding: `${m * 1.1}px ${m * 0.85}px ${m}px ${m * 1.1}px` }}>
         <div style={{ fontFamily: sans, fontSize: '22pt', fontWeight: 800, color: theme.primary, letterSpacing: '0.01em', lineHeight: 1.1, marginBottom: 3 }}>{pi.name || 'Your Name'}</div>
@@ -1750,6 +1801,9 @@ function TealSidebarTemplate({ resume, design }) {
 function TimelineTemplate({ resume, design }) {
   const { theme, spacing, margins } = design;
   const m = margins.value;
+  const mt = margins.top ?? m;
+  const mb = margins.bottom ?? m;
+  const fs = design.fontSize || '10pt';
   const sg = spacing.sectionGap;
   const ig = spacing.itemGap;
   const lh = spacing.lineHeight;
@@ -1760,7 +1814,7 @@ function TimelineTemplate({ resume, design }) {
   const accent = theme.accent || theme.primary;
 
   return (
-    <div style={{ fontFamily: serif, color: theme.text, fontSize: '10.5pt', lineHeight: lh, background: '#fff', padding: `${m * 1.1}px ${m * 1.2}px`, minHeight: '100%' }}>
+    <div style={{ fontFamily: serif, color: theme.text, fontSize: fs, lineHeight: lh, background: '#fff', paddingLeft: Math.round(m * 1.2), paddingRight: Math.round(m * 1.2), paddingTop: Math.round(mt * 1.1), paddingBottom: Math.round(mb * 1.1), minHeight: '100%' }}>
       {/* Header */}
       <div style={{ marginBottom: sg * 0.7 }}>
         <div style={{ fontFamily: sans, fontSize: '22pt', fontWeight: 800, color: theme.primary, letterSpacing: '0.02em', textTransform: 'uppercase' }}>{pi.name || 'Your Name'}</div>
@@ -1880,6 +1934,9 @@ function TimelineTemplate({ resume, design }) {
 function PhotoSidebarTemplate({ resume, design }) {
   const { theme, spacing, margins } = design;
   const m = margins.value;
+  const mt = margins.top ?? m;
+  const mb = margins.bottom ?? m;
+  const fs = design.fontSize || '10pt';
   const sg = spacing.sectionGap;
   const ig = spacing.itemGap;
   const lh = spacing.lineHeight;
@@ -1895,7 +1952,7 @@ function PhotoSidebarTemplate({ resume, design }) {
   const initials = (pi.name || 'Y').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.85fr', fontFamily: serif, fontSize: '10.5pt', lineHeight: lh, color: theme.text, background: '#fff', minHeight: '100%', overflow: 'hidden' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.85fr', fontFamily: serif, fontSize: fs, lineHeight: lh, color: theme.text, background: '#fff', minHeight: '100%', overflow: 'hidden' }}>
       {/* Sidebar */}
       <div style={{ padding: `${m * 1.1}px ${m * 0.7}px ${m}px ${m * 0.9}px`, background: '#fff', borderRight: `1px solid #e8eaee` }}>
         {/* Photo placeholder */}
@@ -2115,21 +2172,22 @@ const MM_TO_PX = 3.7795;
 function applySpacingSettings(design, spacingSettings) {
   if (!spacingSettings) return design;
   const ss = spacingSettings;
+  const lrMm = ss.leftRightMargin ?? ss.marginLeft ?? null;
+  const tbMm = ss.topBottomMargin ?? ss.marginTop ?? null;
+  const fsNum = typeof ss.fontSize === 'number' ? Math.max(9, Math.min(14, ss.fontSize)) : null;
   return {
     ...design,
     spacing: {
       ...design.spacing,
       lineHeight: ss.lineHeight ?? design.spacing.lineHeight,
+      itemGap: ss.entrySpacing != null ? Math.round(ss.entrySpacing * 4) : design.spacing.itemGap,
     },
     margins: {
       ...design.margins,
-      value: Math.round(ss.marginLeft * MM_TO_PX),
-      top: Math.round(ss.marginTop * MM_TO_PX),
-      bottom: Math.round(ss.marginBottom * MM_TO_PX),
-      right: Math.round(ss.marginRight * MM_TO_PX),
-      itemGap: ss.entrySpacing ? ss.entrySpacing * 4 : design.spacing.itemGap,
+      ...(lrMm != null && { value: Math.round(lrMm * MM_TO_PX), right: Math.round(lrMm * MM_TO_PX) }),
+      ...(tbMm != null && { top: Math.round(tbMm * MM_TO_PX), bottom: Math.round(tbMm * MM_TO_PX) }),
     },
-    fontSize: ss.fontSize ? `${ss.fontSize}pt` : null,
+    fontSize: fsNum ? `${fsNum}pt` : null,
   };
 }
 
