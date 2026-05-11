@@ -115,7 +115,7 @@ export default function ScoreBreakdown({ score, compact = false }) {
           <p className="text-xs text-ds-textMuted uppercase tracking-wide font-medium">Overall Score</p>
           <span className={`inline-block mt-1 text-sm font-semibold px-3 py-0.5 rounded-btn ${styles.badge}`}>{band}</span>
           {score.candidate_years != null && (
-            <p className="text-xs text-ds-textMuted mt-1 font-mono">{score.candidate_years.toFixed(1)} yrs detected</p>
+            <p className="text-xs text-ds-textMuted mt-1 font-mono">{parseFloat(score.candidate_years).toFixed(1)} yrs detected</p>
           )}
         </div>
       </div>

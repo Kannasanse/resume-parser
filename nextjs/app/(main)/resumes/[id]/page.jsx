@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, Component } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getResume, deleteResume, exportResume, reparseResume, scoreResume, getResumes } from '@/lib/api';
@@ -7,6 +7,23 @@ import { deduplicateByEmail } from '@/lib/resumeUtils';
 import ScoreBreakdown from '@/components/ScoreBreakdown';
 import HoldToDelete from '@/components/HoldToDelete';
 import { Sk } from '@/components/Skeleton';
+
+class ScoreErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(err) { return { error: err }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="lg:col-span-1">
+          <div className="bg-ds-card rounded border border-ds-border p-4 text-xs text-ds-danger">
+            Score display error — try re-parsing this profile.
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function DeleteModal({ name, onCancel, onDelete }) {
   return (
@@ -548,6 +565,7 @@ export default function ResumeDetail() {
         </div>
 
         {scores.length > 0 && (
+          <ScoreErrorBoundary>
           <div className="lg:col-span-1">
             <div className="bg-ds-card rounded border border-ds-border overflow-hidden sticky top-4">
               <div className="border-b border-ds-border px-4 py-4">
@@ -613,6 +631,7 @@ export default function ResumeDetail() {
               )}
             </div>
           </div>
+          </ScoreErrorBoundary>
         )}
       </div>
     </div>
