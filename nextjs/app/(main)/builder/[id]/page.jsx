@@ -131,6 +131,7 @@ export default function BuilderEditor() {
   const [toast, setToast] = useState(null);
   const [titleEditing, setTitleEditing] = useState(false);
   const [zoom, setZoom] = useState(0.72);
+  const [mobileTab, setMobileTab] = useState('edit'); // 'edit' | 'preview'
   const debounceRefs = useRef({});
 
   const { data, isLoading, error } = useQuery({
@@ -538,11 +539,27 @@ export default function BuilderEditor() {
         </div>
       </div>
 
+      {/* ── Mobile tab bar ───────────────────────────────────────────────── */}
+      <div className="flex md:hidden border-b border-ds-border bg-ds-card flex-shrink-0">
+        <button
+          onClick={() => setMobileTab('edit')}
+          className={`flex-1 py-2.5 text-xs font-semibold transition-colors ${mobileTab === 'edit' ? 'text-primary border-b-2 border-primary' : 'text-ds-textMuted'}`}
+        >
+          Edit
+        </button>
+        <button
+          onClick={() => setMobileTab('preview')}
+          className={`flex-1 py-2.5 text-xs font-semibold transition-colors ${mobileTab === 'preview' ? 'text-primary border-b-2 border-primary' : 'text-ds-textMuted'}`}
+        >
+          Preview
+        </button>
+      </div>
+
       {/* ── Body ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden relative">
 
         {/* Editor pane */}
-        <div className="flex-1 overflow-y-auto border-r border-ds-border bg-white">
+        <div className={`${mobileTab === 'preview' ? 'hidden md:flex' : 'flex'} flex-col flex-1 overflow-y-auto border-r border-ds-border bg-white`}>
           <div className="px-7 py-6 max-w-2xl">
             <div className="mb-5">
               <h1 className="font-heading text-2xl font-bold text-ds-text">Build your resume</h1>
@@ -574,7 +591,7 @@ export default function BuilderEditor() {
         </div>
 
         {/* Preview pane */}
-        <div className="flex-1 overflow-y-auto flex flex-col items-center py-6 gap-5 bg-[#f2f3f5]">
+        <div className={`${mobileTab === 'edit' ? 'hidden md:flex' : 'flex'} flex-col flex-1 overflow-y-auto items-center py-6 gap-5 bg-[#f2f3f5]`}>
           {/* Preview toolbar */}
           <div className="flex items-center gap-1 px-2 py-1 bg-white border border-ds-border rounded-full shadow-sm text-xs flex-shrink-0">
             <button
