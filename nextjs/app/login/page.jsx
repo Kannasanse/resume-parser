@@ -2,7 +2,6 @@
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { createClient } from '@/lib/supabase-browser';
 
 function GoogleIcon() {
@@ -87,7 +86,8 @@ function LoginContent() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <div className="flex justify-center mb-3">
-            <Image src="/login-hero.png" alt="Proflect" width={400} height={198} className="object-contain" priority unoptimized />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/login-hero.png" alt="Proflect" className="w-full max-w-xs object-contain" />
           </div>
           <p className="text-sm text-ds-textMuted">Sign in to your account</p>
         </div>
