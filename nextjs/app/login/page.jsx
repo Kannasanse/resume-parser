@@ -87,7 +87,7 @@ function LoginContent() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <div className="flex justify-center mb-3">
-            <Image src="/logo.png" alt="Proflect" width={120} height={133} className="object-contain" priority />
+            <Image src="/login-hero.png" alt="Proflect" width={400} height={198} className="object-contain" priority />
           </div>
           <p className="text-sm text-ds-textMuted">Sign in to your account</p>
         </div>
