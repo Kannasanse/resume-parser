@@ -11,7 +11,7 @@ export default function AccessDeniedPage() {
     <div className="min-h-screen bg-ds-bg flex items-center justify-center px-4">
       <div className="w-full max-w-sm text-center space-y-5">
         <div className="flex justify-center mb-2">
-          <Image src="/logo.png" alt="Proflect" width={72} height={80} className="object-contain" />
+          <Image src="/logo.png" alt="Proflect" width={120} height={133} className="object-contain" />
         </div>
 
         <div className="w-16 h-16 rounded-full bg-ds-dangerLight flex items-center justify-center mx-auto">

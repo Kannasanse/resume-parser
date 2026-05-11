@@ -134,7 +134,7 @@ export default function Navbar() {
       <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
         <div className="flex items-center gap-6">
           <Link href={isAdmin ? '/resumes' : '/builder'} className="flex items-center flex-shrink-0">
-            <Image src="/logo.png" alt="Proflect" width={45} height={50} className="object-contain" priority />
+            <Image src="/logo.png" alt="Proflect" width={54} height={60} className="object-contain" priority />
           </Link>
 
           <div className="flex items-center gap-0.5">

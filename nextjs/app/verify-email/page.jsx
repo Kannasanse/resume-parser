@@ -52,7 +52,7 @@ function VerifyEmailContent() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <div className="flex justify-center mb-3">
-            <Image src="/logo.png" alt="Proflect" width={72} height={80} className="object-contain" priority />
+            <Image src="/logo.png" alt="Proflect" width={120} height={133} className="object-contain" priority />
           </div>
         </div>
 
