@@ -142,7 +142,7 @@ export default function SignUpPage() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <div className="flex justify-center mb-3">
-            <Image src="/logo.png" alt="Proflect" width={120} height={133} className="object-contain" priority />
+            <Image src="/logo.png" alt="Proflect" width={120} height={133} className="object-contain" priority unoptimized />
           </div>
           <p className="text-sm text-ds-textMuted">Create your account</p>
         </div>
