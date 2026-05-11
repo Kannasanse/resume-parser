@@ -117,24 +117,31 @@ function ClassicProfessional({ resume, design }) {
   return (
     <div style={{ ...base, padding: `${m}px`, background: '#fff', minHeight: '100%' }}>
       {/* Header */}
-      <div style={{ borderBottom: `2px solid ${theme.primary}`, paddingBottom: sg / 2, marginBottom: sg }}>
-        <div style={{ fontSize: '22pt', fontWeight: 700, color: theme.primary, letterSpacing: '-0.3px' }}>
-          {pi.name || 'Your Name'}
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: 4, fontSize: '9pt', color: theme.subtext }}>
-          {pi.email && <span>{pi.email}</span>}
-          {pi.phone && <span>· {pi.phone}</span>}
-          {pi.location && <span>· {pi.location}</span>}
-          {pi.linkedin && <span>· {pi.linkedin}</span>}
-          {pi.github && <span>· {pi.github}</span>}
-          {pi.website && <span>· {pi.website}</span>}
-        </div>
-        {pi.summary && (
-          <p style={{ marginTop: 8, fontSize: '9.5pt', color: theme.subtext, lineHeight: lh }}>
-            {pi.summary}
-          </p>
-        )}
-      </div>
+      {(() => {
+        const ds = resume.design_settings || {};
+        const headerAlign = ds.headerAlignment || 'left';
+        const separator = ds.detailsSeparator || 'icon';
+        const contactItems = [pi.email, pi.phone, pi.location, pi.linkedin, pi.github, pi.website].filter(Boolean);
+        const sepChar = separator === 'bar' ? ' | ' : separator === 'bullet' ? ' • ' : ' · ';
+        const contactLine = contactItems.join(sepChar);
+        return (
+          <div style={{ borderBottom: `2px solid ${theme.primary}`, paddingBottom: sg / 2, marginBottom: sg, textAlign: headerAlign }}>
+            <div style={{ fontSize: '22pt', fontWeight: 700, color: theme.primary, letterSpacing: '-0.3px' }}>
+              {pi.name || 'Your Name'}
+            </div>
+            {contactItems.length > 0 && (
+              <div style={{ marginTop: 4, fontSize: '9pt', color: theme.subtext }}>
+                {contactLine}
+              </div>
+            )}
+            {pi.summary && (
+              <p style={{ marginTop: 8, fontSize: '9.5pt', color: theme.subtext, lineHeight: lh }}>
+                {pi.summary}
+              </p>
+            )}
+          </div>
+        );
+      })()}
 
       {renderSectionsWithLayout(sections, ls, sec => (
         <SectionBlock key={sec.id} sec={sec} theme={theme} sg={sg} ig={ig} lh={lh} style="classic" layoutSettings={ls} />
@@ -315,65 +322,118 @@ function SectionBlock({ sec, theme, sg, ig, lh, style, layoutSettings }) {
   );
 }
 
-function SkillsContent({ entries, theme, style, skillsStyle, bullet = '•' }) {
-  const ss = skillsStyle || 'rows';
+function SkillsContent({ entries, theme, style, displaySettings, skillsStyle, bullet = '•' }) {
+  const ds = displaySettings || {};
+  const ss = ds.layout || ds.skillsStyle || skillsStyle || 'rows';
 
-  if (ss === 'bubble') {
+  // Group by category
+  const grouped = [];
+  const catMap = {};
+  entries.forEach(e => {
+    const cat = (e.category || '').trim();
+    if (cat) {
+      if (!catMap[cat]) { catMap[cat] = []; grouped.push({ cat, skills: catMap[cat] }); }
+      catMap[cat].push(e);
+    } else {
+      grouped.push({ cat: '', skills: [e] });
+    }
+  });
+
+  // Format a category group as text
+  const formatGroup = (cat, skills, subinfoStyle) => {
+    const skillNames = skills.map(e => e.skill).join(', ');
+    if (!cat) return skillNames;
+    if (subinfoStyle === 'dash') return `${cat} – ${skillNames}`;
+    if (subinfoStyle === 'bracket') return `${cat} (${skillNames})`;
+    return `${cat}: ${skillNames}`; // default colon
+  };
+
+  const subinfoStyle = ds.subinfoStyle || 'colon';
+
+  if (ss === 'grid') {
+    const cols = ds.columns || 3;
     return (
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-        {entries.map((e, i) => (
-          <span key={i} style={{ fontSize: '9pt', background: style === 'ats' ? 'transparent' : `${theme.primary}18`, color: style === 'ats' ? theme.text : theme.primary, padding: '2px 8px', borderRadius: 12, border: style === 'ats' ? '1px solid #ccc' : `1px solid ${theme.primary}40` }}>
-            {e.skill}
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '4px 12px' }}>
+        {grouped.map((g, i) => (
+          <span key={i} style={{ fontSize: '9pt', color: theme.text }}>
+            {bullet} {formatGroup(g.cat, g.skills, subinfoStyle)}
           </span>
         ))}
       </div>
     );
   }
 
-  if (ss === 'grid') {
+  if (ss === 'compact') {
+    const parts = grouped.map(g => formatGroup(g.cat, g.skills, subinfoStyle));
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px 16px' }}>
-        {entries.map((e, i) => (
-          <span key={i} style={{ fontSize: '9pt', color: theme.text }}>{bullet} {e.skill}</span>
-        ))}
+      <div style={{ fontSize: '9pt', color: theme.text, lineHeight: 1.4 }}>
+        {parts.join(' · ')}
       </div>
     );
   }
 
-  if (ss === 'compact') {
+  if (ss === 'bubble') {
     return (
-      <div style={{ fontSize: '9pt', color: theme.text, lineHeight: 1.4 }}>
-        {entries.map(e => e.skill).join(' · ')}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {grouped.map((g, i) => {
+          const text = formatGroup(g.cat, g.skills, subinfoStyle);
+          return (
+            <span key={i} style={{ fontSize: '9pt', background: style === 'ats' ? 'transparent' : `${theme.primary}18`, color: style === 'ats' ? theme.text : theme.primary, padding: '4px 10px', borderRadius: 6, border: style === 'ats' ? '1px solid #ccc' : `1px solid ${theme.primary}40`, flexWrap: 'wrap' }}>
+              {text}
+            </span>
+          );
+        })}
       </div>
     );
   }
 
   if (ss === 'level') {
+    const levelStyle = ds.levelStyle || 'dots';
+    const PROF_MAP = { Expert: 5, Advanced: 4, Intermediate: 3, Beginner: 1 };
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        {entries.map((e, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '9pt' }}>
-            <span style={{ flex: 1, color: theme.text }}>{e.skill}</span>
-            <div style={{ display: 'flex', gap: 2 }}>
-              {[1, 2, 3, 4, 5].map(dot => {
-                const lvl = e.proficiency ? parseInt(e.proficiency) || 0 : 0;
-                return (
-                  <div key={dot} style={{ width: 8, height: 8, borderRadius: '50%', background: dot <= lvl ? theme.primary : `${theme.primary}30` }} />
-                );
-              })}
+        {entries.map((e, i) => {
+          const lvl = PROF_MAP[e.proficiency] || (parseInt(e.proficiency) || 0);
+          return (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '9pt' }}>
+              <span style={{ flex: 1, color: theme.text }}>{e.skill}</span>
+              {e.proficiency && (
+                <>
+                  {levelStyle === 'text' && (
+                    <span style={{ fontSize: '8pt', color: theme.primary }}>{e.proficiency}</span>
+                  )}
+                  {levelStyle === 'dots' && (
+                    <div style={{ display: 'flex', gap: 2 }}>
+                      {[1,2,3,4,5].map(dot => (
+                        <div key={dot} style={{ width: 8, height: 8, borderRadius: '50%', background: dot <= lvl ? theme.primary : `${theme.primary}30` }} />
+                      ))}
+                    </div>
+                  )}
+                  {levelStyle === 'bar' && (
+                    <div style={{ width: 60, height: 6, borderRadius: 3, background: `${theme.primary}25`, overflow: 'hidden' }}>
+                      <div style={{ width: `${(lvl / 5) * 100}%`, height: '100%', background: theme.primary, borderRadius: 3 }} />
+                    </div>
+                  )}
+                </>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   }
 
   // Default: rows
+  const rowGap = ds.rowSpacing === 'spacious' ? 6 : 2;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      {entries.map((e, i) => (
-        <span key={i} style={{ fontSize: '9pt', color: theme.text }}>{bullet} {e.skill}{e.proficiency && style !== 'ats' ? ` (${e.proficiency})` : ''}</span>
-      ))}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: rowGap }}>
+      {grouped.map((g, i) => {
+        const prefix = ds.startWithBullets ? `${bullet} ` : '';
+        const text = formatGroup(g.cat, g.skills, subinfoStyle);
+        return (
+          <span key={i} style={{ fontSize: '9pt', color: theme.text }}>{prefix}{text}</span>
+        );
+      })}
     </div>
   );
 }
@@ -389,7 +449,7 @@ function SectionContent({ sec, theme, ig, lh, style, listStyle }) {
 
   if (sec.type === 'skills') {
     const entries = c.entries || [];
-    return <SkillsContent entries={entries} theme={theme} style={style} skillsStyle={ds.skillsStyle} bullet={bullet} />;
+    return <SkillsContent entries={entries} theme={theme} style={style} displaySettings={ds} skillsStyle={ds.skillsStyle} bullet={bullet} />;
   }
 
   if (sec.type === 'languages') {

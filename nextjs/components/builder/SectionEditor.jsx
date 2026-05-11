@@ -306,12 +306,12 @@ function SkillsEditor({ content, onChange }) {
   const add = () => {
     const sk = newSkill.trim().replace(/<[^>]*>/g, '');
     if (!sk) return;
-    onChange({ ...content, entries: [...entries, { skill: sk, proficiency: 'Intermediate' }] });
+    onChange({ ...content, entries: [...entries, { skill: sk, proficiency: 'Intermediate', category: '' }] });
     setNewSkill('');
   };
 
   const remove = (idx) => onChange({ ...content, entries: entries.filter((_, i) => i !== idx) });
-  const updateProf = (idx, proficiency) => onChange({ ...content, entries: entries.map((e, i) => i === idx ? { ...e, proficiency } : e) });
+  const update = (idx, patch) => onChange({ ...content, entries: entries.map((e, i) => i === idx ? { ...e, ...patch } : e) });
 
   return (
     <div className="space-y-2">
@@ -326,20 +326,29 @@ function SkillsEditor({ content, onChange }) {
         />
         <button onClick={add} className="px-3 py-1.5 bg-primary text-white text-sm rounded hover:bg-primary/90 transition-colors">Add</button>
       </div>
-      <div className="space-y-1.5 max-h-48 overflow-y-auto">
+      <div className="space-y-2 max-h-64 overflow-y-auto">
         {entries.map((e, idx) => (
-          <div key={idx} className="flex items-center gap-2">
-            <span className="flex-1 text-sm bg-primary/5 text-primary px-2.5 py-1 rounded-full truncate">{e.skill}</span>
-            <select
-              value={e.proficiency || 'Intermediate'}
-              onChange={(ev) => updateProf(idx, ev.target.value)}
-              className="text-xs border border-ds-inputBorder rounded px-1.5 py-1 bg-ds-card text-ds-text focus:outline-none"
-            >
-              {profOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-            <button onClick={() => remove(idx)} className="w-5 h-5 flex items-center justify-center text-ds-textMuted hover:text-ds-danger transition-colors flex-shrink-0">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
+          <div key={idx} className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="flex-1 text-sm bg-primary/5 text-primary px-2.5 py-1 rounded-full truncate">{e.skill}</span>
+              <select
+                value={e.proficiency || 'Intermediate'}
+                onChange={(ev) => update(idx, { proficiency: ev.target.value })}
+                className="text-xs border border-ds-inputBorder rounded px-1.5 py-1 bg-ds-card text-ds-text focus:outline-none"
+              >
+                {profOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              <button onClick={() => remove(idx)} className="w-5 h-5 flex items-center justify-center text-ds-textMuted hover:text-ds-danger transition-colors flex-shrink-0">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <input
+              value={e.category || ''}
+              onChange={(ev) => update(idx, { category: ev.target.value.replace(/<[^>]*>/g, '') })}
+              placeholder="Category (optional)"
+              maxLength={50}
+              className="w-full px-2 py-1 text-xs border border-ds-inputBorder rounded bg-ds-card text-ds-textMuted placeholder:text-ds-textMuted/60 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
+            />
           </div>
         ))}
       </div>
