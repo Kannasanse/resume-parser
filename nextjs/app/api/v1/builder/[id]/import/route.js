@@ -4,13 +4,53 @@ import { parseResume } from '@/lib/parser.js';
 
 export const dynamic = 'force-dynamic';
 
+// Convert "Beginner"/"Intermediate"/"Advanced"/"Expert" → 1/2/3
+function proficiencyToLevel(text) {
+  const t = (text || '').toLowerCase();
+  if (t.includes('begin') || t.includes('basic') || t.includes('element')) return 1;
+  if (t.includes('advan') || t.includes('expert') || t.includes('profic') || t.includes('senior')) return 3;
+  return 2; // intermediate / unknown
+}
+
+// Split a description string into an array of bullet strings.
+// Handles markdown bullets (- / * / •), numbered lists, and plain paragraphs.
+function descriptionToBullets(desc) {
+  if (!desc) return [];
+  const lines = desc
+    .split(/\n+/)
+    .map(l => l.trim())
+    .filter(Boolean);
+
+  const bullets = [];
+  for (const line of lines) {
+    // Strip leading bullet markers
+    const cleaned = line.replace(/^[-*•]\s+/, '').replace(/^\d+[.)]\s+/, '').trim();
+    if (cleaned) bullets.push(cleaned);
+  }
+  // If we got only one long paragraph, split on '. ' as a fallback
+  if (bullets.length === 1 && bullets[0].length > 120) {
+    const sentences = bullets[0].split(/\.\s+/).filter(s => s.trim());
+    return sentences.map(s => s.endsWith('.') ? s : s + '.');
+  }
+  return bullets;
+}
+
+// Combine start/end dates into a single readable string
+function combineDates(start, end) {
+  const s = (start || '').trim();
+  const e = (end || '').trim();
+  if (s && e) return `${s} – ${e}`;
+  if (e) return e;
+  if (s) return `${s} – Present`;
+  return '';
+}
+
 export async function POST(req, { params }) {
   try {
     const user = await getAuthUser();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
     const { id } = await params;
 
-    // Verify ownership
     const { data: resume } = await supabase
       .from('builder_resumes')
       .select('id')
@@ -31,16 +71,18 @@ export async function POST(req, { params }) {
     const rj = result.structured.raw_json || result.structured;
     const pi = rj.personal_info || {};
 
-    // Update personal_info on the resume
+    // ── personal_info (matches builder schema: name, title, email, phone, location, link, linkedin) ──
+    const firstExpTitle = Array.isArray(rj.experience) && rj.experience[0]?.title
+      ? rj.experience[0].title : '';
+
     const personalInfo = {
-      name: pi.name || rj.candidate_name || '',
-      email: pi.email || rj.email || '',
-      phone: pi.phone || rj.phone || '',
+      name:     pi.name || rj.candidate_name || '',
+      title:    pi.title || pi.headline || firstExpTitle || '',
+      email:    pi.email || rj.email || '',
+      phone:    pi.phone || rj.phone || '',
       location: pi.location || '',
+      link:     pi.linkedin || pi.website || pi.github || '',
       linkedin: pi.linkedin || '',
-      github: pi.github || '',
-      website: pi.website || '',
-      summary: rj.summary || '',
     };
 
     await supabase
@@ -48,110 +90,123 @@ export async function POST(req, { params }) {
       .update({ personal_info: personalInfo })
       .eq('id', id);
 
-    // Delete existing sections and rebuild from parsed data
+    // ── Rebuild sections in the schema the builder/templates expect ──
     await supabase.from('builder_sections').delete().eq('resume_id', id);
 
-    const sectionsToCreate = [];
+    const sections = [];
     let pos = 0;
 
-    if (rj.summary) {
-      sectionsToCreate.push({
+    // Summary
+    if (rj.summary?.trim()) {
+      sections.push({
         resume_id: id, type: 'summary', title: 'Summary',
-        content: { text: rj.summary }, position: pos++,
+        content: { text: rj.summary.trim() },
+        position: pos++,
       });
     }
 
-    if (Array.isArray(rj.experience) && rj.experience.length > 0) {
-      sectionsToCreate.push({
+    // Work Experience — fields: title, employer, dates, location, bullets[]
+    if (Array.isArray(rj.experience) && rj.experience.length) {
+      sections.push({
         resume_id: id, type: 'work_experience', title: 'Work Experience',
         content: {
           entries: rj.experience.map(e => ({
-            title: e.title || '',
-            company: e.company || '',
+            title:    e.title || '',
+            employer: e.company || e.employer || e.organization || '',
+            dates:    combineDates(e.start_date, e.end_date),
             location: e.location || '',
-            start_date: e.start_date || '',
-            end_date: e.end_date || '',
-            current: !e.end_date || e.end_date.toLowerCase().includes('present'),
-            description: e.description || '',
+            bullets:  descriptionToBullets(e.description),
           })),
         },
         position: pos++,
       });
     }
 
-    if (Array.isArray(rj.education) && rj.education.length > 0) {
-      sectionsToCreate.push({
+    // Education — fields: school, degree, dates, location
+    if (Array.isArray(rj.education) && rj.education.length) {
+      sections.push({
         resume_id: id, type: 'education', title: 'Education',
         content: {
           entries: rj.education.map(e => ({
-            institution: e.institution || '',
-            degree: e.degree || '',
-            field: e.field || '',
-            start_date: e.start_date || '',
-            end_date: e.end_date || e.graduation_year || '',
-            grade: e.grade || '',
+            school:   e.institution || e.school || '',
+            degree:   [e.degree, e.field].filter(Boolean).join(', ') || '',
+            dates:    combineDates(e.start_date, e.end_date || e.graduation_year),
+            location: e.location || '',
           })),
         },
         position: pos++,
       });
     }
 
-    if (Array.isArray(rj.skills) && rj.skills.length > 0) {
-      sectionsToCreate.push({
+    // Skills — fields: name (string), level (1/2/3)
+    if (Array.isArray(rj.skills) && rj.skills.length) {
+      sections.push({
         resume_id: id, type: 'skills', title: 'Skills',
         content: {
           entries: rj.skills.map(s =>
             typeof s === 'string'
-              ? { skill: s, proficiency: 'Intermediate' }
-              : { skill: s.skill || '', proficiency: s.proficiency || 'Intermediate' }
-          ),
+              ? { name: s, level: 2 }
+              : { name: s.skill || s.name || '', level: proficiencyToLevel(s.proficiency || s.level) }
+          ).filter(s => s.name),
         },
         position: pos++,
       });
     }
 
-    if (Array.isArray(rj.certifications) && rj.certifications.length > 0) {
-      sectionsToCreate.push({
+    // Certifications — fields: name, issuer, date  (already correct)
+    if (Array.isArray(rj.certifications) && rj.certifications.length) {
+      sections.push({
         resume_id: id, type: 'certifications', title: 'Certifications',
         content: {
           entries: rj.certifications.map(c => ({
-            name: c.name || '', issuer: c.issuer || '', date: c.date || '',
-          })),
+            name:   c.name || '',
+            issuer: c.issuer || c.organization || '',
+            date:   c.date || c.year || '',
+          })).filter(c => c.name),
         },
         position: pos++,
       });
     }
 
-    if (Array.isArray(rj.projects) && rj.projects.length > 0) {
-      sectionsToCreate.push({
+    // Projects — fields: title, role, dates, link, description
+    if (Array.isArray(rj.projects) && rj.projects.length) {
+      sections.push({
         resume_id: id, type: 'projects', title: 'Projects',
         content: {
           entries: rj.projects.map(p => ({
-            name: p.name || '',
+            title:       p.name || p.title || '',
+            role:        Array.isArray(p.technologies) ? p.technologies.join(', ') : (p.technologies || ''),
+            dates:       combineDates(p.start_date, p.end_date),
+            link:        p.github_url || p.url || p.link || '',
             description: p.description || '',
-            technologies: Array.isArray(p.technologies) ? p.technologies.join(', ') : '',
-            url: p.github_url || '',
-          })),
+          })).filter(p => p.title),
         },
         position: pos++,
       });
     }
 
-    const languages = rj.other?.languages;
-    if (Array.isArray(languages) && languages.length > 0) {
-      sectionsToCreate.push({
+    // Languages — fields: name (string), level (text e.g. "Fluent")
+    const langs = rj.other?.languages || rj.languages;
+    if (Array.isArray(langs) && langs.length) {
+      sections.push({
         resume_id: id, type: 'languages', title: 'Languages',
-        content: { entries: languages.map(l => ({ language: l, level: '' })) },
+        content: {
+          entries: langs.map(l =>
+            typeof l === 'string'
+              ? { name: l, level: 'Fluent' }
+              : { name: l.language || l.name || '', level: l.proficiency || l.level || 'Fluent' }
+          ).filter(l => l.name),
+        },
         position: pos++,
       });
     }
 
-    if (sectionsToCreate.length > 0) {
-      await supabase.from('builder_sections').insert(sectionsToCreate);
+    if (sections.length) {
+      await supabase.from('builder_sections').insert(sections);
     }
 
     return Response.json({
-      data: { personalInfo, sectionCount: sectionsToCreate.length },
+      data: { personalInfo, sectionCount: sections.length },
     });
   } catch (err) {
     return Response.json({ error: err.message }, { status: 500 });
