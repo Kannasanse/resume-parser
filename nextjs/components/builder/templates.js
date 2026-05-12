@@ -240,10 +240,16 @@ export const FREE_PLAN_THEME_COUNT = 30;
 
 export function getDefaultContent(type) {
   switch (type) {
-    case 'summary':      return { text: '' };
-    case 'references':   return { text: 'Available upon request' };
-    case 'hobbies':      return { text: '' };
-    default:             return { entries: [] };
+    case 'summary':        return { text: '' };
+    case 'references':     return { text: 'Available upon request' };
+    case 'hobbies':        return { text: '' };
+    case 'work_experience':return { entries: [{ title: '', employer: '', dates: '', location: '', bullets: [''] }] };
+    case 'education':      return { entries: [{ school: '', degree: '', dates: '', location: '' }] };
+    case 'skills':         return { entries: [{ name: '', level: 2 }] };
+    case 'languages':      return { entries: [{ name: '', level: 'Fluent' }] };
+    case 'certifications': return { entries: [{ name: '', issuer: '', date: '' }] };
+    case 'projects':       return { entries: [{ title: '', role: '', dates: '', link: '', description: '' }] };
+    default:               return { entries: [] };
   }
 }
 

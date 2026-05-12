@@ -50,22 +50,24 @@ function PersonalInfoCard({ info, onChange }) {
   const [open, setOpen] = useState(true);
   const set = (k, v) => onChange({ ...info, [k]: v });
 
-  const Field = ({ label, k, placeholder, type = 'text' }) => (
-    <div>
-      <label className="block text-[11px] font-medium text-ds-textMuted mb-1">{label}</label>
+  const inputCls = 'w-full px-[10px] py-2 text-[13px] border border-ds-inputBorder rounded-[7px] bg-white text-ds-text placeholder:text-ds-textMuted focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-primary/10 transition-colors';
+
+  const F = ({ label, k, placeholder, type = 'text' }) => (
+    <div className="flex flex-col gap-1">
+      <label className="text-[12px] font-semibold text-ds-text">{label}</label>
       <input
+        key={k + (info[k] || '')}
         defaultValue={info[k] || ''}
-        onBlur={(e) => set(k, e.target.value.replace(/<[^>]*>/g, ''))}
+        onBlur={e => set(k, e.target.value.replace(/<[^>]*>/g, ''))}
         placeholder={placeholder}
         type={type}
-        className="w-full px-2.5 py-[7px] text-[13px] border border-ds-inputBorder rounded-md bg-white text-ds-text placeholder:text-ds-textMuted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+        className={inputCls}
       />
     </div>
   );
 
   return (
     <div className="border-b border-ds-border">
-      {/* Header */}
       <button
         onClick={() => setOpen(o => !o)}
         className="w-full flex items-center gap-2.5 px-[18px] py-[11px] text-left hover:bg-ds-bg/40 transition-colors"
@@ -82,27 +84,17 @@ function PersonalInfoCard({ info, onChange }) {
           <polyline points="6 9 12 15 18 9"/>
         </svg>
       </button>
-
-      {/* Body */}
       {open && (
-        <div className="px-[18px] pb-4 grid grid-cols-2 gap-x-3 gap-y-3 bg-white">
-          <Field label="Full name" k="name" placeholder="Jane Smith" />
-          <Field label="Job title" k="title" placeholder="Software Engineer" />
-          <Field label="Email" k="email" placeholder="jane@example.com" type="email" />
-          <Field label="Phone" k="phone" placeholder="+1 (555) 000-0000" />
-          <Field label="Location" k="location" placeholder="New York, NY" />
-          <Field label="Website" k="website" placeholder="janesmith.com" />
-          <Field label="LinkedIn" k="linkedin" placeholder="linkedin.com/in/jane" />
-          <Field label="GitHub" k="github" placeholder="github.com/jane" />
-          <div className="col-span-2">
-            <label className="block text-[11px] font-medium text-ds-textMuted mb-1">Summary</label>
-            <textarea
-              defaultValue={info.summary || ''}
-              onBlur={(e) => set('summary', e.target.value.replace(/<[^>]*>/g, ''))}
-              placeholder="Brief professional summary…"
-              rows={3}
-              className="w-full px-2.5 py-[7px] text-[13px] border border-ds-inputBorder rounded-md bg-white text-ds-text placeholder:text-ds-textMuted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors resize-y"
-            />
+        <div className="px-[18px] pb-4 flex flex-col gap-[10px]">
+          <F label="Full name" k="name" placeholder="Jane Smith" />
+          <F label="Job title" k="title" placeholder="Software Engineer" />
+          <div className="grid grid-cols-2 gap-2">
+            <F label="Email" k="email" placeholder="jane@example.com" type="email" />
+            <F label="Phone" k="phone" placeholder="+1 (555) 000-0000" />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <F label="Location" k="location" placeholder="New York, NY" />
+            <F label="Link" k="link" placeholder="linkedin.com/in/jane" />
           </div>
         </div>
       )}
