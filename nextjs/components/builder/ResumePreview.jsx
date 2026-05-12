@@ -98,9 +98,15 @@ function HdrIcon({ kind, style, color, size = 11 }) {
 
 // ── Photo placeholder (initials avatar) ───────────────────────────────────────
 
-function PhotoPlaceholder({ size = 72, shape = 'circle', name = '' }) {
+function PhotoPlaceholder({ size = 72, shape = 'circle', name = '', src = null }) {
   const initials = (name || '').split(/\s+/).filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
   const radius = shape === 'circle' ? '50%' : shape === 'rounded' ? 6 : 0;
+  if (src) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={src} alt={name} style={{ width: size, height: size, borderRadius: radius, objectFit: 'cover', flexShrink: 0, border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }} />
+    );
+  }
   return (
     <div style={{ width: size, height: size, borderRadius: radius, background: 'linear-gradient(135deg, #94A3B8, #64748B)', display: 'inline-grid', placeItems: 'center', color: '#fff', fontWeight: 700, fontSize: size * 0.34, flexShrink: 0, border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }}>
       {initials || '?'}
@@ -570,7 +576,7 @@ function TemplateAtlanticBlue({ resume, ds, ss }) {
         <div style={{ fontSize: '1.7em', fontWeight: 700, color: colIf(t.name) || '#fff', lineHeight: 1.05 }}>{pi.name || 'Your Name'}</div>
         <div style={{ fontSize: '1em', color: colIf(t.jobTitle) || '#B6C2D6', marginTop: 4 }}>{pi.title}</div>
         <div style={{ marginTop: 14, display: 'flex' }}>
-          <PhotoPlaceholder size={86} shape="circle" name={pi.name} />
+          <PhotoPlaceholder size={86} shape="circle" name={pi.name} src={pi.photo || null} />
         </div>
         <div style={{ marginTop: 14 }}>
           {contactRow('mail', pi.email)}
@@ -694,7 +700,7 @@ function TemplateAtlanticCrest({ resume, ds, ss }) {
             {contact('pin', pi.location)}
           </div>
         </div>
-        <PhotoPlaceholder size={96} shape="circle" name={pi.name} />
+        <PhotoPlaceholder size={96} shape="circle" name={pi.name} src={pi.photo || null} />
       </div>
       {/* Two-column body */}
       <div style={{ padding: `${padY * 0.6}mm ${padX}mm`, display: 'grid', gridTemplateColumns: '38% 1fr', gap: 18 }}>
@@ -741,7 +747,7 @@ function TemplateMercuryFlow({ resume, ds, ss }) {
     <div style={pageStyle}>
       {/* Gray banner */}
       <div style={{ background: '#E5E7EB', padding: `${padY * 0.7}mm ${padX}mm`, display: 'flex', alignItems: 'center', gap: 16 }}>
-        <PhotoPlaceholder size={70} shape="circle" name={pi.name} />
+        <PhotoPlaceholder size={70} shape="circle" name={pi.name} src={pi.photo || null} />
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: '1.5em', fontWeight: 700, color: colIf(t.name) || '#1F2937', lineHeight: 1.05 }}>{pi.name || 'Your Name'}</div>
           {pi.title && <div style={{ fontSize: '0.95em', color: colIf(t.jobTitle) || '#374151', marginTop: 2 }}>{pi.title}</div>}
@@ -804,7 +810,7 @@ function TemplateSteadyForm({ resume, ds, ss }) {
             {contact('pin', pi.location)}
           </div>
         </div>
-        <PhotoPlaceholder size={78} shape="circle" name={pi.name} />
+        <PhotoPlaceholder size={78} shape="circle" name={pi.name} src={pi.photo || null} />
       </div>
       {sections.map(sec => {
         const skillsCols   = (sec.type === 'skills' && (sec.display_settings?.layout === 'rows' || !sec.display_settings?.layout)) ? 3 : undefined;
@@ -941,61 +947,56 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
     );
   }
 
-  // Page-break markers: show dashed lines at every page.height interval
-  const scaledContentH = contentHeight * s;
-  const pageBreakCount = Math.max(0, Math.floor(contentHeight / page.height) - 1 + (contentHeight % page.height > 20 ? 1 : 0));
-  const pageBreakMarkers = Array.from({ length: pageBreakCount }, (_, i) => {
-    const yInContent = (i + 1) * page.height; // in unscaled px
-    return yInContent;
-  });
+  const PAGE_GAP = 16; // px gap between page cards (unscaled)
+  const numPages = contentHeight > 0 ? Math.max(1, Math.ceil(contentHeight / page.height)) : 1;
 
   return (
-    <div ref={containerRef} className={`overflow-auto ${className}`} style={{ background: '#e5e7eb' }}>
-      <div style={{ padding: 8 }}>
-        {/* Outer box sized to scaled content height */}
-        <div style={{ position: 'relative', width: page.width * s, height: Math.max(page.height * s, scaledContentH || page.height * s) }}>
-          {/* Scaled content */}
-          <div style={{ width: page.width, transformOrigin: 'top left', transform: `scale(${s})`, boxShadow: '0 1px 8px rgba(0,0,0,0.18)', background: '#fff', display: 'flex', flexDirection: 'column' }}>
-            <div ref={contentRef}>
+    <div ref={containerRef} className={`overflow-auto ${className}`} style={{ background: '#CBD5E1' }}>
+      <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: PAGE_GAP }}>
+        {/* Hidden measurement div — full template render to measure real height */}
+        <div style={{ position: 'absolute', visibility: 'hidden', pointerEvents: 'none', top: 0, left: 0, width: page.width }}>
+          <div ref={contentRef}>
+            <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
+          </div>
+        </div>
+
+        {/* Visible page cards — each clips one page's worth of content */}
+        {Array.from({ length: numPages }, (_, i) => (
+          <div key={i} style={{
+            width: page.width * s,
+            height: page.height * s,
+            flexShrink: 0,
+            position: 'relative',
+            overflow: 'hidden',
+            background: '#fff',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.08)',
+            borderRadius: 2,
+          }}>
+            {/* Template content offset so this page's slice shows */}
+            <div style={{
+              width: page.width,
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              transform: `scale(${s}) translateY(-${i * page.height}px)`,
+              transformOrigin: 'top left',
+            }}>
               <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
+              {hasFooter && i === numPages - 1 && (
+                <div style={{ borderTop: '1px solid #e0e0e0', padding: '6px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8pt', color: '#888', background: '#fff' }}>
+                  <span>{[fs.name && pi.name, fs.email && pi.email].filter(Boolean).join(' · ')}</span>
+                  {fs.pageNumbers && <span>Page {i + 1}</span>}
+                </div>
+              )}
             </div>
-            {hasFooter && (
-              <div style={{ borderTop: '1px solid #e0e0e0', padding: '6px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8pt', color: '#888', background: '#fff' }}>
-                <span>{[fs.name && pi.name, fs.email && pi.email].filter(Boolean).join(' · ')}</span>
-                {fs.pageNumbers && <span>Page 1</span>}
+            {/* Page number label */}
+            {numPages > 1 && (
+              <div style={{ position: 'absolute', bottom: 6, right: 8, fontSize: 9, color: '#94a3b8', fontFamily: 'system-ui, sans-serif', pointerEvents: 'none' }}>
+                {i + 1} / {numPages}
               </div>
             )}
           </div>
-
-          {/* Page break indicators — overlay dashed lines */}
-          {pageBreakMarkers.map((yUnscaled, i) => (
-            <div key={i} style={{
-              position: 'absolute',
-              top: yUnscaled * s,
-              left: 0,
-              right: 0,
-              height: 0,
-              pointerEvents: 'none',
-              zIndex: 10,
-            }}>
-              <div style={{ borderTop: '2px dashed #94a3b8', width: '100%' }} />
-              <span style={{
-                position: 'absolute',
-                right: 0,
-                top: 2,
-                fontSize: 9,
-                color: '#94a3b8',
-                background: '#e5e7eb',
-                padding: '1px 4px',
-                borderRadius: 2,
-                fontFamily: 'system-ui, sans-serif',
-                lineHeight: 1.4,
-              }}>
-                Page {i + 1} → {i + 2}
-              </span>
-            </div>
-          ))}
-        </div>
+        ))}
       </div>
     </div>
   );

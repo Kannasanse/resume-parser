@@ -46,8 +46,10 @@ function SavePill({ state }) {
 
 // ── Personal info card ────────────────────────────────────────────────────────
 
-function PersonalInfoCard({ info, onChange }) {
+function PersonalInfoCard({ info, onChange, resumeId }) {
   const [open, setOpen] = useState(true);
+  const [photoLoading, setPhotoLoading] = useState(false);
+  const fileInputRef = useRef(null);
   const set = (k, v) => onChange({ ...info, [k]: v });
 
   const inputCls = 'w-full px-[10px] py-2 text-[13px] border border-ds-inputBorder rounded-[7px] bg-white text-ds-text placeholder:text-ds-textMuted focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-primary/10 transition-colors';
@@ -65,6 +67,33 @@ function PersonalInfoCard({ info, onChange }) {
       />
     </div>
   );
+
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !resumeId) return;
+    setPhotoLoading(true);
+    try {
+      const form = new FormData();
+      form.append('photo', file);
+      const res = await fetch(`/api/v1/builder/${resumeId}/photo`, { method: 'POST', body: form });
+      const data = await res.json();
+      if (data.url) onChange({ ...info, photo: data.url });
+    } catch (err) {
+      console.error('Photo upload failed:', err.message);
+    } finally {
+      setPhotoLoading(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    if (!resumeId) return;
+    await fetch(`/api/v1/builder/${resumeId}/photo`, { method: 'DELETE' });
+    const { photo: _, ...rest } = info;
+    onChange(rest);
+  };
+
+  const initials = (info.name || '').split(/\s+/).filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
 
   return (
     <div className="border-b border-ds-border">
@@ -86,6 +115,60 @@ function PersonalInfoCard({ info, onChange }) {
       </button>
       {open && (
         <div className="px-[18px] pb-4 flex flex-col gap-[10px]">
+          {/* Photo upload */}
+          <div className="flex items-center gap-3 py-1">
+            <div className="relative flex-shrink-0">
+              <div
+                className="w-[60px] h-[60px] rounded-full overflow-hidden border-2 border-ds-border bg-ds-bg cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => fileInputRef.current?.click()}
+                title="Click to change photo"
+              >
+                {info.photo ? (
+                  <img src={info.photo} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[18px] font-bold text-white"
+                    style={{ background: 'linear-gradient(135deg, #94A3B8, #64748B)' }}>
+                    {initials || (
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                      </svg>
+                    )}
+                  </div>
+                )}
+                {photoLoading && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-full">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5 min-w-0">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={photoLoading}
+                className="text-xs font-semibold text-primary hover:underline disabled:opacity-50 text-left"
+              >
+                {info.photo ? 'Change photo' : 'Upload photo'}
+              </button>
+              {info.photo && (
+                <button
+                  onClick={handleRemovePhoto}
+                  className="text-xs text-ds-textMuted hover:text-ds-danger transition-colors text-left"
+                >
+                  Remove
+                </button>
+              )}
+              <p className="text-[11px] text-ds-textMuted leading-tight">JPG, PNG or WebP · Max 5 MB</p>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={handlePhotoChange}
+            />
+          </div>
+
           <F label="Full name" k="name" placeholder="Jane Smith" />
           <F label="Job title" k="title" placeholder="Software Engineer" />
           <div className="grid grid-cols-2 gap-2">
@@ -691,7 +774,7 @@ export default function BuilderEditor() {
             {panelMode === 'content' ? (
               <div>
                 {/* Personal details */}
-                <PersonalInfoCard info={personalInfo} onChange={handlePersonalInfoChange} />
+                <PersonalInfoCard info={personalInfo} onChange={handlePersonalInfoChange} resumeId={id} />
                 {/* Section list */}
                 <SectionList
                   sections={previewData.sections || []}
@@ -725,6 +808,8 @@ export default function BuilderEditor() {
                 personalInfo={previewData.personal_info || {}}
                 sections={previewData.sections || []}
                 onSectionDisplayChange={handleSectionDisplayChange}
+                onSectionReorder={handleReorder}
+                onSectionToggle={handleToggleSection}
               />
             )}
           </div>
