@@ -235,6 +235,31 @@ function fallbackParse(rawText) {
   };
 }
 
+// Exported for direct use by the builder import route (Groq only, no OpenRouter)
+export async function extractResumeText(buffer, mimeType) {
+  const text = await extractText(buffer, mimeType);
+  if (!text || text.trim().length < 50) {
+    throw new Error('Could not extract text from this file. It may be a scanned image or non-standard format. Please upload a text-based PDF or DOCX.');
+  }
+  return text;
+}
+
+export async function parseResumeWithGroq(buffer, mimeType) {
+  const rawText = await extractResumeText(buffer, mimeType);
+  const response = await groq.chat.completions.create({
+    model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+    messages: [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user',   content: `Resume:\n\n${rawText.slice(0, 60000)}` },
+    ],
+    temperature: 0.1,
+    response_format: { type: 'json_object' },
+    max_tokens: 8192,
+  });
+  const ai = unwrapResult(JSON.parse(response.choices[0].message.content));
+  return { rawText, ai };
+}
+
 export async function parseResume(buffer, mimeType) {
   const rawText = await extractText(buffer, mimeType);
 

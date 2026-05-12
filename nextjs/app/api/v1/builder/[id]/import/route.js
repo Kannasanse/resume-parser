@@ -1,42 +1,31 @@
 import supabase from '@/lib/supabase.js';
 import { getAuthUser } from '@/lib/authUtils.js';
-import { parseResume } from '@/lib/parser.js';
+import { parseResumeWithGroq } from '@/lib/parser.js';
 
 export const dynamic = 'force-dynamic';
 
-// Convert "Beginner"/"Intermediate"/"Advanced"/"Expert" → 1/2/3
-function proficiencyToLevel(text) {
+// Convert proficiency text → numeric level (1=Beginner, 2=Intermediate, 3=Advanced)
+function profToLevel(text) {
   const t = (text || '').toLowerCase();
-  if (t.includes('begin') || t.includes('basic') || t.includes('element')) return 1;
-  if (t.includes('advan') || t.includes('expert') || t.includes('profic') || t.includes('senior')) return 3;
-  return 2; // intermediate / unknown
+  if (t.includes('expert') || t.includes('advan') || t.includes('senior') || t.includes('profic')) return 3;
+  if (t.includes('begin') || t.includes('basic') || t.includes('element') || t.includes('familiar')) return 1;
+  return 2;
 }
 
-// Split a description string into an array of bullet strings.
-// Handles markdown bullets (- / * / •), numbered lists, and plain paragraphs.
-function descriptionToBullets(desc) {
+// Split a markdown/plain-text description into bullet strings
+function toBullets(desc) {
   if (!desc) return [];
-  const lines = desc
-    .split(/\n+/)
-    .map(l => l.trim())
-    .filter(Boolean);
-
-  const bullets = [];
-  for (const line of lines) {
-    // Strip leading bullet markers
-    const cleaned = line.replace(/^[-*•]\s+/, '').replace(/^\d+[.)]\s+/, '').trim();
-    if (cleaned) bullets.push(cleaned);
-  }
-  // If we got only one long paragraph, split on '. ' as a fallback
+  const lines = desc.split(/\n+/).map(l => l.trim()).filter(Boolean);
+  const bullets = lines.map(l => l.replace(/^[-*•]\s+/, '').replace(/^\d+[.)]\s+/, '').trim()).filter(Boolean);
+  // If single long blob, split on '. '
   if (bullets.length === 1 && bullets[0].length > 120) {
-    const sentences = bullets[0].split(/\.\s+/).filter(s => s.trim());
-    return sentences.map(s => s.endsWith('.') ? s : s + '.');
+    return bullets[0].split(/\.\s+/).filter(s => s.trim()).map(s => s.endsWith('.') ? s : s + '.');
   }
   return bullets;
 }
 
-// Combine start/end dates into a single readable string
-function combineDates(start, end) {
+// Join start/end date strings into "Jan 2020 – Mar 2023"
+function joinDates(start, end) {
   const s = (start || '').trim();
   const e = (end || '').trim();
   if (s && e) return `${s} – ${e}`;
@@ -65,24 +54,24 @@ export async function POST(req, { params }) {
     if (!file) return Response.json({ error: 'No file provided.' }, { status: 400 });
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const result = await parseResume(buffer, file.type);
-    if (!result?.structured) return Response.json({ error: 'Could not parse file.' }, { status: 422 });
 
-    const rj = result.structured.raw_json || result.structured;
-    const pi = rj.personal_info || {};
+    // Parse directly with Groq — same engine as the admin/job-profile scorer
+    const { ai } = await parseResumeWithGroq(buffer, file.type);
 
-    // ── personal_info (matches builder schema: name, title, email, phone, location, link, linkedin) ──
-    const firstExpTitle = Array.isArray(rj.experience) && rj.experience[0]?.title
-      ? rj.experience[0].title : '';
+    const pi = ai.personal_info || {};
+
+    // ── personal_info (fields the builder/templates read) ──────────────────────
+    const firstExpTitle = Array.isArray(ai.experience) && ai.experience[0]?.title
+      ? ai.experience[0].title : '';
 
     const personalInfo = {
-      name:     pi.name || rj.candidate_name || '',
-      title:    pi.title || pi.headline || firstExpTitle || '',
-      email:    pi.email || rj.email || '',
-      phone:    pi.phone || rj.phone || '',
-      location: pi.location || '',
-      link:     pi.linkedin || pi.website || pi.github || '',
-      linkedin: pi.linkedin || '',
+      name:     (pi.name     || '').trim(),
+      title:    (pi.title    || pi.headline || firstExpTitle || '').trim(),
+      email:    (pi.email    || '').trim(),
+      phone:    (pi.phone    || '').trim(),
+      location: (pi.location || '').trim(),
+      link:     (pi.linkedin || pi.website || pi.github || '').trim(),
+      linkedin: (pi.linkedin || '').trim(),
     };
 
     await supabase
@@ -90,125 +79,140 @@ export async function POST(req, { params }) {
       .update({ personal_info: personalInfo })
       .eq('id', id);
 
-    // ── Rebuild sections in the schema the builder/templates expect ──
+    // ── Rebuild sections with exact builder schema ─────────────────────────────
     await supabase.from('builder_sections').delete().eq('resume_id', id);
 
     const sections = [];
     let pos = 0;
 
     // Summary
-    if (rj.summary?.trim()) {
+    const summary = (ai.summary || '').trim();
+    if (summary) {
       sections.push({
         resume_id: id, type: 'summary', title: 'Summary',
-        content: { text: rj.summary.trim() },
+        content: { text: summary },
         position: pos++,
       });
     }
 
-    // Work Experience — fields: title, employer, dates, location, bullets[]
-    if (Array.isArray(rj.experience) && rj.experience.length) {
+    // Work Experience — builder reads: title, employer, dates, location, bullets[]
+    const experience = Array.isArray(ai.experience) ? ai.experience : [];
+    if (experience.length) {
       sections.push({
         resume_id: id, type: 'work_experience', title: 'Work Experience',
         content: {
-          entries: rj.experience.map(e => ({
-            title:    e.title || '',
-            employer: e.company || e.employer || e.organization || '',
-            dates:    combineDates(e.start_date, e.end_date),
-            location: e.location || '',
-            bullets:  descriptionToBullets(e.description),
+          entries: experience.map(e => ({
+            title:    (e.title    || '').trim(),
+            employer: (e.company  || e.employer || e.organization || '').trim(),
+            dates:    joinDates(e.start_date, e.end_date),
+            location: (e.location || '').trim(),
+            bullets:  toBullets(e.description),
           })),
         },
         position: pos++,
       });
     }
 
-    // Education — fields: school, degree, dates, location
-    if (Array.isArray(rj.education) && rj.education.length) {
+    // Education — builder reads: school, degree, dates, location
+    const education = Array.isArray(ai.education) ? ai.education : [];
+    if (education.length) {
       sections.push({
         resume_id: id, type: 'education', title: 'Education',
         content: {
-          entries: rj.education.map(e => ({
-            school:   e.institution || e.school || '',
-            degree:   [e.degree, e.field].filter(Boolean).join(', ') || '',
-            dates:    combineDates(e.start_date, e.end_date || e.graduation_year),
-            location: e.location || '',
+          entries: education.map(e => ({
+            school:   (e.institution || e.school || '').trim(),
+            degree:   [e.degree, e.field].filter(Boolean).join(', ').trim(),
+            dates:    joinDates(e.start_date, e.end_date || e.graduation_year),
+            location: (e.location || '').trim(),
           })),
         },
         position: pos++,
       });
     }
 
-    // Skills — fields: name (string), level (1/2/3)
-    if (Array.isArray(rj.skills) && rj.skills.length) {
-      sections.push({
-        resume_id: id, type: 'skills', title: 'Skills',
-        content: {
-          entries: rj.skills.map(s =>
-            typeof s === 'string'
-              ? { name: s, level: 2 }
-              : { name: s.skill || s.name || '', level: proficiencyToLevel(s.proficiency || s.level) }
-          ).filter(s => s.name),
-        },
-        position: pos++,
-      });
+    // Skills — builder reads: name (string), level (1/2/3)
+    const skills = Array.isArray(ai.skills) ? ai.skills : [];
+    if (skills.length) {
+      const entries = skills
+        .map(s => typeof s === 'string'
+          ? { name: s.trim(), level: 2 }
+          : { name: (s.skill || s.name || '').trim(), level: profToLevel(s.proficiency || s.level) }
+        )
+        .filter(s => s.name);
+      if (entries.length) {
+        sections.push({
+          resume_id: id, type: 'skills', title: 'Skills',
+          content: { entries },
+          position: pos++,
+        });
+      }
     }
 
-    // Certifications — fields: name, issuer, date  (already correct)
-    if (Array.isArray(rj.certifications) && rj.certifications.length) {
-      sections.push({
-        resume_id: id, type: 'certifications', title: 'Certifications',
-        content: {
-          entries: rj.certifications.map(c => ({
-            name:   c.name || '',
-            issuer: c.issuer || c.organization || '',
-            date:   c.date || c.year || '',
-          })).filter(c => c.name),
-        },
-        position: pos++,
-      });
+    // Certifications — builder reads: name, issuer, date
+    const certs = Array.isArray(ai.certifications) ? ai.certifications : [];
+    if (certs.length) {
+      const entries = certs
+        .map(c => ({
+          name:   (c.name   || '').trim(),
+          issuer: (c.issuer || c.organization || '').trim(),
+          date:   (c.date   || c.year || '').trim(),
+        }))
+        .filter(c => c.name);
+      if (entries.length) {
+        sections.push({
+          resume_id: id, type: 'certifications', title: 'Certifications',
+          content: { entries },
+          position: pos++,
+        });
+      }
     }
 
-    // Projects — fields: title, role, dates, link, description
-    if (Array.isArray(rj.projects) && rj.projects.length) {
-      sections.push({
-        resume_id: id, type: 'projects', title: 'Projects',
-        content: {
-          entries: rj.projects.map(p => ({
-            title:       p.name || p.title || '',
-            role:        Array.isArray(p.technologies) ? p.technologies.join(', ') : (p.technologies || ''),
-            dates:       combineDates(p.start_date, p.end_date),
-            link:        p.github_url || p.url || p.link || '',
-            description: p.description || '',
-          })).filter(p => p.title),
-        },
-        position: pos++,
-      });
+    // Projects — builder reads: title, role (technologies), dates, link, description
+    const projects = Array.isArray(ai.projects) ? ai.projects : [];
+    if (projects.length) {
+      const entries = projects
+        .map(p => ({
+          title:       (p.name  || p.title || '').trim(),
+          role:        (Array.isArray(p.technologies) ? p.technologies.join(', ') : (p.technologies || '')).trim(),
+          dates:       joinDates(p.start_date, p.end_date),
+          link:        (p.github_url || p.url || p.link || '').trim(),
+          description: (p.description || '').trim(),
+        }))
+        .filter(p => p.title);
+      if (entries.length) {
+        sections.push({
+          resume_id: id, type: 'projects', title: 'Projects',
+          content: { entries },
+          position: pos++,
+        });
+      }
     }
 
-    // Languages — fields: name (string), level (text e.g. "Fluent")
-    const langs = rj.other?.languages || rj.languages;
+    // Languages — builder reads: name (string), level (text e.g. "Fluent")
+    const langs = ai.other?.languages || ai.languages;
     if (Array.isArray(langs) && langs.length) {
-      sections.push({
-        resume_id: id, type: 'languages', title: 'Languages',
-        content: {
-          entries: langs.map(l =>
-            typeof l === 'string'
-              ? { name: l, level: 'Fluent' }
-              : { name: l.language || l.name || '', level: l.proficiency || l.level || 'Fluent' }
-          ).filter(l => l.name),
-        },
-        position: pos++,
-      });
+      const entries = langs
+        .map(l => typeof l === 'string'
+          ? { name: l.trim(), level: 'Fluent' }
+          : { name: (l.language || l.name || '').trim(), level: (l.proficiency || l.level || 'Fluent') }
+        )
+        .filter(l => l.name);
+      if (entries.length) {
+        sections.push({
+          resume_id: id, type: 'languages', title: 'Languages',
+          content: { entries },
+          position: pos++,
+        });
+      }
     }
 
     if (sections.length) {
       await supabase.from('builder_sections').insert(sections);
     }
 
-    return Response.json({
-      data: { personalInfo, sectionCount: sections.length },
-    });
+    return Response.json({ data: { personalInfo, sectionCount: sections.length } });
   } catch (err) {
+    console.error('[builder-import]', err.message);
     return Response.json({ error: err.message }, { status: 500 });
   }
 }
