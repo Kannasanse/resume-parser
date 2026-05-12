@@ -1,49 +1,16 @@
 // Template and design system definitions for the resume builder
 
 export const TEMPLATES = [
-  {
-    id: 'corporate',
-    name: 'Corporate',
-    style: 'Serif',
-    plan: 'free',
-    description: 'Centered name in EB Garamond, spaced caps section headers, classic horizontal rules.',
-    accent: '#1a1a1a',
-  },
-  {
-    id: 'silver-banner',
-    name: 'Silver Banner',
-    style: 'Classic',
-    plan: 'free',
-    description: 'Left-aligned name with full-width silver banner section headers.',
-    accent: '#1a1a1a',
-  },
-  {
-    id: 'teal-sidebar',
-    name: 'Teal Sidebar',
-    style: 'Modern',
-    plan: 'free',
-    description: 'Lora-serif main column with a bold colored right sidebar for skills and achievements.',
-    accent: '#1F6B6F',
-  },
-  {
-    id: 'timeline',
-    name: 'Timeline',
-    style: 'Modern',
-    plan: 'free',
-    description: 'Vertical accent rail with dot markers and a left-aligned date column.',
-    accent: '#2A8DC1',
-  },
-  {
-    id: 'photo-sidebar',
-    name: 'Photo Sidebar',
-    style: 'Creative',
-    plan: 'free',
-    description: 'Left sidebar with photo placeholder, contacts, skills; right column for experience.',
-    accent: '#1F8A8E',
-  },
+  { id: 'modern',         name: 'Modern',         style: 'Clean',    plan: 'free',  description: 'Clean accent lines, flexible header alignment, single-column layout.', accent: '#185FA5', sw1: '#185FA5', sw2: '#F4F8FC' },
+  { id: 'atlantic-blue',  name: 'Atlantic Blue',  style: 'Classic',  plan: 'free',  description: 'Dark sidebar with photo placeholder and serif main column.',            accent: '#1F2A44', sw1: '#1F2A44', sw2: '#FFFFFF' },
+  { id: 'corporate',      name: 'Corporate',      style: 'Serif',    plan: 'free',  description: 'Centered name, italic title, classic double-rule section headers.',     accent: '#0F172A', sw1: '#FFFFFF', sw2: '#0F172A' },
+  { id: 'atlantic-crest', name: 'Atlantic Crest', style: 'Modern',   plan: 'basic', description: 'Dark banner top with photo, two-column body for content-dense CVs.',   accent: '#1F2A44', sw1: '#1F2A44', sw2: '#F4F8FC' },
+  { id: 'mercury-flow',   name: 'Mercury Flow',   style: 'Modern',   plan: 'basic', description: 'Gray banner header with photo and a clean date-column layout.',        accent: '#374151', sw1: '#E5E7EB', sw2: '#FFFFFF' },
+  { id: 'steady-form',    name: 'Steady Form',    style: 'Creative', plan: 'basic', description: 'Photo aligned right, name and role inline, gray-bar section headings.', accent: '#1F2A44', sw1: '#FFFFFF', sw2: '#EEF1F5' },
+  { id: 'executive',      name: 'Executive',      style: 'Serif',    plan: 'pro',   description: 'Editorial serif style with a minimal date-column experience block.',    accent: '#0F172A', sw1: '#FFFFFF', sw2: '#0F172A' },
 ];
 
-export const TEMPLATE_CATEGORIES = ['All', 'Classic', 'Modern', 'Creative', 'Serif'];
+export const TEMPLATE_CATEGORIES = ['All', 'Clean', 'Classic', 'Modern', 'Creative', 'Serif'];
 
 export const FONTS = [
   { id: 'source-sans', name: 'Source Sans', family: "'Source Sans 3', 'Helvetica Neue', sans-serif", plan: 'free' },

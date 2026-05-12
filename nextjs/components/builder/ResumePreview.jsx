@@ -1,8 +1,7 @@
 'use client';
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { FONTS, SPACING_OPTIONS, MARGIN_OPTIONS, PAGE_SIZES, TEMPLATES } from './templates.js';
 
-// ── Design defaults ────────────────────────────────────────────────────────────
+// ── Constants ──────────────────────────────────────────────────────────────────
 
 const DEFAULT_DESIGN = {
   accentColor: '#185FA5',
@@ -16,14 +15,13 @@ const DEFAULT_DESIGN = {
   detailsSeparator: 'icon',
   headerIconStyle: 1,
   pageSize: 'a4',
+  template: 'modern',
 };
 
 const DEFAULT_SPACING = {
   fontSize: 11, lineHeight: 1.15,
   leftRightMargin: 15, topBottomMargin: 15, entrySpacing: 2,
 };
-
-// ── Font map ───────────────────────────────────────────────────────────────────
 
 const FONT_FAMILIES = {
   'source-sans':  "'Source Sans 3', 'Helvetica Neue', sans-serif",
@@ -40,7 +38,40 @@ const FONT_FAMILIES = {
   'poppins':      "'Poppins', sans-serif",
 };
 
-// ── Header icon variants (7 styles from prototype) ─────────────────────────────
+const SEC_ICONS = {
+  summary: 'edit', work_experience: 'briefcase', education: 'book',
+  skills: 'droplet', languages: 'globe', certifications: 'award',
+  projects: 'folder', hobbies: 'heart', references: 'userBadge', custom: 'puzzle',
+};
+
+// ── Icon component (full set) ──────────────────────────────────────────────────
+
+function Icon({ name, size = 14, color = 'currentColor', strokeWidth = 2 }) {
+  const p = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: color, strokeWidth, strokeLinecap: 'round', strokeLinejoin: 'round' };
+  const paths = {
+    mail:       <><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></>,
+    phone:      <><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.5 2.1L8 9.7a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.7.6a2 2 0 0 1 1.7 2z"/></>,
+    pin:        <><path d="M12 22s8-7.6 8-13a8 8 0 0 0-16 0c0 5.4 8 13 8 13z"/><circle cx="12" cy="9" r="3"/></>,
+    link:       <><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></>,
+    briefcase:  <><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></>,
+    book:       <><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></>,
+    droplet:    <><path d="M12 2 5.5 11A6.5 6.5 0 1 0 18.5 11L12 2z"/></>,
+    globe:      <><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10A15.3 15.3 0 0 1 8 12a15.3 15.3 0 0 1 4-10z"/></>,
+    award:      <><circle cx="12" cy="8" r="6"/><polyline points="8.21 13.89 7 22 12 19 17 22 15.79 13.88"/></>,
+    heart:      <><path d="M20.84 4.6a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.07a5.5 5.5 0 1 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.79 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></>,
+    folder:     <><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></>,
+    trophy:     <><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 18h4v4h-4z"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></>,
+    users:      <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></>,
+    fileText:   <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></>,
+    userBadge:  <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></>,
+    edit:       <><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></>,
+    puzzle:     <><path d="M20 14.5a2.5 2.5 0 0 0 0-5h-1V6a2 2 0 0 0-2-2h-3.5a2.5 2.5 0 0 0-5 0H5a2 2 0 0 0-2 2v3.5a2.5 2.5 0 0 1 0 5V20a2 2 0 0 0 2 2h3.5a2.5 2.5 0 0 1 5 0H17a2 2 0 0 0 2-2v-3.5z"/></>,
+  };
+  if (!paths[name]) return null;
+  return <svg {...p}>{paths[name]}</svg>;
+}
+
+// ── HdrIcon: 7 contact icon style variants ────────────────────────────────────
 
 function HdrIcon({ kind, style, color, size = 11 }) {
   const paths = {
@@ -49,7 +80,7 @@ function HdrIcon({ kind, style, color, size = 11 }) {
     pin:   <><path d="M12 22s8-7.6 8-13a8 8 0 0 0-16 0c0 5.4 8 13 8 13z"/><circle cx="12" cy="9" r="3"/></>,
     link:  <><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></>,
   };
-  const iconColor = style === 4 || style === 5 ? '#fff' : color;
+  const iconColor = (style === 4 || style === 5) ? '#fff' : color;
   const inner = (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={iconColor}
       strokeWidth={style === 6 ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round">
@@ -65,469 +96,799 @@ function HdrIcon({ kind, style, color, size = 11 }) {
   return <span style={base}>{inner}</span>;
 }
 
-// ── Map our DB sections to structured data ─────────────────────────────────────
+// ── Photo placeholder (initials avatar) ───────────────────────────────────────
 
-function buildRenderData(resume) {
-  const pi = resume?.personal_info || {};
-  const sections = (resume?.sections || []).filter(s => s.enabled !== false);
-
-  const findSec = (type) => sections.find(s => s.type === type);
-  const filterSec = (type) => sections.filter(s => s.type === type);
-
-  return {
-    pi,
-    sections,
-    summary: findSec('summary'),
-    experiences: filterSec('work_experience'),
-    educations: filterSec('education'),
-    skillsSec: findSec('skills'),
-    langSec: findSec('languages'),
-    certSec: findSec('certifications'),
-    projectsSec: findSec('projects'),
-    hobbiesSec: findSec('hobbies'),
-    refSec: findSec('references'),
-    customSecs: sections.filter(s => s.type === 'custom'),
-    sectionOrder: sections.map(s => s.id),
-  };
+function PhotoPlaceholder({ size = 72, shape = 'circle', name = '' }) {
+  const initials = (name || '').split(/\s+/).filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
+  const radius = shape === 'circle' ? '50%' : shape === 'rounded' ? 6 : 0;
+  return (
+    <div style={{ width: size, height: size, borderRadius: radius, background: 'linear-gradient(135deg, #94A3B8, #64748B)', display: 'inline-grid', placeItems: 'center', color: '#fff', fontWeight: 700, fontSize: size * 0.34, flexShrink: 0, border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }}>
+      {initials || '?'}
+    </div>
+  );
 }
 
-// ── Single flexible resume template ───────────────────────────────────────────
+// ── Utility: compute render values from merged settings ────────────────────────
 
-function FlexibleResume({ resume, designSettings, spacingSettings }) {
-  const ds = { ...DEFAULT_DESIGN, ...(designSettings || {}) };
-  const ss = { ...DEFAULT_SPACING, ...(spacingSettings || {}) };
-
-  // Resolve values
-  const accent = ds.accentColor || '#185FA5';
-  const t = ds.accentTargets || {};
-  const colIf = (on) => on ? accent : undefined;
-
+function tmplUtils(ds, ss) {
+  const safe = (n, lo, hi, d) => (typeof n === 'number' && !isNaN(n) ? Math.max(lo, Math.min(hi, n)) : d);
+  const fontSize   = safe(ss.fontSize, 8, 14, 11);
+  const lineHeight = safe(ss.lineHeight, 1, 1.8, 1.15);
+  const padX       = safe(ss.leftRightMargin, 5, 30, 15);
+  const padY       = safe(ss.topBottomMargin, 5, 30, 15);
+  const entryGapPx = safe(ss.entrySpacing, 0, 6, 2) * fontSize * lineHeight;
+  const hexOk  = c => typeof c === 'string' && /^#([0-9a-f]{3}){1,2}$/i.test(c);
+  const accent = hexOk(ds.accentColor) ? ds.accentColor : '#185FA5';
+  const t      = ds.accentTargets || {};
+  const colIf  = on => on ? accent : undefined;
   const fontId = ds.font || 'source-sans';
   const fontFamily = FONT_FAMILIES[fontId] || FONT_FAMILIES['source-sans'];
+  return { fontSize, lineHeight, padX, padY, entryGapPx, accent, t, colIf, fontFamily };
+}
 
-  const fontSize = Math.max(8, Math.min(14, ss.fontSize || 11));
-  const lineHeight = Math.max(1, Math.min(1.8, ss.lineHeight || 1.15));
-  const padX = ss.leftRightMargin || ss.marginLeft || 15;
-  const padY = ss.topBottomMargin || ss.marginTop || 15;
-  const entryGapPx = (ss.entrySpacing || 2) * fontSize * lineHeight;
+// ── Extract structured data from DB resume ────────────────────────────────────
 
+function buildRenderData(resume) {
+  const pi       = resume?.personal_info || {};
+  const sections = (resume?.sections || []).filter(s => s.enabled !== false);
+  return { pi, sections };
+}
+
+// ── Shared section body renderers ─────────────────────────────────────────────
+
+function SkillsBody({ sec, util, variantCols }) {
+  const { accent, t, colIf } = util;
+  const entries  = sec?.content?.entries || [];
+  if (!entries.length) return null;
+  const dss      = sec.display_settings || {};
+  const layout   = dss.layout || 'rows';
+  const dotColor = colIf(t.dotsBarsBubbles) || accent;
+
+  if (layout === 'grid' || variantCols) {
+    const cols = variantCols || dss.columns || 2;
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, columnGap: 18, rowGap: 3 }}>
+        {entries.map((s, i) => <div key={i}>• {s.name}</div>)}
+      </div>
+    );
+  }
+  if (layout === 'compact') return <div>{entries.map(s => s.name).filter(Boolean).join(' · ')}</div>;
+  if (layout === 'bubble') {
+    return (
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {entries.map((s, i) => (
+          <span key={i} style={{ padding: '3px 10px', borderRadius: 999, background: colIf(t.dotsBarsBubbles) ? accent + '1A' : '#F3F4F6', color: colIf(t.dotsBarsBubbles) || '#2C2C2A', fontSize: '0.9em' }}>{s.name}</span>
+        ))}
+      </div>
+    );
+  }
+  if (layout === 'level') {
+    const lvlStyle = dss.levelStyle || 'dots';
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 18, rowGap: 4 }}>
+        {entries.map((s, i) => (
+          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>{s.name}</span>
+            {lvlStyle === 'dots' && (
+              <span style={{ display: 'inline-flex', gap: 3 }}>
+                {[1,2,3].map(lv => <span key={lv} style={{ width: 6, height: 6, borderRadius: '50%', background: lv <= (s.level || 2) ? dotColor : '#E5E7EB' }} />)}
+              </span>
+            )}
+            {lvlStyle === 'bars' && (
+              <span style={{ display: 'inline-flex', gap: 2 }}>
+                {[1,2,3].map(lv => <span key={lv} style={{ width: 12, height: 4, borderRadius: 1, background: lv <= (s.level || 2) ? dotColor : '#E5E7EB' }} />)}
+              </span>
+            )}
+            {lvlStyle === 'text' && <span style={{ color: '#6B7280', fontSize: '0.85em' }}>{['','Beginner','Intermediate','Advanced'][s.level] || ''}</span>}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  // rows (default)
+  const rowGap   = dss.rowSpacing === 'compact' ? 2 : 6;
+  const subStyle = dss.subinfoStyle || 'dash';
+  return (
+    <div style={{ display: 'grid', rowGap }}>
+      {entries.map((s, i) => (
+        <div key={i} style={{ display: 'flex', gap: 5 }}>
+          {dss.startWithBullets && <span style={{ color: dotColor }}>•</span>}
+          <span>{s.name}</span>
+          {s.level && (
+            <span style={{ color: '#6B7280', fontSize: '0.9em' }}>
+              {subStyle === 'dash'  ? `— ${['','Beginner','Intermediate','Advanced'][s.level] || ''}` :
+               subStyle === 'paren' ? `(${['','Beginner','Intermediate','Advanced'][s.level] || ''})` :
+               `: ${['','Beginner','Intermediate','Advanced'][s.level] || ''}`}
+            </span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ExperienceBody({ secs, util, variant }) {
+  const { entryGapPx, t, colIf } = util;
+  const allEntries = secs.flatMap(sec => {
+    const order = sec.display_settings?.order || 'title-employer';
+    return (sec.content?.entries || []).map(e => ({ ...e, _order: order }));
+  });
+  if (!allEntries.length) return null;
+
+  return (
+    <div>
+      {allEntries.map((e, i) => {
+        const gap        = i < allEntries.length - 1 ? entryGapPx : 0;
+        const titleFirst = e._order !== 'employer-title';
+        const primary    = titleFirst ? (e.title || '') : (e.employer || '');
+        const secondary  = titleFirst ? (e.employer || '') : (e.title || '');
+        const bullets    = (e.bullets || []).filter(b => b?.trim());
+
+        if (variant === 'date-column') {
+          return (
+            <div key={i} style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: 14, marginBottom: gap }}>
+              <div style={{ fontSize: '0.88em', color: colIf(t.dates) || '#374151' }}>
+                <div>{e.dates}</div>
+                <div style={{ color: '#6B7280' }}>{e.location}</div>
+              </div>
+              <div>
+                <div style={{ fontWeight: 700 }}>{secondary || primary}</div>
+                <div style={{ fontSize: '0.92em' }}>{primary}</div>
+                <ul style={{ margin: '3px 0 0', paddingLeft: 18 }}>
+                  {bullets.map((b, j) => <li key={j} style={{ marginBottom: 1 }}>{b}</li>)}
+                </ul>
+              </div>
+            </div>
+          );
+        }
+        if (variant === 'stacked') {
+          return (
+            <div key={i} style={{ marginBottom: gap }}>
+              <div style={{ fontWeight: 700 }}>{primary}</div>
+              <div style={{ fontStyle: 'italic', fontSize: '0.92em' }}>{secondary}</div>
+              <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280', marginBottom: 3 }}>{e.dates}{e.location ? ` | ${e.location}` : ''}</div>
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                {bullets.map((b, j) => <li key={j} style={{ marginBottom: 1 }}>{b}</li>)}
+              </ul>
+            </div>
+          );
+        }
+        if (variant === 'inline-title-role') {
+          return (
+            <div key={i} style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 14, marginBottom: gap }}>
+              <div style={{ fontSize: '0.88em', color: colIf(t.dates) || '#374151' }}>
+                <div>{e.dates}</div>
+                <div style={{ color: '#6B7280' }}>{e.location}</div>
+              </div>
+              <div>
+                <div><strong>{e.employer},</strong> <em>{e.title}</em></div>
+                <ul style={{ margin: '3px 0 0', paddingLeft: 18 }}>
+                  {bullets.map((b, j) => <li key={j} style={{ marginBottom: 1 }}>{b}</li>)}
+                </ul>
+              </div>
+            </div>
+          );
+        }
+        // default
+        return (
+          <div key={i} style={{ marginBottom: gap }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+              <div style={{ fontWeight: 700 }}>{primary}</div>
+              <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280', whiteSpace: 'nowrap' }}>{e.dates}</div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+              <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</div>
+              {e.location && <div style={{ fontSize: '0.85em', color: '#6B7280' }}>{e.location}</div>}
+            </div>
+            <ul style={{ margin: '3px 0 0', paddingLeft: 18 }}>
+              {bullets.map((b, j) => <li key={j} style={{ marginBottom: 1 }}>{b}</li>)}
+            </ul>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function EducationBody({ secs, util, variant }) {
+  const { entryGapPx, t, colIf } = util;
+  const allEntries = secs.flatMap(sec => {
+    const order = sec.display_settings?.order || 'school-degree';
+    return (sec.content?.entries || []).map(e => ({ ...e, _order: order }));
+  });
+  if (!allEntries.length) return null;
+
+  return (
+    <div>
+      {allEntries.map((e, i) => {
+        const gap        = i < allEntries.length - 1 ? entryGapPx : 0;
+        const schoolFirst = e._order !== 'degree-school';
+        const primary    = schoolFirst ? (e.school || '') : (e.degree || '');
+        const secondary  = schoolFirst ? (e.degree || '') : (e.school || '');
+
+        if (variant === 'date-column') {
+          return (
+            <div key={i} style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: 14, marginBottom: gap }}>
+              <div style={{ fontSize: '0.88em', color: colIf(t.dates) || '#374151' }}>
+                <div>{e.dates}</div>
+                <div style={{ color: '#6B7280' }}>{e.location}</div>
+              </div>
+              <div>
+                <div style={{ fontWeight: 700 }}>{primary}</div>
+                <div style={{ fontSize: '0.92em', color: '#6B7280' }}>{secondary}</div>
+              </div>
+            </div>
+          );
+        }
+        return (
+          <div key={i} style={{ marginBottom: gap }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <div style={{ fontWeight: 700 }}>{primary}</div>
+              <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280' }}>{e.dates}</div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</div>
+              {e.location && <div style={{ fontSize: '0.85em', color: '#6B7280' }}>{e.location}</div>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function LanguagesBody({ sec, util }) {
+  const { t, colIf } = util;
+  const entries = sec?.content?.entries || [];
+  if (!entries.length) return null;
+  const lvlMap = { Beginner: 1, Intermediate: 2, Advanced: 3, Fluent: 4, Native: 5 };
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 24, rowGap: 4 }}>
+      {entries.map((l, i) => {
+        const n = typeof l.level === 'number' ? Math.round(l.level * 5 / 3) : (lvlMap[l.level] || 3);
+        return (
+          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>{l.name}</span>
+            <span style={{ display: 'inline-flex', gap: 3 }}>
+              {[1,2,3,4,5].map(j => <span key={j} style={{ width: 5, height: 5, borderRadius: '50%', background: j <= n ? (colIf(t.dotsBarsBubbles) || '#2C2C2A') : '#D1D5DB' }} />)}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function CertsBody({ sec, util, variant }) {
+  const { entryGapPx, t, colIf } = util;
+  const entries = sec?.content?.entries || [];
+  if (!entries.length) return null;
+
+  if (variant === 'three-col-bullets') {
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', columnGap: 14, rowGap: 4 }}>
+        {entries.map((c, i) => <div key={i}>• {c.name}</div>)}
+      </div>
+    );
+  }
+  if (variant === 'compact-list') {
+    return (
+      <ul style={{ margin: 0, paddingLeft: 16 }}>
+        {entries.map((c, i) => <li key={i} style={{ marginBottom: 1 }}>{c.name}{c.issuer ? `, ${c.issuer}` : ''}{c.date ? ` — ${c.date}` : ''}</li>)}
+      </ul>
+    );
+  }
+  return (
+    <div>
+      {entries.map((c, i) => (
+        <div key={i} style={{ marginBottom: i < entries.length - 1 ? entryGapPx * 0.75 : 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <div style={{ fontWeight: 700 }}>{c.name}</div>
+            {c.date && <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280' }}>{c.date}</div>}
+          </div>
+          {c.issuer && <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{c.issuer}</div>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ProjectsBody({ sec, util }) {
+  const { entryGapPx, t, colIf } = util;
+  const entries = sec?.content?.entries || [];
+  if (!entries.length) return null;
+  return (
+    <div>
+      {entries.map((p, i) => (
+        <div key={i} style={{ marginBottom: i < entries.length - 1 ? entryGapPx * 0.75 : 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <div style={{ fontWeight: 700 }}>{p.title}</div>
+            {p.dates && <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280' }}>{p.dates}</div>}
+          </div>
+          {p.role && <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{p.role}</div>}
+          {p.description && <div style={{ marginTop: 3 }}>{p.description}</div>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Dispatch section body by type
+function renderSectionBody(sec, util, opts = {}) {
+  const type = sec.type;
+  if (type === 'summary')        return <div style={{ fontSize: '0.95em' }}>{sec.content?.text}</div>;
+  if (type === 'work_experience') return <ExperienceBody secs={[sec]} util={util} variant={opts.expVariant} />;
+  if (type === 'education')      return <EducationBody secs={[sec]} util={util} variant={opts.eduVariant} />;
+  if (type === 'skills')         return <SkillsBody sec={sec} util={util} variantCols={opts.skillsCols} />;
+  if (type === 'languages')      return <LanguagesBody sec={sec} util={util} />;
+  if (type === 'certifications') return <CertsBody sec={sec} util={util} variant={opts.certVariant} />;
+  if (type === 'projects')       return <ProjectsBody sec={sec} util={util} />;
+  if (type === 'hobbies' || type === 'references') {
+    const text = sec.content?.text;
+    return text ? <div style={{ fontSize: '0.95em' }}>{text}</div> : null;
+  }
+  // custom / unknown
+  const text = sec.content?.text;
+  if (text) return <div style={{ fontSize: '0.95em', whiteSpace: 'pre-wrap' }}>{text}</div>;
+  const entries = sec.content?.entries;
+  if (Array.isArray(entries) && entries.length) {
+    return (
+      <div>
+        {entries.map((e, i) => (
+          <div key={i} style={{ marginBottom: 3 }}>
+            {Object.values(e).filter(v => typeof v === 'string' && v).join(' · ')}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+}
+
+// ── Contact detail item (for Modern header) ───────────────────────────────────
+
+function buildDetailsBlock(pi, ds, util) {
+  const { fontSize, t, colIf } = util;
+  const details = [
+    { kind: 'mail',  val: pi.email },
+    { kind: 'phone', val: pi.phone },
+    { kind: 'pin',   val: pi.location },
+    { kind: 'link',  val: pi.link },
+  ].filter(d => d.val);
+  if (!details.length) return null;
+
+  const sep   = ds.detailsSeparator || 'icon';
+  const arr   = ds.detailsArrangement || 2;
+  const align = ds.headerAlignment === 'center' ? 'center' : 'flex-start';
+
+  const item = ({ kind, val }) => (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}>
+      {sep === 'icon' && <HdrIcon kind={kind} style={ds.headerIconStyle || 1} color={colIf(t.headerIcons) || '#6B7280'} size={fontSize - 2} />}
+      <span>{val}</span>
+    </span>
+  );
+
+  if (arr === 3) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 7, fontSize: '0.92em', color: '#6B7280', alignItems: align === 'center' ? 'center' : 'flex-start' }}>
+        {details.map(d => <div key={d.kind}>{item(d)}</div>)}
+      </div>
+    );
+  }
+  if (arr === 2) {
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 18px', marginTop: 7, fontSize: '0.92em', color: '#6B7280', maxWidth: ds.headerAlignment === 'center' ? '70%' : '85%', marginLeft: ds.headerAlignment === 'center' ? 'auto' : 0, marginRight: ds.headerAlignment === 'center' ? 'auto' : 0 }}>
+        {details.map(d => <div key={d.kind}>{item(d)}</div>)}
+      </div>
+    );
+  }
+  // arr === 1: inline row with separator
+  const sepEl = sep === 'bullet' ? <span style={{ color: '#9CA3AF', margin: '0 5px' }}>·</span>
+    : sep === 'bar' ? <span style={{ color: '#9CA3AF', margin: '0 7px' }}>|</span>
+    : <span style={{ width: 8 }} />;
+  return (
+    <div style={{ display: 'flex', flexWrap: 'nowrap', marginTop: 7, fontSize: '0.92em', color: '#6B7280', justifyContent: align }}>
+      {details.map((d, i) => (
+        <span key={d.kind} style={{ display: 'inline-flex', alignItems: 'center' }}>
+          {i > 0 && sepEl}
+          {item(d)}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// ── Template 1: Modern ────────────────────────────────────────────────────────
+
+function TemplateModern({ resume, ds, ss }) {
+  const util = tmplUtils(ds, ss);
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
   const { pi, sections } = buildRenderData(resume);
 
-  const pageStyle = {
-    fontFamily,
-    fontSize: `${fontSize}pt`,
-    lineHeight,
-    paddingLeft: `${padX}mm`,
-    paddingRight: `${padX}mm`,
-    paddingTop: `${padY}mm`,
-    paddingBottom: `${padY}mm`,
-    color: '#2C2C2A',
-    background: '#fff',
-    minHeight: '100%',
-  };
+  const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, paddingLeft: `${padX}mm`, paddingRight: `${padX}mm`, paddingTop: `${padY}mm`, paddingBottom: `${padY}mm`, color: '#2C2C2A' };
 
-  // ── Section heading ──────────────────────────────────────────────────────────
   const Heading = ({ children }) => (
     <div style={{ marginTop: '1.4em', marginBottom: '0.4em' }}>
-      <div style={{
-        fontSize: '0.85em', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700,
-        color: colIf(t.headings) || '#2C2C2A',
-      }}>
-        {children}
-      </div>
+      <div style={{ fontSize: '0.85em', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, color: colIf(t.headings) || '#2C2C2A' }}>{children}</div>
       <div style={{ height: 1.5, background: colIf(t.headingsLine) || '#D1DCE8', marginTop: 4 }} />
     </div>
   );
 
-  // ── Contact detail item ──────────────────────────────────────────────────────
-  const detailItem = (kind, text) => {
-    if (!text) return null;
-    const sep = ds.detailsSeparator || 'icon';
-    return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}>
-        {sep === 'icon' && (
-          <HdrIcon
-            kind={kind}
-            style={ds.headerIconStyle || 1}
-            color={colIf(t.headerIcons) || '#6B7280'}
-            size={fontSize - 2}
-          />
-        )}
-        <span>{text}</span>
-      </span>
-    );
-  };
-
-  const details = [
-    { kind: 'mail', val: pi.email },
-    { kind: 'phone', val: pi.phone },
-    { kind: 'pin', val: pi.location },
-    { kind: 'link', val: pi.link },
-  ].filter(d => d.val);
-
-  // ── Details block (arrangement 1/2/3) ────────────────────────────────────────
-  const detailsBlock = (() => {
-    if (!details.length) return null;
-    const arr = ds.detailsArrangement || 2;
-    const sep = ds.detailsSeparator || 'icon';
-    const align = ds.headerAlignment === 'center' ? 'center' : 'flex-start';
-
-    if (arr === 3) {
-      return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 7, fontSize: '0.92em', color: '#6B7280', alignItems: align === 'center' ? 'center' : 'flex-start' }}>
-          {details.map(d => <div key={d.kind}>{detailItem(d.kind, d.val)}</div>)}
-        </div>
-      );
-    }
-    if (arr === 2) {
-      return (
-        <div style={{
-          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 18px', marginTop: 7,
-          fontSize: '0.92em', color: '#6B7280',
-          maxWidth: ds.headerAlignment === 'center' ? '70%' : '85%',
-          marginLeft: ds.headerAlignment === 'center' ? 'auto' : 0,
-          marginRight: ds.headerAlignment === 'center' ? 'auto' : 0,
-        }}>
-          {details.map(d => <div key={d.kind}>{detailItem(d.kind, d.val)}</div>)}
-        </div>
-      );
-    }
-    // arr === 1: single inline row with separators
-    const sepEl = sep === 'bullet' ? <span style={{ color: '#9CA3AF', margin: '0 5px' }}>·</span>
-      : sep === 'bar' ? <span style={{ color: '#9CA3AF', margin: '0 7px' }}>|</span>
-      : <span style={{ width: 8 }} />;
-    return (
-      <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 0, marginTop: 7, fontSize: '0.92em', color: '#6B7280', justifyContent: align }}>
-        {details.map((d, i) => (
-          <span key={d.kind} style={{ display: 'inline-flex', alignItems: 'center' }}>
-            {i > 0 && sepEl}
-            {detailItem(d.kind, d.val)}
-          </span>
-        ))}
-      </div>
-    );
-  })();
-
-  // ── Skills rendering ─────────────────────────────────────────────────────────
-  const renderSkills = (sec) => {
-    if (!sec) return null;
-    const entries = sec.content?.entries || [];
-    if (!entries.length) return null;
-    const ds_sec = sec.display_settings || {};
-    const layout = ds_sec.layout || ds_sec.skillsStyle || 'rows';
-    const dotColor = colIf(t.dotsBarsBubbles) || accent;
-
-    if (layout === 'grid') {
-      const cols = ds_sec.columns || 2;
-      return (
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, columnGap: 24, rowGap: 3 }}>
-          {entries.map((s, i) => <div key={i}>{s.name}</div>)}
-        </div>
-      );
-    }
-    if (layout === 'compact') {
-      return <div>{entries.map(s => s.name).filter(Boolean).join(' · ')}</div>;
-    }
-    if (layout === 'bubble') {
-      return (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-          {entries.map((s, i) => (
-            <span key={i} style={{
-              padding: '3px 10px', borderRadius: 999,
-              background: colIf(t.dotsBarsBubbles) ? accent + '1A' : '#F3F4F6',
-              color: colIf(t.dotsBarsBubbles) || '#2C2C2A', fontSize: '0.9em',
-            }}>{s.name}</span>
-          ))}
-        </div>
-      );
-    }
-    if (layout === 'level') {
-      const lvlStyle = ds_sec.levelStyle || 'dots';
-      return (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 24, rowGap: 5 }}>
-          {entries.map((s, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>{s.name}</span>
-              {lvlStyle === 'dots' && (
-                <span style={{ display: 'inline-flex', gap: 3 }}>
-                  {[1, 2, 3].map(lv => (
-                    <span key={lv} style={{ width: 6, height: 6, borderRadius: '50%', background: lv <= (s.level || 2) ? dotColor : '#E5E7EB' }} />
-                  ))}
-                </span>
-              )}
-              {lvlStyle === 'bar' && (
-                <span style={{ display: 'inline-flex', gap: 2 }}>
-                  {[1, 2, 3].map(lv => (
-                    <span key={lv} style={{ width: 12, height: 4, borderRadius: 1, background: lv <= (s.level || 2) ? dotColor : '#E5E7EB' }} />
-                  ))}
-                </span>
-              )}
-              {lvlStyle === 'text' && (
-                <span style={{ color: '#6B7280', fontSize: '0.85em' }}>
-                  {['', 'Beginner', 'Intermediate', 'Advanced'][s.level] || ''}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-      );
-    }
-    // rows (default)
-    const rowGap = ds_sec.rowSpacing === 'compact' ? 2 : 6;
-    const subStyle = ds_sec.subinfoStyle || 'dash';
-    // Group by name for now — single flat list shown with bullet prefix option
-    return (
-      <div style={{ display: 'grid', rowGap }}>
-        {entries.map((s, i) => (
-          <div key={i} style={{ display: 'flex', gap: 5 }}>
-            {ds_sec.startWithBullets && <span style={{ color: dotColor }}>•</span>}
-            <span>{s.name}</span>
-            {s.level && (
-              <span style={{ color: '#6B7280', fontSize: '0.9em' }}>
-                {subStyle === 'dash' ? `— ${['', 'Beginner', 'Intermediate', 'Advanced'][s.level] || ''}` :
-                 subStyle === 'bracket' ? `(${['', 'Beginner', 'Intermediate', 'Advanced'][s.level] || ''})` :
-                 `: ${['', 'Beginner', 'Intermediate', 'Advanced'][s.level] || ''}`}
-              </span>
-            )}
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  // ── Experience rendering ─────────────────────────────────────────────────────
-  const renderExperience = (secs) => {
-    const allEntries = secs.flatMap(sec => {
-      const order = sec.display_settings?.workOrder || 'title-first';
-      return (sec.content?.entries || []).map(e => ({ ...e, _order: order }));
-    });
-    if (!allEntries.length) return null;
-    return (
-      <div>
-        {allEntries.map((e, i) => {
-          const primary = e._order === 'employer-first' ? e.employer : e.title;
-          const secondary = e._order === 'employer-first' ? e.title : e.employer;
-          return (
-            <div key={i} style={{ marginBottom: i < allEntries.length - 1 ? entryGapPx : 0 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
-                <div style={{ fontWeight: 700 }}>{primary}</div>
-                <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280', whiteSpace: 'nowrap' }}>{e.dates}</div>
-              </div>
-              {secondary && (
-                <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280', marginTop: 1 }}>
-                  {[secondary, e.location].filter(Boolean).join(' · ')}
-                </div>
-              )}
-              {e.bullets?.filter(b => b?.trim()).length > 0 && (
-                <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
-                  {e.bullets.filter(b => b?.trim()).map((b, j) => (
-                    <li key={j} style={{ marginBottom: 1 }}>{b}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
-  // ── Education rendering ──────────────────────────────────────────────────────
-  const renderEducation = (secs) => {
-    const allEntries = secs.flatMap(sec => {
-      const order = sec.display_settings?.eduOrder || 'school-first';
-      return (sec.content?.entries || []).map(e => ({ ...e, _order: order }));
-    });
-    if (!allEntries.length) return null;
-    return (
-      <div>
-        {allEntries.map((e, i) => {
-          const primary = e._order === 'degree-first' ? e.degree : e.school;
-          const secondary = e._order === 'degree-first' ? e.school : e.degree;
-          return (
-            <div key={i} style={{ marginBottom: i < allEntries.length - 1 ? entryGapPx : 0 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
-                <div style={{ fontWeight: 700 }}>{primary}</div>
-                <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280' }}>{e.dates}</div>
-              </div>
-              {secondary && (
-                <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280', marginTop: 1 }}>
-                  {[secondary, e.location].filter(Boolean).join(' · ')}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
-  // ── Languages ────────────────────────────────────────────────────────────────
-  const renderLanguages = (sec) => {
-    const entries = sec?.content?.entries || [];
-    if (!entries.length) return null;
-    return (
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 24px' }}>
-        {entries.map((l, i) => (
-          <span key={i}>{l.name}{l.level ? ` — ${l.level}` : ''}</span>
-        ))}
-      </div>
-    );
-  };
-
-  // ── Certifications ───────────────────────────────────────────────────────────
-  const renderCerts = (sec) => {
-    const entries = sec?.content?.entries || [];
-    if (!entries.length) return null;
-    return (
-      <div>
-        {entries.map((c, i) => (
-          <div key={i} style={{ marginBottom: i < entries.length - 1 ? entryGapPx : 0 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
-              <div style={{ fontWeight: 700 }}>{c.name}</div>
-              {c.date && <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280' }}>{c.date}</div>}
-            </div>
-            {c.issuer && <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{c.issuer}</div>}
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  // ── Projects ─────────────────────────────────────────────────────────────────
-  const renderProjects = (sec) => {
-    const entries = sec?.content?.entries || [];
-    if (!entries.length) return null;
-    return (
-      <div>
-        {entries.map((p, i) => (
-          <div key={i} style={{ marginBottom: i < entries.length - 1 ? entryGapPx : 0 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
-              <div style={{ fontWeight: 700 }}>{p.title}</div>
-              {p.dates && <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280' }}>{p.dates}</div>}
-            </div>
-            {p.role && <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{p.role}</div>}
-            {p.description && <div style={{ marginTop: 3, fontSize: '0.95em' }}>{p.description}</div>}
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  // ── Render a section by type ─────────────────────────────────────────────────
-  const renderSection = (sec) => {
-    const { skillsSec, langSec, certSec, projectsSec, hobbiesSec, refSec, experiences, educations } = buildRenderData(resume);
-
-    if (sec.type === 'summary') {
-      const text = sec.content?.text;
-      if (!text?.trim()) return null;
-      return (
-        <div key={sec.id}>
-          <Heading>{sec.title}</Heading>
-          <div style={{ fontSize: '0.95em', lineHeight }}>{text}</div>
-        </div>
-      );
-    }
-    if (sec.type === 'work_experience') {
-      const block = renderExperience([sec]);
-      if (!block) return null;
-      return <div key={sec.id}><Heading>{sec.title}</Heading>{block}</div>;
-    }
-    if (sec.type === 'education') {
-      const block = renderEducation([sec]);
-      if (!block) return null;
-      return <div key={sec.id}><Heading>{sec.title}</Heading>{block}</div>;
-    }
-    if (sec.type === 'skills') {
-      const block = renderSkills(sec);
-      if (!block) return null;
-      return <div key={sec.id}><Heading>{sec.title}</Heading>{block}</div>;
-    }
-    if (sec.type === 'languages') {
-      const block = renderLanguages(sec);
-      if (!block) return null;
-      return <div key={sec.id}><Heading>{sec.title}</Heading>{block}</div>;
-    }
-    if (sec.type === 'certifications') {
-      const block = renderCerts(sec);
-      if (!block) return null;
-      return <div key={sec.id}><Heading>{sec.title}</Heading>{block}</div>;
-    }
-    if (sec.type === 'projects') {
-      const block = renderProjects(sec);
-      if (!block) return null;
-      return <div key={sec.id}><Heading>{sec.title}</Heading>{block}</div>;
-    }
-    if (sec.type === 'hobbies' || sec.type === 'references') {
-      const text = sec.content?.text;
-      if (!text?.trim()) return null;
-      return (
-        <div key={sec.id}>
-          <Heading>{sec.title}</Heading>
-          <div style={{ fontSize: '0.95em' }}>{text}</div>
-        </div>
-      );
-    }
-    // Custom / unknown
-    if (sec.content?.text) {
-      return (
-        <div key={sec.id}>
-          <Heading>{sec.title}</Heading>
-          <div style={{ fontSize: '0.95em', whiteSpace: 'pre-wrap' }}>{sec.content.text}</div>
-        </div>
-      );
-    }
-    if (Array.isArray(sec.content?.entries) && sec.content.entries.length) {
-      return (
-        <div key={sec.id}>
-          <Heading>{sec.title}</Heading>
-          <div>
-            {sec.content.entries.map((e, i) => (
-              <div key={i} style={{ marginBottom: 3 }}>
-                {Object.values(e).filter(v => typeof v === 'string' && v).join(' · ')}
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
     <div style={pageStyle}>
-      {/* ── Header ── */}
-      <div style={{ textAlign: ds.headerAlignment || 'left' }}>
-        <div style={{
-          fontSize: '2.2em', fontWeight: 700, letterSpacing: '-0.02em',
-          color: colIf(t.name) || '#2C2C2A', lineHeight: 1,
-        }}>
-          {pi.name || 'Your Name'}
-        </div>
-        {pi.title && (
-          <div style={{ fontSize: '1.05em', fontWeight: 500, color: colIf(t.jobTitle) || accent, marginTop: 4 }}>
-            {pi.title}
-          </div>
-        )}
-        {detailsBlock}
+      <div style={{ textAlign: ds.headerAlignment }}>
+        <div style={{ fontSize: '2.2em', fontWeight: 700, letterSpacing: '-0.02em', color: colIf(t.name) || '#2C2C2A', lineHeight: 1 }}>{pi.name || 'Your Name'}</div>
+        {pi.title && <div style={{ fontSize: '1.05em', fontWeight: 500, color: colIf(t.jobTitle) || accent, marginTop: 4 }}>{pi.title}</div>}
+        {buildDetailsBlock(pi, ds, util)}
       </div>
-
-      {/* ── Sections in order ── */}
-      {sections.map(sec => renderSection(sec))}
+      {sections.map(sec => {
+        const body = renderSectionBody(sec, util);
+        if (!body) return null;
+        return <div key={sec.id}><Heading>{sec.title}</Heading>{body}</div>;
+      })}
     </div>
   );
 }
 
-// ── ResumePreview component ────────────────────────────────────────────────────
+// ── Template 2: Atlantic Blue (dark sidebar) ──────────────────────────────────
+
+const ATLANTIC_SIDEBAR_TYPES = new Set(['summary', 'languages', 'hobbies', 'references']);
+
+function TemplateAtlanticBlue({ resume, ds, ss }) {
+  const util = tmplUtils(ds, ss);
+  const { fontSize, lineHeight, accent, t, colIf, fontFamily } = util;
+  const { pi, sections } = buildRenderData(resume);
+  const sideColor = '#1F2A44';
+
+  const sideIds = sections.filter(s => ATLANTIC_SIDEBAR_TYPES.has(s.type));
+  const bodyIds = sections.filter(s => !ATLANTIC_SIDEBAR_TYPES.has(s.type));
+
+  const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#2C2C2A', display: 'grid', gridTemplateColumns: '32% 1fr', minHeight: '100%' };
+
+  const PillHead = ({ iconName, children }) => (
+    <div style={{ background: '#E5E7EB', padding: '5px 10px', marginTop: '0.9em', marginBottom: '0.4em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+      {iconName && <Icon name={iconName} size={11} color={colIf(t.headerIcons) || sideColor} />}
+      <span style={{ fontSize: '0.78em', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: colIf(t.headings) || sideColor }}>{children}</span>
+    </div>
+  );
+  const SideHead = ({ iconName, children }) => (
+    <div style={{ background: 'rgba(255,255,255,0.08)', padding: '5px 10px', marginTop: '0.9em', marginBottom: '0.4em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+      {iconName && <Icon name={iconName} size={11} color="#fff" />}
+      <span style={{ fontSize: '0.78em', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#fff' }}>{children}</span>
+    </div>
+  );
+  const contactRow = (icon, txt) => txt ? (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, fontSize: '0.85em', color: '#D1DCE8' }}>
+      <Icon name={icon} size={11} color="#D1DCE8" /><span>{txt}</span>
+    </div>
+  ) : null;
+
+  return (
+    <div style={pageStyle}>
+      {/* Sidebar */}
+      <div style={{ background: sideColor, color: '#fff', padding: '24px 20px' }}>
+        <div style={{ fontSize: '1.7em', fontWeight: 700, color: colIf(t.name) || '#fff', lineHeight: 1.05 }}>{pi.name || 'Your Name'}</div>
+        <div style={{ fontSize: '1em', color: colIf(t.jobTitle) || '#B6C2D6', marginTop: 4 }}>{pi.title}</div>
+        <div style={{ marginTop: 14, display: 'flex' }}>
+          <PhotoPlaceholder size={86} shape="circle" name={pi.name} />
+        </div>
+        <div style={{ marginTop: 14 }}>
+          {contactRow('mail', pi.email)}
+          {contactRow('phone', pi.phone)}
+          {contactRow('pin', pi.location)}
+          {contactRow('link', pi.link)}
+        </div>
+        <div style={{ color: '#E8EEF7' }}>
+          {sideIds.map(sec => {
+            const body = renderSectionBody(sec, util, { certVariant: 'compact-list' });
+            if (!body) return null;
+            return (
+              <div key={sec.id}>
+                <SideHead iconName={SEC_ICONS[sec.type]}>{sec.title}</SideHead>
+                {body}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      {/* Main body */}
+      <div style={{ padding: '24px 22px' }}>
+        {bodyIds.map(sec => {
+          const body = renderSectionBody(sec, util, { expVariant: 'stacked' });
+          if (!body) return null;
+          return (
+            <div key={sec.id}>
+              <PillHead iconName={SEC_ICONS[sec.type]}>{sec.title}</PillHead>
+              {body}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Template 3: Corporate (centered, classic) ─────────────────────────────────
+
+function TemplateCorporate({ resume, ds, ss }) {
+  const util = tmplUtils(ds, ss);
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
+  const { pi, sections } = buildRenderData(resume);
+
+  const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, paddingLeft: `${padX}mm`, paddingRight: `${padX}mm`, paddingTop: `${padY}mm`, paddingBottom: `${padY}mm`, color: '#1F2937' };
+
+  const Heading = ({ children }) => (
+    <div style={{ marginTop: '1em', marginBottom: '0.45em', textAlign: 'center' }}>
+      <div style={{ height: 1, background: colIf(t.headingsLine) || '#9CA3AF' }} />
+      <div style={{ fontSize: '0.9em', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: colIf(t.headings) || '#1F2937', padding: '3px 0' }}>{children}</div>
+      <div style={{ height: 1, background: colIf(t.headingsLine) || '#9CA3AF' }} />
+    </div>
+  );
+
+  const contactItems = [['pin', pi.location], ['mail', pi.email], ['phone', pi.phone], ['link', pi.link]].filter(([, v]) => v);
+
+  return (
+    <div style={pageStyle}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '2em', fontWeight: 700, color: colIf(t.name) || '#1F2937', lineHeight: 1 }}>{pi.name || 'Your Name'}</div>
+        {pi.title && <div style={{ fontSize: '1.05em', fontStyle: 'italic', color: colIf(t.jobTitle) || '#374151', marginTop: 4 }}>{pi.title}</div>}
+        {contactItems.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px', marginTop: 10, fontSize: '0.9em', color: '#374151', justifyContent: 'center' }}>
+            {contactItems.map(([k, v], i) => (
+              <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                <Icon name={k} size={11} color={colIf(t.headerIcons) || '#374151'} />{v}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+      {sections.map(sec => {
+        const certVariant = sec.type === 'certifications' ? 'three-col-bullets' : undefined;
+        const skillsCols  = (sec.type === 'skills' && (sec.display_settings?.layout === 'rows' || !sec.display_settings?.layout)) ? 3 : undefined;
+        const body = renderSectionBody(sec, util, { certVariant, skillsCols });
+        if (!body) return null;
+        return <div key={sec.id}><Heading>{sec.title}</Heading>{body}</div>;
+      })}
+    </div>
+  );
+}
+
+// ── Template 4: Atlantic Crest (dark banner + two-column) ─────────────────────
+
+const CREST_LEFT_TYPES = new Set(['summary', 'skills', 'languages', 'certifications', 'hobbies']);
+
+function TemplateAtlanticCrest({ resume, ds, ss }) {
+  const util = tmplUtils(ds, ss);
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
+  const { pi, sections } = buildRenderData(resume);
+  const bannerColor = '#1F2A44';
+
+  const leftIds  = sections.filter(s => CREST_LEFT_TYPES.has(s.type));
+  const rightIds = sections.filter(s => !CREST_LEFT_TYPES.has(s.type));
+
+  const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#1F2937', background: '#fff' };
+
+  const PillHead = ({ iconName, children }) => (
+    <div style={{ background: '#E5E7EB', padding: '5px 10px', marginTop: '0.9em', marginBottom: '0.4em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+      {iconName && <Icon name={iconName} size={11} color={colIf(t.headerIcons) || bannerColor} />}
+      <span style={{ fontSize: '0.78em', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: colIf(t.headings) || bannerColor }}>{children}</span>
+    </div>
+  );
+  const contact = (icon, txt) => txt ? (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.88em', color: '#D1DCE8' }}>
+      <Icon name={icon} size={11} color="#D1DCE8" />{txt}
+    </span>
+  ) : null;
+
+  return (
+    <div style={pageStyle}>
+      {/* Dark banner */}
+      <div style={{ background: bannerColor, color: '#fff', padding: `${padY}mm ${padX}mm`, display: 'grid', gridTemplateColumns: '1fr auto', gap: 18, alignItems: 'center' }}>
+        <div>
+          <div style={{ fontSize: '1.9em', fontWeight: 700, color: colIf(t.name) || '#fff', lineHeight: 1 }}>{pi.name || 'Your Name'}</div>
+          {pi.title && <div style={{ fontSize: '1em', color: colIf(t.jobTitle) || '#B6C2D6', marginTop: 4 }}>{pi.title}</div>}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 18px', marginTop: 10, maxWidth: 460 }}>
+            {contact('mail', pi.email)}
+            {contact('phone', pi.phone)}
+            {contact('link', pi.link)}
+            {contact('pin', pi.location)}
+          </div>
+        </div>
+        <PhotoPlaceholder size={96} shape="circle" name={pi.name} />
+      </div>
+      {/* Two-column body */}
+      <div style={{ padding: `${padY * 0.6}mm ${padX}mm`, display: 'grid', gridTemplateColumns: '38% 1fr', gap: 18 }}>
+        <div>
+          {leftIds.map(sec => {
+            const body = renderSectionBody(sec, util);
+            if (!body) return null;
+            return <div key={sec.id}><PillHead iconName={SEC_ICONS[sec.type]}>{sec.title}</PillHead>{body}</div>;
+          })}
+        </div>
+        <div>
+          {rightIds.map(sec => {
+            const body = renderSectionBody(sec, util, { expVariant: 'stacked' });
+            if (!body) return null;
+            return <div key={sec.id}><PillHead iconName={SEC_ICONS[sec.type]}>{sec.title}</PillHead>{body}</div>;
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Template 5: Mercury Flow (gray banner + date column) ──────────────────────
+
+function TemplateMercuryFlow({ resume, ds, ss }) {
+  const util = tmplUtils(ds, ss);
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
+  const { pi, sections } = buildRenderData(resume);
+
+  const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#1F2937' };
+
+  const BarHead = ({ children }) => (
+    <div style={{ background: '#EEF1F5', padding: '5px 12px', marginTop: '0.9em', marginBottom: '0.45em', textAlign: 'center' }}>
+      <span style={{ fontSize: '0.92em', fontWeight: 600, color: colIf(t.headings) || '#1F2937' }}>{children}</span>
+    </div>
+  );
+  const contact = (icon, txt) => txt ? (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.88em', color: '#374151' }}>
+      <Icon name={icon} size={11} color={colIf(t.headerIcons) || '#374151'} />{txt}
+    </span>
+  ) : null;
+
+  return (
+    <div style={pageStyle}>
+      {/* Gray banner */}
+      <div style={{ background: '#E5E7EB', padding: `${padY * 0.7}mm ${padX}mm`, display: 'flex', alignItems: 'center', gap: 16 }}>
+        <PhotoPlaceholder size={70} shape="circle" name={pi.name} />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '1.5em', fontWeight: 700, color: colIf(t.name) || '#1F2937', lineHeight: 1.05 }}>{pi.name || 'Your Name'}</div>
+          {pi.title && <div style={{ fontSize: '0.95em', color: colIf(t.jobTitle) || '#374151', marginTop: 2 }}>{pi.title}</div>}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px 14px', marginTop: 6 }}>
+            {contact('mail', pi.email)}
+            {contact('phone', pi.phone)}
+            {contact('link', pi.link)}
+            {contact('pin', pi.location)}
+          </div>
+        </div>
+      </div>
+      <div style={{ padding: `${padY * 0.5}mm ${padX}mm` }}>
+        {sections.map(sec => {
+          const isDateCol = sec.type === 'work_experience' || sec.type === 'education';
+          const body = renderSectionBody(sec, util, isDateCol ? { expVariant: 'date-column', eduVariant: 'date-column' } : {});
+          if (!body) return null;
+          return <div key={sec.id}><BarHead>{sec.title}</BarHead>{body}</div>;
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Template 6: Steady Form (photo right + gray bar headings) ─────────────────
+
+function TemplateSteadyForm({ resume, ds, ss }) {
+  const util = tmplUtils(ds, ss);
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
+  const { pi, sections } = buildRenderData(resume);
+
+  const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, paddingLeft: `${padX}mm`, paddingRight: `${padX}mm`, paddingTop: `${padY}mm`, paddingBottom: `${padY}mm`, color: '#1F2937' };
+
+  const BarHead = ({ children }) => (
+    <div style={{ background: '#EEF1F5', padding: '5px 12px', marginTop: '1em', marginBottom: '0.5em', textAlign: 'center' }}>
+      <span style={{ fontSize: '0.92em', fontWeight: 600, color: colIf(t.headings) || '#1F2937' }}>{children}</span>
+    </div>
+  );
+  const contact = (icon, txt) => txt ? (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.88em', color: '#374151' }}>
+      <span style={{ width: 16, height: 16, border: '1px solid #9CA3AF', borderRadius: 2, display: 'inline-grid', placeItems: 'center', flexShrink: 0 }}>
+        <Icon name={icon} size={9} color={colIf(t.headerIcons) || '#374151'} />
+      </span>
+      {txt}
+    </div>
+  ) : null;
+
+  return (
+    <div style={pageStyle}>
+      {/* Name+contacts left, photo right */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 16, alignItems: 'center', marginBottom: 6 }}>
+        <div>
+          <div style={{ fontSize: '1.6em' }}>
+            <span style={{ fontWeight: 700, color: colIf(t.name) || '#1F2937' }}>{pi.name || 'Your Name'}</span>
+            {pi.title && <span style={{ fontStyle: 'italic', fontWeight: 400, color: colIf(t.jobTitle) || '#374151', marginLeft: 10 }}>{pi.title}</span>}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px', marginTop: 10 }}>
+            {contact('mail', pi.email)}
+            {contact('phone', pi.phone)}
+            {contact('link', pi.link)}
+            {contact('pin', pi.location)}
+          </div>
+        </div>
+        <PhotoPlaceholder size={78} shape="circle" name={pi.name} />
+      </div>
+      {sections.map(sec => {
+        const skillsCols   = (sec.type === 'skills' && (sec.display_settings?.layout === 'rows' || !sec.display_settings?.layout)) ? 3 : undefined;
+        const certVariant  = sec.type === 'certifications' ? 'three-col-bullets' : undefined;
+        const body = renderSectionBody(sec, util, {
+          expVariant: sec.type === 'work_experience' ? 'inline-title-role' : undefined,
+          eduVariant: sec.type === 'education' ? 'date-column' : undefined,
+          skillsCols,
+          certVariant,
+        });
+        if (!body) return null;
+        return <div key={sec.id}><BarHead>{sec.title}</BarHead>{body}</div>;
+      })}
+    </div>
+  );
+}
+
+// ── Template 7: Executive (editorial serif, date-column) ──────────────────────
+
+function TemplateExecutive({ resume, ds, ss }) {
+  const util = tmplUtils(ds, ss);
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
+  const { pi, sections } = buildRenderData(resume);
+
+  const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, paddingLeft: `${padX}mm`, paddingRight: `${padX}mm`, paddingTop: `${padY}mm`, paddingBottom: `${padY}mm`, color: '#1F2937' };
+
+  const Heading = ({ children }) => (
+    <div style={{ marginTop: '1em', marginBottom: '0.35em' }}>
+      <div style={{ fontSize: '0.95em', fontWeight: 600, color: colIf(t.headings) || '#1F2937', letterSpacing: '0.01em' }}>{children}</div>
+      <div style={{ height: 0.5, background: colIf(t.headingsLine) || '#9CA3AF', marginTop: 2 }} />
+    </div>
+  );
+  const contactItems = [['pin', pi.location], ['mail', pi.email], ['phone', pi.phone], ['link', pi.link]].filter(([, v]) => v);
+
+  return (
+    <div style={pageStyle}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: '1.8em', fontWeight: 700, color: colIf(t.name) || '#1F2937' }}>{pi.name || 'Your Name'}</span>
+        {pi.title && <span style={{ fontSize: '1.05em', fontStyle: 'italic', color: colIf(t.jobTitle) || '#374151' }}>{pi.title}</span>}
+      </div>
+      {contactItems.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 18px', marginTop: 8, fontSize: '0.9em', color: '#374151' }}>
+          {contactItems.map(([k, v], i) => (
+            <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <Icon name={k} size={11} color={colIf(t.headerIcons) || '#374151'} />{v}
+            </span>
+          ))}
+        </div>
+      )}
+      {sections.map(sec => {
+        const body = renderSectionBody(sec, util, {
+          expVariant: sec.type === 'work_experience' ? 'date-column' : undefined,
+          eduVariant: sec.type === 'education' ? 'date-column' : undefined,
+        });
+        if (!body) return null;
+        return <div key={sec.id}><Heading>{sec.title}</Heading>{body}</div>;
+      })}
+    </div>
+  );
+}
+
+// ── Template registry ─────────────────────────────────────────────────────────
+
+const TEMPLATE_COMPONENTS = {
+  'modern':         TemplateModern,
+  'atlantic-blue':  TemplateAtlanticBlue,
+  'corporate':      TemplateCorporate,
+  'atlantic-crest': TemplateAtlanticCrest,
+  'mercury-flow':   TemplateMercuryFlow,
+  'steady-form':    TemplateSteadyForm,
+  'executive':      TemplateExecutive,
+};
+
+// ── ResumePreview default export ──────────────────────────────────────────────
 
 export default function ResumePreview({ resume, designSettings = {}, scale = null, className = '' }) {
   const containerRef = useRef(null);
   const [computedScale, setComputedScale] = useState(scale || 0.6);
 
-  const pageId = (designSettings?.pageSize) || 'a4';
-  const page = pageId === 'letter'
-    ? { width: 816, height: 1056 }
-    : { width: 794, height: 1123 };
+  const ds = { ...DEFAULT_DESIGN, ...(designSettings || {}) };
+  const ss = { ...DEFAULT_SPACING, ...(resume?.spacing_settings || {}) };
+
+  const pageId = ds.pageSize || 'a4';
+  const page   = pageId === 'letter' ? { width: 816, height: 1056 } : { width: 794, height: 1123 };
 
   const updateScale = useCallback(() => {
     if (scale !== null || !containerRef.current) return;
@@ -543,42 +904,23 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
   }, [updateScale]);
 
   const s = scale !== null ? scale : computedScale;
-  const spacingSettings = resume?.spacing_settings || {};
 
-  // Footer
-  const fs = resume?.footer_settings;
+  const templateId = ds.template || 'modern';
+  const TemplateComp = TEMPLATE_COMPONENTS[templateId] || TemplateModern;
+
   const pi = resume?.personal_info || {};
+  const fs = resume?.footer_settings;
   const hasFooter = fs && (fs.pageNumbers || (fs.email && pi.email) || (fs.name && pi.name));
 
   return (
     <div ref={containerRef} className={`overflow-auto ${className}`} style={{ background: '#e5e7eb' }}>
       <div style={{ padding: 8 }}>
-        <div
-          style={{
-            width: page.width,
-            minHeight: page.height,
-            transformOrigin: 'top left',
-            transform: `scale(${s})`,
-            boxShadow: '0 1px 8px rgba(0,0,0,0.18)',
-            background: '#fff',
-            marginBottom: `${(s - 1) * page.height}px`,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
+        <div style={{ width: page.width, minHeight: page.height, transformOrigin: 'top left', transform: `scale(${s})`, boxShadow: '0 1px 8px rgba(0,0,0,0.18)', background: '#fff', marginBottom: `${(s - 1) * page.height}px`, display: 'flex', flexDirection: 'column' }}>
           <div style={{ flex: 1 }}>
-            <FlexibleResume
-              resume={resume || {}}
-              designSettings={designSettings}
-              spacingSettings={spacingSettings}
-            />
+            <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
           </div>
           {hasFooter && (
-            <div style={{
-              borderTop: '1px solid #e0e0e0', padding: '6px 20px',
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              fontSize: '8pt', color: '#888', background: '#fff',
-            }}>
+            <div style={{ borderTop: '1px solid #e0e0e0', padding: '6px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8pt', color: '#888', background: '#fff' }}>
               <span>{[fs.name && pi.name, fs.email && pi.email].filter(Boolean).join(' · ')}</span>
               {fs.pageNumbers && <span>Page 1</span>}
             </div>
@@ -591,41 +933,41 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
 
 // ── TemplateThumbnail for gallery ─────────────────────────────────────────────
 
-export function TemplateThumbnail({ templateId, active = false, label, style: styleTag, plan }) {
-  const sampleResume = {
-    personal_info: { name: 'Alex Johnson', title: 'Senior Engineer', email: 'alex@example.com', phone: '+1 (555) 000-0000', location: 'New York, NY' },
-    sections: [
-      { id: 's1', type: 'summary', title: 'Summary', enabled: true, content: { text: 'Experienced professional with a passion for excellence.' } },
-      { id: 's2', type: 'work_experience', title: 'Work Experience', enabled: true, content: { entries: [{ title: 'Senior Engineer', employer: 'Tech Corp', dates: '2022 – Present', location: 'New York', bullets: ['Led core platform development', 'Improved performance by 40%'] }] } },
-      { id: 's3', type: 'education', title: 'Education', enabled: true, content: { entries: [{ school: 'State University', degree: 'B.S. Computer Science', dates: '2015 – 2019' }] } },
-      { id: 's4', type: 'skills', title: 'Skills', enabled: true, content: { entries: [{ name: 'JavaScript', level: 3 }, { name: 'React', level: 3 }, { name: 'Node.js', level: 2 }] } },
-    ],
-  };
+const THUMBNAIL_ACCENTS = {
+  'modern':         '#185FA5',
+  'atlantic-blue':  '#1F2A44',
+  'corporate':      '#0F172A',
+  'atlantic-crest': '#1F2A44',
+  'mercury-flow':   '#374151',
+  'steady-form':    '#1F2A44',
+  'executive':      '#0F172A',
+};
 
-  // Give each template a distinct accent so thumbnails look different
-  const accentMap = {
-    'corporate':     '#1a1a1a',
-    'silver-banner': '#2d4a6e',
-    'teal-sidebar':  '#1F6B6F',
-    'timeline':      '#2A8DC1',
-    'photo-sidebar': '#1F8A8E',
-  };
-  const accent = accentMap[templateId] || '#185FA5';
+const THUMBNAIL_RESUME = {
+  personal_info: { name: 'Alex Johnson', title: 'Senior Engineer', email: 'alex@example.com', phone: '+1 (555) 000-0000', location: 'New York, NY', link: 'linkedin.com/in/alex' },
+  sections: [
+    { id: 's1', type: 'summary',        title: 'Summary',         enabled: true, content: { text: 'Experienced professional with a passion for excellence and innovation across complex product environments.' } },
+    { id: 's2', type: 'work_experience',title: 'Work Experience',  enabled: true, content: { entries: [{ title: 'Senior Engineer', employer: 'Tech Corp', dates: '2022 – Present', location: 'New York', bullets: ['Led core platform development.', 'Improved performance by 40%.'] }, { title: 'Engineer', employer: 'Startup Co', dates: '2019 – 2022', location: 'Remote', bullets: ['Built key product features.'] }] } },
+    { id: 's3', type: 'education',       title: 'Education',       enabled: true, content: { entries: [{ school: 'State University', degree: 'B.S. Computer Science', dates: '2015 – 2019', location: 'Boston, MA' }] } },
+    { id: 's4', type: 'skills',          title: 'Skills',          enabled: true, content: { entries: [{ name: 'JavaScript', level: 3 }, { name: 'React', level: 3 }, { name: 'Node.js', level: 2 }, { name: 'Python', level: 2 }] } },
+    { id: 's5', type: 'languages',       title: 'Languages',       enabled: true, content: { entries: [{ name: 'English', level: 'Native' }, { name: 'Spanish', level: 'Fluent' }] } },
+  ],
+};
+
+export function TemplateThumbnail({ templateId, active = false, label, style: styleTag, plan }) {
+  const accent = THUMBNAIL_ACCENTS[templateId] || '#185FA5';
+  const TemplateComp = TEMPLATE_COMPONENTS[templateId] || TemplateModern;
+  const ds = { ...DEFAULT_DESIGN, accentColor: accent, template: templateId, accentTargets: { name: true, headings: true, headingsLine: true, jobTitle: true, headerIcons: true, dotsBarsBubbles: true } };
+  const ss = DEFAULT_SPACING;
 
   return (
     <div className={`relative rounded overflow-hidden border-2 transition-all cursor-pointer ${active ? 'border-primary shadow-md' : 'border-ds-border hover:border-primary/50'}`}>
       {active && (
-        <div className="absolute top-1.5 left-1.5 z-10 bg-primary text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase">
-          Active
-        </div>
+        <div className="absolute top-1.5 left-1.5 z-10 bg-primary text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase">Active</div>
       )}
       <div style={{ height: 140, overflow: 'hidden', pointerEvents: 'none' }}>
         <div style={{ width: 794, transformOrigin: 'top left', transform: 'scale(0.168)' }}>
-          <FlexibleResume
-            resume={sampleResume}
-            designSettings={{ accentColor: accent, accentTargets: { name: true, headings: true, headingsLine: true, jobTitle: true }, detailsArrangement: 2 }}
-            spacingSettings={{}}
-          />
+          <TemplateComp resume={THUMBNAIL_RESUME} ds={ds} ss={ss} />
         </div>
       </div>
       <div className="bg-ds-card px-2 py-1.5 border-t border-ds-border">
