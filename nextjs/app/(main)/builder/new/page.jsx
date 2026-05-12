@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { createBuilderResume, createBuilderSection, importResumeFile } from '@/lib/builderApi';
@@ -9,6 +9,10 @@ import { TemplateThumbnail } from '@/components/builder/ResumePreview.jsx';
 const DEFAULT_SECTIONS = ['summary', 'work_experience', 'education', 'skills'];
 
 export default function NewResumePage() {
+  return <Suspense><NewResumePageInner /></Suspense>;
+}
+
+function NewResumePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const startWithUpload = searchParams.get('upload') === '1';
