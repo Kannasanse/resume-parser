@@ -47,50 +47,65 @@ function SavePill({ state }) {
 // ── Personal info card ────────────────────────────────────────────────────────
 
 function PersonalInfoCard({ info, onChange }) {
+  const [open, setOpen] = useState(true);
   const set = (k, v) => onChange({ ...info, [k]: v });
-  const Field = ({ label, k, placeholder, type = 'text', span2 = false }) => (
-    <div className={span2 ? 'col-span-2' : ''}>
-      <label className="block text-xs font-semibold text-ds-textMuted mb-1">{label}</label>
+
+  const Field = ({ label, k, placeholder, type = 'text' }) => (
+    <div>
+      <label className="block text-[11px] font-medium text-ds-textMuted mb-1">{label}</label>
       <input
         defaultValue={info[k] || ''}
         onBlur={(e) => set(k, e.target.value.replace(/<[^>]*>/g, ''))}
         placeholder={placeholder}
         type={type}
-        className="w-full px-2.5 py-1.5 text-sm border border-ds-inputBorder rounded-md bg-white text-ds-text placeholder:text-ds-textMuted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+        className="w-full px-2.5 py-[7px] text-[13px] border border-ds-inputBorder rounded-md bg-white text-ds-text placeholder:text-ds-textMuted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
       />
     </div>
   );
 
   return (
-    <div className="mb-3.5 rounded-lg border border-ds-border overflow-hidden shadow-sm">
-      <div className="flex items-center gap-2.5 px-3.5 py-3 bg-ds-card border-b border-ds-border">
-        <div className="w-8 h-8 rounded-md flex-shrink-0 flex items-center justify-center bg-primary/10 text-primary">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <div className="border-b border-ds-border">
+      {/* Header */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-2.5 px-[18px] py-[11px] text-left hover:bg-ds-bg/40 transition-colors"
+      >
+        <span className="flex-shrink-0 text-ds-textMuted">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
           </svg>
+        </span>
+        <span className="flex-1 text-[13px] font-semibold text-ds-text">Personal Details</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          className="flex-shrink-0 text-ds-textMuted"
+          style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+
+      {/* Body */}
+      {open && (
+        <div className="px-[18px] pb-4 grid grid-cols-2 gap-x-3 gap-y-3 bg-white">
+          <Field label="Full name" k="name" placeholder="Jane Smith" />
+          <Field label="Job title" k="title" placeholder="Software Engineer" />
+          <Field label="Email" k="email" placeholder="jane@example.com" type="email" />
+          <Field label="Phone" k="phone" placeholder="+1 (555) 000-0000" />
+          <Field label="Location" k="location" placeholder="New York, NY" />
+          <Field label="Website" k="website" placeholder="janesmith.com" />
+          <Field label="LinkedIn" k="linkedin" placeholder="linkedin.com/in/jane" />
+          <Field label="GitHub" k="github" placeholder="github.com/jane" />
+          <div className="col-span-2">
+            <label className="block text-[11px] font-medium text-ds-textMuted mb-1">Summary</label>
+            <textarea
+              defaultValue={info.summary || ''}
+              onBlur={(e) => set('summary', e.target.value.replace(/<[^>]*>/g, ''))}
+              placeholder="Brief professional summary…"
+              rows={3}
+              className="w-full px-2.5 py-[7px] text-[13px] border border-ds-inputBorder rounded-md bg-white text-ds-text placeholder:text-ds-textMuted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors resize-y"
+            />
+          </div>
         </div>
-        <span className="text-sm font-semibold text-ds-text">Personal details</span>
-      </div>
-      <div className="p-4 grid grid-cols-2 gap-x-3 gap-y-3 bg-white">
-        <Field label="Full name" k="name" placeholder="Jane Smith" />
-        <Field label="Job title" k="title" placeholder="Software Engineer" />
-        <Field label="Email" k="email" placeholder="jane@example.com" type="email" />
-        <Field label="Phone" k="phone" placeholder="+1 (555) 000-0000" />
-        <Field label="Location" k="location" placeholder="New York, NY" />
-        <Field label="Website" k="website" placeholder="janesmith.com" />
-        <Field label="LinkedIn" k="linkedin" placeholder="linkedin.com/in/jane" />
-        <Field label="GitHub" k="github" placeholder="github.com/jane" />
-        <div className="col-span-2">
-          <label className="block text-xs font-semibold text-ds-textMuted mb-1">Profile Summary</label>
-          <textarea
-            defaultValue={info.summary || ''}
-            onBlur={(e) => set('summary', e.target.value.replace(/<[^>]*>/g, ''))}
-            placeholder="Brief professional summary…"
-            rows={3}
-            className="w-full px-2.5 py-1.5 text-sm border border-ds-inputBorder rounded-md bg-white text-ds-text placeholder:text-ds-textMuted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors resize-y"
-          />
-        </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -595,7 +610,7 @@ export default function BuilderEditor() {
           {/* Scrollable panel body */}
           <div className="flex-1 overflow-y-auto">
             {panelMode === 'content' ? (
-              <div className="px-[18px] py-4">
+              <div>
                 {/* Personal details */}
                 <PersonalInfoCard info={personalInfo} onChange={handlePersonalInfoChange} />
                 {/* Section list */}

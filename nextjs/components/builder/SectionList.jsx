@@ -2,95 +2,53 @@
 import { useState, useRef } from 'react';
 import { SECTION_TYPES } from './templates.js';
 
-// ── Section type icons ────────────────────────────────────────────────────────
+// ── Icons ─────────────────────────────────────────────────────────────────────
 
 const ICONS = {
-  summary: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-    </svg>
-  ),
-  work_experience: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
-    </svg>
-  ),
-  education: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
-    </svg>
-  ),
-  skills: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-    </svg>
-  ),
-  certifications: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
-    </svg>
-  ),
-  projects: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-    </svg>
-  ),
-  languages: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
-      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-    </svg>
-  ),
-  hobbies: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-    </svg>
-  ),
-  references: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-    </svg>
-  ),
-  custom: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-    </svg>
-  ),
+  summary: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+  work_experience: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>,
+  education: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>,
+  skills: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+  certifications: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>,
+  projects: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>,
+  languages: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
+  hobbies: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>,
+  references: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+  custom: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
 };
 
-function SectionTypeIcon({ type }) {
-  return (
-    <div className="w-8 h-8 rounded-md flex-shrink-0 flex items-center justify-center bg-primary/10 text-primary">
-      <div style={{ width: 16, height: 16 }}>{ICONS[type] || ICONS.custom}</div>
-    </div>
-  );
-}
-
-function DragHandle() {
+function GripIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" className="text-ds-border group-hover:text-ds-textMuted flex-shrink-0 cursor-grab active:cursor-grabbing transition-colors">
-      <circle cx="4" cy="3.5" r="1.2"/><circle cx="4" cy="7" r="1.2"/><circle cx="4" cy="10.5" r="1.2"/>
-      <circle cx="10" cy="3.5" r="1.2"/><circle cx="10" cy="7" r="1.2"/><circle cx="10" cy="10.5" r="1.2"/>
+      <circle cx="4" cy="3" r="1.2"/><circle cx="4" cy="7" r="1.2"/><circle cx="4" cy="11" r="1.2"/>
+      <circle cx="10" cy="3" r="1.2"/><circle cx="10" cy="7" r="1.2"/><circle cx="10" cy="11" r="1.2"/>
     </svg>
   );
 }
 
-function ChevronIcon({ open }) {
+function EyeOnIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-      className={`text-ds-textMuted flex-shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
-      <polyline points="6 9 12 15 18 9"/>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
     </svg>
   );
 }
 
-function getSectionMeta(sec) {
-  const isText = ['summary', 'hobbies', 'references'].includes(sec.type);
-  if (isText) return null;
-  const count = sec.content?.entries?.length ?? 0;
-  if (count === 0) return null;
-  return `${count} ${count === 1 ? 'entry' : 'entries'}`;
+function EyeOffIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+      <line x1="1" y1="1" x2="23" y2="23"/>
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+    </svg>
+  );
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -149,61 +107,68 @@ export default function SectionList({
       {sections.map((sec) => {
         const isActive = activeSectionId === sec.id;
         const isDragTarget = dragOver === sec.id;
-        const meta = getSectionMeta(sec);
 
         return (
           <div
             key={sec.id}
-            className={`mb-3.5 rounded-lg border overflow-hidden transition-all duration-150
-              ${isDragTarget ? 'border-t-2 border-t-primary' : ''}
-              ${isActive
-                ? 'border-primary/50 shadow-sm'
-                : 'border-ds-border hover:border-ds-textMuted/50 hover:shadow-sm'}
-              ${!sec.enabled ? 'opacity-50' : ''}
-            `}
+            className={`group border-b border-ds-border transition-all duration-150 ${isDragTarget ? 'border-t-2 border-t-primary' : ''}`}
           >
-            {/* Card header */}
+            {/* Section head */}
             <div
               draggable
               onDragStart={(e) => handleDragStart(e, sec.id)}
               onDragOver={(e) => handleDragOver(e, sec.id)}
               onDrop={(e) => handleDrop(e, sec.id)}
               onDragEnd={handleDragEnd}
-              className="group flex items-center gap-2.5 px-3.5 py-3 cursor-pointer select-none bg-ds-card"
-              onClick={() => onSelect(isActive ? null : sec.id)}
+              className="flex items-center gap-2.5 px-[18px] py-[11px] select-none bg-white hover:bg-ds-bg/40 transition-colors"
             >
-              <DragHandle />
-              <SectionTypeIcon type={sec.type} />
+              {/* Grip */}
+              <span className="flex-shrink-0"><GripIcon /></span>
 
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-ds-text truncate">{sec.title}</p>
-                {meta && <p className="text-xs text-ds-textMuted mt-0.5">{meta}</p>}
-              </div>
+              {/* Icon */}
+              <span className={`flex-shrink-0 w-[18px] h-[18px] ${!sec.enabled ? 'opacity-40' : 'text-ds-textMuted'}`} style={{ display: 'flex', alignItems: 'center' }}>
+                <span style={{ width: 16, height: 16 }}>{ICONS[sec.type] || ICONS.custom}</span>
+              </span>
 
-              {/* Hover actions */}
-              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={(e) => { e.stopPropagation(); onToggle(sec.id, !sec.enabled); }}
-                  title={sec.enabled ? 'Hide section' : 'Show section'}
-                  className="w-7 h-7 flex items-center justify-center rounded text-ds-textMuted hover:bg-ds-bg hover:text-ds-text transition-colors"
-                >
-                  {sec.enabled
-                    ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                  }
-                </button>
+              {/* Title */}
+              <span
+                className={`flex-1 min-w-0 text-[13px] font-semibold truncate cursor-pointer ${!sec.enabled ? 'opacity-40 text-ds-textMuted' : 'text-ds-text'}`}
+                onClick={() => onSelect(isActive ? null : sec.id)}
+              >
+                {sec.title}
+              </span>
+
+              {/* Right controls */}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {/* Delete — hover only */}
                 <button
                   onClick={(e) => { e.stopPropagation(); setDeleteConfirm(sec.id); }}
                   title="Remove section"
-                  className="w-7 h-7 flex items-center justify-center rounded text-ds-textMuted hover:bg-ds-dangerLight hover:text-ds-danger transition-colors"
+                  className="w-6 h-6 flex items-center justify-center rounded text-ds-textMuted opacity-0 group-hover:opacity-100 hover:text-ds-danger transition-all"
                 >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                  <TrashIcon />
+                </button>
+
+                {/* Eye toggle */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); onToggle(sec.id, !sec.enabled); }}
+                  title={sec.enabled ? 'Hide section' : 'Show section'}
+                  className="w-6 h-6 flex items-center justify-center rounded text-ds-textMuted hover:text-ds-text transition-colors"
+                >
+                  {sec.enabled ? <EyeOnIcon /> : <EyeOffIcon />}
+                </button>
+
+                {/* Chevron */}
+                <button
+                  onClick={() => onSelect(isActive ? null : sec.id)}
+                  className="w-6 h-6 flex items-center justify-center rounded text-ds-textMuted hover:text-ds-text transition-colors"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                    style={{ transform: isActive ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                    <polyline points="6 9 12 15 18 9"/>
                   </svg>
                 </button>
               </div>
-
-              <ChevronIcon open={isActive} />
             </div>
 
             {/* Inline editor */}
@@ -217,13 +182,13 @@ export default function SectionList({
       })}
 
       {/* Add section */}
-      <div className="mt-1">
+      <div className="px-[18px] py-4">
         {!showAddMenu ? (
           <button
             onClick={() => setShowAddMenu(true)}
-            className="w-full flex items-center justify-center gap-2 h-11 rounded-lg border border-dashed border-ds-textMuted/40 text-sm font-semibold text-primary hover:border-primary hover:bg-primary/5 transition-colors"
+            className="w-full flex items-center justify-center gap-2 h-10 rounded-lg bg-primary text-white text-[13px] font-semibold hover:bg-primary/90 transition-colors"
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
             Add section
@@ -231,7 +196,7 @@ export default function SectionList({
         ) : (
           <div className="rounded-lg border border-ds-border bg-ds-bg overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-ds-border">
-              <span className="text-sm font-semibold text-ds-text">Add a new section</span>
+              <span className="text-sm font-semibold text-ds-text">Add a section</span>
               <button
                 onClick={() => setShowAddMenu(false)}
                 className="w-6 h-6 flex items-center justify-center rounded text-ds-textMuted hover:text-ds-text hover:bg-ds-border/60 transition-colors"
