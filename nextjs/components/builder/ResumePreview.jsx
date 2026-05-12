@@ -1,6 +1,8 @@
 'use client';
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { resolveDesign, PAGE_SIZES } from './templates.js';
+import { Corporate, SilverBanner as SilverBannerDesign, TealSidebar as TealSidebarDesign, Timeline as TimelineDesign, PhotoSidebar as PhotoSidebarDesign } from './DesignTemplates.jsx';
+import { adaptResumeData } from './templateDataAdapter.js';
 
 // ── Shared rendering helpers ──────────────────────────────────────────────────
 
@@ -2083,26 +2085,27 @@ function PhotoSidebarTemplate({ resume, design }) {
 
 // ── Template registry ─────────────────────────────────────────────────────────
 
+// Adapter wrappers: convert resume+design props to the flat data format the design templates expect
+function makeDesignAdapter(DesignComp) {
+  return function DesignAdapter({ resume, design }) {
+    const data = adaptResumeData(resume);
+    const { theme, font, spacing, margins } = design;
+    return <DesignComp data={data} accent={theme?.primary} font={font} spacing={spacing} margins={margins} />;
+  };
+}
+
+const CorporateAdapter = makeDesignAdapter(Corporate);
+const SilverBannerAdapter = makeDesignAdapter(SilverBannerDesign);
+const TealSidebarAdapter = makeDesignAdapter(TealSidebarDesign);
+const TimelineAdapter = makeDesignAdapter(TimelineDesign);
+const PhotoSidebarAdapter = makeDesignAdapter(PhotoSidebarDesign);
+
 const TEMPLATE_COMPONENTS = {
-  'classic-professional': ClassicProfessional,
-  'modern-slate': ModernSlate,
-  'minimal-white': MinimalWhite,
-  'ats-clean': ATSClean,
-  'heritage': Heritage,
-  'beacon': Beacon,
-  'banded': Banded,
-  'foundry': Foundry,
-  'creative-edge': CreativeEdge,
-  'executive-navy': ExecutiveNavy,
-  'tech-stack': TechStack,
-  'soft-gradient': SoftGradient,
-  'bold-impact': BoldImpact,
-  'elegant-script': ElegantScript,
-  'corporate-serif': CorporateSerif,
-  'silver-banner': SilverBanner,
-  'teal-sidebar': TealSidebarTemplate,
-  'timeline': TimelineTemplate,
-  'photo-sidebar': PhotoSidebarTemplate,
+  'corporate': CorporateAdapter,
+  'silver-banner': SilverBannerAdapter,
+  'teal-sidebar': TealSidebarAdapter,
+  'timeline': TimelineAdapter,
+  'photo-sidebar': PhotoSidebarAdapter,
 };
 
 // ── ResumePreview component ───────────────────────────────────────────────────
@@ -2213,7 +2216,7 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
     },
   };
   const page = design.page;
-  const TemplateComp = TEMPLATE_COMPONENTS[resume?.template_id] || ClassicProfessional;
+  const TemplateComp = TEMPLATE_COMPONENTS[resume?.template_id] || CorporateAdapter;
 
   const updateScale = useCallback(() => {
     if (scale !== null || !containerRef.current) return;
@@ -2266,14 +2269,15 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
 
 // Small thumbnail for template gallery
 export function TemplateThumbnail({ templateId, active = false, label, style: styleTag, plan }) {
-  const TemplateComp = TEMPLATE_COMPONENTS[templateId];
+  const TemplateComp = TEMPLATE_COMPONENTS[templateId] || CorporateAdapter;
   const sampleResume = {
     template_id: templateId,
-    personal_info: { name: 'Alex Johnson', email: 'alex@example.com', phone: '+1 (555) 000-0000', location: 'New York, NY', summary: 'Experienced professional with a passion for excellence.' },
+    personal_info: { name: 'Alex Johnson', title: 'Senior Engineer', email: 'alex@example.com', phone: '+1 (555) 000-0000', location: 'New York, NY' },
     sections: [
-      { id: 's1', type: 'work_experience', title: 'Work Experience', enabled: true, content: { entries: [{ title: 'Senior Engineer', company: 'Tech Corp', start_date: '01/2022', end_date: '', current: true, description: 'Led development of core platform features.' }] } },
-      { id: 's2', type: 'education', title: 'Education', enabled: true, content: { entries: [{ institution: 'State University', degree: 'B.S. Computer Science', start_date: '09/2015', end_date: '05/2019' }] } },
-      { id: 's3', type: 'skills', title: 'Skills', enabled: true, content: { entries: [{ skill: 'JavaScript' }, { skill: 'React' }, { skill: 'Node.js' }] } },
+      { id: 's1', type: 'summary', title: 'Summary', enabled: true, content: { text: 'Experienced professional with a passion for excellence and innovation.' } },
+      { id: 's2', type: 'work_experience', title: 'Work Experience', enabled: true, content: { entries: [{ title: 'Senior Engineer', employer: 'Tech Corp', dates: '2022 – Present', location: 'New York, NY', bullets: ['Led core platform development', 'Improved performance by 40%'] }] } },
+      { id: 's3', type: 'education', title: 'Education', enabled: true, content: { entries: [{ school: 'State University', degree: 'B.S. Computer Science', dates: '2015 – 2019', location: 'Boston, MA' }] } },
+      { id: 's4', type: 'skills', title: 'Skills', enabled: true, content: { entries: [{ name: 'JavaScript', level: 3 }, { name: 'React', level: 3 }, { name: 'Node.js', level: 2 }] } },
     ],
   };
 
