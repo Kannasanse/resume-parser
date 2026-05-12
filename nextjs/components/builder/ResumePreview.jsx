@@ -905,7 +905,7 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
 
   const s = scale !== null ? scale : computedScale;
 
-  const templateId = ds.template || 'modern';
+  const templateId = resume?.template_id || ds.template || 'modern';
   const TemplateComp = TEMPLATE_COMPONENTS[templateId] || TemplateModern;
 
   const pi = resume?.personal_info || {};
