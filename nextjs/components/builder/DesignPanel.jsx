@@ -241,6 +241,7 @@ export default function DesignPanel({
   personalInfo,
   sections,
   onSectionDisplayChange,
+  activeTab = 'design', // 'design' | 'spacing' | 'sections' — controlled by parent
 }) {
   const d = design || {};
   const fs = footerSettings || { pageNumbers: false, email: false, name: false };
@@ -252,167 +253,288 @@ export default function DesignPanel({
   const setSs = (key, val) => onSpacingChange({ ...ss, [key]: val });
   const setLs = (key, val) => onLayoutChange({ ...ls, [key]: val });
 
-  // Missing data warnings for footer
   const noEmail = fs.email && !personalInfo?.email;
   const noName = fs.name && !personalInfo?.name;
 
-  // Sections available for column assignment
   const enabledSections = (sections || []).filter(s => s.enabled !== false);
   const skillsSec = enabledSections.find(s => s.type === 'skills');
   const eduSec = enabledSections.find(s => s.type === 'education');
   const workSec = enabledSections.find(s => s.type === 'work_experience');
 
-  return (
-    <div className="p-4 space-y-6 overflow-y-auto">
+  // ── DESIGN TAB ──────────────────────────────────────────────────────────────
+  // ── SECTIONS TAB ────────────────────────────────────────────────────────────
+  if (activeTab === 'sections') {
+    const skillsDs = skillsSec?.display_settings || {};
+    const skillsLayout = skillsDs.layout || skillsDs.skillsStyle || 'rows';
+    const hasLevels = (skillsSec?.content?.entries || []).some(e => e.proficiency);
+    const setSkillsDs = (patch) => skillsSec && onSectionDisplayChange(skillsSec.id, { ...skillsDs, ...patch, skillsStyle: patch.layout || skillsLayout });
 
-      {/* ── Skills ── */}
-      {onSectionDisplayChange && skillsSec && (() => {
-        const ds = skillsSec.display_settings || {};
-        const layout = ds.layout || ds.skillsStyle || 'rows';
-        const hasLevels = (skillsSec.content?.entries || []).some(e => e.proficiency);
+    return (
+      <div className="p-4 space-y-6">
 
-        const setDs = (patch) => onSectionDisplayChange(skillsSec.id, { ...ds, ...patch, skillsStyle: patch.layout || layout });
-
-        const LAYOUT_OPTS = [
-          { value: 'rows', label: 'Rows' },
-          { value: 'grid', label: 'Grid' },
-          { value: 'compact', label: 'Compact' },
-          { value: 'bubble', label: 'Bubble' },
-          { value: 'level', label: 'Level' },
-        ];
-
-        const ColIcon = ({ n }) => (
-          <div className="flex items-end gap-0.5 h-4">
-            {Array.from({ length: n }).map((_, i) => (
-              <div key={i} className="flex-1 bg-current rounded-sm" style={{ height: `${60 + i * 10}%` }} />
-            ))}
-          </div>
-        );
-
-        return (
+        {/* Skills layout */}
+        {onSectionDisplayChange && skillsSec && (
           <div>
             <SectionHeader title="Skills" />
             <div className="space-y-3">
-              {/* Layout mode toggle */}
               <div>
                 <p className="text-xs text-ds-textMuted mb-1.5">Layout</p>
                 <div className="grid grid-cols-3 gap-1">
-                  {LAYOUT_OPTS.map(o => (
-                    <button
-                      key={o.value}
-                      onClick={() => setDs({ layout: o.value })}
-                      className={`py-1.5 text-xs font-medium rounded border transition-colors
-                        ${layout === o.value ? 'bg-primary text-white border-primary' : 'border-ds-border text-ds-text hover:bg-ds-bg'}`}
-                    >
+                  {[
+                    { value: 'rows', label: 'Rows' },
+                    { value: 'grid', label: 'Grid' },
+                    { value: 'compact', label: 'Compact' },
+                    { value: 'bubble', label: 'Bubble' },
+                    { value: 'level', label: 'Level' },
+                  ].map(o => (
+                    <button key={o.value} onClick={() => setSkillsDs({ layout: o.value })}
+                      className={`py-1.5 text-xs font-medium rounded border transition-colors ${skillsLayout === o.value ? 'bg-primary text-white border-primary' : 'border-ds-border text-ds-text hover:bg-ds-bg'}`}>
                       {o.label}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Grid sub-options */}
-              {layout === 'grid' && (
+              {skillsLayout === 'grid' && (
                 <div>
                   <p className="text-xs text-ds-textMuted mb-1.5">Columns</p>
                   <div className="flex gap-2">
                     {[1, 2, 3, 4].map(n => (
-                      <button
-                        key={n}
-                        onClick={() => setDs({ columns: n })}
-                        title={`${n} column${n > 1 ? 's' : ''}`}
-                        className={`flex-1 flex flex-col items-center py-2 rounded border transition-colors gap-1
-                          ${(ds.columns || 3) === n ? 'border-primary text-primary bg-primary/5' : 'border-ds-border text-ds-textMuted hover:bg-ds-bg'}`}
-                      >
-                        <ColIcon n={n} />
-                        <span className="text-[10px]">{n}</span>
+                      <button key={n} onClick={() => setSkillsDs({ columns: n })}
+                        className={`flex-1 py-1.5 text-xs font-medium rounded border transition-colors ${(skillsDs.columns || 3) === n ? 'border-primary text-primary bg-primary/5' : 'border-ds-border text-ds-textMuted hover:bg-ds-bg'}`}>
+                        {n}
                       </button>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Rows sub-options */}
-              {layout === 'rows' && (
+              {(skillsLayout === 'rows' || skillsLayout === 'compact' || skillsLayout === 'bubble') && (
+                <div>
+                  <p className="text-xs text-ds-textMuted mb-1">Category separator</p>
+                  <Segmented
+                    options={[{ value: 'colon', label: ': Colon' }, { value: 'dash', label: '– Dash' }, { value: 'bracket', label: '() Bracket' }]}
+                    value={skillsDs.subinfoStyle || 'colon'}
+                    onChange={v => setSkillsDs({ subinfoStyle: v })}
+                  />
+                </div>
+              )}
+
+              {skillsLayout === 'rows' && (
                 <div className="space-y-2">
                   <div>
                     <p className="text-xs text-ds-textMuted mb-1">Row spacing</p>
                     <Segmented
                       options={[{ value: 'tight', label: 'Tight' }, { value: 'spacious', label: 'Spacious' }]}
-                      value={ds.rowSpacing || 'tight'}
-                      onChange={v => setDs({ rowSpacing: v })}
+                      value={skillsDs.rowSpacing || 'tight'}
+                      onChange={v => setSkillsDs({ rowSpacing: v })}
                     />
                   </div>
                   <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={!!ds.startWithBullets}
-                      onChange={e => setDs({ startWithBullets: e.target.checked })}
-                      className="w-3.5 h-3.5 accent-primary rounded"
-                    />
+                    <input type="checkbox" checked={!!skillsDs.startWithBullets}
+                      onChange={e => setSkillsDs({ startWithBullets: e.target.checked })}
+                      className="w-3.5 h-3.5 accent-primary rounded" />
                     <span className="text-xs text-ds-text">Start rows with bullets</span>
                   </label>
-                  <div>
-                    <p className="text-xs text-ds-textMuted mb-1">Category separator</p>
-                    <Segmented
-                      options={[{ value: 'colon', label: ': Colon' }, { value: 'dash', label: '– Dash' }, { value: 'bracket', label: '() Bracket' }]}
-                      value={ds.subinfoStyle || 'colon'}
-                      onChange={v => setDs({ subinfoStyle: v })}
-                    />
-                  </div>
                 </div>
               )}
 
-              {/* Compact sub-options */}
-              {layout === 'compact' && (
-                <div>
-                  <p className="text-xs text-ds-textMuted mb-1">Category separator</p>
-                  <Segmented
-                    options={[{ value: 'colon', label: ': Colon' }, { value: 'dash', label: '– Dash' }, { value: 'bracket', label: '() Bracket' }]}
-                    value={ds.subinfoStyle || 'colon'}
-                    onChange={v => setDs({ subinfoStyle: v })}
-                  />
-                </div>
-              )}
-
-              {/* Bubble sub-options */}
-              {layout === 'bubble' && (
-                <div>
-                  <p className="text-xs text-ds-textMuted mb-1">Category separator</p>
-                  <Segmented
-                    options={[{ value: 'colon', label: ': Colon' }, { value: 'dash', label: '– Dash' }, { value: 'bracket', label: '() Bracket' }]}
-                    value={ds.subinfoStyle || 'colon'}
-                    onChange={v => setDs({ subinfoStyle: v })}
-                  />
-                </div>
-              )}
-
-              {/* Level sub-options */}
-              {layout === 'level' && (
+              {skillsLayout === 'level' && (
                 <div className="space-y-2">
                   <div>
                     <p className="text-xs text-ds-textMuted mb-1">Indicator style</p>
                     <Segmented
                       options={[{ value: 'text', label: 'Text' }, { value: 'dots', label: 'Dots' }, { value: 'bar', label: 'Bar' }]}
-                      value={ds.levelStyle || 'dots'}
-                      onChange={v => setDs({ levelStyle: v })}
+                      value={skillsDs.levelStyle || 'dots'}
+                      onChange={v => setSkillsDs({ levelStyle: v })}
                     />
                   </div>
                   {!hasLevels && (
-                    <div className="flex gap-2 p-2.5 rounded bg-blue-50 border border-blue-200">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-shrink-0">
-                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                      </svg>
-                      <p className="text-xs text-blue-700">None of your skills have a level yet. Add a level to a skill to make this style visible.</p>
-                    </div>
+                    <p className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded p-2">None of your skills have a level yet. Add one to a skill to use this style.</p>
                   )}
                 </div>
               )}
             </div>
           </div>
-        );
-      })()}
+        )}
 
-      {/* ── Header Layout ── */}
+        {/* Column layout */}
+        {onLayoutChange && (
+          <div>
+            <SectionHeader title="Layout" />
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs text-ds-textMuted mb-1.5">Column layout</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'one', label: 'One Column', icon: <div className="w-full h-8 border border-current rounded flex items-center justify-center"><div className="w-3/4 h-1 bg-current rounded opacity-40" /></div> },
+                    { id: 'two', label: 'Two Column', icon: <div className="w-full h-8 border border-current rounded flex gap-0.5 p-0.5"><div className="flex-1 bg-current rounded opacity-20" /><div className="flex-1 bg-current rounded opacity-20" /></div> },
+                    { id: 'mix', label: 'Mix', icon: <div className="w-full h-8 border border-current rounded flex flex-col gap-0.5 p-0.5"><div className="flex-1 bg-current rounded opacity-20 w-full" /><div className="flex gap-0.5 flex-1"><div className="flex-1 bg-current rounded opacity-20" /><div className="flex-1 bg-current rounded opacity-20" /></div></div> },
+                  ].map(opt => (
+                    <button key={opt.id} onClick={() => setLs('columnLayout', opt.id)}
+                      className={`flex flex-col items-center gap-1 p-2 rounded border text-[10px] font-medium transition-colors ${(ls.columnLayout || 'one') === opt.id ? 'border-primary text-primary bg-primary/5' : 'border-ds-border text-ds-textMuted hover:bg-ds-bg'}`}>
+                      {opt.icon}{opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {ls.columnLayout === 'two' && enabledSections.length > 0 && (
+                <div>
+                  <p className="text-xs text-ds-textMuted mb-1.5">Assign sections to columns</p>
+                  <div className="space-y-1">
+                    {enabledSections.map(sec => {
+                      const col = ls.sectionColumns?.[sec.id] || 'left';
+                      return (
+                        <div key={sec.id} className="flex items-center justify-between text-xs">
+                          <span className="text-ds-text truncate flex-1 mr-2">{sec.title}</span>
+                          <div className="flex rounded border border-ds-border overflow-hidden flex-shrink-0">
+                            {['left', 'right'].map(side => (
+                              <button key={side} onClick={() => setLs('sectionColumns', { ...ls.sectionColumns, [sec.id]: side })}
+                                className={`px-2 py-1 capitalize transition-colors ${col === side ? 'bg-primary text-white' : 'text-ds-text hover:bg-ds-bg'}`}>
+                                {side}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {ls.columnLayout === 'mix' && enabledSections.length > 0 && (
+                <div>
+                  <p className="text-xs text-ds-textMuted mb-1.5">Section width</p>
+                  <div className="space-y-1">
+                    {enabledSections.map(sec => {
+                      const width = ls.sectionColumns?.[sec.id] || 'full';
+                      return (
+                        <div key={sec.id} className="flex items-center justify-between text-xs">
+                          <span className="text-ds-text truncate flex-1 mr-2">{sec.title}</span>
+                          <div className="flex rounded border border-ds-border overflow-hidden flex-shrink-0">
+                            {[{ v: 'full', l: '1-col' }, { v: 'half', l: '2-col' }].map(({ v, l }) => (
+                              <button key={v} onClick={() => setLs('sectionColumns', { ...ls.sectionColumns, [sec.id]: v })}
+                                className={`px-2 py-1 transition-colors ${width === v ? 'bg-primary text-white' : 'text-ds-text hover:bg-ds-bg'}`}>
+                                {l}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <p className="text-xs text-ds-textMuted mb-1.5">Section title size</p>
+                <Segmented options={[{ value: 'small', label: 'Small' }, { value: 'medium', label: 'Medium' }, { value: 'large', label: 'Large' }]}
+                  value={ls.titleSize || 'medium'} onChange={v => setLs('titleSize', v)} />
+              </div>
+              <div>
+                <p className="text-xs text-ds-textMuted mb-1.5">Subtitle size</p>
+                <Segmented options={[{ value: 'small', label: 'Small' }, { value: 'medium', label: 'Medium' }, { value: 'large', label: 'Large' }]}
+                  value={ls.subtitleSize || 'medium'} onChange={v => setLs('subtitleSize', v)} />
+                {(({ small: 0, medium: 1, large: 2 })[ls.subtitleSize || 'medium'] > ({ small: 0, medium: 1, large: 2 })[ls.titleSize || 'medium']) && (
+                  <p className="text-xs text-amber-600 mt-1">Subtitle size is larger than title size.</p>
+                )}
+              </div>
+              <div>
+                <p className="text-xs text-ds-textMuted mb-1.5">List style</p>
+                <Segmented options={[{ value: 'bullet', label: '• Bullet' }, { value: 'hyphen', label: '– Hyphen' }]}
+                  value={ls.listStyle || 'bullet'} onChange={v => setLs('listStyle', v)} />
+              </div>
+              <div>
+                <p className="text-xs text-ds-textMuted mb-1.5">Heading icon</p>
+                <Segmented options={[{ value: 'none', label: 'None' }, { value: 'outline', label: 'Outline' }, { value: 'filled', label: 'Filled' }]}
+                  value={ls.headingIcon || 'none'} onChange={v => setLs('headingIcon', v)} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Section Order */}
+        {onSectionDisplayChange && (eduSec || workSec) && (
+          <div>
+            <SectionHeader title="Section Order" />
+            <div className="space-y-3">
+              {eduSec && (
+                <div>
+                  <p className="text-xs text-ds-textMuted mb-1.5">Education order</p>
+                  <Segmented
+                    options={[{ value: 'school-first', label: 'School → Degree' }, { value: 'degree-first', label: 'Degree → School' }]}
+                    value={eduSec.display_settings?.eduOrder || 'school-first'}
+                    onChange={v => onSectionDisplayChange(eduSec.id, { ...eduSec.display_settings, eduOrder: v })}
+                  />
+                </div>
+              )}
+              {workSec && (
+                <div>
+                  <p className="text-xs text-ds-textMuted mb-1.5">Work experience order</p>
+                  <Segmented
+                    options={[{ value: 'title-first', label: 'Title → Employer' }, { value: 'employer-first', label: 'Employer → Title' }]}
+                    value={workSec.display_settings?.workOrder || 'title-first'}
+                    onChange={v => onSectionDisplayChange(workSec.id, { ...workSec.display_settings, workOrder: v })}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── SPACING TAB ──────────────────────────────────────────────────────────────
+  if (activeTab === 'spacing') return (
+    <div className="p-4 space-y-6">
+      <div>
+        <SectionHeader title="Typography" />
+        <div className="space-y-4">
+          <Stepper label="Font size" value={ss.fontSize} min={9} max={14} step={0.5} unit="pt" onChange={v => setSs('fontSize', v)} />
+          <Stepper label="Line height" value={ss.lineHeight} min={1.00} max={1.8} step={0.01} unit="" onChange={v => setSs('lineHeight', v)} />
+        </div>
+      </div>
+      <div>
+        <SectionHeader title="Margins" />
+        <div className="space-y-4">
+          <Stepper label="Left & right" value={ss.leftRightMargin ?? ss.marginLeft ?? 15} min={5} max={30} step={1} unit="mm"
+            onChange={v => onSpacingChange({ ...ss, leftRightMargin: v, marginLeft: v, marginRight: v })} />
+          <Stepper label="Top & bottom" value={ss.topBottomMargin ?? ss.marginTop ?? 15} min={5} max={30} step={1} unit="mm"
+            onChange={v => onSpacingChange({ ...ss, topBottomMargin: v, marginTop: v, marginBottom: v })} />
+          <Stepper label="Entry spacing" value={ss.entrySpacing} min={0} max={10} step={1} unit="ln" onChange={v => setSs('entrySpacing', Math.round(v))} />
+        </div>
+      </div>
+      {onFooterChange && (
+        <div>
+          <SectionHeader title="Footer" />
+          <div className="space-y-2">
+            {[{ key: 'pageNumbers', label: 'Page Numbers' }, { key: 'email', label: 'Email' }, { key: 'name', label: 'Name' }].map(({ key, label }) => (
+              <label key={key} className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input type="checkbox" checked={!!fs[key]} onChange={e => setFs(key, e.target.checked)} className="w-4 h-4 accent-primary rounded" />
+                <span className="text-sm text-ds-text">{label}</span>
+              </label>
+            ))}
+            {noEmail && <p className="text-xs text-amber-600 mt-1">No email address found in your personal details.</p>}
+            {noName && <p className="text-xs text-amber-600 mt-1">No name found in your personal details.</p>}
+          </div>
+        </div>
+      )}
+      <button
+        onClick={() => onSpacingChange({ fontSize: 11, lineHeight: 1.15, leftRightMargin: 15, topBottomMargin: 15, marginTop: 15, marginBottom: 15, marginLeft: 15, marginRight: 15, entrySpacing: 2 })}
+        className="text-xs text-ds-textMuted hover:text-ds-text underline transition-colors"
+      >
+        Reset spacing to defaults
+      </button>
+    </div>
+  );
+
+  // ── DESIGN TAB (default) ─────────────────────────────────────────────────────
+  return (
+    <div className="p-4 space-y-6">
+
+      {/* Header Layout */}
       <div>
         <SectionHeader title="Header Layout" />
         <div className="space-y-3">
@@ -428,31 +550,14 @@ export default function DesignPanel({
             <p className="text-xs text-ds-textMuted mb-1.5">Details arrangement</p>
             <div className="flex gap-2">
               {[
-                { v: 1, icon: (
-                  <div className="w-full h-5 flex items-center gap-0.5">
-                    {[1,2,3].map(i => <div key={i} className="flex-1 h-1.5 bg-current rounded opacity-50" />)}
-                  </div>
-                )},
-                { v: 2, icon: (
-                  <div className="w-full space-y-0.5">
-                    <div className="flex gap-0.5">{[1,2].map(i => <div key={i} className="flex-1 h-1.5 bg-current rounded opacity-50"/>)}</div>
-                    <div className="flex gap-0.5">{[1,2].map(i => <div key={i} className="flex-1 h-1.5 bg-current rounded opacity-50"/>)}</div>
-                  </div>
-                )},
-                { v: 3, icon: (
-                  <div className="w-full space-y-0.5">
-                    {[1,2,3].map(i => <div key={i} className="h-1.5 bg-current rounded opacity-50"/>)}
-                  </div>
-                )},
-              ].map(({ v, icon }) => (
-                <button
-                  key={v}
-                  onClick={() => set('detailsArrangement', v)}
-                  className={`flex-1 flex flex-col items-center py-2 px-2 rounded border transition-colors gap-1
-                    ${(d.detailsArrangement || 1) === v ? 'border-primary text-primary bg-primary/5' : 'border-ds-border text-ds-textMuted hover:bg-ds-bg'}`}
-                >
+                { v: 1, label: '1-row', icon: <div className="w-full h-5 flex items-center gap-0.5">{[1,2,3].map(i => <div key={i} className="flex-1 h-1.5 bg-current rounded opacity-50" />)}</div> },
+                { v: 2, label: '2-row', icon: <div className="w-full space-y-0.5"><div className="flex gap-0.5">{[1,2].map(i => <div key={i} className="flex-1 h-1.5 bg-current rounded opacity-50"/>)}</div><div className="flex gap-0.5">{[1,2].map(i => <div key={i} className="flex-1 h-1.5 bg-current rounded opacity-50"/>)}</div></div> },
+                { v: 3, label: 'Stack', icon: <div className="w-full space-y-0.5">{[1,2,3].map(i => <div key={i} className="h-1.5 bg-current rounded opacity-50"/>)}</div> },
+              ].map(({ v, label, icon }) => (
+                <button key={v} onClick={() => set('detailsArrangement', v)}
+                  className={`flex-1 flex flex-col items-center py-2 px-2 rounded border transition-colors gap-1 ${(d.detailsArrangement || 1) === v ? 'border-primary text-primary bg-primary/5' : 'border-ds-border text-ds-textMuted hover:bg-ds-bg'}`}>
                   {icon}
-                  <span className="text-[10px]">{v === 1 ? '1-row' : v === 2 ? '2-row' : 'Stack'}</span>
+                  <span className="text-[10px]">{label}</span>
                 </button>
               ))}
             </div>
@@ -467,14 +572,10 @@ export default function DesignPanel({
           </div>
           <div>
             <p className="text-xs text-ds-textMuted mb-1.5">Icon style</p>
-            <div className={`flex gap-1 ${(d.detailsSeparator || 'icon') !== 'icon' ? 'opacity-40 pointer-events-none' : ''}`} title={(d.detailsSeparator || 'icon') !== 'icon' ? 'Only available when separator is set to Icon' : ''}>
+            <div className={`flex gap-1 ${(d.detailsSeparator || 'icon') !== 'icon' ? 'opacity-40 pointer-events-none' : ''}`}>
               {[1,2,3,4,5,6,7].map(n => (
-                <button
-                  key={n}
-                  onClick={() => set('headerIconStyle', n)}
-                  className={`flex-1 py-1.5 text-xs font-medium rounded border transition-colors
-                    ${(d.headerIconStyle || 1) === n ? 'bg-primary text-white border-primary' : 'border-ds-border text-ds-text hover:bg-ds-bg'}`}
-                >
+                <button key={n} onClick={() => set('headerIconStyle', n)}
+                  className={`flex-1 py-1.5 text-xs font-medium rounded border transition-colors ${(d.headerIconStyle || 1) === n ? 'bg-primary text-white border-primary' : 'border-ds-border text-ds-text hover:bg-ds-bg'}`}>
                   {n}
                 </button>
               ))}
@@ -483,304 +584,48 @@ export default function DesignPanel({
         </div>
       </div>
 
-      {/* ── Colors ── */}
+      {/* Colors */}
       <ColorsSection design={d} onChange={onChange} />
 
-      {/* ── Spacing ── */}
-      {onSpacingChange && (
-        <div>
-          <SectionHeader title="Spacing" />
-          <div className="space-y-4">
-            <Stepper label="Font size" value={ss.fontSize} min={9} max={14} step={0.5} unit="pt" onChange={v => setSs('fontSize', v)} />
-            <Stepper label="Line height" value={ss.lineHeight} min={1.00} max={1.16} step={0.01} unit="" onChange={v => setSs('lineHeight', v)} />
-            <Stepper
-              label="Left & right margin"
-              value={ss.leftRightMargin ?? ss.marginLeft ?? 15}
-              min={10} max={25} step={1} unit="mm"
-              onChange={v => onSpacingChange({ ...ss, leftRightMargin: v, marginLeft: v, marginRight: v })}
-            />
-            <Stepper
-              label="Top & bottom margin"
-              value={ss.topBottomMargin ?? ss.marginTop ?? 15}
-              min={10} max={25} step={1} unit="mm"
-              onChange={v => onSpacingChange({ ...ss, topBottomMargin: v, marginTop: v, marginBottom: v })}
-            />
-            <Stepper label="Entry spacing" value={ss.entrySpacing} min={0} max={10} step={1} unit="ln" onChange={v => setSs('entrySpacing', Math.round(v))} />
-          </div>
-          <button
-            onClick={() => onSpacingChange({ fontSize: 11, lineHeight: 1.15, leftRightMargin: 15, topBottomMargin: 15, marginTop: 15, marginBottom: 15, marginLeft: 15, marginRight: 15, entrySpacing: 2 })}
-            className="mt-3 text-xs text-ds-textMuted hover:text-ds-text underline transition-colors"
-          >
-            Reset spacing to defaults
-          </button>
-        </div>
-      )}
-
-      {/* ── Footer ── */}
-      {onFooterChange && (
-        <div>
-          <SectionHeader title="Footer" />
-          <div className="space-y-2">
-            {[
-              { key: 'pageNumbers', label: 'Page Numbers' },
-              { key: 'email', label: 'Email' },
-              { key: 'name', label: 'Name' },
-            ].map(({ key, label }) => (
-              <label key={key} className="flex items-center gap-2.5 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={!!fs[key]}
-                  onChange={e => setFs(key, e.target.checked)}
-                  className="w-4 h-4 accent-primary rounded"
-                />
-                <span className="text-sm text-ds-text">{label}</span>
-              </label>
-            ))}
-            {noEmail && (
-              <p className="text-xs text-amber-600 mt-1">No email address found. Please add one to your contact details.</p>
-            )}
-            {noName && (
-              <p className="text-xs text-amber-600 mt-1">No name found. Please add your name to the resume.</p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Layout ── */}
-      {onLayoutChange && (
-        <div>
-          <SectionHeader title="Layout" />
-          <div className="space-y-4">
-            {/* Column layout */}
-            <div>
-              <p className="text-xs text-ds-textMuted mb-1.5">Column layout</p>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { id: 'one', label: 'One Column', icon: (
-                    <div className="w-full h-8 border border-current rounded flex items-center justify-center">
-                      <div className="w-3/4 h-1 bg-current rounded opacity-40" />
-                    </div>
-                  )},
-                  { id: 'two', label: 'Two Column', icon: (
-                    <div className="w-full h-8 border border-current rounded flex gap-0.5 p-0.5">
-                      <div className="flex-1 bg-current rounded opacity-20" />
-                      <div className="flex-1 bg-current rounded opacity-20" />
-                    </div>
-                  )},
-                  { id: 'mix', label: 'Mix', icon: (
-                    <div className="w-full h-8 border border-current rounded flex flex-col gap-0.5 p-0.5">
-                      <div className="flex-1 bg-current rounded opacity-20 w-full" />
-                      <div className="flex gap-0.5 flex-1">
-                        <div className="flex-1 bg-current rounded opacity-20" />
-                        <div className="flex-1 bg-current rounded opacity-20" />
-                      </div>
-                    </div>
-                  )},
-                ].map(opt => {
-                  const active = (ls.columnLayout || 'one') === opt.id;
-                  return (
-                    <button
-                      key={opt.id}
-                      onClick={() => setLs('columnLayout', opt.id)}
-                      className={`flex flex-col items-center gap-1 p-2 rounded border text-[10px] font-medium transition-colors
-                        ${active ? 'border-primary text-primary bg-primary/5' : 'border-ds-border text-ds-textMuted hover:bg-ds-bg'}`}
-                    >
-                      {opt.icon}
-                      {opt.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Two-column section assignment */}
-            {ls.columnLayout === 'two' && enabledSections.length > 0 && (
-              <div>
-                <p className="text-xs text-ds-textMuted mb-1.5">Assign sections to columns</p>
-                <div className="space-y-1">
-                  {enabledSections.map(sec => {
-                    const col = ls.sectionColumns?.[sec.id] || 'left';
-                    return (
-                      <div key={sec.id} className="flex items-center justify-between text-xs">
-                        <span className="text-ds-text truncate flex-1 mr-2">{sec.title}</span>
-                        <div className="flex rounded border border-ds-border overflow-hidden flex-shrink-0">
-                          {['left', 'right'].map(side => (
-                            <button
-                              key={side}
-                              onClick={() => setLs('sectionColumns', { ...ls.sectionColumns, [sec.id]: side })}
-                              className={`px-2 py-1 capitalize transition-colors
-                                ${col === side ? 'bg-primary text-white' : 'text-ds-text hover:bg-ds-bg'}`}
-                            >
-                              {side}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Mix mode per-section column width */}
-            {ls.columnLayout === 'mix' && enabledSections.length > 0 && (
-              <div>
-                <p className="text-xs text-ds-textMuted mb-1.5">Section width</p>
-                <div className="space-y-1">
-                  {enabledSections.map(sec => {
-                    const width = ls.sectionColumns?.[sec.id] || 'full';
-                    return (
-                      <div key={sec.id} className="flex items-center justify-between text-xs">
-                        <span className="text-ds-text truncate flex-1 mr-2">{sec.title}</span>
-                        <div className="flex rounded border border-ds-border overflow-hidden flex-shrink-0">
-                          {[{ v: 'full', l: '1-col' }, { v: 'half', l: '2-col' }].map(({ v, l }) => (
-                            <button
-                              key={v}
-                              onClick={() => setLs('sectionColumns', { ...ls.sectionColumns, [sec.id]: v })}
-                              className={`px-2 py-1 transition-colors
-                                ${width === v ? 'bg-primary text-white' : 'text-ds-text hover:bg-ds-bg'}`}
-                            >
-                              {l}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Typography sizes */}
-            <div>
-              <p className="text-xs text-ds-textMuted mb-1.5">Section title size</p>
-              <Segmented
-                options={[{ value: 'small', label: 'Small' }, { value: 'medium', label: 'Medium' }, { value: 'large', label: 'Large' }]}
-                value={ls.titleSize || 'medium'}
-                onChange={v => setLs('titleSize', v)}
-              />
-            </div>
-            <div>
-              <p className="text-xs text-ds-textMuted mb-1.5">Subtitle size</p>
-              <Segmented
-                options={[{ value: 'small', label: 'Small' }, { value: 'medium', label: 'Medium' }, { value: 'large', label: 'Large' }]}
-                value={ls.subtitleSize || 'medium'}
-                onChange={v => setLs('subtitleSize', v)}
-              />
-              {(() => {
-                const rank = { small: 0, medium: 1, large: 2 };
-                return rank[ls.subtitleSize || 'medium'] > rank[ls.titleSize || 'medium'];
-              })() && (
-                <p className="text-xs text-amber-600 mt-1">Subtitle size is larger than title size.</p>
-              )}
-            </div>
-
-            {/* List style */}
-            <div>
-              <p className="text-xs text-ds-textMuted mb-1.5">List style</p>
-              <Segmented
-                options={[{ value: 'bullet', label: '• Bullet' }, { value: 'hyphen', label: '– Hyphen' }]}
-                value={ls.listStyle || 'bullet'}
-                onChange={v => setLs('listStyle', v)}
-              />
-            </div>
-
-            {/* Heading icon style */}
-            <div>
-              <p className="text-xs text-ds-textMuted mb-1.5">Heading icon</p>
-              <Segmented
-                options={[{ value: 'none', label: 'None' }, { value: 'outline', label: 'Outline' }, { value: 'filled', label: 'Filled' }]}
-                value={ls.headingIcon || 'none'}
-                onChange={v => setLs('headingIcon', v)}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Section Order ── */}
-      {onSectionDisplayChange && (eduSec || workSec) && (
-        <div>
-          <SectionHeader title="Section Order" />
-          <div className="space-y-3">
-            {eduSec && (
-              <div>
-                <p className="text-xs text-ds-textMuted mb-1.5">Education order</p>
-                <Segmented
-                  options={[{ value: 'school-first', label: 'School → Degree' }, { value: 'degree-first', label: 'Degree → School' }]}
-                  value={eduSec.display_settings?.eduOrder || 'school-first'}
-                  onChange={v => onSectionDisplayChange(eduSec.id, { ...eduSec.display_settings, eduOrder: v })}
-                />
-              </div>
-            )}
-            {workSec && (
-              <div>
-                <p className="text-xs text-ds-textMuted mb-1.5">Work experience order</p>
-                <Segmented
-                  options={[{ value: 'title-first', label: 'Title → Employer' }, { value: 'employer-first', label: 'Employer → Title' }]}
-                  value={workSec.display_settings?.workOrder || 'title-first'}
-                  onChange={v => onSectionDisplayChange(workSec.id, { ...workSec.display_settings, workOrder: v })}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Font ── */}
+      {/* Font */}
       <div>
         <SectionHeader title="Font" />
         <div className="space-y-1">
           {FONTS.map(f => {
             const active = (d.font || 'source-sans') === f.id;
             return (
-              <button
-                key={f.id}
-                onClick={() => set('font', f.id)}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded text-sm cursor-pointer transition-colors
-                  ${active ? 'bg-primary/10 border border-primary text-primary' : 'border border-ds-border text-ds-text hover:bg-ds-bg'}`}
-                style={{ fontFamily: f.family }}
-              >
+              <button key={f.id} onClick={() => set('font', f.id)}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded text-sm cursor-pointer transition-colors ${active ? 'bg-primary/10 border border-primary text-primary' : 'border border-ds-border text-ds-text hover:bg-ds-bg'}`}
+                style={{ fontFamily: f.family }}>
                 <span>{f.name}</span>
-                {active && (
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                )}
+                {active && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><polyline points="20 6 9 17 4 12"/></svg>}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* ── Page Size ── */}
+      {/* Page Size */}
       <div>
         <SectionHeader title="Page Size" />
         <div className="flex gap-2">
           {PAGE_SIZES.map(p => (
-            <button
-              key={p.id}
-              onClick={() => set('pageSize', p.id)}
-              className={`flex-1 py-1.5 text-xs font-medium rounded border transition-colors
-                ${(d.pageSize || 'a4') === p.id ? 'bg-primary text-white border-primary' : 'border-ds-border text-ds-text hover:bg-ds-bg'}`}
-            >
+            <button key={p.id} onClick={() => set('pageSize', p.id)}
+              className={`flex-1 py-1.5 text-xs font-medium rounded border transition-colors ${(d.pageSize || 'a4') === p.id ? 'bg-primary text-white border-primary' : 'border-ds-border text-ds-text hover:bg-ds-bg'}`}>
               {p.label}
             </button>
           ))}
         </div>
       </div>
 
-      {/* ── Reset all ── */}
+      {/* Reset */}
       <button
         onClick={() => {
           onChange({ font: 'source-sans', pageSize: 'a4', headerAlignment: 'left', detailsArrangement: 1, detailsSeparator: 'icon', headerIconStyle: 1, colorMode: 'accent', accentColor: null, accentTargets: {}, multiColors: {}, borderColor: null });
-          if (onFooterChange) onFooterChange({ pageNumbers: false, email: false, name: false });
-          if (onSpacingChange) onSpacingChange({ fontSize: 11, lineHeight: 1.15, leftRightMargin: 15, topBottomMargin: 15, marginTop: 15, marginBottom: 15, marginLeft: 15, marginRight: 15, entrySpacing: 2 });
-          if (onLayoutChange) onLayoutChange({ columnLayout: 'one', sectionColumns: {}, pageBreaks: [], titleSize: 'medium', subtitleSize: 'medium', listStyle: 'bullet', headingIcon: 'none' });
         }}
         className="w-full text-xs text-ds-textMuted hover:text-ds-text underline transition-colors mt-2"
       >
-        Reset all to defaults
+        Reset design to defaults
       </button>
     </div>
   );

@@ -125,13 +125,14 @@ export default function BuilderEditor() {
   const [showGallery, setShowGallery] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [showShare, setShowShare] = useState(false);
-  const [showDesign, setShowDesign] = useState(false);
   const [importFile, setImportFile] = useState(null);
   const [sectionSaveStatus, setSectionSaveStatus] = useState({});
   const [toast, setToast] = useState(null);
   const [titleEditing, setTitleEditing] = useState(false);
   const [zoom, setZoom] = useState(0.72);
   const [mobileTab, setMobileTab] = useState('edit'); // 'edit' | 'preview'
+  const [panelMode, setPanelMode] = useState('content'); // 'content' | 'customize'
+  const [customizeTab, setCustomizeTab] = useState('design'); // 'design' | 'spacing' | 'sections'
   const debounceRefs = useRef({});
 
   const { data, isLoading, error } = useQuery({
@@ -388,7 +389,7 @@ export default function BuilderEditor() {
         {/* Body skeleton */}
         <div className="flex flex-1 overflow-hidden">
           {/* Left pane */}
-          <div className="w-[340px] flex-shrink-0 border-r border-ds-border bg-ds-bg overflow-y-auto p-3 space-y-2.5">
+          <div className="w-[340px] flex-shrink-0 border-r border-ds-border bg-white overflow-y-auto p-3 space-y-2.5">
             {/* PersonalInfoCard skeleton */}
             <div className="rounded-lg border border-ds-border bg-ds-card overflow-hidden">
               <div className="flex items-center gap-2.5 px-3.5 py-3 border-b border-ds-border">
@@ -508,16 +509,6 @@ export default function BuilderEditor() {
             Templates
           </button>
           <button
-            onClick={() => setShowDesign(d => !d)}
-            className={`flex items-center gap-1.5 h-8 px-3 text-xs font-semibold border rounded-md transition-colors
-              ${showDesign ? 'bg-primary/10 border-primary/40 text-primary' : 'border-ds-border text-ds-text hover:bg-ds-bg'}`}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
-            </svg>
-            Design
-          </button>
-          <button
             onClick={() => setShowShare(true)}
             className="hidden sm:flex items-center gap-1.5 h-8 px-3 text-xs font-semibold border border-ds-border text-ds-text rounded-md hover:bg-ds-bg transition-colors"
           >
@@ -558,35 +549,90 @@ export default function BuilderEditor() {
       {/* ── Body ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden relative">
 
-        {/* Editor pane */}
-        <div className={`${mobileTab === 'preview' ? 'hidden md:flex' : 'flex'} flex-col md:w-[45%] md:flex-none flex-1 overflow-y-auto border-r border-ds-border bg-white`}>
-          <div className="px-7 py-6 max-w-2xl">
-            <div className="mb-5">
-              <h1 className="font-heading text-2xl font-bold text-ds-text">Build your resume</h1>
-              <p className="text-sm text-ds-textMuted mt-1">Edit any section — your preview updates in real time.</p>
+        {/* ── Left panel (340px, Content / Customize) ───────────────────────── */}
+        <div className={`${mobileTab === 'preview' ? 'hidden md:flex' : 'flex'} flex-col md:w-[340px] md:flex-none flex-1 border-r border-ds-border bg-white overflow-hidden`}>
+
+          {/* Sticky panel header */}
+          <div className="flex-shrink-0 bg-white border-b border-ds-border sticky top-0 z-10">
+            <div className="px-[18px] pt-[14px] pb-[14px]">
+              {/* Mode toggle */}
+              <div className="flex p-1 bg-ds-bg rounded-[10px] gap-1">
+                {[
+                  { id: 'content', label: 'Content', icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg> },
+                  { id: 'customize', label: 'Customize', icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg> },
+                ].map(m => (
+                  <button
+                    key={m.id}
+                    onClick={() => setPanelMode(m.id)}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-[9px] px-3 text-[13px] font-semibold rounded-[7px] transition-all ${panelMode === m.id ? 'bg-white text-primary shadow-sm' : 'text-ds-textMuted hover:text-ds-text'}`}
+                  >
+                    {m.icon}{m.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Personal details card */}
-            <PersonalInfoCard info={personalInfo} onChange={handlePersonalInfoChange} />
+            {/* Sub-tabs row (Customize mode only) */}
+            {panelMode === 'customize' && (
+              <div className="flex border-t border-ds-border">
+                {[
+                  { id: 'design', label: 'Design' },
+                  { id: 'spacing', label: 'Spacing' },
+                  { id: 'sections', label: 'Sections' },
+                ].map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => setCustomizeTab(t.id)}
+                    className={`flex-1 py-[10px] text-xs font-semibold text-center border-b-2 transition-colors ${customizeTab === t.id ? 'text-primary border-primary' : 'text-ds-textMuted border-transparent hover:text-ds-text'}`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
-            {/* Section list */}
-            <SectionList
-              sections={previewData.sections || []}
-              activeSectionId={activeSectionId}
-              onSelect={setActiveSectionId}
-              onReorder={handleReorder}
-              onDelete={(sectionId) => deleteSectionMutation.mutate(sectionId)}
-              onToggle={handleToggleSection}
-              onAddSection={handleAddSection}
-              SectionEditorComponent={previewSection ? () => (
-                <SectionEditor
-                  section={previewSection}
-                  onContentChange={(content) => handleSectionContentChange(previewSection.id, content)}
-                  onTitleChange={(title) => handleSectionTitleChange(previewSection.id, title)}
-                  saveStatus={sectionSaveStatus[previewSection.id]}
+          {/* Scrollable panel body */}
+          <div className="flex-1 overflow-y-auto">
+            {panelMode === 'content' ? (
+              <div className="px-[18px] py-4">
+                {/* Personal details */}
+                <PersonalInfoCard info={personalInfo} onChange={handlePersonalInfoChange} />
+                {/* Section list */}
+                <SectionList
+                  sections={previewData.sections || []}
+                  activeSectionId={activeSectionId}
+                  onSelect={setActiveSectionId}
+                  onReorder={handleReorder}
+                  onDelete={(sectionId) => deleteSectionMutation.mutate(sectionId)}
+                  onToggle={handleToggleSection}
+                  onAddSection={handleAddSection}
+                  SectionEditorComponent={previewSection ? () => (
+                    <SectionEditor
+                      section={previewSection}
+                      onContentChange={(content) => handleSectionContentChange(previewSection.id, content)}
+                      onTitleChange={(title) => handleSectionTitleChange(previewSection.id, title)}
+                      saveStatus={sectionSaveStatus[previewSection.id]}
+                    />
+                  ) : null}
                 />
-              ) : null}
-            />
+              </div>
+            ) : (
+              <DesignPanel
+                activeTab={customizeTab}
+                design={previewData.design_settings || {}}
+                onChange={handleDesignChange}
+                footerSettings={previewData.footer_settings || footerSettings}
+                onFooterChange={handleFooterChange}
+                spacingSettings={previewData.spacing_settings || spacingSettings}
+                onSpacingChange={handleSpacingChange}
+                layoutSettings={previewData.layout_settings || layoutSettings}
+                onLayoutChange={handleLayoutChange}
+                personalInfo={previewData.personal_info || {}}
+                sections={previewData.sections || []}
+                onSectionDisplayChange={handleSectionDisplayChange}
+              />
+            )}
           </div>
         </div>
 
@@ -644,37 +690,6 @@ export default function BuilderEditor() {
           </div>
         </div>
 
-        {/* Design panel overlay */}
-        {showDesign && (
-          <div className="absolute right-0 inset-y-0 w-72 bg-white border-l border-ds-border shadow-2xl z-30 flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-ds-border flex-shrink-0">
-              <h3 className="font-heading font-bold text-sm text-ds-text">Design</h3>
-              <button
-                onClick={() => setShowDesign(false)}
-                className="w-7 h-7 flex items-center justify-center rounded text-ds-textMuted hover:bg-ds-bg hover:text-ds-text transition-colors"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              <DesignPanel
-                design={previewData.design_settings || {}}
-                onChange={handleDesignChange}
-                footerSettings={previewData.footer_settings || footerSettings}
-                onFooterChange={handleFooterChange}
-                spacingSettings={previewData.spacing_settings || spacingSettings}
-                onSpacingChange={handleSpacingChange}
-                layoutSettings={previewData.layout_settings || layoutSettings}
-                onLayoutChange={handleLayoutChange}
-                personalInfo={previewData.personal_info || {}}
-                sections={previewData.sections || []}
-                onSectionDisplayChange={handleSectionDisplayChange}
-              />
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Template gallery overlay */}
