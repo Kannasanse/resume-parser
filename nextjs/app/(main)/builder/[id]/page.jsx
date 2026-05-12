@@ -121,6 +121,101 @@ function Toast({ message, type = 'info', onDismiss }) {
   );
 }
 
+// ── Export button (PDF + Word dropdown) ──────────────────────────────────────
+
+function ExportButton({ resumeId }) {
+  const [open, setOpen] = useState(false);
+  const [wordLoading, setWordLoading] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const downloadWord = async () => {
+    setWordLoading(true);
+    setOpen(false);
+    try {
+      const res = await fetch(`/api/v1/builder/${resumeId}/export/word`);
+      if (!res.ok) throw new Error(await res.text());
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const cd = res.headers.get('Content-Disposition') || '';
+      const match = cd.match(/filename="([^"]+)"/);
+      a.href = url;
+      a.download = match ? match[1] : 'Resume.docx';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Word export failed: ' + err.message);
+    } finally {
+      setWordLoading(false);
+    }
+  };
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <div className="flex items-center rounded-md overflow-hidden bg-primary">
+        {/* PDF button */}
+        <button
+          onClick={() => window.open(`/print/${resumeId}`, '_blank')}
+          className="flex items-center gap-1.5 h-8 px-3 text-xs font-semibold text-white hover:bg-primary/90 transition-colors"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          PDF
+        </button>
+        {/* Divider */}
+        <div className="w-px h-4 bg-white/30" />
+        {/* Dropdown toggle */}
+        <button
+          onClick={() => setOpen(o => !o)}
+          className="flex items-center h-8 px-2 text-white hover:bg-primary/90 transition-colors"
+          title="More export options"
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+      </div>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-1 bg-ds-card border border-ds-border rounded-lg shadow-xl z-50 py-1 min-w-[160px]">
+          <button
+            onClick={() => { window.open(`/print/${resumeId}`, '_blank'); setOpen(false); }}
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-ds-text hover:bg-ds-bg transition-colors"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+            </svg>
+            Save as PDF
+          </button>
+          <button
+            onClick={downloadWord}
+            disabled={wordLoading}
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-ds-text hover:bg-ds-bg transition-colors disabled:opacity-50"
+          >
+            {wordLoading ? (
+              <span className="w-3 h-3 border-2 border-ds-textMuted border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                <path d="M9 13l2 2 4-4"/>
+              </svg>
+            )}
+            {wordLoading ? 'Generating…' : 'Download Word (.docx)'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main editor ───────────────────────────────────────────────────────────────
 
 export default function BuilderEditor() {
@@ -525,15 +620,7 @@ export default function BuilderEditor() {
             </svg>
             Share
           </button>
-          <button
-            onClick={() => window.open(`/print/${id}`, '_blank')}
-            className="flex items-center gap-1.5 h-8 px-3 text-xs font-semibold bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            PDF
-          </button>
+          <ExportButton resumeId={id} />
         </div>
       </div>
 

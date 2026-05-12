@@ -880,15 +880,17 @@ const TEMPLATE_COMPONENTS = {
 
 // ── ResumePreview default export ──────────────────────────────────────────────
 
-export default function ResumePreview({ resume, designSettings = {}, scale = null, className = '' }) {
+export default function ResumePreview({ resume, designSettings = {}, scale = null, className = '', printMode = false }) {
   const containerRef = useRef(null);
+  const contentRef  = useRef(null);
   const [computedScale, setComputedScale] = useState(scale || 0.6);
+  const [contentHeight, setContentHeight] = useState(0);
 
   const ds = { ...DEFAULT_DESIGN, ...(designSettings || {}) };
   const ss = { ...DEFAULT_SPACING, ...(resume?.spacing_settings || {}) };
 
   const pageId = ds.pageSize || 'a4';
-  const page   = pageId === 'letter' ? { width: 816, height: 1056 } : { width: 794, height: 1123 };
+  const page   = pageId === 'letter' ? { id: 'letter', width: 816, height: 1056 } : { id: 'a4', width: 794, height: 1123 };
 
   const updateScale = useCallback(() => {
     if (scale !== null || !containerRef.current) return;
@@ -898,8 +900,12 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
 
   useEffect(() => {
     updateScale();
-    const ro = new ResizeObserver(updateScale);
+    const ro = new ResizeObserver(() => {
+      updateScale();
+      if (contentRef.current) setContentHeight(contentRef.current.scrollHeight);
+    });
     if (containerRef.current) ro.observe(containerRef.current);
+    if (contentRef.current)   ro.observe(contentRef.current);
     return () => ro.disconnect();
   }, [updateScale]);
 
@@ -912,19 +918,83 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
   const fs = resume?.footer_settings;
   const hasFooter = fs && (fs.pageNumbers || (fs.email && pi.email) || (fs.name && pi.name));
 
+  // In printMode we render a plain div — no scaling, no wrapper chrome
+  if (printMode) {
+    return (
+      <div style={{ width: page.width, background: '#fff' }}>
+        <style>{`
+          @media print {
+            .resume-section-block { page-break-inside: avoid; }
+            .resume-entry-block   { page-break-inside: avoid; }
+          }
+        `}</style>
+        <div ref={contentRef}>
+          <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
+        </div>
+        {hasFooter && (
+          <div style={{ borderTop: '1px solid #e0e0e0', padding: '6px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8pt', color: '#888', background: '#fff' }}>
+            <span>{[fs.name && pi.name, fs.email && pi.email].filter(Boolean).join(' · ')}</span>
+            {fs.pageNumbers && <span>Page 1</span>}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Page-break markers: show dashed lines at every page.height interval
+  const scaledContentH = contentHeight * s;
+  const pageBreakCount = Math.max(0, Math.floor(contentHeight / page.height) - 1 + (contentHeight % page.height > 20 ? 1 : 0));
+  const pageBreakMarkers = Array.from({ length: pageBreakCount }, (_, i) => {
+    const yInContent = (i + 1) * page.height; // in unscaled px
+    return yInContent;
+  });
+
   return (
     <div ref={containerRef} className={`overflow-auto ${className}`} style={{ background: '#e5e7eb' }}>
       <div style={{ padding: 8 }}>
-        <div style={{ width: page.width, minHeight: page.height, transformOrigin: 'top left', transform: `scale(${s})`, boxShadow: '0 1px 8px rgba(0,0,0,0.18)', background: '#fff', marginBottom: `${(s - 1) * page.height}px`, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ flex: 1 }}>
-            <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
-          </div>
-          {hasFooter && (
-            <div style={{ borderTop: '1px solid #e0e0e0', padding: '6px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8pt', color: '#888', background: '#fff' }}>
-              <span>{[fs.name && pi.name, fs.email && pi.email].filter(Boolean).join(' · ')}</span>
-              {fs.pageNumbers && <span>Page 1</span>}
+        {/* Outer box sized to scaled content height */}
+        <div style={{ position: 'relative', width: page.width * s, height: Math.max(page.height * s, scaledContentH || page.height * s) }}>
+          {/* Scaled content */}
+          <div style={{ width: page.width, transformOrigin: 'top left', transform: `scale(${s})`, boxShadow: '0 1px 8px rgba(0,0,0,0.18)', background: '#fff', display: 'flex', flexDirection: 'column' }}>
+            <div ref={contentRef}>
+              <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
             </div>
-          )}
+            {hasFooter && (
+              <div style={{ borderTop: '1px solid #e0e0e0', padding: '6px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8pt', color: '#888', background: '#fff' }}>
+                <span>{[fs.name && pi.name, fs.email && pi.email].filter(Boolean).join(' · ')}</span>
+                {fs.pageNumbers && <span>Page 1</span>}
+              </div>
+            )}
+          </div>
+
+          {/* Page break indicators — overlay dashed lines */}
+          {pageBreakMarkers.map((yUnscaled, i) => (
+            <div key={i} style={{
+              position: 'absolute',
+              top: yUnscaled * s,
+              left: 0,
+              right: 0,
+              height: 0,
+              pointerEvents: 'none',
+              zIndex: 10,
+            }}>
+              <div style={{ borderTop: '2px dashed #94a3b8', width: '100%' }} />
+              <span style={{
+                position: 'absolute',
+                right: 0,
+                top: 2,
+                fontSize: 9,
+                color: '#94a3b8',
+                background: '#e5e7eb',
+                padding: '1px 4px',
+                borderRadius: 2,
+                fontFamily: 'system-ui, sans-serif',
+                lineHeight: 1.4,
+              }}>
+                Page {i + 1} → {i + 2}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
