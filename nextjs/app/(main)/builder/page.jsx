@@ -16,6 +16,31 @@ function PlusIcon() {
   );
 }
 
+function UploadIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+    </svg>
+  );
+}
+
+function EditIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+    </svg>
+  );
+}
+
+function EyeIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+    </svg>
+  );
+}
+
 function FileTextIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -171,14 +196,21 @@ export default function BuilderListPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="font-heading text-xl font-bold text-ds-text">My Resumes</h1>
+          <h2 className="font-heading text-xl font-bold text-ds-text">My Resumes</h2>
           <p className="text-sm text-ds-textMuted mt-0.5">Build and manage your resumes</p>
         </div>
-        <Link href="/builder/new" className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-btn text-sm font-medium hover:bg-primary/90 transition-colors">
-          <PlusIcon />New Resume
-        </Link>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Link href="/builder/new?upload=1" className="flex items-center gap-1.5 px-3.5 py-2 border border-ds-border text-ds-text rounded-btn text-sm font-medium hover:bg-ds-bg transition-colors">
+            <UploadIcon />
+            <span className="hidden sm:inline">New from Upload</span>
+            <span className="sm:hidden">Upload</span>
+          </Link>
+          <Link href="/builder/new" className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-btn text-sm font-medium hover:bg-primary/90 transition-colors">
+            <PlusIcon />New Resume
+          </Link>
+        </div>
       </div>
 
       {isLoading ? (
@@ -202,12 +234,17 @@ export default function BuilderListPage() {
         </div>
       ) : resumes.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-16 h-16 rounded-full bg-ds-bg flex items-center justify-center text-ds-textMuted mb-4"><FileTextIcon /></div>
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-4"><FileTextIcon /></div>
           <h2 className="font-heading font-bold text-ds-text mb-1">No resumes yet</h2>
           <p className="text-sm text-ds-textMuted mb-5">Create your first resume to get started.</p>
-          <Link href="/builder/new" className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-btn text-sm font-medium hover:bg-primary/90 transition-colors">
-            <PlusIcon />Create Resume
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/builder/new?upload=1" className="flex items-center gap-1.5 px-4 py-2 border border-ds-border text-ds-text rounded-btn text-sm font-medium hover:bg-ds-bg transition-colors">
+              <UploadIcon />New from Upload
+            </Link>
+            <Link href="/builder/new" className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-btn text-sm font-medium hover:bg-primary/90 transition-colors">
+              <PlusIcon />Create Resume
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -216,39 +253,63 @@ export default function BuilderListPage() {
             const isRenaming = renaming === r.id;
             const isDuplicating = duplicatingId === r.id;
 
+            const accentColor = tpl?.accent || '#185FA5';
+
             return (
               <div
                 key={r.id}
-                className={`bg-ds-card border border-ds-border rounded-lg p-5 hover:border-primary/40 hover:shadow-sm transition-all cursor-pointer ${isDuplicating ? 'opacity-60 pointer-events-none' : ''}`}
+                className={`bg-ds-card border border-ds-border rounded-xl overflow-hidden flex flex-col transition-all duration-200 ${isDuplicating ? 'opacity-60 pointer-events-none' : 'hover:shadow-md hover:-translate-y-0.5 cursor-pointer'}`}
+                style={{ borderTop: `4px solid ${accentColor}` }}
                 onClick={() => !isRenaming && router.push(`/builder/${r.id}`)}
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0" style={{ background: tpl ? `${tpl.accent}18` : '#f0f0f0' }}>
-                    <FileTextIcon />
+                {/* Card body */}
+                <div className="p-4 flex-1">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${accentColor}18`, color: accentColor }}>
+                        <FileTextIcon />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        {isRenaming ? (
+                          <RenameInput
+                            value={r.title}
+                            onConfirm={(title) => renameMutation.mutate({ id: r.id, title })}
+                            onCancel={() => setRenaming(null)}
+                          />
+                        ) : (
+                          <h3 className="font-heading font-semibold text-ds-text truncate text-sm">{r.title}</h3>
+                        )}
+                        {tpl && <span className="text-xs text-ds-textMuted">{tpl.style}</span>}
+                      </div>
+                    </div>
+                    <OverflowMenu
+                      resume={r}
+                      duplicating={isDuplicating}
+                      onDelete={() => setDeleteTarget(r)}
+                      onDuplicate={() => handleDuplicate(r)}
+                      onShare={() => setShareTarget(r.id)}
+                      onRename={() => setRenaming(r.id)}
+                    />
                   </div>
-                  <OverflowMenu
-                    resume={r}
-                    duplicating={isDuplicating}
-                    onDelete={() => setDeleteTarget(r)}
-                    onDuplicate={() => handleDuplicate(r)}
-                    onShare={() => setShareTarget(r.id)}
-                    onRename={() => setRenaming(r.id)}
-                  />
+                  <p className="text-xs text-ds-textMuted mt-2">Updated {formatDate(r.updated_at)}</p>
                 </div>
 
-                {isRenaming ? (
-                  <RenameInput
-                    value={r.title}
-                    onConfirm={(title) => renameMutation.mutate({ id: r.id, title })}
-                    onCancel={() => setRenaming(null)}
-                  />
-                ) : (
-                  <h3 className="font-heading font-semibold text-ds-text mb-1 truncate">{r.title}</h3>
-                )}
-
-                <div className="flex items-center gap-2 flex-wrap mt-1">
-                  {tpl && <span className="text-xs px-2 py-0.5 rounded-full bg-ds-bg text-ds-textMuted border border-ds-border">{tpl.style}</span>}
-                  <span className="text-xs text-ds-textMuted">Updated {formatDate(r.updated_at)}</span>
+                {/* Card actions */}
+                <div className="flex items-center gap-2 px-4 py-3 border-t border-ds-border bg-ds-bg" onClick={e => e.stopPropagation()}>
+                  <Link
+                    href={`/builder/${r.id}`}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded text-xs font-semibold hover:bg-primary/90 transition-colors"
+                  >
+                    <EditIcon />Edit
+                  </Link>
+                  <a
+                    href={`/print/${r.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 border border-ds-border text-ds-text rounded text-xs font-semibold hover:bg-ds-card transition-colors"
+                  >
+                    <EyeIcon />Preview
+                  </a>
                 </div>
               </div>
             );

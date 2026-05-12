@@ -419,7 +419,7 @@ export default function BuilderEditor() {
             ))}
           </div>
           {/* Right pane — preview */}
-          <div className="flex-1 bg-gray-100 flex flex-col overflow-hidden">
+          <div className="flex-1 bg-[#E6ECF2] flex flex-col overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2 border-b border-ds-border bg-ds-card flex-shrink-0">
               <Sk className="h-4 w-28" />
               <div className="flex items-center gap-2">
@@ -559,7 +559,7 @@ export default function BuilderEditor() {
       <div className="flex flex-1 overflow-hidden relative">
 
         {/* Editor pane */}
-        <div className={`${mobileTab === 'preview' ? 'hidden md:flex' : 'flex'} flex-col flex-1 overflow-y-auto border-r border-ds-border bg-white`}>
+        <div className={`${mobileTab === 'preview' ? 'hidden md:flex' : 'flex'} flex-col md:w-[45%] md:flex-none flex-1 overflow-y-auto border-r border-ds-border bg-white`}>
           <div className="px-7 py-6 max-w-2xl">
             <div className="mb-5">
               <h1 className="font-heading text-2xl font-bold text-ds-text">Build your resume</h1>
@@ -591,7 +591,7 @@ export default function BuilderEditor() {
         </div>
 
         {/* Preview pane */}
-        <div className={`${mobileTab === 'edit' ? 'hidden md:flex' : 'flex'} flex-col flex-1 overflow-y-auto items-center py-6 gap-5 bg-[#f2f3f5]`}>
+        <div className={`${mobileTab === 'edit' ? 'hidden md:flex' : 'flex'} flex-col md:flex-1 flex-1 overflow-y-auto items-center py-6 gap-5 bg-[#E6ECF2]`}>
           {/* Preview toolbar */}
           <div className="flex items-center gap-1 px-2 py-1 bg-white border border-ds-border rounded-full shadow-sm text-xs flex-shrink-0">
             <button
@@ -631,8 +631,9 @@ export default function BuilderEditor() {
               minHeight: page.height,
               transform: `scale(${zoom})`,
               transformOrigin: 'top left',
-              boxShadow: '0 4px 24px rgba(23,26,69,.10), 0 0 0 1px rgba(0,0,0,.05)',
+              boxShadow: '0 8px 32px rgba(23,26,69,.18), 0 2px 8px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.04)',
               background: '#fff',
+              borderRadius: 2,
             }}>
               <ResumePreview
                 resume={previewData}

@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { createBuilderResume, createBuilderSection, importResumeFile } from '@/lib/builderApi';
 import { TEMPLATES, TEMPLATE_CATEGORIES, SECTION_TYPES, getDefaultContent } from '@/components/builder/templates.js';
@@ -10,12 +10,14 @@ const DEFAULT_SECTIONS = ['summary', 'work_experience', 'education', 'skills'];
 
 export default function NewResumePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const startWithUpload = searchParams.get('upload') === '1';
   const [step, setStep] = useState('template'); // 'template' | 'title' | 'import'
   const [selectedTemplate, setSelectedTemplate] = useState('classic-professional');
   const [category, setCategory] = useState('All');
   const [title, setTitle] = useState('');
   const [importFile, setImportFile] = useState(null);
-  const [importMode, setImportMode] = useState('blank'); // 'blank' | 'import'
+  const [importMode, setImportMode] = useState(startWithUpload ? 'import' : 'blank'); // 'blank' | 'import'
 
   const createMutation = useMutation({
     mutationFn: async () => {
