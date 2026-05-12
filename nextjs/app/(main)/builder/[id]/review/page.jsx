@@ -17,7 +17,7 @@ function isMissing(v) {
 }
 
 function countFields(personalInfo, sections) {
-  const piFields = ['name', 'email', 'phone', 'location', 'linkedin', 'github'];
+  const piFields = ['name', 'email', 'phone', 'location', 'linkedin', 'link'];
   const total = piFields.length;
   const extracted = piFields.filter(k => !isMissing(personalInfo[k])).length;
 
@@ -169,20 +169,20 @@ function EntryFields({ type, entry: e, onChange, fallback }) {
     <ReviewField
       key={k}
       label={k.replace(/_/g, ' ')}
-      value={e[k]}
-      onChange={v => onChange({ [k]: v })}
+      value={Array.isArray(e[k]) ? e[k].join('\n') : e[k]}
+      onChange={v => onChange({ [k]: k === 'bullets' ? v.split('\n').filter(Boolean) : v })}
       missing={isMissing(e[k]) || fallback}
       placeholder={`Enter ${k.replace(/_/g, ' ')}...`}
-      multiline={k === 'description'}
+      multiline={k === 'description' || k === 'bullets'}
     />
   );
 
-  if (type === 'work_experience') return <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">{['title','company','location','start_date','end_date'].map(f)}<div className="sm:col-span-2">{f('description')}</div></div>;
-  if (type === 'education') return <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">{['institution','degree','field','start_date','end_date','grade'].map(f)}</div>;
-  if (type === 'skills') return <div className="grid grid-cols-2 gap-2">{['skill','proficiency'].map(f)}</div>;
+  if (type === 'work_experience') return <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">{['title','employer','location','dates'].map(f)}<div className="sm:col-span-2">{f('bullets')}</div></div>;
+  if (type === 'education') return <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">{['school','degree','dates','location'].map(f)}</div>;
+  if (type === 'skills') return <div className="grid grid-cols-2 gap-2">{['name','level'].map(f)}</div>;
   if (type === 'certifications') return <div className="grid grid-cols-2 gap-2">{['name','issuer','date'].map(f)}</div>;
-  if (type === 'projects') return <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">{['name','technologies','url'].map(f)}<div className="sm:col-span-2">{f('description')}</div></div>;
-  if (type === 'languages') return <div className="grid grid-cols-2 gap-2">{['language','level'].map(f)}</div>;
+  if (type === 'projects') return <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">{['title','role','dates','link'].map(f)}<div className="sm:col-span-2">{f('description')}</div></div>;
+  if (type === 'languages') return <div className="grid grid-cols-2 gap-2">{['name','level'].map(f)}</div>;
   return <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">{Object.keys(e).filter(k => typeof e[k] === 'string').map(f)}</div>;
 }
 
@@ -192,12 +192,12 @@ function PersonalInfoReview({ info, onChange, fallback }) {
   const [open, setOpen] = useState(true);
   const fields = [
     { k: 'name', label: 'Full Name', placeholder: 'Your full name' },
+    { k: 'title', label: 'Job Title', placeholder: 'e.g. Software Engineer' },
     { k: 'email', label: 'Email', placeholder: 'your@email.com', type: 'email' },
     { k: 'phone', label: 'Phone', placeholder: '+1 (555) 000-0000' },
     { k: 'location', label: 'Location', placeholder: 'City, Country' },
     { k: 'linkedin', label: 'LinkedIn', placeholder: 'linkedin.com/in/...' },
-    { k: 'github', label: 'GitHub', placeholder: 'github.com/...' },
-    { k: 'website', label: 'Website', placeholder: 'yoursite.com' },
+    { k: 'link', label: 'Website / Link', placeholder: 'yoursite.com or github.com/...' },
   ];
   const missingCount = fields.filter(f => isMissing(info[f.k])).length;
 
@@ -229,16 +229,6 @@ function PersonalInfoReview({ info, onChange, fallback }) {
                 type={f.type}
               />
             ))}
-          </div>
-          <div className="mt-3">
-            <ReviewField
-              label="Summary"
-              value={info.summary}
-              onChange={v => onChange({ ...info, summary: v })}
-              missing={isMissing(info.summary)}
-              placeholder="Brief professional summary..."
-              multiline
-            />
           </div>
         </div>
       )}
@@ -359,7 +349,7 @@ export default function ReviewPage() {
       const secs = queryClient.getQueryData(['builder-resume', id])?.data?.sections || [];
       await Promise.all(secs.map(s => deleteBuilderSection(id, s.id)));
       await updateBuilderResume(id, {
-        personal_info: { name: '', email: '', phone: '', location: '', linkedin: '', github: '', website: '', summary: '' },
+        personal_info: { name: '', title: '', email: '', phone: '', location: '', linkedin: '', link: '' },
         design_settings: {},
       });
     },
