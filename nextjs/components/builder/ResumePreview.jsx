@@ -947,10 +947,7 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
     );
   }
 
-  const PAGE_GAP = 16; // px between page separators (unscaled)
   const numPages = contentHeight > 0 ? Math.max(1, Math.ceil(contentHeight / page.height)) : 1;
-  // Total scaled height: all pages + gaps between them
-  const totalScaledHeight = numPages * page.height * s + (numPages - 1) * PAGE_GAP;
 
   return (
     <div ref={containerRef} className={`overflow-auto ${className}`} style={{ background: '#CBD5E1' }}>
@@ -962,10 +959,9 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
           </div>
         </div>
 
-        {/* Single render — content flows naturally, no clipping */}
+        {/* Single render wrapper — no overflow:hidden so content never clips */}
         <div style={{
           width: page.width * s,
-          height: totalScaledHeight,
           position: 'relative',
           flexShrink: 0,
           background: '#fff',
@@ -986,26 +982,32 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
             )}
           </div>
 
-          {/* Page break overlays — grey bands positioned at each page boundary */}
+          {/* Page break indicators — thin dashed lines, no content obscured */}
           {numPages > 1 && Array.from({ length: numPages - 1 }, (_, i) => {
-            const breakY = (i + 1) * page.height * s + i * PAGE_GAP;
+            const lineY = (i + 1) * page.height * s;
             return (
               <div key={i} style={{
                 position: 'absolute',
-                top: breakY,
+                top: lineY,
                 left: 0,
                 right: 0,
-                height: PAGE_GAP,
-                background: '#CBD5E1',
+                height: 0,
+                borderTop: '2px dashed #94a3b8',
                 pointerEvents: 'none',
-                zIndex: 2,
+                zIndex: 10,
               }}>
-                {/* Page number badges */}
-                <div style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 9, color: '#64748b', fontFamily: 'system-ui, sans-serif', display: 'flex', gap: 4, alignItems: 'center' }}>
-                  <span style={{ background: '#94a3b8', color: '#fff', borderRadius: 3, padding: '1px 5px' }}>{i + 1}</span>
-                  <span style={{ color: '#94a3b8' }}>→</span>
-                  <span style={{ background: '#94a3b8', color: '#fff', borderRadius: 3, padding: '1px 5px' }}>{i + 2}</span>
-                </div>
+                <span style={{
+                  position: 'absolute',
+                  right: 6,
+                  top: 3,
+                  fontSize: 9,
+                  color: '#64748b',
+                  background: '#CBD5E1',
+                  borderRadius: 3,
+                  padding: '1px 5px',
+                  fontFamily: 'system-ui, sans-serif',
+                  lineHeight: 1.4,
+                }}>page {i + 2}</span>
               </div>
             );
           })}

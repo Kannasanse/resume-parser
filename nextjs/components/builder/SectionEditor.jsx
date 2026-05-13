@@ -52,7 +52,7 @@ function Field({ label, children }) {
 }
 
 // Shared input style
-const inputCls = 'w-full px-[10px] py-2 border border-ds-inputBorder rounded-[7px] text-[13px] bg-white text-ds-text placeholder:text-ds-textMuted focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-primary/10 transition-colors';
+const inputCls = 'w-full px-[10px] py-2 border border-ds-inputBorder rounded-[7px] text-[13px] bg-ds-card text-ds-text placeholder:text-ds-textMuted focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-primary/10 transition-colors';
 const textareaCls = inputCls + ' resize-y min-h-[64px] leading-relaxed';
 
 // 2-column field row
@@ -64,7 +64,7 @@ function FieldRow({ children }) {
 function EntryCard({ title, sub, onDelete, children, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border border-ds-border rounded-[9px] overflow-hidden bg-white">
+    <div className="border border-ds-border rounded-[9px] overflow-hidden bg-ds-card">
       <div
         className="flex items-center gap-2 px-3 py-[10px] cursor-pointer bg-[#FAFBFC] hover:bg-ds-bg transition-colors"
         onClick={() => setOpen(o => !o)}
@@ -140,7 +140,7 @@ function SkillsEditor({ content, onChange }) {
                 key={lv}
                 title={['', 'Beginner', 'Intermediate', 'Advanced'][lv]}
                 onClick={() => update(i, { level: lv })}
-                className={`w-6 h-[18px] rounded border flex items-center justify-center transition-colors ${s.level === lv ? 'border-primary bg-primary/10' : 'border-ds-border bg-white'}`}
+                className={`w-6 h-[18px] rounded border flex items-center justify-center transition-colors ${s.level === lv ? 'border-primary bg-primary/10' : 'border-ds-border bg-ds-card'}`}
               >
                 <span style={{ width: 4 + lv * 2, height: 4 + lv * 2, borderRadius: '50%', background: '#185FA5', display: 'block' }} />
               </button>
@@ -343,7 +343,7 @@ function LanguagesEditor({ content, onChange }) {
           <select
             value={e.level || 'Fluent'}
             onChange={ev => update(i, { level: ev.target.value })}
-            className="text-[13px] border border-ds-inputBorder rounded-[7px] px-2 py-2 bg-white text-ds-text focus:outline-none focus:border-primary transition-colors"
+            className="text-[13px] border border-ds-inputBorder rounded-[7px] px-2 py-2 bg-ds-card text-ds-text focus:outline-none focus:border-primary transition-colors"
           >
             {levels.map(l => <option key={l} value={l}>{l}</option>)}
           </select>
@@ -423,7 +423,7 @@ export default function SectionEditor({ section, onContentChange, onTitleChange,
           defaultValue={section.title}
           onBlur={e => onTitleChange(e.target.value)}
           placeholder="Section name"
-          className="flex-1 px-[10px] py-2 text-[13px] font-semibold border border-ds-inputBorder rounded-[7px] bg-white text-ds-text focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-primary/10 transition-colors"
+          className="flex-1 px-[10px] py-2 text-[13px] font-semibold border border-ds-inputBorder rounded-[7px] bg-ds-card text-ds-text focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-primary/10 transition-colors"
         />
         {saveStatus === 'saving' && <span className="text-[11px] text-ds-textMuted">Saving…</span>}
         {saveStatus === 'saved' && <span className="text-[11px] text-ds-success">Saved</span>}

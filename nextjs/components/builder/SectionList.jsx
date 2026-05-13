@@ -120,7 +120,7 @@ export default function SectionList({
               onDragOver={(e) => handleDragOver(e, sec.id)}
               onDrop={(e) => handleDrop(e, sec.id)}
               onDragEnd={handleDragEnd}
-              className="flex items-center gap-2.5 px-[18px] py-[11px] select-none bg-white hover:bg-ds-bg/40 transition-colors"
+              className="flex items-center gap-2.5 px-[18px] py-[11px] select-none bg-ds-card hover:bg-ds-bg/40 transition-colors"
             >
               {/* Grip */}
               <span className="flex-shrink-0"><GripIcon /></span>

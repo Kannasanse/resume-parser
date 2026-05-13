@@ -76,7 +76,7 @@ function Seg({ options, value, onChange }) {
           onClick={() => onChange(o.value)}
           className={`flex-1 py-[6px] px-2 text-[11px] font-semibold rounded-md transition-all ${
             value === o.value
-              ? 'bg-white text-primary shadow-sm'
+              ? 'bg-ds-bg text-primary shadow-sm'
               : 'text-ds-textMuted hover:text-ds-text'
           }`}
         >
@@ -92,7 +92,7 @@ function Check({ checked, onChange, children }) {
   return (
     <label className="flex items-center gap-2.5 cursor-pointer select-none py-[3px]" onClick={() => onChange(!checked)}>
       <span className={`w-[18px] h-[18px] rounded-[4px] border-[1.5px] flex-shrink-0 grid place-items-center transition-all ${
-        checked ? 'bg-primary border-primary' : 'border-ds-border bg-white'
+        checked ? 'bg-primary border-primary' : 'border-ds-border bg-ds-card'
       }`}>
         {checked && (
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -121,7 +121,7 @@ function Tile({ active, onClick, children, style }) {
       className={`border rounded-lg grid place-items-center transition-all text-[11px] cursor-pointer ${
         active
           ? 'border-primary bg-primary/5 text-primary'
-          : 'border-ds-border bg-white text-ds-textMuted hover:border-primary/50'
+          : 'border-ds-border bg-ds-card text-ds-textMuted hover:border-primary/50'
       }`}
       style={{ aspectRatio: '1', ...style }}
     >
@@ -151,7 +151,7 @@ function HexInput({ value, onChange }) {
           onBlur={commit}
           maxLength={6}
           placeholder="185FA5"
-          className="flex-1 px-2 py-1 text-xs border border-ds-inputBorder rounded bg-white text-ds-text focus:outline-none focus:ring-1 focus:ring-primary/50"
+          className="flex-1 px-2 py-1 text-xs border border-ds-inputBorder rounded bg-ds-card text-ds-text focus:outline-none focus:ring-1 focus:ring-primary/50"
         />
       </div>
       {err && <p className="text-[10px] text-red-500 mt-0.5">{err}</p>}
@@ -301,7 +301,7 @@ export default function DesignPanel({
                 className={`w-full flex items-center justify-between px-[10px] py-2 border rounded-lg text-left transition-all ${
                   active
                     ? 'border-primary bg-primary/5'
-                    : 'border-ds-border bg-white hover:border-primary/40'
+                    : 'border-ds-border bg-ds-card hover:border-primary/40'
                 }`}
                 style={{ fontFamily: f.family }}
               >

@@ -52,7 +52,7 @@ function PersonalInfoCard({ info, onChange, resumeId }) {
   const fileInputRef = useRef(null);
   const set = (k, v) => onChange({ ...info, [k]: v });
 
-  const inputCls = 'w-full px-[10px] py-2 text-[13px] border border-ds-inputBorder rounded-[7px] bg-white text-ds-text placeholder:text-ds-textMuted focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-primary/10 transition-colors';
+  const inputCls = 'w-full px-[10px] py-2 text-[13px] border border-ds-inputBorder rounded-[7px] bg-ds-card text-ds-text placeholder:text-ds-textMuted focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-primary/10 transition-colors';
 
   const F = ({ label, k, placeholder, type = 'text' }) => (
     <div className="flex flex-col gap-1">
@@ -574,7 +574,7 @@ export default function BuilderEditor() {
         {/* Body skeleton */}
         <div className="flex flex-1 overflow-hidden">
           {/* Left pane */}
-          <div className="w-[340px] flex-shrink-0 border-r border-ds-border bg-white overflow-y-auto p-3 space-y-2.5">
+          <div className="w-[340px] flex-shrink-0 border-r border-ds-border bg-ds-card overflow-y-auto p-3 space-y-2.5">
             {/* PersonalInfoCard skeleton */}
             <div className="rounded-lg border border-ds-border bg-ds-card overflow-hidden">
               <div className="flex items-center gap-2.5 px-3.5 py-3 border-b border-ds-border">
@@ -637,7 +637,7 @@ export default function BuilderEditor() {
     <div className="flex flex-col" style={{ height: 'calc(100vh - 56px)' }}>
 
       {/* ── Top bar ──────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 px-4 h-14 bg-white border-b border-ds-border flex-shrink-0">
+      <div className="flex items-center gap-3 px-4 h-14 bg-ds-card border-b border-ds-border flex-shrink-0">
         {/* Back */}
         <Link href="/builder" className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded text-ds-textMuted hover:text-ds-text hover:bg-ds-bg transition-colors">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -655,7 +655,7 @@ export default function BuilderEditor() {
               autoFocus
               onBlur={(e) => handleTitleBlur(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
-              className="font-semibold text-ds-text border border-primary rounded px-2 py-0.5 text-sm bg-white focus:outline-none min-w-0 max-w-48"
+              className="font-semibold text-ds-text border border-primary rounded px-2 py-0.5 text-sm bg-ds-card focus:outline-none min-w-0 max-w-48"
             />
           ) : (
             <button
@@ -727,10 +727,10 @@ export default function BuilderEditor() {
       <div className="flex flex-1 overflow-hidden relative">
 
         {/* ── Left panel (340px, Content / Customize) ───────────────────────── */}
-        <div className={`${mobileTab === 'preview' ? 'hidden md:flex' : 'flex'} flex-col md:w-[340px] md:flex-none flex-1 border-r border-ds-border bg-white overflow-hidden`}>
+        <div className={`${mobileTab === 'preview' ? 'hidden md:flex' : 'flex'} flex-col md:w-[340px] md:flex-none flex-1 border-r border-ds-border bg-ds-card overflow-hidden`}>
 
           {/* Sticky panel header */}
-          <div className="flex-shrink-0 bg-white border-b border-ds-border sticky top-0 z-10">
+          <div className="flex-shrink-0 bg-ds-card border-b border-ds-border sticky top-0 z-10">
             <div className="px-[18px] pt-[14px] pb-[14px]">
               {/* Mode toggle */}
               <div className="flex p-1 bg-ds-bg rounded-[10px] gap-1">
@@ -741,7 +741,7 @@ export default function BuilderEditor() {
                   <button
                     key={m.id}
                     onClick={() => setPanelMode(m.id)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-[9px] px-3 text-[13px] font-semibold rounded-[7px] transition-all ${panelMode === m.id ? 'bg-white text-primary shadow-sm' : 'text-ds-textMuted hover:text-ds-text'}`}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-[9px] px-3 text-[13px] font-semibold rounded-[7px] transition-all ${panelMode === m.id ? 'bg-ds-bg text-primary shadow-sm' : 'text-ds-textMuted hover:text-ds-text'}`}
                   >
                     {m.icon}{m.label}
                   </button>
@@ -818,7 +818,7 @@ export default function BuilderEditor() {
         {/* Preview pane */}
         <div className={`${mobileTab === 'edit' ? 'hidden md:flex' : 'flex'} flex-col md:flex-1 flex-1 overflow-y-auto items-center py-6 gap-5 bg-[#E6ECF2]`}>
           {/* Preview toolbar */}
-          <div className="flex items-center gap-1 px-2 py-1 bg-white border border-ds-border rounded-full shadow-sm text-xs flex-shrink-0">
+          <div className="flex items-center gap-1 px-2 py-1 bg-ds-card border border-ds-border rounded-full shadow-sm text-xs flex-shrink-0">
             <button
               onClick={() => setZoom(z => Math.max(0.35, parseFloat((z - 0.1).toFixed(1))))}
               className="w-6 h-6 flex items-center justify-center rounded-full text-ds-textMuted hover:text-ds-text hover:bg-ds-bg transition-colors"
@@ -884,7 +884,7 @@ export default function BuilderEditor() {
       {showImport && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowImport(false)} />
-          <div className="relative bg-white border border-ds-border rounded-xl shadow-2xl p-6 max-w-md w-full space-y-4">
+          <div className="relative bg-ds-card border border-ds-border rounded-xl shadow-2xl p-6 max-w-md w-full space-y-4">
             <h3 className="font-heading font-bold text-ds-text">Import Resume</h3>
             <p className="text-sm text-ds-textSecondary">
               Upload a PDF or DOCX file. We'll extract your information and populate the editor.
