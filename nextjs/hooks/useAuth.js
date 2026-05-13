@@ -14,7 +14,7 @@ export function useAuth() {
     const supabase = createClient();
     const { data } = await supabase
       .from('profiles')
-      .select('id, first_name, last_name, email, role, status')
+      .select('id, first_name, last_name, email, role, status, avatar_url')
       .eq('id', userId)
       .single();
     setProfile(data || null);
@@ -62,5 +62,7 @@ export function useAuth() {
     .slice(0, 2)
     .toUpperCase() || 'AU';
 
-  return { user, profile, loading, signOut, isAdmin, isActive, displayName, initials };
+  const avatarUrl = profile?.avatar_url || null;
+
+  return { user, profile, loading, signOut, isAdmin, isActive, displayName, initials, avatarUrl };
 }

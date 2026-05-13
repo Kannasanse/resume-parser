@@ -118,7 +118,7 @@ function CloseIcon() {
 export default function Navbar() {
   const pathname = usePathname();
   const [dark, toggleTheme] = useTheme();
-  const { user, isAdmin, displayName, initials, signOut } = useAuth();
+  const { user, isAdmin, displayName, initials, avatarUrl, signOut } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const menuRef = useRef(null);
@@ -233,9 +233,11 @@ export default function Navbar() {
               <div ref={menuRef} className="relative">
                 <button
                   onClick={() => setUserMenuOpen(v => !v)}
-                  className="w-7 h-7 rounded-full bg-ds-bg border border-ds-border flex items-center justify-center text-xs font-semibold text-ds-textSecondary font-body hover:border-ds-borderStrong transition-colors"
+                  className="w-7 h-7 rounded-full bg-ds-bg border border-ds-border overflow-hidden flex items-center justify-center text-xs font-semibold text-ds-textSecondary font-body hover:border-ds-borderStrong transition-colors"
                 >
-                  {initials}
+                  {avatarUrl
+                    ? <img src={avatarUrl} alt={initials} className="w-full h-full object-cover" />
+                    : initials}
                 </button>
                 {userMenuOpen && (
                   <div className="absolute right-0 top-full mt-1.5 bg-ds-card border border-ds-border rounded shadow-lg min-w-[180px] z-50 py-1">
@@ -248,10 +250,23 @@ export default function Navbar() {
                         </span>
                       )}
                     </div>
+                    <Link
+                      href="/profile"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="w-full text-left px-3 py-1.5 text-sm text-ds-text hover:bg-ds-bg transition-colors rounded-sm flex items-center gap-2"
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                      </svg>
+                      My Profile
+                    </Link>
                     <button
                       onClick={() => { setUserMenuOpen(false); signOut(); }}
-                      className="w-full text-left px-3 py-1.5 text-sm text-ds-text hover:bg-ds-bg transition-colors rounded-sm"
+                      className="w-full text-left px-3 py-1.5 text-sm text-ds-text hover:bg-ds-bg transition-colors rounded-sm flex items-center gap-2"
                     >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+                      </svg>
                       Sign out
                     </button>
                   </div>
@@ -307,18 +322,33 @@ export default function Navbar() {
         {user && (
           <div className="border-t border-ds-border p-4 flex-shrink-0">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-8 h-8 rounded-full bg-ds-bg border border-ds-border flex items-center justify-center text-xs font-semibold text-ds-textSecondary flex-shrink-0">
-                {initials}
+              <div className="w-8 h-8 rounded-full bg-ds-bg border border-ds-border overflow-hidden flex items-center justify-center text-xs font-semibold text-ds-textSecondary flex-shrink-0">
+                {avatarUrl
+                  ? <img src={avatarUrl} alt={initials} className="w-full h-full object-cover" />
+                  : initials}
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-medium text-ds-text truncate">{displayName}</p>
                 <p className="text-xs text-ds-textMuted truncate">{user.email}</p>
               </div>
             </div>
+            <Link
+              href="/profile"
+              onClick={() => setDrawerOpen(false)}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ds-text hover:bg-ds-bg transition-colors rounded mb-1"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+              </svg>
+              My Profile
+            </Link>
             <button
               onClick={() => { setDrawerOpen(false); signOut(); }}
-              className="w-full text-left px-3 py-2 text-sm text-ds-text hover:bg-ds-bg transition-colors rounded"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ds-text hover:bg-ds-bg transition-colors rounded"
             >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
               Sign out
             </button>
           </div>
