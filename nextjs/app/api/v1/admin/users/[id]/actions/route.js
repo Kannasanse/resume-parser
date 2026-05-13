@@ -101,21 +101,21 @@ export async function POST(request, { params }) {
 
     if (action === 'send_password_reset') {
       const sc = adminClient();
-      // Use Supabase to generate a password reset link
-      const { data, error } = await sc.auth.admin.generateLink({
+      const siteUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://proflect-evo.vercel.app';
+      const redirectTo = `${siteUrl}/auth/callback?next=/reset-password`;
+
+      const { data: linkData, error: linkError } = await sc.auth.admin.generateLink({
         type: 'recovery',
         email: target.email,
-        options: {
-          redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://proflect-evo.vercel.app'}/auth/callback?next=/reset-password`,
-        },
+        options: { redirectTo },
       });
 
-      if (error) throw error;
+      if (linkError) throw linkError;
 
-      // Send via email utility if available, else use Supabase built-in
-      if (typeof sendPasswordResetEmail === 'function') {
-        await sendPasswordResetEmail({ to: target.email, link: data.properties?.action_link });
-      }
+      const resetUrl = linkData?.properties?.action_link;
+      if (!resetUrl) throw new Error('Failed to generate reset link.');
+
+      await sendPasswordResetEmail({ to: target.email, resetUrl });
 
       await auditLog({
         performedBy: adminUser.id,
