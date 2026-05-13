@@ -1,0 +1,605 @@
+# Proflect — Resume Parser & Builder · Design Brief
+> For Claude Design · MUI v9 + TailwindCSS · Next.js App Router
+
+---
+
+## Design System Quick Reference
+
+**Fonts:** `Inter` (all text) · `JetBrains Mono` (code)
+**Colors:**
+- Primary: `#185FA5` · Dark: `#0C447C` · Light bg: `#E6F1FB`
+- Success: `#1D9E75` · Error: `#D93025` · Warning: `#F59E0B`
+- Text: `#2C2C2A` · Secondary text: `#6B7280` · Disabled: `#9CA3AF`
+- Border: `#D1DCE8` · Surface: `#FFFFFF` · Page bg: `#F4F8FC`
+
+**Radius:** Inputs/buttons `8px` · Cards `12px` · Modals `16px` · Pills `9999px`
+**Shadows:** Cards `0 2px 8px rgba(12,68,124,0.10)` · Modals `0 8px 32px rgba(12,68,124,0.16)`
+**Spacing base:** 8px
+**Theme:** Light only (dark mode toggle exists but design light-first)
+
+---
+
+## App Shell
+
+### Navbar (Admin)
+- White bg, `border-bottom: 1px solid #D1DCE8`, sticky, height 64px
+- Left: Logo `Proflect`
+- Center nav links: **Profiles** · **Job Profiles** · **Builder** · **Dashboard**
+  - Active link: `color: #185FA5`, `bgcolor: #E6F1FB`, `borderRadius: 8px`
+  - Default link: `color: #2C2C2A`, hover `#E6F1FB`
+- Right: notification bell with error badge · Avatar (36px, `border: 2px solid #D1DCE8`) with dropdown menu
+- Mobile: hamburger icon → Drawer (280px, left)
+
+### Navbar (User)
+- Same shell, only **Builder** link visible
+
+### Sidebar (optional desktop)
+- 240px permanent drawer, white, `border-right: 1px solid #D1DCE8`
+- Nav items: `ListItemButton` with icon + label, selected state `#E6F1FB` bg + `#185FA5` text
+- Section subheaders: `11px`, `font-weight 600`, `uppercase`, `letter-spacing 0.08em`, `#6B7280`
+
+---
+
+## Pages
+
+---
+
+### 1. `/login` — Login
+
+**Layout:** Full page, centered card `maxWidth="sm"`, page bg `#F4F8FC`
+
+**Card:** white, `borderRadius: 16px`, `padding: 40px`, `shadow-lg`
+
+**Elements (top → bottom):**
+1. Logo / app name centered
+2. `h4` heading: "Welcome back"
+3. `body2` subtext: "Sign in to your account" · `color: #6B7280`
+4. `TextField` — Email · `fullWidth` · `outlined`
+5. `TextField` — Password · `type="password"` · end adornment `<IconButton>` show/hide · `fullWidth`
+6. Row: "Forgot password?" right-aligned · `Link` · `color: #185FA5` · `fontSize: 14px`
+7. `Button variant="contained"` — "Sign In" · `fullWidth` · `bgcolor: #185FA5`
+8. `Divider` with "or" centered text · `color: #6B7280`
+9. `Button variant="outlined"` — "Continue with Google" · Google icon left · `fullWidth` · `borderColor: #D1DCE8` · `color: #2C2C2A`
+10. Bottom text: "Don't have an account? **Sign up**" · centered
+
+**Error states:**
+- Field-level: `error` prop on TextField + `helperText` in `#D93025`
+- Lockout: `Alert severity="error"` above form — "Account locked. Try again in **X minutes**."
+- Unverified: `Alert severity="warning"` — "Please verify your email. [Resend link]"
+
+---
+
+### 2. `/signup` — Sign Up
+
+**Layout:** Same centered card as login
+
+**Elements:**
+1. Logo + `h4` "Create your account"
+2. `Grid container spacing={2}`:
+   - `Grid size={6}`: First Name `TextField`
+   - `Grid size={6}`: Last Name `TextField`
+3. Email `TextField` · `fullWidth`
+4. Password `TextField` with show/hide toggle · `fullWidth`
+5. **Password strength bar** — 4 segments, full width below password field
+   - Segment colors: Weak `#D93025` · Fair `#F59E0B` · Good `#185FA5` · Strong `#1D9E75`
+   - Label below bar: e.g. "Good" in matching color · `caption` variant
+6. Confirm Password `TextField` · `fullWidth`
+7. `Button variant="contained"` — "Create Account" · `fullWidth`
+8. `Divider` with "or"
+9. `Button variant="outlined"` — "Continue with Google" · `fullWidth`
+10. "Already have an account? **Sign in**" · centered
+
+---
+
+### 3. `/verify-email` — Email Verification
+
+**Layout:** Centered, minimal, page bg `#F4F8FC`
+
+**Card:** white, `borderRadius: 16px`, `padding: 48px`, max-width 480px, centered text
+
+**Elements:**
+1. Large envelope icon (64px) · `color: #185FA5`
+2. `h3` "Check your inbox"
+3. `body2` "We sent a verification link to **email@example.com**" · `color: #6B7280`
+4. `Alert severity="info"` — "Didn't receive it? Check your spam folder."
+5. `Button variant="outlined"` — "Resend verification email" · `fullWidth`
+   - Disabled state: "Resend in **X:XX**" with `CircularProgress size={16}` inline
+6. `caption` — "You can resend up to 3 times per hour" · `color: #9CA3AF` · centered
+
+---
+
+### 4. `/forgot-password` — Forgot Password
+
+**Layout:** Centered card, same as login
+
+**Elements:**
+1. Back arrow `IconButton` + `Link` "Back to login" · top-left of card
+2. Lock icon (48px) · `color: #185FA5` · centered
+3. `h4` "Forgot your password?"
+4. `body2` subtext: "Enter your email and we'll send you a reset link." · `color: #6B7280`
+5. Email `TextField` · `fullWidth`
+6. `Button variant="contained"` — "Send Reset Link" · `fullWidth`
+
+**Success state** (replace form):
+- Checkmark icon · `color: #1D9E75`
+- `h5` "Check your inbox"
+- `body2` "Reset link sent to **email@example.com**. Link expires in 1 hour."
+- `Button variant="text"` — "Send again" · centered
+
+---
+
+### 5. `/reset-password` — Reset Password
+
+**Layout:** Centered card
+
+**Elements:**
+1. `h4` "Set new password"
+2. New Password `TextField` + show/hide + strength bar
+3. Confirm Password `TextField` + show/hide
+4. `Button variant="contained"` — "Reset Password" · `fullWidth`
+
+---
+
+### 6. `/join` — Invite Acceptance
+
+**Layout:** Centered card, max-width `sm`
+
+**Elements:**
+1. Logo
+2. `Chip` — role badge e.g. "Invited as Admin" · `bgcolor: #E6F1FB` · `color: #185FA5`
+3. `h4` "Accept your invitation"
+4. `body2` — "You've been invited to join Proflect." · `color: #6B7280`
+5. Email `TextField` · `disabled` · `fullWidth` (pre-filled, read-only)
+6. `Grid` First Name / Last Name side-by-side
+7. Password + strength bar
+8. Confirm Password
+9. `Button variant="contained"` — "Accept & Join" · `fullWidth` · `bgcolor: #185FA5`
+
+**Error states (replace form content):**
+- Expired token: `Alert severity="error"` — "This invitation has expired."
+- Used token: `Alert severity="warning"` — "This invitation has already been used."
+- Invalid token: `Alert severity="error"` — "Invalid invitation link."
+
+---
+
+### 7. `/resumes` — Profiles List (Admin)
+
+**Layout:** Full-width content area, top nav + optional sidebar
+
+**Page header:**
+- `h2` "Resumes" left
+- Right: `Button variant="contained"` "Upload Resume" with upload icon
+
+**Toolbar row (below header):**
+- Search `TextField size="small"` with search icon adornment · width 280px
+- `Select size="small"` — Status filter: All / Pending / Processing / Completed / Failed
+- `ToggleButtonGroup size="small"` — Grid view / Table view icons
+- `Button variant="text"` — "Bulk Delete" · `color: #D93025` · appears when rows selected
+
+**Grid view (default):** `Grid container spacing={3}`
+Each resume card (`Card elevation={1}`, `borderRadius: 12px`, `border: 1px solid #D1DCE8`):
+- `CardHeader`: file icon · filename (truncated) · `Chip` status badge
+  - Status chip colors: Pending `#FEF3C7/#B45309` · Processing `#E6F1FB/#185FA5` · Completed `#D1FAE5/#1D9E75` · Failed `#FEE2E2/#D93025`
+- `CardContent`: candidate name · email · uploaded date · job profile linked (or "No job linked" in `#9CA3AF`)
+- `CardActions`: "View" `outlined` + kebab menu icon
+
+**Table view:** `TableContainer` with `border: 1px solid #D1DCE8`, `borderRadius: 12px`
+- Columns: Checkbox · File Name · Candidate · Status · Job Profile · Uploaded · Actions
+- Header: `bgcolor: #E6F1FB`, `color: #185FA5`, `fontSize: 12px`, uppercase, sortable with `TableSortLabel`
+- Row hover: `bgcolor: #F4F8FC`
+- Actions cell: "View" `Button size="small" variant="text"` + kebab `IconButton`
+
+**Pagination:** `Pagination` component · `shape="rounded"` · centered · below table/grid
+
+**Empty state:**
+- Centered illustration area · `h5` "No resumes yet" · `body2` subtext · "Upload Resume" CTA button
+
+---
+
+### 8. `/resumes/upload` — Upload Resume (Admin)
+
+**Layout:** Centered content, `maxWidth="md"`
+
+**Page header:** `h3` "Upload Resume(s)"
+
+**Job Profile selector (optional):**
+- `Autocomplete` — "Link to Job Profile (optional)" · full width · shows org + title
+
+**Drop zone:**
+- `Paper` dashed border `2px dashed #D1DCE8`, `borderRadius: 12px`, `padding: 48px`, centered
+- Hover/drag-over: border `#185FA5`, bg `#E6F1FB`
+- Cloud upload icon (48px) · `color: #9CA3AF`
+- `h6` "Drag & drop resumes here"
+- `body2` "or" · `Button variant="outlined"` "Browse Files"
+- `caption` "PDF, DOC, DOCX · Max 10 MB per file" · `color: #9CA3AF`
+
+**File queue** (after files added):
+- `List` — each item: file icon · filename · file size · status chip · remove `IconButton`
+- Status: Queued → Uploading (`LinearProgress`) → Parsed (`#1D9E75` check) → Failed (`#D93025` × icon)
+
+**Submit:** `Button variant="contained"` "Upload & Parse" · `fullWidth` · disabled until files added
+
+---
+
+### 9. `/resumes/:id` — Resume Detail (Admin)
+
+**Layout:** Two-column `Grid` — left 7/12, right 5/12
+
+**Left panel:**
+- Breadcrumbs: Resumes > [filename]
+- Candidate name `h3` + email + phone in `Stack direction="row"` with icon adornments
+- Status `Chip` + "Re-parse" `Button variant="outlined" size="small"` + "Delete" `Button variant="outlined" color="error" size="small"` — action row
+- `Tabs` with indicator `#185FA5`:
+  - **Parsed Data** — sections: Summary, Skills (chips), Experience (Timeline), Education (List), Certifications, Projects
+  - **Raw JSON** — `Paper` with monospace JSON viewer, `bgcolor: #F4F8FC`
+
+**Right panel (Score):**
+- `Paper border="1px solid #D1DCE8" borderRadius="12px" padding="24px"`
+- "Score Against Job" `Autocomplete` + `Button variant="contained"` "Score"
+- If scored:
+  - Overall score: large circular progress ring · score % centered · band `Chip`
+    - Strong Match `#D1FAE5/#1D9E75` · Good `#E6F1FB/#185FA5` · Moderate `#FEF3C7/#B45309` · Weak `#FEE2E2/#D93025`
+  - 7 factor scores as horizontal `LinearProgress` bars with labels:
+    - Skills · Experience · Education · Title · Certs · Projects · Quality
+  - `Accordion` — AI Summary (strengths/gaps)
+    - Strengths: bullet list with `CheckCircleIcon color="#1D9E75"`
+    - Gaps: bullet list with `WarningIcon color="#F59E0B"`
+- Export row: "Export JSON" + "Export CSV" `Button variant="outlined" size="small"`
+
+---
+
+### 10. `/jobs` — Job Profiles List (Admin)
+
+**Layout:** Full-width
+
+**Page header:** `h2` "Job Profiles" + "New Job Profile" `Button variant="contained"`
+
+**Search + filter toolbar:** Search `TextField` · Org `Select` filter
+
+**Job profile tiles:** `Grid container spacing={3}`
+Each tile (`Card elevation={1}`, `borderRadius: 12px`):
+- `CardHeader`: job title `h5` · org name `caption`/`color: #6B7280` · role type `Chip outlined`
+- `CardContent`:
+  - Seniority badge · required experience `caption`
+  - Top skills: 3–4 `Chip size="small"` + "+N more" text
+  - Candidate count: `body2` "**12** candidates"
+- `CardActions`: "View Candidates" `outlined` + kebab menu
+
+**Empty state:** centered, "No job profiles yet" + CTA
+
+---
+
+### 11. `/jobs/new` and `/jobs/:id/edit` — Job Profile Form (Admin)
+
+**Layout:** `maxWidth="md"`, centered
+
+**`Paper` form container, `padding: 32px`, `borderRadius: 12px`:**
+
+**Section 1 — Basic Info:**
+- Job Title `TextField fullWidth`
+- Organization `Autocomplete freeSolo` (with inline "Create new org" option)
+- `Grid 2-col`: Role Type `Select` · Seniority `Select`
+- `Grid 2-col`: Required Experience (years) `NumberField` · Required Degree `Select`
+
+**Section 2 — Description:**
+- `TextField multiline minRows={6}` — rich text job description
+- "Extract Skills with AI" `Button variant="outlined" startIcon={<AutoAwesomeIcon />}` below textarea
+
+**Section 3 — Required Skills** (populated by AI extraction or manual):
+- Skill chips list with proficiency dots + required toggle
+- "Add skill" `TextField size="small"` inline at bottom of list
+
+**Section 4 — Scoring Weights** (custom sliders):
+- 7 `Slider` rows: Skills · Experience · Education · Title · Certs · Projects · Quality
+- Each row: label left, `Slider color="#185FA5"` center, `%` value right
+- Note: sliders sum to 100% — live validation
+
+**Footer actions:** `Stack direction="row" justifyContent="flex-end" spacing={2}`:
+- "Cancel" `outlined` · "Save Job Profile" `contained`
+
+---
+
+### 12. `/jobs/:id` — Job Profile Detail / Candidates (Admin)
+
+**Layout:** Full-width
+
+**Header:**
+- Job title `h2` · org `body1 color="#6B7280"` · role+seniority chips
+- Actions: "Edit" `outlined` · "Upload Resume" `contained` · "Add Existing" `outlined` · delete kebab
+
+**`Tabs`:** Candidates · Overview · Settings
+
+**Candidates tab:**
+- Filter bar: Search · Band filter chips (Strong / Good / Moderate / Weak) · Sort `Select` · "Export XLSX" `Button`
+- Candidates table:
+  - Columns: Candidate name · Email · Score (with band `Chip`) · Skills % · Experience % · Scored at · Actions
+  - Expandable row: AI Assessment accordion (strengths/gaps)
+  - Row actions: "Rescore" `Button size="small"` + kebab
+- Pagination
+
+---
+
+### 13. `/admin` — Dashboard (Admin)
+
+**Layout:** Full-width, `Grid container spacing={3}`
+
+**Stat cards row** (`Grid size={4}` each):
+Each `Card elevation={1} borderRadius="12px"`:
+- Icon (48px circle bg `#E6F1FB`, icon `#185FA5`)
+- `h3` stat number
+- `body2` label e.g. "Total Users"
+- Trend indicator (optional): `caption` "+12 this month" `color="#1D9E75"`
+
+Stats: Total Users (links to user list) · Pending Invitations · Active Job Profiles
+
+**Quick Actions:**
+- Two `Card` tiles side-by-side:
+  - "Manage Users" — person icon, description, "Go to Users" button
+  - "Invite Users" — email icon, description, "Invite" `contained` + "Bulk Import CSV" `outlined`
+
+---
+
+### 14. `/admin/users` — User List (Admin)
+
+**Layout:** Full-width
+
+**Page header:** `h2` "Users"
+
+**Toolbar:**
+- Search (name/email) · Role `Select` (All/User/Admin) · Status `Select` (All/Active/Pending/Deactivated)
+- Sort `Select` (First Name / Email / Joined date) + asc/desc `IconButton`
+
+**Table:** `TableContainer border="1px solid #D1DCE8" borderRadius="12px"`
+- Columns: Name + avatar · Email · Role `Chip` · Status `Chip` · Joined · Edit `Link`
+- Status chip colors: Active `#D1FAE5/#1D9E75` · Pending `#FEF3C7/#B45309` · Deactivated `#F3F4F6/#6B7280`
+- Role chip: Admin `#E6F1FB/#185FA5` · User `#F3F4F6/#6B7280`
+
+**Pagination:** "Showing X–Y of Z" text left + `Pagination` right
+
+---
+
+### 15. `/admin/users/:id` — User Detail & Edit (Admin)
+
+**Layout:** `maxWidth="md"`, centered · `Paper` container
+
+**Account info section:**
+- Avatar (64px initials) + name `h4` + email + joined date + last login · `Stack`
+- `Chip` status badge · `Chip` role badge
+- Locked account: `Alert severity="warning"` — "Account locked since X. **Unlock**" action button inline
+
+**Edit section:**
+- Role `Select` (User / Admin) — disabled if viewing own account
+- Status `Select` (Active / Pending / Deactivated) — disabled if own account
+- Failed logins count `caption`
+- "Save Changes" `Button variant="contained"`
+
+**Danger Zone:**
+- `Paper` with `border: 1px solid #D93025`, `borderRadius: 12px`, `padding: 24px`
+- `h6` "Danger Zone" `color="#D93025"`
+- "Permanently delete this account" row with hold-to-delete button
+  - Hold button: press and hold 3s, progress fills, releases on delete
+  - Disabled if own account
+
+---
+
+### 16. `/admin/invite` — Invite Users (Admin)
+
+**Layout:** `maxWidth="md"`, `Grid` two sections
+
+**Left — Send Invites:**
+- `Paper padding="24px" borderRadius="12px"`
+- `h5` "Invite Users"
+- Email chip input: `TextField` where pressing Enter/comma/Tab adds a `Chip`
+  - Chips: email text + × delete · `bgcolor: #E6F1FB` · `color: #185FA5`
+- Role `Select` — User / Admin
+- "Send Invitations" `Button variant="contained"` `fullWidth`
+- Results list (after send): per-email `Alert` — success `#1D9E75` / duplicate `#F59E0B` / error `#D93025`
+
+**Right — Pending Invitations:**
+- `Paper padding="24px" borderRadius="12px"`
+- `h5` "Pending Invitations"
+- `List` — each item: email · role `Chip` · expires date · "Cancel" `Button size="small" color="error"`
+- Empty state: `body2` "No pending invitations" `color="#9CA3AF"`
+
+---
+
+### 17. `/admin/import` — Bulk CSV Import (Admin)
+
+**Layout:** `maxWidth="md"`, centered
+
+**Step 1 — Upload:**
+- Drop zone (same style as resume upload) — CSV files only
+- "Download CSV Template" `Link` with download icon below drop zone
+
+**Step 2 — Preview (after CSV parsed):**
+- `Alert severity="info"` — "X rows found. Showing first 20."
+- `Table` preview — columns: First Name · Last Name · Email · Role · Status (valid ✓ / error ✗)
+- Per-row errors shown in error column with `Tooltip` detail
+- Row count: Invited X · Skipped X · Errors X in colored `Chip` row
+- "Confirm Import" `Button contained` + "Cancel" `outlined`
+
+**Step 3 — Results:**
+- Summary chips: Invited `#D1FAE5/#1D9E75` · Skipped `#FEF3C7/#B45309` · Errors `#FEE2E2/#D93025`
+- Full results table with per-row status
+- "Done" `Button contained` → back to user list
+
+---
+
+### 18. `/builder` — Resume List (User)
+
+**Layout:** Full-width, page bg `#F4F8FC`
+
+**Page header:** `h2` "My Resumes" + `Stack direction="row" spacing={2}`:
+- "New Resume" `Button variant="contained"`
+- "New from Upload" `Button variant="outlined"` with upload icon
+
+**Resume cards grid:** `Grid container spacing={3}` — `Grid size={{ xs:12, sm:6, md:4 }}`
+
+Each resume card (`Card elevation={1}`, `borderRadius: 12px`, hover lift: `transform: translateY(-2px)`, `transition: 200ms`):
+- **Template color swatch** — 8px top border in template accent color (or full-height left border)
+- `CardContent`:
+  - Resume name `h5`
+  - Template name `caption color="#6B7280"`
+  - Last updated `caption color="#9CA3AF"`
+- `CardActions`: "Edit" `contained size="small"` · "Preview" `outlined size="small"` · kebab menu
+  - Kebab: Duplicate · Download PDF · Share · `Divider` · Delete (red)
+
+**Empty state:** centered illustration · "No resumes yet" · "Create your first resume" CTA
+
+---
+
+### 19. `/builder/:id` — Resume Editor (User)
+
+**Layout:** Two-panel split — Left editor 45%, Right live preview 55% · sticky both panels
+
+**Left panel — Editor:**
+
+**Top bar:** Resume name (inline editable `TextField`) · Template selector button · "Preview" mobile toggle
+
+**Section list** (scrollable):
+Each section is a `Accordion disableGutters elevation={0}` with `border: 1px solid #D1DCE8`:
+- Summary handle: drag icon + section name `body2 fontWeight={600}` + enabled `Switch` + expand arrow
+- Expanded: form fields specific to section type
+
+Section types and their fields:
+- **Personal Info:** First/Last Name · Email · Phone · Location · LinkedIn · Website — `Grid 2-col`
+- **Summary:** `TextareaAutosize minRows={4}`
+- **Skills:** skill name + proficiency `Rating` + "Add skill" button
+- **Work Experience:** multi-entry — company, title, dates `DatePicker`, description `TextareaAutosize` — add/remove/reorder entries with drag handles
+- **Education:** institution, degree, field, graduation year
+- **Certifications / Projects / Languages / Awards / Interests / Other:** similar multi-entry patterns
+
+**Bottom toolbar:** "+ Add Section" `Button variant="outlined"` full-width
+
+**Right panel — Live Preview:**
+- White paper shadow: `Paper elevation={4}` max-width A4 (794px), centered, scrollable
+- Template renders live as user types
+- Template selector: horizontal scroll chips or grid modal
+
+**Customization drawer** (accessible via gear icon):
+- **Layout tab:** Column layout `ToggleButtonGroup` (1-col / 2-col / Mix) · Section column assign toggles
+- **Spacing tab:** Font size `Slider 9–14pt` · Line height `Slider` · Margins (4 sliders) · Entry spacing `Slider`
+- **Style tab:** Section title size `ToggleButtonGroup` S/M/L · Subtitle size · List style (Bullet/Hyphen) · Heading icon (None/Outline/Filled)
+- **Footer tab:** `Checkbox` Page Numbers · Email · Name — with inline warnings if data missing
+- **Sections tab:** Skills layout `Select` (Rows/Grid/Compact/Bubble/Level) · Education order toggle · Experience order toggle
+
+---
+
+### 20. `/builder/:id/review` — Resume Review & Export (User)
+
+**Layout:** Full-page preview
+
+**Top bar:**
+- "Back to Editor" `Button variant="outlined"` with back arrow
+- Resume name `h5` centered
+- "Download PDF" `Button variant="contained"` with download icon · triggers browser print
+
+**Preview area:** A4 paper centered, white bg, `shadow-xl`, full resume rendered in template
+
+---
+
+### 21. `/r/:token` — Public Share Page
+
+**Layout:** Minimal — no navbar, no sidebar
+
+- Full resume rendered in selected template, centered
+- Watermark/powered-by footer: `caption` "Created with Proflect" + link · `color: #9CA3AF`
+- If token invalid/revoked: `Alert severity="error"` "This resume is no longer available."
+
+---
+
+### 22. `/access-denied` — Access Denied
+
+**Layout:** Centered, full page `bgcolor: #F4F8FC`
+
+**Card:**
+- Lock icon (64px) · `color: #D93025`
+- `h3` "Access Denied"
+- `body1` "You don't have permission to view this page." · `color: #6B7280`
+- `Button variant="contained"` — role-aware: "Go to Builder" (user) or "Go to Resumes" (admin)
+
+---
+
+## Shared Components
+
+### Score Band Chip
+```
+Strong Match  → bgcolor: #D1FAE5, color: #1D9E75
+Good Match    → bgcolor: #E6F1FB, color: #185FA5
+Moderate Match→ bgcolor: #FEF3C7, color: #B45309
+Weak Match    → bgcolor: #FEE2E2, color: #D93025
+```
+
+### Hold-to-Delete Button
+- `Button variant="outlined" color="error"`
+- On `mousedown`: `LinearProgress` fills over 3s
+- On complete: triggers delete action
+- On `mouseup` early: resets progress
+- Label: "Hold to Delete"
+
+### Skeleton Loaders
+- Card skeleton: circular avatar + 2 text lines + rectangular block
+- Table skeleton: 5 rows × column widths matching real table
+- All use `animation="wave"` (not pulse)
+
+### Status Badges (User)
+```
+Active      → bgcolor: #D1FAE5, color: #1D9E75
+Pending     → bgcolor: #FEF3C7, color: #B45309
+Deactivated → bgcolor: #F3F4F6, color: #6B7280
+```
+
+### Session Timeout Modal
+- `Dialog maxWidth="xs"` · `borderRadius: 16px`
+- `h6` "Session expiring soon"
+- `body2` "You'll be signed out in **X minutes** due to inactivity."
+- `DialogActions`: "Sign Out" `outlined` · "Stay Signed In" `contained`
+
+### Toast / Snackbar
+- Position: `bottom-right` desktop · `bottom-center` mobile
+- Success: dark bg `#2C2C2A`, success icon `#1D9E75` · auto-hide 4s
+- Error: `bgcolor: #D93025`, white text · auto-hide 6s
+
+---
+
+## Responsive Rules
+
+| Element | Mobile (`xs/sm`) | Desktop (`md+`) |
+|---------|-----------------|-----------------|
+| Navbar | Hamburger → Drawer | Full horizontal nav |
+| Resume editor | Single panel, preview modal | Two-panel split |
+| Cards grid | 1 column | 3–4 columns |
+| Tables | Horizontal scroll | Full display |
+| Dialogs | `fullScreen` | Centered max-width |
+| FAB | Fixed `bottom-right` for primary action | Inline button |
+| Filter bar | "Filters" button → bottom Drawer | Inline row |
+
+---
+
+## Page Inventory (Summary)
+
+| Route | Page | Persona |
+|-------|------|---------|
+| `/login` | Login | All |
+| `/signup` | Sign Up | All |
+| `/verify-email` | Email Verification | All |
+| `/forgot-password` | Forgot Password | All |
+| `/reset-password` | Reset Password | All |
+| `/join` | Invite Acceptance | All |
+| `/resumes` | Profiles List | Admin |
+| `/resumes/upload` | Upload Resume | Admin |
+| `/resumes/:id` | Resume Detail | Admin |
+| `/jobs` | Job Profiles List | Admin |
+| `/jobs/new` | New Job Profile | Admin |
+| `/jobs/:id/edit` | Edit Job Profile | Admin |
+| `/jobs/:id` | Job Detail + Candidates | Admin |
+| `/admin` | Dashboard | Admin |
+| `/admin/users` | User List | Admin |
+| `/admin/users/:id` | User Detail + Edit | Admin |
+| `/admin/invite` | Invite Users | Admin |
+| `/admin/import` | Bulk CSV Import | Admin |
+| `/builder` | Resume List | User |
+| `/builder/:id` | Resume Editor | User |
+| `/builder/:id/review` | Review + Export | User |
+| `/r/:token` | Public Share | Public |
+| `/access-denied` | Access Denied | All |

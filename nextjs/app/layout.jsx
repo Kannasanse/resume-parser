@@ -5,9 +5,9 @@ export const metadata = {
   title: 'Profile Stream',
   description: 'AI-powered resume parsing and candidate scoring',
   icons: {
-    icon: '/icon.svg',
-    shortcut: '/icon.svg',
-    apple: '/icon.svg',
+    icon: '/favicon.png',
+    shortcut: '/favicon.png',
+    apple: '/favicon.png',
   },
 };
 
