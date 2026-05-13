@@ -180,7 +180,7 @@ function SkillsBody({ sec, util, variantCols }) {
                 {[1,2,3].map(lv => <span key={lv} style={{ width: 6, height: 6, borderRadius: '50%', background: lv <= (s.level || 2) ? dotColor : '#E5E7EB' }} />)}
               </span>
             )}
-            {lvlStyle === 'bars' && (
+            {(lvlStyle === 'bars' || lvlStyle === 'bar') && (
               <span style={{ display: 'inline-flex', alignItems: 'center', width: 60, height: 6, borderRadius: 3, background: '#E5E7EB', overflow: 'hidden', flexShrink: 0 }}>
                 <span style={{ width: `${Math.round(((s.level || 2) / 3) * 100)}%`, height: '100%', background: dotColor, borderRadius: 3, transition: 'width 0.3s' }} />
               </span>
@@ -947,56 +947,69 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
     );
   }
 
-  const PAGE_GAP = 16; // px gap between page cards (unscaled)
+  const PAGE_GAP = 16; // px between page separators (unscaled)
   const numPages = contentHeight > 0 ? Math.max(1, Math.ceil(contentHeight / page.height)) : 1;
+  // Total scaled height: all pages + gaps between them
+  const totalScaledHeight = numPages * page.height * s + (numPages - 1) * PAGE_GAP;
 
   return (
     <div ref={containerRef} className={`overflow-auto ${className}`} style={{ background: '#CBD5E1' }}>
-      <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: PAGE_GAP }}>
-        {/* Hidden measurement div — full template render to measure real height */}
+      <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        {/* Hidden measurement div */}
         <div style={{ position: 'absolute', visibility: 'hidden', pointerEvents: 'none', top: 0, left: 0, width: page.width }}>
           <div ref={contentRef}>
             <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
           </div>
         </div>
 
-        {/* Visible page cards — each clips one page's worth of content */}
-        {Array.from({ length: numPages }, (_, i) => (
-          <div key={i} style={{
-            width: page.width * s,
-            height: page.height * s,
-            flexShrink: 0,
-            position: 'relative',
-            overflow: 'hidden',
-            background: '#fff',
-            boxShadow: '0 4px 24px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.08)',
-            borderRadius: 2,
+        {/* Single render — content flows naturally, no clipping */}
+        <div style={{
+          width: page.width * s,
+          height: totalScaledHeight,
+          position: 'relative',
+          flexShrink: 0,
+          background: '#fff',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.08)',
+        }}>
+          {/* Scaled template content */}
+          <div style={{
+            width: page.width,
+            transformOrigin: 'top left',
+            transform: `scale(${s})`,
           }}>
-            {/* Template content offset so this page's slice shows */}
-            <div style={{
-              width: page.width,
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              transform: `scale(${s}) translateY(-${i * page.height}px)`,
-              transformOrigin: 'top left',
-            }}>
-              <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
-              {hasFooter && i === numPages - 1 && (
-                <div style={{ borderTop: '1px solid #e0e0e0', padding: '6px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8pt', color: '#888', background: '#fff' }}>
-                  <span>{[fs.name && pi.name, fs.email && pi.email].filter(Boolean).join(' · ')}</span>
-                  {fs.pageNumbers && <span>Page {i + 1}</span>}
-                </div>
-              )}
-            </div>
-            {/* Page number label */}
-            {numPages > 1 && (
-              <div style={{ position: 'absolute', bottom: 6, right: 8, fontSize: 9, color: '#94a3b8', fontFamily: 'system-ui, sans-serif', pointerEvents: 'none' }}>
-                {i + 1} / {numPages}
+            <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
+            {hasFooter && (
+              <div style={{ borderTop: '1px solid #e0e0e0', padding: '6px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8pt', color: '#888', background: '#fff' }}>
+                <span>{[fs.name && pi.name, fs.email && pi.email].filter(Boolean).join(' · ')}</span>
+                {fs.pageNumbers && <span>Page {numPages}</span>}
               </div>
             )}
           </div>
-        ))}
+
+          {/* Page break overlays — grey bands positioned at each page boundary */}
+          {numPages > 1 && Array.from({ length: numPages - 1 }, (_, i) => {
+            const breakY = (i + 1) * page.height * s + i * PAGE_GAP;
+            return (
+              <div key={i} style={{
+                position: 'absolute',
+                top: breakY,
+                left: 0,
+                right: 0,
+                height: PAGE_GAP,
+                background: '#CBD5E1',
+                pointerEvents: 'none',
+                zIndex: 2,
+              }}>
+                {/* Page number badges */}
+                <div style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 9, color: '#64748b', fontFamily: 'system-ui, sans-serif', display: 'flex', gap: 4, alignItems: 'center' }}>
+                  <span style={{ background: '#94a3b8', color: '#fff', borderRadius: 3, padding: '1px 5px' }}>{i + 1}</span>
+                  <span style={{ color: '#94a3b8' }}>→</span>
+                  <span style={{ background: '#94a3b8', color: '#fff', borderRadius: 3, padding: '1px 5px' }}>{i + 2}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
