@@ -1,5 +1,5 @@
 'use client';
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase-browser';
@@ -29,6 +29,20 @@ function LoginContent() {
   const [error, setError]       = useState('');
   const [lockoutMins, setLockoutMins] = useState(0);
   const [unverified, setUnverified]   = useState(false);
+  const [hashError, setHashError]     = useState(null);
+
+  useEffect(() => {
+    const hash = new URLSearchParams(window.location.hash.replace('#', ''));
+    const errCode = hash.get('error_code');
+    const errDesc = hash.get('error_description');
+    if (errCode === 'otp_expired') {
+      setHashError('Your password reset link has expired. Please request a new one.');
+    } else if (errCode === 'access_denied' || errDesc) {
+      setHashError(errDesc?.replace(/\+/g, ' ') || 'The link is invalid or has expired.');
+    }
+    // Clean the hash from the URL without reloading
+    if (hash.get('error')) window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  }, []);
 
   const handleGoogle = async () => {
     setGoogleLoading(true);
@@ -93,6 +107,13 @@ function LoginContent() {
             <h1 className="text-xl font-bold text-ds-text font-heading">Welcome back</h1>
             <p className="text-sm text-ds-textSecondary">Sign in to your account</p>
           </div>
+
+          {hashError && (
+            <div className="text-sm text-ds-danger bg-ds-dangerLight rounded-lg px-4 py-3">
+              {hashError}{' '}
+              <Link href="/forgot-password" className="underline font-medium">Request new link</Link>
+            </div>
+          )}
 
           {lockoutMins > 0 && (
             <div className="text-sm text-ds-danger bg-ds-dangerLight rounded-lg px-4 py-3">
