@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -21,26 +21,32 @@ import ShareModal from '@/components/builder/ShareModal.jsx';
 import Link from 'next/link';
 import { Sk } from '@/components/Skeleton';
 
-// ── Save pill ─────────────────────────────────────────────────────────────────
+// ── Save button ───────────────────────────────────────────────────────────────
 
-function SavePill({ state }) {
-  if (state === 'saving') return (
-    <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-xs font-semibold bg-amber-50 border border-amber-200 text-amber-700">
-      <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+function SaveButton({ onClick, saving, saved, error }) {
+  if (saving) return (
+    <button disabled className="inline-flex items-center gap-1.5 h-8 px-4 rounded-md text-xs font-semibold bg-primary/60 text-white cursor-not-allowed">
+      <span className="w-3 h-3 rounded-full border-2 border-white border-t-transparent animate-spin" />
       Saving…
-    </span>
+    </button>
   );
-  if (state === 'error') return (
-    <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-xs font-semibold bg-ds-dangerLight border border-ds-danger/30 text-ds-danger">
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      Save failed
-    </span>
+  if (error) return (
+    <button onClick={onClick} className="inline-flex items-center gap-1.5 h-8 px-4 rounded-md text-xs font-semibold bg-ds-danger text-white hover:bg-ds-danger/90 transition-colors">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Retry save
+    </button>
+  );
+  if (saved) return (
+    <button onClick={onClick} className="inline-flex items-center gap-1.5 h-8 px-4 rounded-md text-xs font-semibold bg-ds-successLight border border-ds-success/30 text-ds-success hover:bg-ds-success/10 transition-colors">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      Saved
+    </button>
   );
   return (
-    <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-xs font-semibold bg-ds-successLight border border-ds-success/30 text-ds-success">
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-      All changes saved
-    </span>
+    <button onClick={onClick} className="inline-flex items-center gap-1.5 h-8 px-4 rounded-md text-xs font-semibold bg-primary text-white hover:bg-primary/90 transition-colors">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Save
+    </button>
   );
 }
 
@@ -311,14 +317,13 @@ export default function BuilderEditor() {
   const [showImport, setShowImport] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [importFile, setImportFile] = useState(null);
-  const [sectionSaveStatus, setSectionSaveStatus] = useState({});
   const [toast, setToast] = useState(null);
   const [titleEditing, setTitleEditing] = useState(false);
   const [zoom, setZoom] = useState(0.72);
   const [mobileTab, setMobileTab] = useState('edit'); // 'edit' | 'preview'
   const [panelMode, setPanelMode] = useState('content'); // 'content' | 'customize'
   const [customizeTab, setCustomizeTab] = useState('design'); // 'design' | 'spacing' | 'sections'
-  const debounceRefs = useRef({});
+  const [saveState, setSaveState] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['builder-resume', id],
@@ -337,7 +342,7 @@ export default function BuilderEditor() {
 
   const showToast = useCallback((message, type = 'info') => setToast({ message, type }), []);
 
-  // ── Save state derived from mutations ─────────────────────────────────────
+  // ── Mutations (structural ops still save instantly) ───────────────────────
 
   const updateResumeMutation = useMutation({
     mutationFn: (patch) => updateBuilderResume(id, patch),
@@ -348,14 +353,6 @@ export default function BuilderEditor() {
     },
     onError: () => showToast("We couldn't save your changes. Please try again.", 'error'),
   });
-
-  const saveState = useMemo(() => {
-    if (updateResumeMutation.isPending) return 'saving';
-    if (Object.values(sectionSaveStatus).some(s => s === 'saving')) return 'saving';
-    if (updateResumeMutation.isError) return 'error';
-    if (Object.values(sectionSaveStatus).some(s => s === 'error')) return 'error';
-    return 'saved';
-  }, [updateResumeMutation.isPending, updateResumeMutation.isError, sectionSaveStatus]);
 
   // ── Section mutations ─────────────────────────────────────────────────────
 
@@ -402,34 +399,15 @@ export default function BuilderEditor() {
     onError: () => showToast("We couldn't parse the file. Please try again.", 'error'),
   });
 
-  // ── Debounced section save ────────────────────────────────────────────────
-
-  const debouncedSaveSection = useCallback((sectionId, patch) => {
-    setSectionSaveStatus(s => ({ ...s, [sectionId]: 'saving' }));
-    if (debounceRefs.current[sectionId]) clearTimeout(debounceRefs.current[sectionId]);
-    debounceRefs.current[sectionId] = setTimeout(async () => {
-      try {
-        await updateBuilderSection(id, sectionId, patch);
-        setSectionSaveStatus(s => ({ ...s, [sectionId]: 'saved' }));
-        queryClient.setQueryData(['builder-resume', id], (old) => {
-          if (!old) return old;
-          return { ...old, data: { ...old.data, sections: old.data.sections.map(s => s.id === sectionId ? { ...s, ...patch } : s) } };
-        });
-        setTimeout(() => setSectionSaveStatus(s => ({ ...s, [sectionId]: null })), 2000);
-      } catch {
-        setSectionSaveStatus(s => ({ ...s, [sectionId]: 'error' }));
-        showToast("Changes couldn't be saved. Please try again.", 'error');
-      }
-    }, 3000);
-  }, [id, queryClient, showToast]);
+  // ── Local-only change handlers (preview updates; saved on explicit Save) ──
 
   const handleSectionContentChange = useCallback((sectionId, content) => {
     setPreviewResume(prev => {
       if (!prev) return prev;
       return { ...prev, sections: prev.sections.map(s => s.id === sectionId ? { ...s, content } : s) };
     });
-    debouncedSaveSection(sectionId, { content });
-  }, [debouncedSaveSection]);
+    setSaveState('idle');
+  }, []);
 
   const handleSectionTitleChange = useCallback((sectionId, title) => {
     if (!title.trim()) return;
@@ -437,65 +415,73 @@ export default function BuilderEditor() {
       if (!prev) return prev;
       return { ...prev, sections: prev.sections.map(s => s.id === sectionId ? { ...s, title } : s) };
     });
-    debouncedSaveSection(sectionId, { title });
-  }, [debouncedSaveSection]);
+    setSaveState('idle');
+  }, []);
 
   const handleToggleSection = useCallback((sectionId, enabled) => {
     setPreviewResume(prev => {
       if (!prev) return prev;
       return { ...prev, sections: prev.sections.map(s => s.id === sectionId ? { ...s, enabled } : s) };
     });
-    debouncedSaveSection(sectionId, { enabled });
-  }, [debouncedSaveSection]);
+    setSaveState('idle');
+  }, []);
 
-  // ── Personal info debounce ────────────────────────────────────────────────
-
-  const piDebounceRef = useRef(null);
   const handlePersonalInfoChange = useCallback((pi) => {
     setPreviewResume(prev => prev ? { ...prev, personal_info: pi } : prev);
-    if (piDebounceRef.current) clearTimeout(piDebounceRef.current);
-    piDebounceRef.current = setTimeout(() => {
-      updateResumeMutation.mutate({ personal_info: pi });
-    }, 3000);
-  }, [updateResumeMutation]);
+    setSaveState('idle');
+  }, []);
 
-  // ── Design change ─────────────────────────────────────────────────────────
-
-  const designDebounceRef = useRef(null);
   const handleDesignChange = useCallback((ds) => {
     setPreviewResume(prev => prev ? { ...prev, design_settings: ds } : prev);
-    if (designDebounceRef.current) clearTimeout(designDebounceRef.current);
-    designDebounceRef.current = setTimeout(() => {
-      updateResumeMutation.mutate({ design_settings: ds });
-    }, 800);
-  }, [updateResumeMutation]);
+    setSaveState('idle');
+  }, []);
 
-  const footerDebounceRef = useRef(null);
   const handleFooterChange = useCallback((fs) => {
     setPreviewResume(prev => prev ? { ...prev, footer_settings: fs } : prev);
-    if (footerDebounceRef.current) clearTimeout(footerDebounceRef.current);
-    footerDebounceRef.current = setTimeout(() => {
-      updateResumeMutation.mutate({ footer_settings: fs });
-    }, 800);
-  }, [updateResumeMutation]);
+    setSaveState('idle');
+  }, []);
 
-  const spacingDebounceRef = useRef(null);
   const handleSpacingChange = useCallback((ss) => {
     setPreviewResume(prev => prev ? { ...prev, spacing_settings: ss } : prev);
-    if (spacingDebounceRef.current) clearTimeout(spacingDebounceRef.current);
-    spacingDebounceRef.current = setTimeout(() => {
-      updateResumeMutation.mutate({ spacing_settings: ss });
-    }, 800);
-  }, [updateResumeMutation]);
+    setSaveState('idle');
+  }, []);
 
-  const layoutDebounceRef = useRef(null);
   const handleLayoutChange = useCallback((ls) => {
     setPreviewResume(prev => prev ? { ...prev, layout_settings: ls } : prev);
-    if (layoutDebounceRef.current) clearTimeout(layoutDebounceRef.current);
-    layoutDebounceRef.current = setTimeout(() => {
-      updateResumeMutation.mutate({ layout_settings: ls });
-    }, 800);
-  }, [updateResumeMutation]);
+    setSaveState('idle');
+  }, []);
+
+  // ── Single save ───────────────────────────────────────────────────────────
+
+  const handleSave = useCallback(async () => {
+    if (!previewResume || saveState === 'saving') return;
+    setSaveState('saving');
+    try {
+      // Save resume-level fields
+      await updateBuilderResume(id, {
+        personal_info: previewResume.personal_info,
+        design_settings: previewResume.design_settings,
+        spacing_settings: previewResume.spacing_settings,
+        layout_settings: previewResume.layout_settings,
+        footer_settings: previewResume.footer_settings,
+      });
+      // Save all sections
+      await Promise.all(
+        (previewResume.sections || []).map(s =>
+          updateBuilderSection(id, s.id, { content: s.content, title: s.title, enabled: s.enabled, display_settings: s.display_settings })
+        )
+      );
+      // Update query cache
+      queryClient.setQueryData(['builder-resume', id], (old) =>
+        old ? { ...old, data: { ...old.data, ...previewResume } } : old
+      );
+      setSaveState('saved');
+      setTimeout(() => setSaveState(st => st === 'saved' ? 'idle' : st), 3000);
+    } catch {
+      setSaveState('error');
+      showToast("Couldn't save. Please try again.", 'error');
+    }
+  }, [id, previewResume, saveState, queryClient, showToast]);
 
   const handleSectionDisplayChange = useCallback((sectionId, displaySettings) => {
     setPreviewResume(prev => {
@@ -670,8 +656,13 @@ export default function BuilderEditor() {
 
         <div className="flex-1" />
 
-        {/* Save pill */}
-        <SavePill state={saveState} />
+        {/* Save button */}
+        <SaveButton
+          onClick={handleSave}
+          saving={saveState === 'saving'}
+          saved={saveState === 'saved'}
+          error={saveState === 'error'}
+        />
 
         {/* Action buttons */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -789,7 +780,6 @@ export default function BuilderEditor() {
                       section={previewSection}
                       onContentChange={(content) => handleSectionContentChange(previewSection.id, content)}
                       onTitleChange={(title) => handleSectionTitleChange(previewSection.id, title)}
-                      saveStatus={sectionSaveStatus[previewSection.id]}
                     />
                   ) : null}
                 />

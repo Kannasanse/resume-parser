@@ -422,7 +422,7 @@ const EDITORS = {
   custom:         CustomEditor,
 };
 
-export default function SectionEditor({ section, onContentChange, onTitleChange, saveStatus }) {
+export default function SectionEditor({ section, onContentChange, onTitleChange }) {
   const EditorComp = EDITORS[section.type];
 
   return (
@@ -436,9 +436,6 @@ export default function SectionEditor({ section, onContentChange, onTitleChange,
           placeholder="Section name"
           className="flex-1 px-[10px] py-2 text-[13px] font-semibold border border-ds-inputBorder rounded-[7px] bg-ds-card text-ds-text focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-primary/10 transition-colors"
         />
-        {saveStatus === 'saving' && <span className="text-[11px] text-ds-textMuted">Saving…</span>}
-        {saveStatus === 'saved' && <span className="text-[11px] text-ds-success">Saved</span>}
-        {saveStatus === 'error' && <span className="text-[11px] text-ds-danger">Error</span>}
       </div>
 
       {EditorComp
