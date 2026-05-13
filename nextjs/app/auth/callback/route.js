@@ -24,9 +24,9 @@ export async function GET(request) {
       }
     );
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      // If caller specified a redirect (e.g. from middleware), honour it
+      // If caller specified a redirect (e.g. /reset-password), honour it
       if (next && next.startsWith('/')) {
         return NextResponse.redirect(`${origin}${next}`);
       }
