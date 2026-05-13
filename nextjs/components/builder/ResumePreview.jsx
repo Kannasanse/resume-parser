@@ -216,7 +216,8 @@ function SkillsBody({ sec, util, variantCols }) {
 function ExperienceBody({ secs, util, variant }) {
   const { entryGapPx, t, colIf } = util;
   const allEntries = secs.flatMap(sec => {
-    const order = sec.display_settings?.order || 'title-employer';
+    // Support both key names: workOrder (DesignPanel) and legacy order key
+    const order = sec.display_settings?.workOrder || sec.display_settings?.order || 'title-first';
     return (sec.content?.entries || []).map(e => ({ ...e, _order: order }));
   });
   if (!allEntries.length) return null;
@@ -225,7 +226,7 @@ function ExperienceBody({ secs, util, variant }) {
     <div>
       {allEntries.map((e, i) => {
         const gap        = i < allEntries.length - 1 ? entryGapPx : 0;
-        const titleFirst = e._order !== 'employer-title';
+        const titleFirst = e._order !== 'employer-first';
         const primary    = titleFirst ? (e.title || '') : (e.employer || '');
         const secondary  = titleFirst ? (e.employer || '') : (e.title || '');
         const bullets    = (e.bullets || []).filter(b => b?.trim());
@@ -238,8 +239,8 @@ function ExperienceBody({ secs, util, variant }) {
                 <div style={{ color: '#6B7280' }}>{e.location}</div>
               </div>
               <div>
-                <div style={{ fontWeight: 700 }}>{secondary || primary}</div>
-                <div style={{ fontSize: '0.92em' }}>{primary}</div>
+                <div style={{ fontWeight: 700 }}>{primary}</div>
+                <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</div>
                 <ul style={{ margin: '3px 0 0', paddingLeft: 18 }}>
                   {bullets.map((b, j) => <li key={j} style={{ marginBottom: 1 }}>{b}</li>)}
                 </ul>
@@ -251,7 +252,7 @@ function ExperienceBody({ secs, util, variant }) {
           return (
             <div key={i} className="resume-entry-block" style={{ marginBottom: gap }}>
               <div style={{ fontWeight: 700 }}>{primary}</div>
-              <div style={{ fontStyle: 'italic', fontSize: '0.92em' }}>{secondary}</div>
+              <div style={{ fontStyle: 'italic', fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</div>
               <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280', marginBottom: 3 }}>{e.dates}{e.location ? ` | ${e.location}` : ''}</div>
               <ul style={{ margin: 0, paddingLeft: 18 }}>
                 {bullets.map((b, j) => <li key={j} style={{ marginBottom: 1 }}>{b}</li>)}
@@ -267,7 +268,7 @@ function ExperienceBody({ secs, util, variant }) {
                 <div style={{ color: '#6B7280' }}>{e.location}</div>
               </div>
               <div>
-                <div><strong>{e.employer},</strong> <em>{e.title}</em></div>
+                <div><strong>{primary},</strong> <em style={{ color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</em></div>
                 <ul style={{ margin: '3px 0 0', paddingLeft: 18 }}>
                   {bullets.map((b, j) => <li key={j} style={{ marginBottom: 1 }}>{b}</li>)}
                 </ul>
@@ -299,7 +300,8 @@ function ExperienceBody({ secs, util, variant }) {
 function EducationBody({ secs, util, variant }) {
   const { entryGapPx, t, colIf } = util;
   const allEntries = secs.flatMap(sec => {
-    const order = sec.display_settings?.order || 'school-degree';
+    // Support both key names: eduOrder (DesignPanel) and legacy order key
+    const order = sec.display_settings?.eduOrder || sec.display_settings?.order || 'school-first';
     return (sec.content?.entries || []).map(e => ({ ...e, _order: order }));
   });
   if (!allEntries.length) return null;
@@ -308,7 +310,7 @@ function EducationBody({ secs, util, variant }) {
     <div>
       {allEntries.map((e, i) => {
         const gap        = i < allEntries.length - 1 ? entryGapPx : 0;
-        const schoolFirst = e._order !== 'degree-school';
+        const schoolFirst = e._order !== 'degree-first';
         const primary    = schoolFirst ? (e.school || '') : (e.degree || '');
         const secondary  = schoolFirst ? (e.degree || '') : (e.school || '');
 
