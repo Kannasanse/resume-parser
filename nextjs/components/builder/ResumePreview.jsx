@@ -181,8 +181,8 @@ function SkillsBody({ sec, util, variantCols }) {
               </span>
             )}
             {lvlStyle === 'bars' && (
-              <span style={{ display: 'inline-flex', gap: 2 }}>
-                {[1,2,3].map(lv => <span key={lv} style={{ width: 12, height: 4, borderRadius: 1, background: lv <= (s.level || 2) ? dotColor : '#E5E7EB' }} />)}
+              <span style={{ display: 'inline-flex', alignItems: 'center', width: 60, height: 6, borderRadius: 3, background: '#E5E7EB', overflow: 'hidden', flexShrink: 0 }}>
+                <span style={{ width: `${Math.round(((s.level || 2) / 3) * 100)}%`, height: '100%', background: dotColor, borderRadius: 3, transition: 'width 0.3s' }} />
               </span>
             )}
             {lvlStyle === 'text' && <span style={{ color: '#6B7280', fontSize: '0.85em' }}>{['','Beginner','Intermediate','Advanced'][s.level] || ''}</span>}
@@ -232,7 +232,7 @@ function ExperienceBody({ secs, util, variant }) {
 
         if (variant === 'date-column') {
           return (
-            <div key={i} style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: 14, marginBottom: gap }}>
+            <div key={i} className="resume-entry-block" style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: 14, marginBottom: gap }}>
               <div style={{ fontSize: '0.88em', color: colIf(t.dates) || '#374151' }}>
                 <div>{e.dates}</div>
                 <div style={{ color: '#6B7280' }}>{e.location}</div>
@@ -249,7 +249,7 @@ function ExperienceBody({ secs, util, variant }) {
         }
         if (variant === 'stacked') {
           return (
-            <div key={i} style={{ marginBottom: gap }}>
+            <div key={i} className="resume-entry-block" style={{ marginBottom: gap }}>
               <div style={{ fontWeight: 700 }}>{primary}</div>
               <div style={{ fontStyle: 'italic', fontSize: '0.92em' }}>{secondary}</div>
               <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280', marginBottom: 3 }}>{e.dates}{e.location ? ` | ${e.location}` : ''}</div>
@@ -261,7 +261,7 @@ function ExperienceBody({ secs, util, variant }) {
         }
         if (variant === 'inline-title-role') {
           return (
-            <div key={i} style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 14, marginBottom: gap }}>
+            <div key={i} className="resume-entry-block" style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 14, marginBottom: gap }}>
               <div style={{ fontSize: '0.88em', color: colIf(t.dates) || '#374151' }}>
                 <div>{e.dates}</div>
                 <div style={{ color: '#6B7280' }}>{e.location}</div>
@@ -277,7 +277,7 @@ function ExperienceBody({ secs, util, variant }) {
         }
         // default
         return (
-          <div key={i} style={{ marginBottom: gap }}>
+          <div key={i} className="resume-entry-block" style={{ marginBottom: gap }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
               <div style={{ fontWeight: 700 }}>{primary}</div>
               <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280', whiteSpace: 'nowrap' }}>{e.dates}</div>
@@ -530,7 +530,7 @@ function TemplateModern({ resume, ds, ss }) {
       {sections.map(sec => {
         const body = renderSectionBody(sec, util);
         if (!body) return null;
-        return <div key={sec.id}><Heading>{sec.title}</Heading>{body}</div>;
+        return <div key={sec.id} className="resume-section-block" data-type={sec.type}><Heading>{sec.title}</Heading>{body}</div>;
       })}
     </div>
   );
@@ -589,7 +589,7 @@ function TemplateAtlanticBlue({ resume, ds, ss }) {
             const body = renderSectionBody(sec, util, { certVariant: 'compact-list' });
             if (!body) return null;
             return (
-              <div key={sec.id}>
+              <div key={sec.id} className="resume-section-block" data-type={sec.type}>
                 <SideHead iconName={SEC_ICONS[sec.type]}>{sec.title}</SideHead>
                 {body}
               </div>
@@ -603,7 +603,7 @@ function TemplateAtlanticBlue({ resume, ds, ss }) {
           const body = renderSectionBody(sec, util, { expVariant: 'stacked' });
           if (!body) return null;
           return (
-            <div key={sec.id}>
+            <div key={sec.id} className="resume-section-block" data-type={sec.type}>
               <PillHead iconName={SEC_ICONS[sec.type]}>{sec.title}</PillHead>
               {body}
             </div>
@@ -653,7 +653,7 @@ function TemplateCorporate({ resume, ds, ss }) {
         const skillsCols  = (sec.type === 'skills' && (sec.display_settings?.layout === 'rows' || !sec.display_settings?.layout)) ? 3 : undefined;
         const body = renderSectionBody(sec, util, { certVariant, skillsCols });
         if (!body) return null;
-        return <div key={sec.id}><Heading>{sec.title}</Heading>{body}</div>;
+        return <div key={sec.id} className="resume-section-block" data-type={sec.type}><Heading>{sec.title}</Heading>{body}</div>;
       })}
     </div>
   );
@@ -708,14 +708,14 @@ function TemplateAtlanticCrest({ resume, ds, ss }) {
           {leftIds.map(sec => {
             const body = renderSectionBody(sec, util);
             if (!body) return null;
-            return <div key={sec.id}><PillHead iconName={SEC_ICONS[sec.type]}>{sec.title}</PillHead>{body}</div>;
+            return <div key={sec.id} className="resume-section-block" data-type={sec.type}><PillHead iconName={SEC_ICONS[sec.type]}>{sec.title}</PillHead>{body}</div>;
           })}
         </div>
         <div>
           {rightIds.map(sec => {
             const body = renderSectionBody(sec, util, { expVariant: 'stacked' });
             if (!body) return null;
-            return <div key={sec.id}><PillHead iconName={SEC_ICONS[sec.type]}>{sec.title}</PillHead>{body}</div>;
+            return <div key={sec.id} className="resume-section-block" data-type={sec.type}><PillHead iconName={SEC_ICONS[sec.type]}>{sec.title}</PillHead>{body}</div>;
           })}
         </div>
       </div>
@@ -764,7 +764,7 @@ function TemplateMercuryFlow({ resume, ds, ss }) {
           const isDateCol = sec.type === 'work_experience' || sec.type === 'education';
           const body = renderSectionBody(sec, util, isDateCol ? { expVariant: 'date-column', eduVariant: 'date-column' } : {});
           if (!body) return null;
-          return <div key={sec.id}><BarHead>{sec.title}</BarHead>{body}</div>;
+          return <div key={sec.id} className="resume-section-block" data-type={sec.type}><BarHead>{sec.title}</BarHead>{body}</div>;
         })}
       </div>
     </div>
@@ -822,7 +822,7 @@ function TemplateSteadyForm({ resume, ds, ss }) {
           certVariant,
         });
         if (!body) return null;
-        return <div key={sec.id}><BarHead>{sec.title}</BarHead>{body}</div>;
+        return <div key={sec.id} className="resume-section-block" data-type={sec.type}><BarHead>{sec.title}</BarHead>{body}</div>;
       })}
     </div>
   );
@@ -866,7 +866,7 @@ function TemplateExecutive({ resume, ds, ss }) {
           eduVariant: sec.type === 'education' ? 'date-column' : undefined,
         });
         if (!body) return null;
-        return <div key={sec.id}><Heading>{sec.title}</Heading>{body}</div>;
+        return <div key={sec.id} className="resume-section-block" data-type={sec.type}><Heading>{sec.title}</Heading>{body}</div>;
       })}
     </div>
   );

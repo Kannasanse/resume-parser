@@ -25,8 +25,7 @@ export default function PrintPage() {
 
   useEffect(() => {
     if (!resume) return;
-    // Wait for fonts + template to render, then print
-    const t = setTimeout(() => window.print(), 800);
+    const t = setTimeout(() => window.print(), 900);
     return () => clearTimeout(t);
   }, [resume]);
 
@@ -51,8 +50,12 @@ export default function PrintPage() {
       <style>{`
         *, *::before, *::after { box-sizing: border-box; }
 
+        /* ── Page setup ── */
         @page {
           size: ${isLetter ? '8.5in 11in' : 'A4'};
+          /* Zero margins so our content controls all spacing.
+             This also suppresses the browser's own URL / date header+footer
+             that would otherwise appear in the margin area. */
           margin: 0;
         }
 
@@ -63,20 +66,12 @@ export default function PrintPage() {
           background: #fff;
         }
 
-        /* The resume content — fills exactly one page width, flows naturally */
         .resume-print-root {
           width: ${page.width}px;
           background: #fff;
         }
 
-        /* Prevent orphaned headings / short blocks at bottom of page */
-        .resume-print-root h1,
-        .resume-print-root h2,
-        .resume-print-root h3 {
-          page-break-after: avoid;
-        }
-
-        /* Screen-only bar */
+        /* ── Screen chrome ── */
         .no-print {
           display: flex;
           position: fixed;
@@ -87,9 +82,24 @@ export default function PrintPage() {
           font: 13px/1 system-ui, sans-serif;
           align-items: center;
           justify-content: space-between;
+          gap: 12px;
           z-index: 9999;
         }
+        .no-print-hint {
+          font-size: 11px;
+          color: #9ca3af;
+          margin-top: 2px;
+        }
 
+        @media screen {
+          body { background: #e5e7eb; padding-top: 56px; }
+          .resume-print-root {
+            margin: 24px auto;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.18);
+          }
+        }
+
+        /* ── Print rules ── */
         @media print {
           .no-print { display: none !important; }
 
@@ -103,27 +113,73 @@ export default function PrintPage() {
             width: ${page.width}px;
           }
 
-          /* Allow natural page breaks inside the resume */
+          /* Preserve all colors exactly */
           .resume-print-root * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-        }
 
-        @media screen {
-          body { background: #e5e7eb; padding-top: 44px; }
-          .resume-print-root {
-            margin: 24px auto;
-            box-shadow: 0 2px 20px rgba(0,0,0,0.18);
+          /* ── Section-aware page break rules ── */
+
+          /* 1. Section headers glue to their content — never orphaned at page bottom */
+          .resume-print-root h1,
+          .resume-print-root h2,
+          .resume-print-root h3,
+          .resume-print-root h4 {
+            break-after: avoid;
+            page-break-after: avoid;
           }
+
+          /* 2. Keep each full section together if it's reasonably sized.
+                Browsers honour this for blocks that fit within one page. */
+          .resume-section-block {
+            break-inside: auto;
+            page-break-inside: auto;
+          }
+
+          /* 3. Individual experience / education entries stay intact */
+          .resume-entry-block {
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+
+          /* 4. Prevent a lone section heading at the bottom of a page.
+                margin-bottom: 0 + the next sibling having break-before pulls
+                the heading along with its first child. */
+          .resume-section-block + .resume-section-block {
+            break-before: auto;
+          }
+
+          /* 5. Skills, certifications, languages, projects — compact blocks
+                that should stay together if they fit on one page */
+          .resume-section-block[data-type="skills"],
+          .resume-section-block[data-type="certifications"],
+          .resume-section-block[data-type="languages"],
+          .resume-section-block[data-type="summary"] {
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+
+          /* 6. If a table spans pages, repeat the header row */
+          thead {
+            display: table-header-group;
+          }
+
+          /* 7. Suppress browser-injected link underlines & colors in print */
+          a { text-decoration: none !important; color: inherit !important; }
         }
       `}</style>
 
       <div className="no-print">
-        <span>Print dialog opening… Select &ldquo;Save as PDF&rdquo; to download your resume.</span>
+        <div>
+          <div>Print dialog opening… Select <strong>&ldquo;Save as PDF&rdquo;</strong> to download.</div>
+          <div className="no-print-hint">
+            Tip: In the print dialog, uncheck <strong>&ldquo;Headers and footers&rdquo;</strong> to remove the browser URL from your PDF.
+          </div>
+        </div>
         <button
           onClick={() => window.print()}
-          style={{ background: '#FF7814', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
+          style={{ background: '#FF7814', color: '#fff', border: 'none', borderRadius: 6, padding: '7px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 600, flexShrink: 0 }}
         >
           Print / Save PDF
         </button>
