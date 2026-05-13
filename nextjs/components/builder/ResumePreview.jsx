@@ -116,7 +116,7 @@ function PhotoPlaceholder({ size = 72, shape = 'circle', name = '', src = null }
 
 // ── Utility: compute render values from merged settings ────────────────────────
 
-function tmplUtils(ds, ss) {
+function tmplUtils(ds, ss, ls = {}) {
   const safe = (n, lo, hi, d) => (typeof n === 'number' && !isNaN(n) ? Math.max(lo, Math.min(hi, n)) : d);
   const fontSize   = safe(ss.fontSize, 8, 14, 11);
   const lineHeight = safe(ss.lineHeight, 1, 1.8, 1.15);
@@ -129,7 +129,9 @@ function tmplUtils(ds, ss) {
   const colIf  = on => on ? accent : undefined;
   const fontId = ds.font || 'source-sans';
   const fontFamily = FONT_FAMILIES[fontId] || FONT_FAMILIES['source-sans'];
-  return { fontSize, lineHeight, padX, padY, entryGapPx, accent, t, colIf, fontFamily };
+  const titleSizeMult = { small: 0.82, medium: 1.0, large: 1.22 }[ls.titleSize || 'medium'];
+  const listStyle = ls.listStyle || 'bullet';
+  return { fontSize, lineHeight, padX, padY, entryGapPx, accent, t, colIf, fontFamily, titleSizeMult, listStyle };
 }
 
 // ── Extract structured data from DB resume ────────────────────────────────────
@@ -213,8 +215,29 @@ function SkillsBody({ sec, util, variantCols }) {
   );
 }
 
+function BulletList({ bullets, listStyle }) {
+  if (!bullets?.length) return null;
+  if (listStyle === 'hyphen') {
+    return (
+      <div style={{ margin: '3px 0 0' }}>
+        {bullets.map((b, j) => (
+          <div key={j} style={{ display: 'flex', gap: 6, marginBottom: 1 }}>
+            <span style={{ flexShrink: 0, color: '#6B7280' }}>–</span>
+            <span>{b}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return (
+    <ul style={{ margin: '3px 0 0', paddingLeft: 18 }}>
+      {bullets.map((b, j) => <li key={j} style={{ marginBottom: 1 }}>{b}</li>)}
+    </ul>
+  );
+}
+
 function ExperienceBody({ secs, util, variant }) {
-  const { entryGapPx, t, colIf } = util;
+  const { entryGapPx, t, colIf, listStyle } = util;
   const allEntries = secs.flatMap(sec => {
     // Support both key names: workOrder (DesignPanel) and legacy order key
     const order = sec.display_settings?.workOrder || sec.display_settings?.order || 'title-first';
@@ -241,9 +264,7 @@ function ExperienceBody({ secs, util, variant }) {
               <div>
                 <div style={{ fontWeight: 700 }}>{primary}</div>
                 <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</div>
-                <ul style={{ margin: '3px 0 0', paddingLeft: 18 }}>
-                  {bullets.map((b, j) => <li key={j} style={{ marginBottom: 1 }}>{b}</li>)}
-                </ul>
+                <BulletList bullets={bullets} listStyle={listStyle} />
               </div>
             </div>
           );
@@ -254,9 +275,7 @@ function ExperienceBody({ secs, util, variant }) {
               <div style={{ fontWeight: 700 }}>{primary}</div>
               <div style={{ fontStyle: 'italic', fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</div>
               <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280', marginBottom: 3 }}>{e.dates}{e.location ? ` | ${e.location}` : ''}</div>
-              <ul style={{ margin: 0, paddingLeft: 18 }}>
-                {bullets.map((b, j) => <li key={j} style={{ marginBottom: 1 }}>{b}</li>)}
-              </ul>
+              <BulletList bullets={bullets} listStyle={listStyle} />
             </div>
           );
         }
@@ -269,9 +288,7 @@ function ExperienceBody({ secs, util, variant }) {
               </div>
               <div>
                 <div><strong>{primary},</strong> <em style={{ color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</em></div>
-                <ul style={{ margin: '3px 0 0', paddingLeft: 18 }}>
-                  {bullets.map((b, j) => <li key={j} style={{ marginBottom: 1 }}>{b}</li>)}
-                </ul>
+                <BulletList bullets={bullets} listStyle={listStyle} />
               </div>
             </div>
           );
@@ -287,9 +304,7 @@ function ExperienceBody({ secs, util, variant }) {
               <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</div>
               {e.location && <div style={{ fontSize: '0.85em', color: '#6B7280' }}>{e.location}</div>}
             </div>
-            <ul style={{ margin: '3px 0 0', paddingLeft: 18 }}>
-              {bullets.map((b, j) => <li key={j} style={{ marginBottom: 1 }}>{b}</li>)}
-            </ul>
+            <BulletList bullets={bullets} listStyle={listStyle} />
           </div>
         );
       })}
@@ -509,8 +524,8 @@ function buildDetailsBlock(pi, ds, util) {
 // ── Template 1: Modern ────────────────────────────────────────────────────────
 
 function TemplateModern({ resume, ds, ss, sectionAdjustments }) {
-  const util = tmplUtils(ds, ss);
-  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
+  const util = tmplUtils(ds, ss, resume.layout_settings || {});
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult } = util;
   const { pi, sections } = buildRenderData(resume);
   const headingIcon = resume.layout_settings?.headingIcon || 'none';
 
@@ -520,7 +535,7 @@ function TemplateModern({ resume, ds, ss, sectionAdjustments }) {
     const hColor = colIf(t.headings) || '#2C2C2A';
     return (
       <div style={{ marginTop: '1.4em', marginBottom: '0.4em' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85em', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, color: hColor }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: `${0.85 * titleSizeMult}em`, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, color: hColor }}>
           {headingIcon !== 'none' && iconName && (
             headingIcon === 'filled'
               ? <span style={{ background: colIf(t.headings) || accent, borderRadius: '50%', width: 16, height: 16, display: 'inline-grid', placeItems: 'center', flexShrink: 0 }}><Icon name={iconName} size={9} color="#fff" /></span>
@@ -555,8 +570,8 @@ function TemplateModern({ resume, ds, ss, sectionAdjustments }) {
 const ATLANTIC_SIDEBAR_TYPES = new Set(['summary', 'languages', 'hobbies', 'references']);
 
 function TemplateAtlanticBlue({ resume, ds, ss, sectionAdjustments }) {
-  const util = tmplUtils(ds, ss);
-  const { fontSize, lineHeight, accent, t, colIf, fontFamily } = util;
+  const util = tmplUtils(ds, ss, resume.layout_settings || {});
+  const { fontSize, lineHeight, accent, t, colIf, fontFamily, titleSizeMult } = util;
   const { pi, sections } = buildRenderData(resume);
   const sideColor = '#1F2A44';
   const headingIcon = resume.layout_settings?.headingIcon || 'none';
@@ -573,7 +588,7 @@ function TemplateAtlanticBlue({ resume, ds, ss, sectionAdjustments }) {
           ? <span style={{ background: colIf(t.headings) || sideColor, borderRadius: '50%', width: 15, height: 15, display: 'inline-grid', placeItems: 'center', flexShrink: 0 }}><Icon name={iconName} size={8} color="#fff" /></span>
           : <Icon name={iconName} size={11} color={colIf(t.headerIcons) || sideColor} />
       )}
-      <span style={{ fontSize: '0.78em', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: colIf(t.headings) || sideColor }}>{children}</span>
+      <span style={{ fontSize: `${0.78 * titleSizeMult}em`, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: colIf(t.headings) || sideColor }}>{children}</span>
     </div>
   );
   const SideHead = ({ iconName, children }) => (
@@ -583,7 +598,7 @@ function TemplateAtlanticBlue({ resume, ds, ss, sectionAdjustments }) {
           ? <span style={{ background: 'rgba(255,255,255,0.25)', borderRadius: '50%', width: 15, height: 15, display: 'inline-grid', placeItems: 'center', flexShrink: 0 }}><Icon name={iconName} size={8} color="#fff" /></span>
           : <Icon name={iconName} size={11} color="#fff" />
       )}
-      <span style={{ fontSize: '0.78em', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#fff' }}>{children}</span>
+      <span style={{ fontSize: `${0.78 * titleSizeMult}em`, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#fff' }}>{children}</span>
     </div>
   );
   const contactRow = (icon, txt) => txt ? (
@@ -642,8 +657,8 @@ function TemplateAtlanticBlue({ resume, ds, ss, sectionAdjustments }) {
 // ── Template 3: Corporate (centered, classic) ─────────────────────────────────
 
 function TemplateCorporate({ resume, ds, ss, sectionAdjustments }) {
-  const util = tmplUtils(ds, ss);
-  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
+  const util = tmplUtils(ds, ss, resume.layout_settings || {});
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult } = util;
   const { pi, sections } = buildRenderData(resume);
   const headingIcon = resume.layout_settings?.headingIcon || 'none';
 
@@ -654,7 +669,7 @@ function TemplateCorporate({ resume, ds, ss, sectionAdjustments }) {
     return (
       <div style={{ marginTop: '1em', marginBottom: '0.45em', textAlign: 'center' }}>
         <div style={{ height: 1, background: colIf(t.headingsLine) || '#9CA3AF' }} />
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: '0.9em', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: hColor, padding: '3px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: `${0.9 * titleSizeMult}em`, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: hColor, padding: '3px 0' }}>
           {headingIcon !== 'none' && iconName && (
             headingIcon === 'filled'
               ? <span style={{ background: colIf(t.headings) || accent, borderRadius: '50%', width: 16, height: 16, display: 'inline-grid', placeItems: 'center', flexShrink: 0 }}><Icon name={iconName} size={9} color="#fff" /></span>
@@ -701,8 +716,8 @@ function TemplateCorporate({ resume, ds, ss, sectionAdjustments }) {
 const CREST_LEFT_TYPES = new Set(['summary', 'skills', 'languages', 'certifications', 'hobbies']);
 
 function TemplateAtlanticCrest({ resume, ds, ss, sectionAdjustments }) {
-  const util = tmplUtils(ds, ss);
-  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
+  const util = tmplUtils(ds, ss, resume.layout_settings || {});
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult } = util;
   const { pi, sections } = buildRenderData(resume);
   const bannerColor = '#1F2A44';
   const headingIcon = resume.layout_settings?.headingIcon || 'none';
@@ -719,7 +734,7 @@ function TemplateAtlanticCrest({ resume, ds, ss, sectionAdjustments }) {
           ? <span style={{ background: colIf(t.headings) || bannerColor, borderRadius: '50%', width: 15, height: 15, display: 'inline-grid', placeItems: 'center', flexShrink: 0 }}><Icon name={iconName} size={8} color="#fff" /></span>
           : <Icon name={iconName} size={11} color={colIf(t.headerIcons) || bannerColor} />
       )}
-      <span style={{ fontSize: '0.78em', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: colIf(t.headings) || bannerColor }}>{children}</span>
+      <span style={{ fontSize: `${0.78 * titleSizeMult}em`, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: colIf(t.headings) || bannerColor }}>{children}</span>
     </div>
   );
   const contact = (icon, txt) => txt ? (
@@ -770,8 +785,8 @@ function TemplateAtlanticCrest({ resume, ds, ss, sectionAdjustments }) {
 // ── Template 5: Mercury Flow (gray banner + date column) ──────────────────────
 
 function TemplateMercuryFlow({ resume, ds, ss, sectionAdjustments }) {
-  const util = tmplUtils(ds, ss);
-  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
+  const util = tmplUtils(ds, ss, resume.layout_settings || {});
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult } = util;
   const { pi, sections } = buildRenderData(resume);
   const headingIcon = resume.layout_settings?.headingIcon || 'none';
 
@@ -786,7 +801,7 @@ function TemplateMercuryFlow({ resume, ds, ss, sectionAdjustments }) {
             ? <span style={{ background: hColor, borderRadius: '50%', width: 15, height: 15, display: 'inline-grid', placeItems: 'center', flexShrink: 0 }}><Icon name={iconName} size={8} color="#fff" /></span>
             : <Icon name={iconName} size={11} color={hColor} />
         )}
-        <span style={{ fontSize: '0.92em', fontWeight: 600, color: hColor }}>{children}</span>
+        <span style={{ fontSize: `${0.92 * titleSizeMult}em`, fontWeight: 600, color: hColor }}>{children}</span>
       </div>
     );
   };
@@ -828,8 +843,8 @@ function TemplateMercuryFlow({ resume, ds, ss, sectionAdjustments }) {
 // ── Template 6: Steady Form (photo right + gray bar headings) ─────────────────
 
 function TemplateSteadyForm({ resume, ds, ss, sectionAdjustments }) {
-  const util = tmplUtils(ds, ss);
-  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
+  const util = tmplUtils(ds, ss, resume.layout_settings || {});
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult } = util;
   const { pi, sections } = buildRenderData(resume);
   const headingIcon = resume.layout_settings?.headingIcon || 'none';
 
@@ -844,7 +859,7 @@ function TemplateSteadyForm({ resume, ds, ss, sectionAdjustments }) {
             ? <span style={{ background: hColor, borderRadius: '50%', width: 15, height: 15, display: 'inline-grid', placeItems: 'center', flexShrink: 0 }}><Icon name={iconName} size={8} color="#fff" /></span>
             : <Icon name={iconName} size={11} color={hColor} />
         )}
-        <span style={{ fontSize: '0.92em', fontWeight: 600, color: hColor }}>{children}</span>
+        <span style={{ fontSize: `${0.92 * titleSizeMult}em`, fontWeight: 600, color: hColor }}>{children}</span>
       </div>
     );
   };
@@ -895,8 +910,8 @@ function TemplateSteadyForm({ resume, ds, ss, sectionAdjustments }) {
 // ── Template 7: Executive (editorial serif, date-column) ──────────────────────
 
 function TemplateExecutive({ resume, ds, ss, sectionAdjustments }) {
-  const util = tmplUtils(ds, ss);
-  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
+  const util = tmplUtils(ds, ss, resume.layout_settings || {});
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult } = util;
   const { pi, sections } = buildRenderData(resume);
   const headingIcon = resume.layout_settings?.headingIcon || 'none';
 
@@ -906,7 +921,7 @@ function TemplateExecutive({ resume, ds, ss, sectionAdjustments }) {
     const hColor = colIf(t.headings) || '#1F2937';
     return (
       <div style={{ marginTop: '1em', marginBottom: '0.35em' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.95em', fontWeight: 600, color: hColor, letterSpacing: '0.01em' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: `${0.95 * titleSizeMult}em`, fontWeight: 600, color: hColor, letterSpacing: '0.01em' }}>
           {headingIcon !== 'none' && iconName && (
             headingIcon === 'filled'
               ? <span style={{ background: colIf(t.headings) || accent, borderRadius: '50%', width: 16, height: 16, display: 'inline-grid', placeItems: 'center', flexShrink: 0 }}><Icon name={iconName} size={9} color="#fff" /></span>
