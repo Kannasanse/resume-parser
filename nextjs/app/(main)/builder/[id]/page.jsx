@@ -281,9 +281,9 @@ function Toast({ message, type = 'info', onDismiss }) {
   );
 }
 
-// ── Export button (PDF + Word dropdown) ──────────────────────────────────────
+// ── Export & Share dropdown ───────────────────────────────────────────────────
 
-function ExportButton({ resumeId }) {
+function ExportShareButton({ resumeId, onShare }) {
   const [open, setOpen] = useState(false);
   const [wordLoading, setWordLoading] = useState(false);
   const ref = useRef(null);
@@ -318,57 +318,76 @@ function ExportButton({ resumeId }) {
   };
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <div className="flex items-center rounded-md overflow-hidden bg-primary">
-        {/* PDF button */}
-        <button
-          onClick={() => window.open(`/print/${resumeId}`, '_blank')}
-          className="flex items-center gap-1.5 h-8 px-3 text-xs font-semibold text-white hover:bg-primary/90 transition-colors"
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          PDF
-        </button>
-        {/* Divider */}
-        <div className="w-px h-4 bg-white/30" />
-        {/* Dropdown toggle */}
-        <button
-          onClick={() => setOpen(o => !o)}
-          className="flex items-center h-8 px-2 text-white hover:bg-primary/90 transition-colors"
-          title="More export options"
-        >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </button>
-      </div>
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1.5 h-8 px-3 text-xs font-semibold bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Export
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 1 }}>
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 bg-ds-card border border-ds-border rounded-lg shadow-xl z-50 py-1 min-w-[160px]">
+        <div className="absolute right-0 top-full mt-1.5 bg-ds-card border border-ds-border rounded-xl shadow-xl z-50 overflow-hidden min-w-[200px]">
+          {/* Share */}
+          <button
+            onClick={() => { onShare(); setOpen(false); }}
+            className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-ds-text hover:bg-ds-bg transition-colors"
+          >
+            <span className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+              </svg>
+            </span>
+            <div className="text-left">
+              <div className="font-semibold text-[12px]">Share link</div>
+              <div className="text-[11px] text-ds-textMuted">Copy a shareable URL</div>
+            </div>
+          </button>
+
+          <div className="h-px bg-ds-border mx-3" />
+
+          {/* PDF */}
           <button
             onClick={() => { window.open(`/print/${resumeId}`, '_blank'); setOpen(false); }}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-ds-text hover:bg-ds-bg transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-ds-text hover:bg-ds-bg transition-colors"
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-            </svg>
-            Save as PDF
+            <span className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+              </svg>
+            </span>
+            <div className="text-left">
+              <div className="font-semibold text-[12px]">Download PDF</div>
+              <div className="text-[11px] text-ds-textMuted">Print-ready PDF file</div>
+            </div>
           </button>
+
+          {/* Word */}
           <button
             onClick={downloadWord}
             disabled={wordLoading}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-ds-text hover:bg-ds-bg transition-colors disabled:opacity-50"
+            className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-ds-text hover:bg-ds-bg transition-colors disabled:opacity-50"
           >
-            {wordLoading ? (
-              <span className="w-3 h-3 border-2 border-ds-textMuted border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                <path d="M9 13l2 2 4-4"/>
-              </svg>
-            )}
-            {wordLoading ? 'Generating…' : 'Download Word (.docx)'}
+            <span className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+              {wordLoading
+                ? <span className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                    <path d="M9 13l2 2 4-4"/>
+                  </svg>
+              }
+            </span>
+            <div className="text-left">
+              <div className="font-semibold text-[12px]">{wordLoading ? 'Generating…' : 'Download Word'}</div>
+              <div className="text-[11px] text-ds-textMuted">.docx format</div>
+            </div>
           </button>
         </div>
       )}
@@ -755,17 +774,7 @@ export default function BuilderEditor() {
             </svg>
             Templates
           </button>
-          <button
-            onClick={() => setShowShare(true)}
-            className="hidden sm:flex items-center gap-1.5 h-8 px-3 text-xs font-semibold border border-ds-border text-ds-text rounded-md hover:bg-ds-bg transition-colors"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-            </svg>
-            Share
-          </button>
-          <ExportButton resumeId={id} />
+          <ExportShareButton resumeId={id} onShare={() => setShowShare(true)} />
         </div>
       </div>
 
