@@ -512,15 +512,26 @@ function TemplateModern({ resume, ds, ss, sectionAdjustments }) {
   const util = tmplUtils(ds, ss);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
   const { pi, sections } = buildRenderData(resume);
+  const headingIcon = resume.layout_settings?.headingIcon || 'none';
 
   const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, paddingLeft: `${padX}mm`, paddingRight: `${padX}mm`, paddingTop: `${padY}mm`, paddingBottom: `${padY}mm`, color: '#2C2C2A' };
 
-  const Heading = ({ children }) => (
-    <div style={{ marginTop: '1.4em', marginBottom: '0.4em' }}>
-      <div style={{ fontSize: '0.85em', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, color: colIf(t.headings) || '#2C2C2A' }}>{children}</div>
-      <div style={{ height: 1.5, background: colIf(t.headingsLine) || '#D1DCE8', marginTop: 4 }} />
-    </div>
-  );
+  const Heading = ({ children, iconName }) => {
+    const hColor = colIf(t.headings) || '#2C2C2A';
+    return (
+      <div style={{ marginTop: '1.4em', marginBottom: '0.4em' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85em', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, color: hColor }}>
+          {headingIcon !== 'none' && iconName && (
+            headingIcon === 'filled'
+              ? <span style={{ background: colIf(t.headings) || accent, borderRadius: '50%', width: 16, height: 16, display: 'inline-grid', placeItems: 'center', flexShrink: 0 }}><Icon name={iconName} size={9} color="#fff" /></span>
+              : <Icon name={iconName} size={11} color={hColor} />
+          )}
+          {children}
+        </div>
+        <div style={{ height: 1.5, background: colIf(t.headingsLine) || '#D1DCE8', marginTop: 4 }} />
+      </div>
+    );
+  };
 
   return (
     <div style={pageStyle}>
@@ -533,7 +544,7 @@ function TemplateModern({ resume, ds, ss, sectionAdjustments }) {
         const body = renderSectionBody(sec, util);
         if (!body) return null;
         const adj = sectionAdjustments?.[sec.id];
-        return <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}><Heading>{sec.title}</Heading>{body}</div>;
+        return <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}><Heading iconName={SEC_ICONS[sec.type]}>{sec.title}</Heading>{body}</div>;
       })}
     </div>
   );
@@ -548,6 +559,7 @@ function TemplateAtlanticBlue({ resume, ds, ss, sectionAdjustments }) {
   const { fontSize, lineHeight, accent, t, colIf, fontFamily } = util;
   const { pi, sections } = buildRenderData(resume);
   const sideColor = '#1F2A44';
+  const headingIcon = resume.layout_settings?.headingIcon || 'none';
 
   const sideIds = sections.filter(s => ATLANTIC_SIDEBAR_TYPES.has(s.type));
   const bodyIds = sections.filter(s => !ATLANTIC_SIDEBAR_TYPES.has(s.type));
@@ -556,13 +568,21 @@ function TemplateAtlanticBlue({ resume, ds, ss, sectionAdjustments }) {
 
   const PillHead = ({ iconName, children }) => (
     <div style={{ background: '#E5E7EB', padding: '5px 10px', marginTop: '0.9em', marginBottom: '0.4em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-      {iconName && <Icon name={iconName} size={11} color={colIf(t.headerIcons) || sideColor} />}
+      {headingIcon !== 'none' && iconName && (
+        headingIcon === 'filled'
+          ? <span style={{ background: colIf(t.headings) || sideColor, borderRadius: '50%', width: 15, height: 15, display: 'inline-grid', placeItems: 'center', flexShrink: 0 }}><Icon name={iconName} size={8} color="#fff" /></span>
+          : <Icon name={iconName} size={11} color={colIf(t.headerIcons) || sideColor} />
+      )}
       <span style={{ fontSize: '0.78em', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: colIf(t.headings) || sideColor }}>{children}</span>
     </div>
   );
   const SideHead = ({ iconName, children }) => (
     <div style={{ background: 'rgba(255,255,255,0.08)', padding: '5px 10px', marginTop: '0.9em', marginBottom: '0.4em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-      {iconName && <Icon name={iconName} size={11} color="#fff" />}
+      {headingIcon !== 'none' && iconName && (
+        headingIcon === 'filled'
+          ? <span style={{ background: 'rgba(255,255,255,0.25)', borderRadius: '50%', width: 15, height: 15, display: 'inline-grid', placeItems: 'center', flexShrink: 0 }}><Icon name={iconName} size={8} color="#fff" /></span>
+          : <Icon name={iconName} size={11} color="#fff" />
+      )}
       <span style={{ fontSize: '0.78em', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#fff' }}>{children}</span>
     </div>
   );
@@ -625,16 +645,27 @@ function TemplateCorporate({ resume, ds, ss, sectionAdjustments }) {
   const util = tmplUtils(ds, ss);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
   const { pi, sections } = buildRenderData(resume);
+  const headingIcon = resume.layout_settings?.headingIcon || 'none';
 
   const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, paddingLeft: `${padX}mm`, paddingRight: `${padX}mm`, paddingTop: `${padY}mm`, paddingBottom: `${padY}mm`, color: '#1F2937' };
 
-  const Heading = ({ children }) => (
-    <div style={{ marginTop: '1em', marginBottom: '0.45em', textAlign: 'center' }}>
-      <div style={{ height: 1, background: colIf(t.headingsLine) || '#9CA3AF' }} />
-      <div style={{ fontSize: '0.9em', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: colIf(t.headings) || '#1F2937', padding: '3px 0' }}>{children}</div>
-      <div style={{ height: 1, background: colIf(t.headingsLine) || '#9CA3AF' }} />
-    </div>
-  );
+  const Heading = ({ children, iconName }) => {
+    const hColor = colIf(t.headings) || '#1F2937';
+    return (
+      <div style={{ marginTop: '1em', marginBottom: '0.45em', textAlign: 'center' }}>
+        <div style={{ height: 1, background: colIf(t.headingsLine) || '#9CA3AF' }} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: '0.9em', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: hColor, padding: '3px 0' }}>
+          {headingIcon !== 'none' && iconName && (
+            headingIcon === 'filled'
+              ? <span style={{ background: colIf(t.headings) || accent, borderRadius: '50%', width: 16, height: 16, display: 'inline-grid', placeItems: 'center', flexShrink: 0 }}><Icon name={iconName} size={9} color="#fff" /></span>
+              : <Icon name={iconName} size={11} color={hColor} />
+          )}
+          {children}
+        </div>
+        <div style={{ height: 1, background: colIf(t.headingsLine) || '#9CA3AF' }} />
+      </div>
+    );
+  };
 
   const contactItems = [['pin', pi.location], ['mail', pi.email], ['phone', pi.phone], ['link', pi.link]].filter(([, v]) => v);
 
@@ -659,7 +690,7 @@ function TemplateCorporate({ resume, ds, ss, sectionAdjustments }) {
         const body = renderSectionBody(sec, util, { certVariant, skillsCols });
         if (!body) return null;
         const adj = sectionAdjustments?.[sec.id];
-        return <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}><Heading>{sec.title}</Heading>{body}</div>;
+        return <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}><Heading iconName={SEC_ICONS[sec.type]}>{sec.title}</Heading>{body}</div>;
       })}
     </div>
   );
@@ -674,6 +705,7 @@ function TemplateAtlanticCrest({ resume, ds, ss, sectionAdjustments }) {
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
   const { pi, sections } = buildRenderData(resume);
   const bannerColor = '#1F2A44';
+  const headingIcon = resume.layout_settings?.headingIcon || 'none';
 
   const leftIds  = sections.filter(s => CREST_LEFT_TYPES.has(s.type));
   const rightIds = sections.filter(s => !CREST_LEFT_TYPES.has(s.type));
@@ -682,7 +714,11 @@ function TemplateAtlanticCrest({ resume, ds, ss, sectionAdjustments }) {
 
   const PillHead = ({ iconName, children }) => (
     <div style={{ background: '#E5E7EB', padding: '5px 10px', marginTop: '0.9em', marginBottom: '0.4em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-      {iconName && <Icon name={iconName} size={11} color={colIf(t.headerIcons) || bannerColor} />}
+      {headingIcon !== 'none' && iconName && (
+        headingIcon === 'filled'
+          ? <span style={{ background: colIf(t.headings) || bannerColor, borderRadius: '50%', width: 15, height: 15, display: 'inline-grid', placeItems: 'center', flexShrink: 0 }}><Icon name={iconName} size={8} color="#fff" /></span>
+          : <Icon name={iconName} size={11} color={colIf(t.headerIcons) || bannerColor} />
+      )}
       <span style={{ fontSize: '0.78em', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: colIf(t.headings) || bannerColor }}>{children}</span>
     </div>
   );
@@ -737,14 +773,23 @@ function TemplateMercuryFlow({ resume, ds, ss, sectionAdjustments }) {
   const util = tmplUtils(ds, ss);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
   const { pi, sections } = buildRenderData(resume);
+  const headingIcon = resume.layout_settings?.headingIcon || 'none';
 
   const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#1F2937' };
 
-  const BarHead = ({ children }) => (
-    <div style={{ background: '#EEF1F5', padding: '5px 12px', marginTop: '0.9em', marginBottom: '0.45em', textAlign: 'center' }}>
-      <span style={{ fontSize: '0.92em', fontWeight: 600, color: colIf(t.headings) || '#1F2937' }}>{children}</span>
-    </div>
-  );
+  const BarHead = ({ children, iconName }) => {
+    const hColor = colIf(t.headings) || '#1F2937';
+    return (
+      <div style={{ background: '#EEF1F5', padding: '5px 12px', marginTop: '0.9em', marginBottom: '0.45em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+        {headingIcon !== 'none' && iconName && (
+          headingIcon === 'filled'
+            ? <span style={{ background: hColor, borderRadius: '50%', width: 15, height: 15, display: 'inline-grid', placeItems: 'center', flexShrink: 0 }}><Icon name={iconName} size={8} color="#fff" /></span>
+            : <Icon name={iconName} size={11} color={hColor} />
+        )}
+        <span style={{ fontSize: '0.92em', fontWeight: 600, color: hColor }}>{children}</span>
+      </div>
+    );
+  };
   const contact = (icon, txt) => txt ? (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.88em', color: '#374151' }}>
       <Icon name={icon} size={11} color={colIf(t.headerIcons) || '#374151'} />{txt}
@@ -773,7 +818,7 @@ function TemplateMercuryFlow({ resume, ds, ss, sectionAdjustments }) {
           const body = renderSectionBody(sec, util, isDateCol ? { expVariant: 'date-column', eduVariant: 'date-column' } : {});
           if (!body) return null;
           const adj = sectionAdjustments?.[sec.id];
-          return <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}><BarHead>{sec.title}</BarHead>{body}</div>;
+          return <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}><BarHead iconName={SEC_ICONS[sec.type]}>{sec.title}</BarHead>{body}</div>;
         })}
       </div>
     </div>
@@ -786,14 +831,23 @@ function TemplateSteadyForm({ resume, ds, ss, sectionAdjustments }) {
   const util = tmplUtils(ds, ss);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
   const { pi, sections } = buildRenderData(resume);
+  const headingIcon = resume.layout_settings?.headingIcon || 'none';
 
   const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, paddingLeft: `${padX}mm`, paddingRight: `${padX}mm`, paddingTop: `${padY}mm`, paddingBottom: `${padY}mm`, color: '#1F2937' };
 
-  const BarHead = ({ children }) => (
-    <div style={{ background: '#EEF1F5', padding: '5px 12px', marginTop: '1em', marginBottom: '0.5em', textAlign: 'center' }}>
-      <span style={{ fontSize: '0.92em', fontWeight: 600, color: colIf(t.headings) || '#1F2937' }}>{children}</span>
-    </div>
-  );
+  const BarHead = ({ children, iconName }) => {
+    const hColor = colIf(t.headings) || '#1F2937';
+    return (
+      <div style={{ background: '#EEF1F5', padding: '5px 12px', marginTop: '1em', marginBottom: '0.5em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+        {headingIcon !== 'none' && iconName && (
+          headingIcon === 'filled'
+            ? <span style={{ background: hColor, borderRadius: '50%', width: 15, height: 15, display: 'inline-grid', placeItems: 'center', flexShrink: 0 }}><Icon name={iconName} size={8} color="#fff" /></span>
+            : <Icon name={iconName} size={11} color={hColor} />
+        )}
+        <span style={{ fontSize: '0.92em', fontWeight: 600, color: hColor }}>{children}</span>
+      </div>
+    );
+  };
   const contact = (icon, txt) => txt ? (
     <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.88em', color: '#374151' }}>
       <span style={{ width: 16, height: 16, border: '1px solid #9CA3AF', borderRadius: 2, display: 'inline-grid', placeItems: 'center', flexShrink: 0 }}>
@@ -832,7 +886,7 @@ function TemplateSteadyForm({ resume, ds, ss, sectionAdjustments }) {
         });
         if (!body) return null;
         const adj = sectionAdjustments?.[sec.id];
-        return <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}><BarHead>{sec.title}</BarHead>{body}</div>;
+        return <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}><BarHead iconName={SEC_ICONS[sec.type]}>{sec.title}</BarHead>{body}</div>;
       })}
     </div>
   );
@@ -844,15 +898,26 @@ function TemplateExecutive({ resume, ds, ss, sectionAdjustments }) {
   const util = tmplUtils(ds, ss);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
   const { pi, sections } = buildRenderData(resume);
+  const headingIcon = resume.layout_settings?.headingIcon || 'none';
 
   const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, paddingLeft: `${padX}mm`, paddingRight: `${padX}mm`, paddingTop: `${padY}mm`, paddingBottom: `${padY}mm`, color: '#1F2937' };
 
-  const Heading = ({ children }) => (
-    <div style={{ marginTop: '1em', marginBottom: '0.35em' }}>
-      <div style={{ fontSize: '0.95em', fontWeight: 600, color: colIf(t.headings) || '#1F2937', letterSpacing: '0.01em' }}>{children}</div>
-      <div style={{ height: 0.5, background: colIf(t.headingsLine) || '#9CA3AF', marginTop: 2 }} />
-    </div>
-  );
+  const Heading = ({ children, iconName }) => {
+    const hColor = colIf(t.headings) || '#1F2937';
+    return (
+      <div style={{ marginTop: '1em', marginBottom: '0.35em' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.95em', fontWeight: 600, color: hColor, letterSpacing: '0.01em' }}>
+          {headingIcon !== 'none' && iconName && (
+            headingIcon === 'filled'
+              ? <span style={{ background: colIf(t.headings) || accent, borderRadius: '50%', width: 16, height: 16, display: 'inline-grid', placeItems: 'center', flexShrink: 0 }}><Icon name={iconName} size={9} color="#fff" /></span>
+              : <Icon name={iconName} size={11} color={hColor} />
+          )}
+          {children}
+        </div>
+        <div style={{ height: 0.5, background: colIf(t.headingsLine) || '#9CA3AF', marginTop: 2 }} />
+      </div>
+    );
+  };
   const contactItems = [['pin', pi.location], ['mail', pi.email], ['phone', pi.phone], ['link', pi.link]].filter(([, v]) => v);
 
   return (
@@ -877,7 +942,7 @@ function TemplateExecutive({ resume, ds, ss, sectionAdjustments }) {
         });
         if (!body) return null;
         const adj = sectionAdjustments?.[sec.id];
-        return <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}><Heading>{sec.title}</Heading>{body}</div>;
+        return <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}><Heading iconName={SEC_ICONS[sec.type]}>{sec.title}</Heading>{body}</div>;
       })}
     </div>
   );

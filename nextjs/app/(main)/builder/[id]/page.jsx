@@ -420,7 +420,7 @@ export default function BuilderEditor() {
         setSectionSaveStatus(s => ({ ...s, [sectionId]: 'error' }));
         showToast("Changes couldn't be saved. Please try again.", 'error');
       }
-    }, 1200);
+    }, 3000);
   }, [id, queryClient, showToast]);
 
   const handleSectionContentChange = useCallback((sectionId, content) => {
@@ -456,7 +456,7 @@ export default function BuilderEditor() {
     if (piDebounceRef.current) clearTimeout(piDebounceRef.current);
     piDebounceRef.current = setTimeout(() => {
       updateResumeMutation.mutate({ personal_info: pi });
-    }, 1200);
+    }, 3000);
   }, [updateResumeMutation]);
 
   // ── Design change ─────────────────────────────────────────────────────────
