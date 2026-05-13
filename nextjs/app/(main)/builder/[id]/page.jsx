@@ -18,6 +18,7 @@ import DesignPanel from '@/components/builder/DesignPanel.jsx';
 import ResumePreview from '@/components/builder/ResumePreview.jsx';
 import TemplateGallery from '@/components/builder/TemplateGallery.jsx';
 import ShareModal from '@/components/builder/ShareModal.jsx';
+import ATSPanel from '@/components/builder/ATSPanel.jsx';
 import Link from 'next/link';
 import { Sk } from '@/components/Skeleton';
 
@@ -414,6 +415,7 @@ export default function BuilderEditor() {
   const [panelMode, setPanelMode] = useState('content'); // 'content' | 'customize'
   const [customizeTab, setCustomizeTab] = useState('design'); // 'design' | 'spacing' | 'sections'
   const [saveState, setSaveState] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+  const [showATS, setShowATS] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['builder-resume', id],
@@ -757,6 +759,15 @@ export default function BuilderEditor() {
         {/* Action buttons */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <button
+            onClick={() => setShowATS(true)}
+            className="hidden sm:flex items-center gap-1.5 h-8 px-3 text-xs font-semibold border border-indigo-200 text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100 transition-colors"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+            Get ATS Score
+          </button>
+          <button
             onClick={() => setShowImport(true)}
             className="hidden sm:flex items-center gap-1.5 h-8 px-3 text-xs font-semibold border border-ds-border text-ds-text rounded-md hover:bg-ds-bg transition-colors"
           >
@@ -977,6 +988,17 @@ export default function BuilderEditor() {
 
       {/* Share modal */}
       {showShare && <ShareModal resumeId={id} onClose={() => setShowShare(false)} />}
+
+      {/* ATS panel */}
+      {showATS && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/30 z-[199]"
+            onClick={() => setShowATS(false)}
+          />
+          <ATSPanel resumeId={id} onClose={() => setShowATS(false)} />
+        </>
+      )}
 
       {/* Toast */}
       {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
