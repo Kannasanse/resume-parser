@@ -184,6 +184,16 @@ export default function PrintPage() {
 
           /* 7. Suppress browser-injected link underlines & colors in print */
           a { text-decoration: none !important; color: inherit !important; }
+
+          /* 8. Rich text body rendered from TipTap HTML */
+          .resume-rich-body p  { margin: 0; }
+          .resume-rich-body p + p { margin-top: 0.2em; }
+          .resume-rich-body ul { list-style-type: disc !important; padding-left: 1.2em; margin: 0.2em 0; }
+          .resume-rich-body ol { list-style-type: decimal !important; padding-left: 1.2em; margin: 0.2em 0; }
+          .resume-rich-body li { display: list-item !important; margin: 0; }
+          .resume-rich-body strong { font-weight: 700; }
+          .resume-rich-body em     { font-style: italic; }
+          .resume-rich-body u      { text-decoration: underline; }
         }
       `}</style>
 

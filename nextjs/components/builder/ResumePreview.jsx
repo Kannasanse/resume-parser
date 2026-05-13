@@ -218,11 +218,25 @@ function SkillsBody({ sec, util, variantCols }) {
   );
 }
 
-function BulletList({ bullets, listStyle }) {
-  if (!bullets?.length) return null;
+// Renders rich HTML body (new format) or falls back to old bullets array / plain text.
+// listStyle only affects the old bullets fallback (hyphen vs disc).
+function RichBody({ entry, listStyle, style }) {
+  // New: HTML body stored by RichTextEditor
+  if (entry.body) {
+    return (
+      <div
+        className="resume-rich-body"
+        dangerouslySetInnerHTML={{ __html: entry.body }}
+        style={{ marginTop: 3, ...style }}
+      />
+    );
+  }
+  // Legacy: bullets array
+  const bullets = (entry.bullets || []).filter(b => b?.trim());
+  if (!bullets.length) return null;
   if (listStyle === 'hyphen') {
     return (
-      <div style={{ margin: '3px 0 0' }}>
+      <div style={{ margin: '3px 0 0', ...style }}>
         {bullets.map((b, j) => (
           <div key={j} style={{ display: 'flex', gap: 6, marginBottom: 1 }}>
             <span style={{ flexShrink: 0, color: '#6B7280' }}>–</span>
@@ -233,10 +247,15 @@ function BulletList({ bullets, listStyle }) {
     );
   }
   return (
-    <ul style={{ margin: '3px 0 0', paddingLeft: 18, listStyleType: 'disc' }}>
+    <ul style={{ margin: '3px 0 0', paddingLeft: 18, listStyleType: 'disc', ...style }}>
       {bullets.map((b, j) => <li key={j} style={{ marginBottom: 1, display: 'list-item' }}>{b}</li>)}
     </ul>
   );
+}
+
+// Keep BulletList for backwards compat with any remaining callers
+function BulletList({ bullets, listStyle }) {
+  return <RichBody entry={{ bullets }} listStyle={listStyle} />;
 }
 
 function ExperienceBody({ secs, util, variant }) {
@@ -255,8 +274,6 @@ function ExperienceBody({ secs, util, variant }) {
         const titleFirst = e._order !== 'employer-first';
         const primary    = titleFirst ? (e.title || '') : (e.employer || '');
         const secondary  = titleFirst ? (e.employer || '') : (e.title || '');
-        const bullets    = (e.bullets || []).filter(b => b?.trim());
-
         if (variant === 'date-column') {
           return (
             <div key={i} className="resume-entry-block" style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: 14, marginBottom: gap }}>
@@ -267,7 +284,7 @@ function ExperienceBody({ secs, util, variant }) {
               <div>
                 <div style={{ fontWeight: 700 }}>{primary}</div>
                 <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</div>
-                <BulletList bullets={bullets} listStyle={listStyle} />
+                <RichBody entry={e} listStyle={listStyle} />
               </div>
             </div>
           );
@@ -278,7 +295,7 @@ function ExperienceBody({ secs, util, variant }) {
               <div style={{ fontWeight: 700 }}>{primary}</div>
               <div style={{ fontStyle: 'italic', fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</div>
               <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280', marginBottom: 3 }}>{e.dates}{e.location ? ` | ${e.location}` : ''}</div>
-              <BulletList bullets={bullets} listStyle={listStyle} />
+              <RichBody entry={e} listStyle={listStyle} />
             </div>
           );
         }
@@ -291,7 +308,7 @@ function ExperienceBody({ secs, util, variant }) {
               </div>
               <div>
                 <div><strong>{primary},</strong> <em style={{ color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</em></div>
-                <BulletList bullets={bullets} listStyle={listStyle} />
+                <RichBody entry={e} listStyle={listStyle} />
               </div>
             </div>
           );
@@ -307,7 +324,7 @@ function ExperienceBody({ secs, util, variant }) {
               <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</div>
               {e.location && <div style={{ fontSize: '0.85em', color: '#6B7280' }}>{e.location}</div>}
             </div>
-            <BulletList bullets={bullets} listStyle={listStyle} />
+            <RichBody entry={e} listStyle={listStyle} />
           </div>
         );
       })}
@@ -425,21 +442,17 @@ function ProjectsBody({ sec, util }) {
   if (!entries.length) return null;
   return (
     <div>
-      {entries.map((p, i) => {
-        const bullets = (p.bullets || []).filter(b => b?.trim());
-        return (
-          <div key={i} className="resume-entry-block" style={{ marginBottom: i < entries.length - 1 ? entryGapPx * 0.75 : 0 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <div style={{ fontWeight: 700 }}>{p.title}</div>
-              {p.dates && <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280' }}>{p.dates}</div>}
-            </div>
-            {p.role && <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{p.role}</div>}
-            {p.link && <div style={{ fontSize: '0.85em', color: '#6B7280' }}>{p.link}</div>}
-            {p.description && !bullets.length && <div style={{ marginTop: 3 }}>{p.description}</div>}
-            {bullets.length > 0 && <BulletList bullets={bullets} listStyle={listStyle} />}
+      {entries.map((p, i) => (
+        <div key={i} className="resume-entry-block" style={{ marginBottom: i < entries.length - 1 ? entryGapPx * 0.75 : 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <div style={{ fontWeight: 700 }}>{p.title}</div>
+            {p.dates && <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280' }}>{p.dates}</div>}
           </div>
-        );
-      })}
+          {p.role && <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{p.role}</div>}
+          {p.link && <div style={{ fontSize: '0.85em', color: '#6B7280' }}>{p.link}</div>}
+          <RichBody entry={p} listStyle={listStyle} />
+        </div>
+      ))}
     </div>
   );
 }
@@ -447,7 +460,13 @@ function ProjectsBody({ sec, util }) {
 // Dispatch section body by type
 function renderSectionBody(sec, util, opts = {}) {
   const type = sec.type;
-  if (type === 'summary')        return <div style={{ fontSize: '0.95em' }}>{sec.content?.text}</div>;
+  if (type === 'summary') {
+    const txt = sec.content?.text || '';
+    const isHtml = txt.trim().startsWith('<');
+    return isHtml
+      ? <div className="resume-rich-body" style={{ fontSize: '0.95em' }} dangerouslySetInnerHTML={{ __html: txt }} />
+      : <div style={{ fontSize: '0.95em' }}>{txt}</div>;
+  }
   if (type === 'work_experience') return <ExperienceBody secs={[sec]} util={util} variant={opts.expVariant} />;
   if (type === 'education')      return <EducationBody secs={[sec]} util={util} variant={opts.eduVariant} />;
   if (type === 'skills')         return <SkillsBody sec={sec} util={util} variantCols={opts.skillsCols} />;
@@ -465,11 +484,19 @@ function renderSectionBody(sec, util, opts = {}) {
   if (Array.isArray(entries) && entries.length) {
     return (
       <div>
-        {entries.map((e, i) => (
-          <div key={i} style={{ marginBottom: 3 }}>
-            {Object.values(e).filter(v => typeof v === 'string' && v).join(' · ')}
-          </div>
-        ))}
+        {entries.map((e, i) => {
+          const body = e.body || e.description || '';
+          const isHtml = body.trim().startsWith('<');
+          return (
+            <div key={i} style={{ marginBottom: 6 }}>
+              {e.title && <div style={{ fontWeight: 600 }}>{e.title}</div>}
+              {body && (isHtml
+                ? <div className="resume-rich-body" dangerouslySetInnerHTML={{ __html: body }} style={{ fontSize: '0.95em' }} />
+                : <div style={{ fontSize: '0.95em', whiteSpace: 'pre-wrap' }}>{body}</div>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   }

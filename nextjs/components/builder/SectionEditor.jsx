@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import RichTextEditor from './RichTextEditor.jsx';
 
 // ── Shared atoms ──────────────────────────────────────────────────────────────
 
@@ -99,15 +100,20 @@ function EntryCard({ title, sub, onDelete, children, defaultOpen = false }) {
   );
 }
 
+// Convert old bullets array to HTML for backwards compat
+function bulletsToHtml(bullets) {
+  if (!Array.isArray(bullets) || !bullets.length) return '';
+  const items = bullets.filter(b => b?.trim()).map(b => `<li><p>${b}</p></li>`).join('');
+  return items ? `<ul>${items}</ul>` : '';
+}
+
 // ── Summary ───────────────────────────────────────────────────────────────────
 
 function SummaryEditor({ content, onChange }) {
   return (
-    <textarea
-      className={textareaCls}
-      rows={5}
-      defaultValue={content.text || ''}
-      onBlur={e => onChange({ ...content, text: e.target.value })}
+    <RichTextEditor
+      value={content.text || ''}
+      onChange={val => onChange({ ...content, text: val })}
       placeholder="Write a compelling professional summary…"
     />
   );
@@ -164,11 +170,7 @@ function WorkExperienceEditor({ content, onChange }) {
 
   const update = (i, patch) => onChange({ ...content, entries: entries.map((e, j) => j === i ? { ...e, ...patch } : e) });
   const remove = (i) => onChange({ ...content, entries: entries.filter((_, j) => j !== i) });
-  const add = () => onChange({ ...content, entries: [...entries, { title: '', employer: '', dates: '', location: '', bullets: [''] }] });
-
-  const updateBullet = (i, bi, val) => update(i, { bullets: entries[i].bullets.map((b, bj) => bj === bi ? val : b) });
-  const addBullet = (i) => update(i, { bullets: [...(entries[i].bullets || []), ''] });
-  const removeBullet = (i, bi) => update(i, { bullets: entries[i].bullets.filter((_, bj) => bj !== bi) });
+  const add = () => onChange({ ...content, entries: [...entries, { title: '', employer: '', dates: '', location: '', body: '' }] });
 
   return (
     <div className="flex flex-col gap-2">
@@ -196,18 +198,12 @@ function WorkExperienceEditor({ content, onChange }) {
               <input defaultValue={e.location} onBlur={ev => update(i, { location: ev.target.value })} placeholder="New York, NY" className={inputCls} />
             </Field>
           </FieldRow>
-          <Field label="Bullets">
-            <div className="flex flex-col gap-[6px]">
-              {(e.bullets || []).map((b, bi) => (
-                <div key={bi} className="flex items-center gap-2">
-                  <input defaultValue={b} onBlur={ev => updateBullet(i, bi, ev.target.value)} placeholder="Describe an accomplishment…" className={inputCls + ' flex-1'} />
-                  <button onClick={() => removeBullet(i, bi)} className="w-[26px] h-[26px] rounded-md flex items-center justify-center text-ds-textMuted hover:text-ds-danger hover:bg-ds-dangerLight transition-colors flex-shrink-0">
-                    <TrashIcon />
-                  </button>
-                </div>
-              ))}
-              <AddBtn onClick={() => addBullet(i)}>Add bullet</AddBtn>
-            </div>
+          <Field label="Description">
+            <RichTextEditor
+              value={e.body || bulletsToHtml(e.bullets)}
+              onChange={val => update(i, { body: val })}
+              placeholder="Add an accomplishment, bullet points, or description…"
+            />
           </Field>
         </EntryCard>
       ))}
@@ -223,7 +219,7 @@ function EducationEditor({ content, onChange }) {
 
   const update = (i, patch) => onChange({ ...content, entries: entries.map((e, j) => j === i ? { ...e, ...patch } : e) });
   const remove = (i) => onChange({ ...content, entries: entries.filter((_, j) => j !== i) });
-  const add = () => onChange({ ...content, entries: [...entries, { school: '', degree: '', dates: '', location: '' }] });
+  const add = () => onChange({ ...content, entries: [...entries, { school: '', degree: '', dates: '', location: '', body: '' }] });
 
   return (
     <div className="flex flex-col gap-2">
@@ -251,6 +247,13 @@ function EducationEditor({ content, onChange }) {
               <input defaultValue={e.location} onBlur={ev => update(i, { location: ev.target.value })} placeholder="Berkeley, CA" className={inputCls} />
             </Field>
           </FieldRow>
+          <Field label="Description">
+            <RichTextEditor
+              value={e.body || ''}
+              onChange={val => update(i, { body: val })}
+              placeholder="Add a description of your education entry…"
+            />
+          </Field>
         </EntryCard>
       ))}
       <AddBtn onClick={add}>Add education</AddBtn>
@@ -294,11 +297,7 @@ function ProjectsEditor({ content, onChange }) {
   const entries = content.entries || [];
   const update = (i, patch) => onChange({ ...content, entries: entries.map((e, j) => j === i ? { ...e, ...patch } : e) });
   const remove = (i) => onChange({ ...content, entries: entries.filter((_, j) => j !== i) });
-  const add = () => onChange({ ...content, entries: [...entries, { title: '', role: '', dates: '', link: '', description: '', bullets: [] }] });
-
-  const updateBullet = (i, bi, val) => update(i, { bullets: (entries[i].bullets || []).map((b, bj) => bj === bi ? val : b) });
-  const addBullet    = (i) => update(i, { bullets: [...(entries[i].bullets || []), ''] });
-  const removeBullet = (i, bi) => update(i, { bullets: (entries[i].bullets || []).filter((_, bj) => bj !== bi) });
+  const add = () => onChange({ ...content, entries: [...entries, { title: '', role: '', dates: '', link: '', body: '' }] });
 
   return (
     <div className="flex flex-col gap-2">
@@ -321,20 +320,11 @@ function ProjectsEditor({ content, onChange }) {
             </Field>
           </FieldRow>
           <Field label="Description">
-            <textarea defaultValue={e.description} onBlur={ev => update(i, { description: ev.target.value })} rows={2} placeholder="Short summary (optional if using bullets)…" className={textareaCls} />
-          </Field>
-          <Field label="Bullets">
-            <div className="flex flex-col gap-[6px]">
-              {(e.bullets || []).map((b, bi) => (
-                <div key={bi} className="flex items-center gap-2">
-                  <input defaultValue={b} onBlur={ev => updateBullet(i, bi, ev.target.value)} placeholder="Describe an achievement…" className={inputCls + ' flex-1'} />
-                  <button onClick={() => removeBullet(i, bi)} className="w-[26px] h-[26px] rounded-md flex items-center justify-center text-ds-textMuted hover:text-ds-danger hover:bg-ds-dangerLight transition-colors flex-shrink-0">
-                    <TrashIcon />
-                  </button>
-                </div>
-              ))}
-              <AddBtn onClick={() => addBullet(i)}>Add bullet</AddBtn>
-            </div>
+            <RichTextEditor
+              value={e.body || bulletsToHtml(e.bullets)}
+              onChange={val => update(i, { body: val })}
+              placeholder="Add a description, bullet points, or achievements…"
+            />
           </Field>
         </EntryCard>
       ))}
@@ -404,7 +394,11 @@ function CustomEditor({ content, onChange }) {
             <input defaultValue={e.title} onBlur={ev => update(i, { title: ev.target.value })} placeholder="Entry title" className={inputCls} />
           </Field>
           <Field label="Description">
-            <textarea defaultValue={e.description} onBlur={ev => update(i, { description: ev.target.value })} rows={3} className={textareaCls} />
+            <RichTextEditor
+              value={e.body || e.description || ''}
+              onChange={val => update(i, { body: val })}
+              placeholder="Add a description…"
+            />
           </Field>
         </EntryCard>
       ))}
