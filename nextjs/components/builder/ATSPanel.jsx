@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 
 // ── Category icons ────────────────────────────────────────────────────────────
 
@@ -88,27 +88,10 @@ const PRIORITY_CONFIG = {
   low:    { label: 'Low',    bg: '#DBEAFE', color: '#2563EB' },
 };
 
-export default function ATSPanel({ resumeId, onClose }) {
-  const [state, setState] = useState('idle'); // idle | loading | done | error
-  const [data, setData] = useState(null);
-  const [errorMsg, setErrorMsg] = useState('');
+export default function ATSPanel({ resumeId, onClose, atsState, atsData, atsError, onAnalyze }) {
   const [activeTab, setActiveTab] = useState('overview');
-
-  const analyze = useCallback(async () => {
-    setState('loading');
-    setErrorMsg('');
-    try {
-      const res = await fetch(`/api/v1/builder/${resumeId}/ats-score`, { method: 'POST' });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Analysis failed');
-      setData(json);
-      setState('done');
-    } catch (err) {
-      setErrorMsg(err.message);
-      setState('error');
-    }
-  }, [resumeId]);
-
+  const state = atsState;
+  const data = atsData;
   const bandColor = data ? scoreColor(data.score) : '#6B7280';
 
   return (
@@ -160,7 +143,7 @@ export default function ATSPanel({ resumeId, onClose }) {
               </div>
             </div>
             <button
-              onClick={analyze}
+              onClick={onAnalyze}
               style={{ background: '#4F46E5', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
             >
               Analyze Resume
@@ -181,8 +164,8 @@ export default function ATSPanel({ resumeId, onClose }) {
         {/* Error */}
         {state === 'error' && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16, padding: 40, textAlign: 'center' }}>
-            <div style={{ fontSize: 13, color: '#D93025', background: '#FEE2E2', padding: '10px 16px', borderRadius: 8 }}>{errorMsg}</div>
-            <button onClick={analyze} style={{ background: '#4F46E5', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 24px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+            <div style={{ fontSize: 13, color: '#D93025', background: '#FEE2E2', padding: '10px 16px', borderRadius: 8 }}>{atsError}</div>
+            <button onClick={onAnalyze} style={{ background: '#4F46E5', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 24px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
               Try Again
             </button>
           </div>
@@ -309,10 +292,15 @@ export default function ATSPanel({ resumeId, onClose }) {
             {/* Re-analyze */}
             <div style={{ padding: '12px 20px 24px', borderTop: '1px solid #E5E7EB', marginTop: 8 }}>
               <button
-                onClick={analyze}
-                style={{ width: '100%', background: '#F3F4F6', color: '#374151', border: '1px solid #E5E7EB', borderRadius: 8, padding: '9px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                onClick={onAnalyze}
+                style={{
+                  width: '100%', border: 'none', borderRadius: 8, padding: '10px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                  background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
+                  color: '#fff',
+                  boxShadow: '0 0 16px rgba(139,92,246,0.45), 0 2px 8px rgba(99,102,241,0.3)',
+                }}
               >
-                Re-analyze
+                ↻ Re-analyze Resume
               </button>
             </div>
           </div>

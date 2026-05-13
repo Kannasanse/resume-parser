@@ -416,6 +416,24 @@ export default function BuilderEditor() {
   const [customizeTab, setCustomizeTab] = useState('design'); // 'design' | 'spacing' | 'sections'
   const [saveState, setSaveState] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
   const [showATS, setShowATS] = useState(false);
+  const [atsState, setAtsState] = useState('idle');
+  const [atsData, setAtsData] = useState(null);
+  const [atsError, setAtsError] = useState('');
+
+  const handleAnalyzeATS = useCallback(async () => {
+    setAtsState('loading');
+    setAtsError('');
+    try {
+      const res = await fetch(`/api/v1/builder/${id}/ats-score`, { method: 'POST' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Analysis failed');
+      setAtsData(json);
+      setAtsState('done');
+    } catch (err) {
+      setAtsError(err.message);
+      setAtsState('error');
+    }
+  }, [id]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['builder-resume', id],
@@ -760,12 +778,18 @@ export default function BuilderEditor() {
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <button
             onClick={() => setShowATS(true)}
-            className="hidden sm:flex items-center gap-1.5 h-8 px-3 text-xs font-semibold border border-indigo-200 text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100 transition-colors"
+            className="hidden sm:flex items-center gap-1.5 h-8 px-3 text-xs font-bold text-white rounded-md transition-all"
+            style={{
+              background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
+              boxShadow: '0 0 12px rgba(139,92,246,0.5), 0 2px 6px rgba(99,102,241,0.3)',
+            }}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
             </svg>
-            Get ATS Score
+            {atsData ? (
+              <>ATS Score: <span style={{ marginLeft: 3, background: 'rgba(255,255,255,0.25)', borderRadius: 4, padding: '1px 5px' }}>{atsData.score}</span></>
+            ) : 'Get ATS Score'}
           </button>
           <button
             onClick={() => setShowImport(true)}
@@ -996,7 +1020,14 @@ export default function BuilderEditor() {
             className="fixed inset-0 bg-black/30 z-[199]"
             onClick={() => setShowATS(false)}
           />
-          <ATSPanel resumeId={id} onClose={() => setShowATS(false)} />
+          <ATSPanel
+            resumeId={id}
+            onClose={() => setShowATS(false)}
+            atsState={atsState}
+            atsData={atsData}
+            atsError={atsError}
+            onAnalyze={handleAnalyzeATS}
+          />
         </>
       )}
 
