@@ -121,11 +121,15 @@ export default function PrintPage() {
 
           /* ── Section-aware page break rules ── */
 
-          /* 1. Section headers glue to their content — never orphaned at page bottom */
+          /* 1. Section headers glue to their content — never orphaned at page bottom.
+                Covers both native h-tags and template heading divs (first child of section block). */
           .resume-print-root h1,
           .resume-print-root h2,
           .resume-print-root h3,
-          .resume-print-root h4 {
+          .resume-print-root h4,
+          .resume-print-root h5,
+          .resume-print-root h6,
+          .resume-print-root .resume-section-block > *:first-child {
             break-after: avoid;
             page-break-after: avoid;
           }

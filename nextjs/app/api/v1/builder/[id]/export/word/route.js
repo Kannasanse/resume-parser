@@ -16,6 +16,7 @@ function hr(color = 'BFBFBF', size = 6) {
   return new Paragraph({
     border: { bottom: { style: BorderStyle.SINGLE, size, color, space: 1 } },
     spacing: { before: 0, after: 60 },
+    keepWithNext: true,
   });
 }
 
@@ -24,6 +25,8 @@ function sectionHeading(text, color = '1a1a1a') {
     new Paragraph({
       children: [new TextRun({ text: text.toUpperCase(), bold: true, size: PT(10), color, font: 'Calibri', characterSpacing: 60 })],
       spacing: { before: 200, after: 0 },
+      keepWithNext: true,
+      keepLines: true,
     }),
     hr(color.replace('#', ''), 6),
   ];
@@ -44,6 +47,8 @@ function entryHeader(left, right, leftBold = true) {
       new TextRun({ text: right ? `  |  ${right}` : '', size: PT(10), color: '666666', font: 'Calibri' }),
     ],
     spacing: { before: 120, after: 20 },
+    keepWithNext: true,
+    keepLines: true,
   });
 }
 

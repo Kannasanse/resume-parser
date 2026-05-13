@@ -506,7 +506,7 @@ function buildDetailsBlock(pi, ds, util) {
 
 // ── Template 1: Modern ────────────────────────────────────────────────────────
 
-function TemplateModern({ resume, ds, ss }) {
+function TemplateModern({ resume, ds, ss, sectionAdjustments }) {
   const util = tmplUtils(ds, ss);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
   const { pi, sections } = buildRenderData(resume);
@@ -530,7 +530,8 @@ function TemplateModern({ resume, ds, ss }) {
       {sections.map(sec => {
         const body = renderSectionBody(sec, util);
         if (!body) return null;
-        return <div key={sec.id} className="resume-section-block" data-type={sec.type}><Heading>{sec.title}</Heading>{body}</div>;
+        const adj = sectionAdjustments?.[sec.id];
+        return <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}><Heading>{sec.title}</Heading>{body}</div>;
       })}
     </div>
   );
@@ -540,7 +541,7 @@ function TemplateModern({ resume, ds, ss }) {
 
 const ATLANTIC_SIDEBAR_TYPES = new Set(['summary', 'languages', 'hobbies', 'references']);
 
-function TemplateAtlanticBlue({ resume, ds, ss }) {
+function TemplateAtlanticBlue({ resume, ds, ss, sectionAdjustments }) {
   const util = tmplUtils(ds, ss);
   const { fontSize, lineHeight, accent, t, colIf, fontFamily } = util;
   const { pi, sections } = buildRenderData(resume);
@@ -588,8 +589,9 @@ function TemplateAtlanticBlue({ resume, ds, ss }) {
           {sideIds.map(sec => {
             const body = renderSectionBody(sec, util, { certVariant: 'compact-list' });
             if (!body) return null;
+            const adj = sectionAdjustments?.[sec.id];
             return (
-              <div key={sec.id} className="resume-section-block" data-type={sec.type}>
+              <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
                 <SideHead iconName={SEC_ICONS[sec.type]}>{sec.title}</SideHead>
                 {body}
               </div>
@@ -602,8 +604,9 @@ function TemplateAtlanticBlue({ resume, ds, ss }) {
         {bodyIds.map(sec => {
           const body = renderSectionBody(sec, util, { expVariant: 'stacked' });
           if (!body) return null;
+          const adj = sectionAdjustments?.[sec.id];
           return (
-            <div key={sec.id} className="resume-section-block" data-type={sec.type}>
+            <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
               <PillHead iconName={SEC_ICONS[sec.type]}>{sec.title}</PillHead>
               {body}
             </div>
@@ -616,7 +619,7 @@ function TemplateAtlanticBlue({ resume, ds, ss }) {
 
 // ── Template 3: Corporate (centered, classic) ─────────────────────────────────
 
-function TemplateCorporate({ resume, ds, ss }) {
+function TemplateCorporate({ resume, ds, ss, sectionAdjustments }) {
   const util = tmplUtils(ds, ss);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
   const { pi, sections } = buildRenderData(resume);
@@ -653,7 +656,8 @@ function TemplateCorporate({ resume, ds, ss }) {
         const skillsCols  = (sec.type === 'skills' && (sec.display_settings?.layout === 'rows' || !sec.display_settings?.layout)) ? 3 : undefined;
         const body = renderSectionBody(sec, util, { certVariant, skillsCols });
         if (!body) return null;
-        return <div key={sec.id} className="resume-section-block" data-type={sec.type}><Heading>{sec.title}</Heading>{body}</div>;
+        const adj = sectionAdjustments?.[sec.id];
+        return <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}><Heading>{sec.title}</Heading>{body}</div>;
       })}
     </div>
   );
@@ -663,7 +667,7 @@ function TemplateCorporate({ resume, ds, ss }) {
 
 const CREST_LEFT_TYPES = new Set(['summary', 'skills', 'languages', 'certifications', 'hobbies']);
 
-function TemplateAtlanticCrest({ resume, ds, ss }) {
+function TemplateAtlanticCrest({ resume, ds, ss, sectionAdjustments }) {
   const util = tmplUtils(ds, ss);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
   const { pi, sections } = buildRenderData(resume);
@@ -708,14 +712,16 @@ function TemplateAtlanticCrest({ resume, ds, ss }) {
           {leftIds.map(sec => {
             const body = renderSectionBody(sec, util);
             if (!body) return null;
-            return <div key={sec.id} className="resume-section-block" data-type={sec.type}><PillHead iconName={SEC_ICONS[sec.type]}>{sec.title}</PillHead>{body}</div>;
+            const adj = sectionAdjustments?.[sec.id];
+            return <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}><PillHead iconName={SEC_ICONS[sec.type]}>{sec.title}</PillHead>{body}</div>;
           })}
         </div>
         <div>
           {rightIds.map(sec => {
             const body = renderSectionBody(sec, util, { expVariant: 'stacked' });
             if (!body) return null;
-            return <div key={sec.id} className="resume-section-block" data-type={sec.type}><PillHead iconName={SEC_ICONS[sec.type]}>{sec.title}</PillHead>{body}</div>;
+            const adj = sectionAdjustments?.[sec.id];
+            return <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}><PillHead iconName={SEC_ICONS[sec.type]}>{sec.title}</PillHead>{body}</div>;
           })}
         </div>
       </div>
@@ -725,7 +731,7 @@ function TemplateAtlanticCrest({ resume, ds, ss }) {
 
 // ── Template 5: Mercury Flow (gray banner + date column) ──────────────────────
 
-function TemplateMercuryFlow({ resume, ds, ss }) {
+function TemplateMercuryFlow({ resume, ds, ss, sectionAdjustments }) {
   const util = tmplUtils(ds, ss);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
   const { pi, sections } = buildRenderData(resume);
@@ -764,7 +770,8 @@ function TemplateMercuryFlow({ resume, ds, ss }) {
           const isDateCol = sec.type === 'work_experience' || sec.type === 'education';
           const body = renderSectionBody(sec, util, isDateCol ? { expVariant: 'date-column', eduVariant: 'date-column' } : {});
           if (!body) return null;
-          return <div key={sec.id} className="resume-section-block" data-type={sec.type}><BarHead>{sec.title}</BarHead>{body}</div>;
+          const adj = sectionAdjustments?.[sec.id];
+          return <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}><BarHead>{sec.title}</BarHead>{body}</div>;
         })}
       </div>
     </div>
@@ -773,7 +780,7 @@ function TemplateMercuryFlow({ resume, ds, ss }) {
 
 // ── Template 6: Steady Form (photo right + gray bar headings) ─────────────────
 
-function TemplateSteadyForm({ resume, ds, ss }) {
+function TemplateSteadyForm({ resume, ds, ss, sectionAdjustments }) {
   const util = tmplUtils(ds, ss);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
   const { pi, sections } = buildRenderData(resume);
@@ -822,7 +829,8 @@ function TemplateSteadyForm({ resume, ds, ss }) {
           certVariant,
         });
         if (!body) return null;
-        return <div key={sec.id} className="resume-section-block" data-type={sec.type}><BarHead>{sec.title}</BarHead>{body}</div>;
+        const adj = sectionAdjustments?.[sec.id];
+        return <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}><BarHead>{sec.title}</BarHead>{body}</div>;
       })}
     </div>
   );
@@ -830,7 +838,7 @@ function TemplateSteadyForm({ resume, ds, ss }) {
 
 // ── Template 7: Executive (editorial serif, date-column) ──────────────────────
 
-function TemplateExecutive({ resume, ds, ss }) {
+function TemplateExecutive({ resume, ds, ss, sectionAdjustments }) {
   const util = tmplUtils(ds, ss);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
   const { pi, sections } = buildRenderData(resume);
@@ -866,7 +874,8 @@ function TemplateExecutive({ resume, ds, ss }) {
           eduVariant: sec.type === 'education' ? 'date-column' : undefined,
         });
         if (!body) return null;
-        return <div key={sec.id} className="resume-section-block" data-type={sec.type}><Heading>{sec.title}</Heading>{body}</div>;
+        const adj = sectionAdjustments?.[sec.id];
+        return <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}><Heading>{sec.title}</Heading>{body}</div>;
       })}
     </div>
   );
@@ -886,11 +895,32 @@ const TEMPLATE_COMPONENTS = {
 
 // ── ResumePreview default export ──────────────────────────────────────────────
 
+// Detect sections whose headings would be orphaned at a page bottom.
+// Returns a map of { sectionId: extraMarginPx } using a single cumulative pass
+// so that cascading effects (earlier pushes shifting later sections) are handled.
+function detectOrphanAdjustments(contentEl, pageHeight) {
+  const ORPHAN_ZONE = pageHeight * 0.1; // last 10% of page (~84px on A4)
+  const blocks = contentEl.querySelectorAll('[data-section-id]');
+  const adj = {};
+  let cumulative = 0;
+  blocks.forEach(el => {
+    const effectiveTop = el.offsetTop + cumulative;
+    const posOnPage = effectiveTop % pageHeight;
+    if (posOnPage > pageHeight - ORPHAN_ZONE) {
+      const push = pageHeight - posOnPage;
+      adj[el.dataset.sectionId] = push;
+      cumulative += push;
+    }
+  });
+  return adj;
+}
+
 export default function ResumePreview({ resume, designSettings = {}, scale = null, className = '', printMode = false }) {
   const containerRef = useRef(null);
   const contentRef  = useRef(null);
   const [computedScale, setComputedScale] = useState(scale || 0.6);
   const [contentHeight, setContentHeight] = useState(0);
+  const [sectionAdjustments, setSectionAdjustments] = useState({});
 
   const ds = { ...DEFAULT_DESIGN, ...(designSettings || {}) };
   const ss = { ...DEFAULT_SPACING, ...(resume?.spacing_settings || {}) };
@@ -914,6 +944,16 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
     if (contentRef.current)   ro.observe(contentRef.current);
     return () => ro.disconnect();
   }, [updateScale]);
+
+  // Re-run orphan detection whenever raw content height changes
+  useEffect(() => {
+    if (!contentRef.current || !contentHeight) return;
+    const newAdj = detectOrphanAdjustments(contentRef.current, page.height);
+    setSectionAdjustments(prev => {
+      if (JSON.stringify(newAdj) === JSON.stringify(prev)) return prev;
+      return newAdj;
+    });
+  }, [contentHeight, page.height]);
 
   const s = scale !== null ? scale : computedScale;
 
@@ -947,12 +987,14 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
     );
   }
 
-  const numPages = contentHeight > 0 ? Math.max(1, Math.ceil(contentHeight / page.height)) : 1;
+  const totalAdjustment = Object.values(sectionAdjustments).reduce((sum, v) => sum + v, 0);
+  const adjustedHeight = contentHeight + totalAdjustment;
+  const numPages = adjustedHeight > 0 ? Math.max(1, Math.ceil(adjustedHeight / page.height)) : 1;
 
   return (
     <div ref={containerRef} className={`overflow-auto ${className}`} style={{ background: '#CBD5E1' }}>
       <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        {/* Hidden measurement div */}
+        {/* Hidden measurement div — raw layout, no adjustments applied */}
         <div style={{ position: 'absolute', visibility: 'hidden', pointerEvents: 'none', top: 0, left: 0, width: page.width }}>
           <div ref={contentRef}>
             <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
@@ -967,13 +1009,13 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
           background: '#fff',
           boxShadow: '0 4px 24px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.08)',
         }}>
-          {/* Scaled template content */}
+          {/* Scaled template content — with orphan adjustments applied */}
           <div style={{
             width: page.width,
             transformOrigin: 'top left',
             transform: `scale(${s})`,
           }}>
-            <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
+            <TemplateComp resume={resume || {}} ds={ds} ss={ss} sectionAdjustments={sectionAdjustments} />
             {hasFooter && (
               <div style={{ borderTop: '1px solid #e0e0e0', padding: '6px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8pt', color: '#888', background: '#fff' }}>
                 <span>{[fs.name && pi.name, fs.email && pi.email].filter(Boolean).join(' · ')}</span>
