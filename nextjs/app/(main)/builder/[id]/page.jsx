@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -488,8 +488,8 @@ export default function BuilderEditor() {
       if (!prev) return prev;
       return { ...prev, sections: prev.sections.map(s => s.id === sectionId ? { ...s, display_settings: displaySettings } : s) };
     });
-    debouncedSaveSection(sectionId, { display_settings: displaySettings });
-  }, [debouncedSaveSection]);
+    setSaveState('idle');
+  }, []);
 
   // ── Template change ───────────────────────────────────────────────────────
 
