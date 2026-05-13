@@ -61,7 +61,7 @@ export default function SectionList({
   onDelete,
   onToggle,
   onAddSection,
-  SectionEditorComponent,
+  sectionEditorNode,
 }) {
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -172,9 +172,9 @@ export default function SectionList({
             </div>
 
             {/* Inline editor */}
-            {isActive && SectionEditorComponent && (
+            {isActive && sectionEditorNode && (
               <div className="border-t border-ds-border bg-ds-bg">
-                <SectionEditorComponent section={sec} />
+                {sectionEditorNode}
               </div>
             )}
           </div>

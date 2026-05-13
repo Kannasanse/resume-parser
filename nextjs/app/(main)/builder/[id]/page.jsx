@@ -21,6 +21,77 @@ import ShareModal from '@/components/builder/ShareModal.jsx';
 import Link from 'next/link';
 import { Sk } from '@/components/Skeleton';
 
+// ── Paged preview ─────────────────────────────────────────────────────────────
+// Renders the resume and overlays page-break lines + page shadows to match PDF export.
+
+function PagedPreview({ resume, page, zoom }) {
+  const contentRef = useRef(null);
+  const [contentHeight, setContentHeight] = useState(page.height);
+
+  useEffect(() => {
+    if (!contentRef.current) return;
+    const obs = new ResizeObserver(entries => {
+      const h = entries[0]?.contentRect?.height;
+      if (h) setContentHeight(h);
+    });
+    obs.observe(contentRef.current);
+    return () => obs.disconnect();
+  }, []);
+
+  const pageCount = Math.max(1, Math.ceil(contentHeight / page.height));
+  const scaledPageH = page.height * zoom;
+  const scaledPageW = page.width * zoom;
+
+  return (
+    <div style={{ width: scaledPageW, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {Array.from({ length: pageCount }).map((_, pi) => (
+        <div
+          key={pi}
+          style={{
+            width: scaledPageW,
+            height: scaledPageH,
+            overflow: 'hidden',
+            position: 'relative',
+            boxShadow: '0 8px 32px rgba(23,26,69,.18), 0 2px 8px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.04)',
+            background: '#fff',
+            borderRadius: 2,
+            flexShrink: 0,
+          }}
+        >
+          {/* The full resume content, offset so the correct page slice is visible */}
+          <div style={{
+            width: page.width,
+            transform: `scale(${zoom})`,
+            transformOrigin: 'top left',
+            position: 'absolute',
+            top: -pi * page.height * zoom,
+            left: 0,
+          }}>
+            <div ref={pi === 0 ? contentRef : null}>
+              <ResumePreview
+                resume={resume}
+                designSettings={resume.design_settings || {}}
+                scale={1}
+              />
+            </div>
+          </div>
+
+          {/* Page number label */}
+          {pageCount > 1 && (
+            <div style={{
+              position: 'absolute', bottom: 6, right: 8,
+              fontSize: 10, color: '#9CA3AF', fontFamily: 'system-ui',
+              pointerEvents: 'none', userSelect: 'none',
+            }}>
+              {pi + 1} / {pageCount}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Save button ───────────────────────────────────────────────────────────────
 
 function SaveButton({ onClick, saving, saved, error }) {
@@ -775,7 +846,7 @@ export default function BuilderEditor() {
                   onDelete={(sectionId) => deleteSectionMutation.mutate(sectionId)}
                   onToggle={handleToggleSection}
                   onAddSection={handleAddSection}
-                  SectionEditorComponent={previewSection ? () => (
+                  sectionEditorNode={previewSection ? (
                     <SectionEditor
                       section={previewSection}
                       onContentChange={(content) => handleSectionContentChange(previewSection.id, content)}
@@ -837,26 +908,12 @@ export default function BuilderEditor() {
             <span className="text-ds-textMuted">{templateName}</span>
           </div>
 
-          {/* Resume paper */}
-          <div
-            style={{ width: page.width * zoom, minHeight: page.height * zoom, flexShrink: 0 }}
-          >
-            <div style={{
-              width: page.width,
-              minHeight: page.height,
-              transform: `scale(${zoom})`,
-              transformOrigin: 'top left',
-              boxShadow: '0 8px 32px rgba(23,26,69,.18), 0 2px 8px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.04)',
-              background: '#fff',
-              borderRadius: 2,
-            }}>
-              <ResumePreview
-                resume={previewData}
-                designSettings={previewData.design_settings || {}}
-                scale={1}
-              />
-            </div>
-          </div>
+          {/* Resume paper — paged preview */}
+          <PagedPreview
+            resume={previewData}
+            page={page}
+            zoom={zoom}
+          />
         </div>
 
       </div>
