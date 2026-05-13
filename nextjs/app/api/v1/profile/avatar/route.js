@@ -1,5 +1,5 @@
 import { getAuthUser } from '@/lib/authUtils.js';
-import { createServerClient } from '@supabase/ssr';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,11 +7,11 @@ const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const BUCKET = 'avatars';
 
-function makeClient() {
-  return createServerClient(
+function makeAdminClient() {
+  return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY,
-    { cookies: { getAll: () => [], setAll: () => {} } }
+    { auth: { autoRefreshToken: false, persistSession: false } }
   );
 }
 
@@ -32,7 +32,7 @@ export async function POST(req) {
     return Response.json({ error: 'File must be under 5 MB.' }, { status: 400 });
   }
 
-  const supabase = makeClient();
+  const supabase = makeAdminClient();
   const ext = file.type.split('/')[1].replace('jpeg', 'jpg');
   const path = `${user.id}/avatar.${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -61,7 +61,7 @@ export async function DELETE() {
   const user = await getAuthUser();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const supabase = makeClient();
+  const supabase = makeAdminClient();
 
   // Try to remove any known extension variants
   await supabase.storage.from(BUCKET).remove([
