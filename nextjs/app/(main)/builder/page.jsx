@@ -258,7 +258,7 @@ export default function BuilderListPage() {
             return (
               <div
                 key={r.id}
-                className={`bg-ds-card border border-ds-border rounded-xl overflow-hidden flex flex-col transition-all duration-200 ${isDuplicating ? 'opacity-60 pointer-events-none' : 'hover:shadow-md hover:-translate-y-0.5 cursor-pointer'}`}
+                className={`bg-ds-card border border-ds-border rounded-xl flex flex-col transition-all duration-200 ${isDuplicating ? 'opacity-60 pointer-events-none' : 'hover:shadow-md hover:-translate-y-0.5 cursor-pointer'}`}
                 style={{ borderTop: `4px solid ${accentColor}` }}
                 onClick={() => !isRenaming && router.push(`/builder/${r.id}`)}
               >
@@ -295,7 +295,7 @@ export default function BuilderListPage() {
                 </div>
 
                 {/* Card actions */}
-                <div className="flex items-center gap-2 px-4 py-3 border-t border-ds-border bg-ds-bg" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center gap-2 px-4 py-3 border-t border-ds-border bg-ds-bg rounded-b-xl overflow-hidden" onClick={e => e.stopPropagation()}>
                   <Link
                     href={`/builder/${r.id}`}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded text-xs font-semibold hover:bg-primary/90 transition-colors"
