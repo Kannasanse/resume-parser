@@ -420,21 +420,26 @@ function CertsBody({ sec, util, variant }) {
 }
 
 function ProjectsBody({ sec, util }) {
-  const { entryGapPx, t, colIf } = util;
+  const { entryGapPx, t, colIf, listStyle } = util;
   const entries = sec?.content?.entries || [];
   if (!entries.length) return null;
   return (
     <div>
-      {entries.map((p, i) => (
-        <div key={i} style={{ marginBottom: i < entries.length - 1 ? entryGapPx * 0.75 : 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <div style={{ fontWeight: 700 }}>{p.title}</div>
-            {p.dates && <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280' }}>{p.dates}</div>}
+      {entries.map((p, i) => {
+        const bullets = (p.bullets || []).filter(b => b?.trim());
+        return (
+          <div key={i} className="resume-entry-block" style={{ marginBottom: i < entries.length - 1 ? entryGapPx * 0.75 : 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <div style={{ fontWeight: 700 }}>{p.title}</div>
+              {p.dates && <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280' }}>{p.dates}</div>}
+            </div>
+            {p.role && <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{p.role}</div>}
+            {p.link && <div style={{ fontSize: '0.85em', color: '#6B7280' }}>{p.link}</div>}
+            {p.description && !bullets.length && <div style={{ marginTop: 3 }}>{p.description}</div>}
+            {bullets.length > 0 && <BulletList bullets={bullets} listStyle={listStyle} />}
           </div>
-          {p.role && <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{p.role}</div>}
-          {p.description && <div style={{ marginTop: 3 }}>{p.description}</div>}
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

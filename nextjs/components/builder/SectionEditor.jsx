@@ -294,7 +294,11 @@ function ProjectsEditor({ content, onChange }) {
   const entries = content.entries || [];
   const update = (i, patch) => onChange({ ...content, entries: entries.map((e, j) => j === i ? { ...e, ...patch } : e) });
   const remove = (i) => onChange({ ...content, entries: entries.filter((_, j) => j !== i) });
-  const add = () => onChange({ ...content, entries: [...entries, { title: '', role: '', dates: '', link: '', description: '' }] });
+  const add = () => onChange({ ...content, entries: [...entries, { title: '', role: '', dates: '', link: '', description: '', bullets: [] }] });
+
+  const updateBullet = (i, bi, val) => update(i, { bullets: (entries[i].bullets || []).map((b, bj) => bj === bi ? val : b) });
+  const addBullet    = (i) => update(i, { bullets: [...(entries[i].bullets || []), ''] });
+  const removeBullet = (i, bi) => update(i, { bullets: (entries[i].bullets || []).filter((_, bj) => bj !== bi) });
 
   return (
     <div className="flex flex-col gap-2">
@@ -304,8 +308,8 @@ function ProjectsEditor({ content, onChange }) {
             <Field label="Title">
               <input defaultValue={e.title} onBlur={ev => update(i, { title: ev.target.value })} placeholder="Project name" className={inputCls} />
             </Field>
-            <Field label="Role">
-              <input defaultValue={e.role} onBlur={ev => update(i, { role: ev.target.value })} placeholder="Lead Developer" className={inputCls} />
+            <Field label="Role / Tech">
+              <input defaultValue={e.role} onBlur={ev => update(i, { role: ev.target.value })} placeholder="React, Node.js" className={inputCls} />
             </Field>
           </FieldRow>
           <FieldRow>
@@ -317,7 +321,20 @@ function ProjectsEditor({ content, onChange }) {
             </Field>
           </FieldRow>
           <Field label="Description">
-            <textarea defaultValue={e.description} onBlur={ev => update(i, { description: ev.target.value })} rows={3} placeholder="Describe the project…" className={textareaCls} />
+            <textarea defaultValue={e.description} onBlur={ev => update(i, { description: ev.target.value })} rows={2} placeholder="Short summary (optional if using bullets)…" className={textareaCls} />
+          </Field>
+          <Field label="Bullets">
+            <div className="flex flex-col gap-[6px]">
+              {(e.bullets || []).map((b, bi) => (
+                <div key={bi} className="flex items-center gap-2">
+                  <input defaultValue={b} onBlur={ev => updateBullet(i, bi, ev.target.value)} placeholder="Describe an achievement…" className={inputCls + ' flex-1'} />
+                  <button onClick={() => removeBullet(i, bi)} className="w-[26px] h-[26px] rounded-md flex items-center justify-center text-ds-textMuted hover:text-ds-danger hover:bg-ds-dangerLight transition-colors flex-shrink-0">
+                    <TrashIcon />
+                  </button>
+                </div>
+              ))}
+              <AddBtn onClick={() => addBullet(i)}>Add bullet</AddBtn>
+            </div>
           </Field>
         </EntryCard>
       ))}

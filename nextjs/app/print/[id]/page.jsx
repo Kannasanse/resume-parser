@@ -45,6 +45,12 @@ export default function PrintPage() {
   const page = design.page;
   const isLetter = page.id === 'letter';
 
+  // Match @page margins to the resume's own spacing so page 2+ have top/bottom breathing room
+  const ss = resume.spacing_settings || {};
+  const clamp = (n, lo, hi, d) => (typeof n === 'number' && !isNaN(n) ? Math.max(lo, Math.min(hi, n)) : d);
+  const padX = clamp(ss.leftRightMargin, 5, 30, 15);
+  const padY = clamp(ss.topBottomMargin, 5, 30, 15);
+
   return (
     <>
       <style>{`
@@ -53,10 +59,17 @@ export default function PrintPage() {
         /* ── Page setup ── */
         @page {
           size: ${isLetter ? '8.5in 11in' : 'A4'};
-          /* Zero margins so our content controls all spacing.
-             This also suppresses the browser's own URL / date header+footer
-             that would otherwise appear in the margin area. */
-          margin: 0;
+          /*
+            Match the resume's own padding so page 2+ have correct top/bottom space.
+            Page 1 top padding is already inside the template wrapper div,
+            so we only need the margin for subsequent pages.
+            Using @page :first to suppress the top margin on page 1 avoids doubling.
+          */
+          margin: ${padY}mm ${padX}mm;
+        }
+        @page :first {
+          margin-top: 0;
+          margin-bottom: 0;
         }
 
         html, body {
