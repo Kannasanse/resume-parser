@@ -4,7 +4,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import TextAlign from '@tiptap/extension-text-align';
-import { useEffect, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 
 // ── Toolbar icons ─────────────────────────────────────────────────────────────
 
@@ -98,6 +98,8 @@ function Toolbar({ editor }) {
 // ── Editor ────────────────────────────────────────────────────────────────────
 
 export default function RichTextEditor({ value, onChange, placeholder }) {
+  const isFocused = useRef(false);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ heading: false, codeBlock: false, blockquote: false, horizontalRule: false }),
@@ -111,15 +113,23 @@ export default function RichTextEditor({ value, onChange, placeholder }) {
         class: 'outline-none min-h-[80px] px-3 py-2 text-[13px] leading-relaxed text-ds-text prose-rte',
       },
     },
+    onFocus: () => { isFocused.current = true; },
+    onBlur: ({ editor }) => {
+      isFocused.current = false;
+      // Flush final value on blur so parent always has the latest
+      const html = editor.isEmpty ? '' : editor.getHTML();
+      onChange(html);
+    },
     onUpdate: ({ editor }) => {
+      if (!isFocused.current) return;
       const html = editor.isEmpty ? '' : editor.getHTML();
       onChange(html);
     },
   });
 
-  // Sync external value changes (e.g. when a different entry is opened)
+  // Only sync external value when the editor is not focused (e.g. switching entries)
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || isFocused.current) return;
     const current = editor.isEmpty ? '' : editor.getHTML();
     if ((value || '') !== current) {
       editor.commands.setContent(value || '', false);
