@@ -147,6 +147,31 @@ function buildRenderData(resume) {
 
 // ── Shared section body renderers ─────────────────────────────────────────────
 
+const SKILL_LEVELS = ['', 'Beginner', 'Intermediate', 'Advanced'];
+
+function SkillLevelDots({ level, color }) {
+  if (!level) return null;
+  return (
+    <span style={{ display: 'inline-flex', gap: 3, flexShrink: 0 }}>
+      {[1,2,3].map(lv => <span key={lv} style={{ width: 6, height: 6, borderRadius: '50%', background: lv <= level ? color : '#E5E7EB' }} />)}
+    </span>
+  );
+}
+
+function SkillSubSkills({ subSkills, dotColor }) {
+  const subs = (subSkills || []).filter(Boolean);
+  if (!subs.length) return null;
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 8px', marginTop: 1 }}>
+      {subs.map((ss, i) => (
+        <span key={i} style={{ fontSize: '0.85em', color: '#6B7280' }}>
+          {i > 0 && <span style={{ marginRight: 8, color: '#D1DCE8' }}>·</span>}{ss}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function SkillsBody({ sec, util, variantCols }) {
   const { accent, t, colIf } = util;
   const entries  = sec?.content?.entries || [];
@@ -158,39 +183,64 @@ function SkillsBody({ sec, util, variantCols }) {
   if (layout === 'grid' || variantCols) {
     const cols = variantCols || dss.columns || 2;
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, columnGap: 18, rowGap: 3 }}>
-        {entries.map((s, i) => <div key={i}>• {s.name}</div>)}
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, columnGap: 18, rowGap: 4 }}>
+        {entries.map((s, i) => (
+          <div key={i}>
+            <div>• {s.name}</div>
+            <SkillSubSkills subSkills={s.subSkills} dotColor={dotColor} />
+          </div>
+        ))}
       </div>
     );
   }
-  if (layout === 'compact') return <div>{entries.map(s => s.name).filter(Boolean).join(' · ')}</div>;
+  if (layout === 'compact') {
+    return (
+      <div>
+        {entries.map((s, i) => {
+          const subs = (s.subSkills || []).filter(Boolean);
+          return (
+            <span key={i}>
+              {i > 0 && ' · '}
+              <strong>{s.name}</strong>
+              {subs.length > 0 && <span style={{ color: '#6B7280' }}> ({subs.join(', ')})</span>}
+            </span>
+          );
+        })}
+      </div>
+    );
+  }
   if (layout === 'bubble') {
     return (
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-        {entries.map((s, i) => (
-          <span key={i} style={{ padding: '3px 10px', borderRadius: 999, background: colIf(t.dotsBarsBubbles) ? accent + '1A' : '#F3F4F6', color: colIf(t.dotsBarsBubbles) || '#2C2C2A', fontSize: '0.9em' }}>{s.name}</span>
-        ))}
+        {entries.map((s, i) => {
+          const subs = (s.subSkills || []).filter(Boolean);
+          return (
+            <span key={i} style={{ padding: '3px 10px', borderRadius: 999, background: colIf(t.dotsBarsBubbles) ? accent + '1A' : '#F3F4F6', color: colIf(t.dotsBarsBubbles) || '#2C2C2A', fontSize: '0.9em' }}>
+              {s.name}
+              {subs.length > 0 && <span style={{ opacity: 0.65, fontSize: '0.88em' }}> · {subs.join(', ')}</span>}
+            </span>
+          );
+        })}
       </div>
     );
   }
   if (layout === 'level') {
     const lvlStyle = dss.levelStyle || 'dots';
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 18, rowGap: 4 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 18, rowGap: 5 }}>
         {entries.map((s, i) => (
-          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>{s.name}</span>
-            {lvlStyle === 'dots' && (
-              <span style={{ display: 'inline-flex', gap: 3 }}>
-                {[1,2,3].map(lv => <span key={lv} style={{ width: 6, height: 6, borderRadius: '50%', background: lv <= (s.level || 2) ? dotColor : '#E5E7EB' }} />)}
-              </span>
-            )}
-            {(lvlStyle === 'bars' || lvlStyle === 'bar') && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', width: 60, height: 6, borderRadius: 3, background: '#E5E7EB', overflow: 'hidden', flexShrink: 0 }}>
-                <span style={{ width: `${Math.round(((s.level || 2) / 3) * 100)}%`, height: '100%', background: dotColor, borderRadius: 3, transition: 'width 0.3s' }} />
-              </span>
-            )}
-            {lvlStyle === 'text' && <span style={{ color: '#6B7280', fontSize: '0.85em' }}>{['','Beginner','Intermediate','Advanced'][s.level] || ''}</span>}
+          <div key={i}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 500 }}>{s.name}</span>
+              {lvlStyle === 'dots' && <SkillLevelDots level={s.level} color={dotColor} />}
+              {(lvlStyle === 'bars' || lvlStyle === 'bar') && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', width: 60, height: 6, borderRadius: 3, background: '#E5E7EB', overflow: 'hidden', flexShrink: 0 }}>
+                  <span style={{ width: `${Math.round(((s.level || 2) / 3) * 100)}%`, height: '100%', background: dotColor, borderRadius: 3 }} />
+                </span>
+              )}
+              {lvlStyle === 'text' && <span style={{ color: '#6B7280', fontSize: '0.85em' }}>{SKILL_LEVELS[s.level] || ''}</span>}
+            </div>
+            <SkillSubSkills subSkills={s.subSkills} dotColor={dotColor} />
           </div>
         ))}
       </div>
@@ -202,16 +252,19 @@ function SkillsBody({ sec, util, variantCols }) {
   return (
     <div style={{ display: 'grid', rowGap }}>
       {entries.map((s, i) => (
-        <div key={i} style={{ display: 'flex', gap: 5 }}>
-          {dss.startWithBullets && <span style={{ color: dotColor }}>•</span>}
-          <span>{s.name}</span>
-          {s.level && (
-            <span style={{ color: '#6B7280', fontSize: '0.9em' }}>
-              {subStyle === 'dash'  ? `— ${['','Beginner','Intermediate','Advanced'][s.level] || ''}` :
-               subStyle === 'paren' ? `(${['','Beginner','Intermediate','Advanced'][s.level] || ''})` :
-               `: ${['','Beginner','Intermediate','Advanced'][s.level] || ''}`}
-            </span>
-          )}
+        <div key={i}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, flexWrap: 'wrap' }}>
+            {dss.startWithBullets && <span style={{ color: dotColor }}>•</span>}
+            <span style={{ fontWeight: 500 }}>{s.name}</span>
+            {s.level > 0 && (
+              <span style={{ color: '#6B7280', fontSize: '0.9em' }}>
+                {subStyle === 'dash'  ? `— ${SKILL_LEVELS[s.level] || ''}` :
+                 subStyle === 'paren' ? `(${SKILL_LEVELS[s.level] || ''})` :
+                 `: ${SKILL_LEVELS[s.level] || ''}`}
+              </span>
+            )}
+          </div>
+          <SkillSubSkills subSkills={s.subSkills} dotColor={dotColor} />
         </div>
       ))}
     </div>

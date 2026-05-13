@@ -119,43 +119,74 @@ function SummaryEditor({ content, onChange }) {
   );
 }
 
-// ── Skills — bullet-row + 3-dot level picker ──────────────────────────────────
+// ── Skills — skill name + sub-skills + proficiency ───────────────────────────
+
+const LEVEL_LABELS = ['', 'Beginner', 'Intermediate', 'Advanced'];
 
 function SkillsEditor({ content, onChange }) {
   const entries = content.entries || [];
 
   const update = (i, patch) => onChange({ ...content, entries: entries.map((e, j) => j === i ? { ...e, ...patch } : e) });
   const remove = (i) => onChange({ ...content, entries: entries.filter((_, j) => j !== i) });
-  const add = () => onChange({ ...content, entries: [...entries, { name: '', level: 2 }] });
+  const add    = () => onChange({ ...content, entries: [...entries, { name: '', level: 2, subSkills: [] }] });
+
+  const addSubSkill    = (i) => update(i, { subSkills: [...(entries[i].subSkills || []), ''] });
+  const updateSubSkill = (i, si, val) => update(i, { subSkills: (entries[i].subSkills || []).map((s, j) => j === si ? val : s) });
+  const removeSubSkill = (i, si) => update(i, { subSkills: (entries[i].subSkills || []).filter((_, j) => j !== si) });
 
   return (
-    <div className="flex flex-col gap-[6px]">
+    <div className="flex flex-col gap-2">
       {entries.map((s, i) => (
-        <div key={i} className="flex items-center gap-2">
-          {/* Skill name input */}
-          <input
-            defaultValue={s.name}
-            onBlur={e => update(i, { name: e.target.value })}
-            placeholder="Skill name"
-            className={inputCls + ' flex-1'}
-          />
-          {/* Level picker — 3 circles of increasing size */}
-          <div className="flex gap-1 flex-shrink-0">
-            {[1, 2, 3].map(lv => (
-              <button
-                key={lv}
-                title={['', 'Beginner', 'Intermediate', 'Advanced'][lv]}
-                onClick={() => update(i, { level: lv })}
-                className={`w-6 h-[18px] rounded border flex items-center justify-center transition-colors ${s.level === lv ? 'border-primary bg-primary/10' : 'border-ds-border bg-ds-card'}`}
-              >
-                <span style={{ width: 4 + lv * 2, height: 4 + lv * 2, borderRadius: '50%', background: '#185FA5', display: 'block' }} />
-              </button>
-            ))}
+        <div key={i} className="border border-ds-border rounded-[9px] overflow-hidden bg-ds-card">
+          {/* Skill header row */}
+          <div className="flex items-center gap-2 px-3 py-2">
+            <input
+              defaultValue={s.name}
+              onBlur={e => update(i, { name: e.target.value })}
+              placeholder="Skill name (e.g. Programming)"
+              className={inputCls + ' flex-1'}
+            />
+            {/* Proficiency dots */}
+            <div className="flex gap-1 flex-shrink-0" title="Proficiency">
+              {[1, 2, 3].map(lv => (
+                <button
+                  key={lv}
+                  title={LEVEL_LABELS[lv]}
+                  onClick={() => update(i, { level: s.level === lv ? 0 : lv })}
+                  className={`w-6 h-[22px] rounded border flex items-center justify-center transition-colors ${(s.level || 0) >= lv ? 'border-primary bg-primary/10' : 'border-ds-border bg-ds-card'}`}
+                >
+                  <span style={{ width: 4 + lv * 2, height: 4 + lv * 2, borderRadius: '50%', background: (s.level || 0) >= lv ? '#185FA5' : '#D1DCE8', display: 'block' }} />
+                </button>
+              ))}
+            </div>
+            <button onClick={() => remove(i)} className="w-[26px] h-[26px] rounded-md flex items-center justify-center text-ds-textMuted hover:text-ds-danger hover:bg-ds-dangerLight transition-colors flex-shrink-0">
+              <TrashIcon />
+            </button>
           </div>
-          {/* Trash */}
-          <button onClick={() => remove(i)} className="w-[26px] h-[26px] rounded-md flex items-center justify-center text-ds-textMuted hover:text-ds-danger hover:bg-ds-dangerLight transition-colors flex-shrink-0">
-            <TrashIcon />
-          </button>
+
+          {/* Sub-skills */}
+          <div className="px-3 pb-2 flex flex-col gap-1.5">
+            {(s.subSkills || []).map((ss, si) => (
+              <div key={si} className="flex items-center gap-2 pl-4">
+                <span className="text-ds-textMuted text-[11px] flex-shrink-0">↳</span>
+                <input
+                  defaultValue={ss}
+                  onBlur={e => updateSubSkill(i, si, e.target.value)}
+                  placeholder="Sub-skill (e.g. JavaScript)"
+                  className={inputCls + ' flex-1 text-[12px] py-1.5'}
+                />
+                <button onClick={() => removeSubSkill(i, si)} className="w-[22px] h-[22px] rounded flex items-center justify-center text-ds-textMuted hover:text-ds-danger hover:bg-ds-dangerLight transition-colors flex-shrink-0">
+                  <TrashIcon />
+                </button>
+              </div>
+            ))}
+            <button
+              onClick={() => addSubSkill(i)}
+              className="flex items-center gap-1 pl-4 text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors w-fit"
+            >
+              <PlusIcon /> Add sub-skill
+            </button>
+          </div>
         </div>
       ))}
       <AddBtn onClick={add}>Add skill</AddBtn>
