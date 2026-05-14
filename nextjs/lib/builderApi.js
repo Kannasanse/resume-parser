@@ -4,7 +4,7 @@ async function req(path, opts = {}) {
   const res = await fetch(`${BASE}${path}`, opts);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw Object.assign(new Error(body.error || res.statusText), { status: res.status });
+    throw Object.assign(new Error(body.error || res.statusText), { status: res.status, code: body.code });
   }
   return res.json();
 }

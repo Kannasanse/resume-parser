@@ -420,12 +420,19 @@ export default function BuilderEditor() {
   const [atsData, setAtsData] = useState(null);
   const [atsError, setAtsError] = useState('');
 
+  const [insufficientCredits, setInsufficientCredits] = useState(null); // { message }
+
   const handleAnalyzeATS = useCallback(async () => {
     setAtsState('loading');
     setAtsError('');
     try {
       const res = await fetch(`/api/v1/builder/${id}/ats-score`, { method: 'POST' });
       const json = await res.json();
+      if (res.status === 402 && json.code === 'insufficient_credits') {
+        setAtsState('idle');
+        setInsufficientCredits({ message: json.error });
+        return;
+      }
       if (!res.ok) throw new Error(json.error || 'Analysis failed');
       setAtsData(json);
       setAtsState('done');
@@ -506,7 +513,14 @@ export default function BuilderEditor() {
       setImportFile(null);
       showToast('Resume imported successfully.', 'success');
     },
-    onError: () => showToast("We couldn't parse the file. Please try again.", 'error'),
+    onError: (err) => {
+      if (err?.code === 'insufficient_credits') {
+        setShowImport(false);
+        setInsufficientCredits({ message: err.message });
+      } else {
+        showToast("We couldn't parse the file. Please try again.", 'error');
+      }
+    },
   });
 
   // ── Local-only change handlers (preview updates; saved on explicit Save) ──
@@ -1029,6 +1043,32 @@ export default function BuilderEditor() {
             onAnalyze={handleAnalyzeATS}
           />
         </>
+      )}
+
+      {/* Insufficient credits modal */}
+      {insufficientCredits && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setInsufficientCredits(null)} />
+          <div className="relative bg-ds-card border border-ds-border rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center">
+            <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-4">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>
+              </svg>
+            </div>
+            <h3 className="font-bold text-ds-text mb-2">Not enough credits</h3>
+            <p className="text-sm text-ds-textMuted mb-5">{insufficientCredits.message}</p>
+            <div className="flex gap-2 justify-center">
+              <button onClick={() => setInsufficientCredits(null)}
+                className="h-9 px-4 text-sm font-semibold border border-ds-border rounded-lg text-ds-text hover:bg-ds-bg transition-colors">
+                Dismiss
+              </button>
+              <a href="/credits"
+                className="h-9 px-4 text-sm font-semibold bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center">
+                View Credits →
+              </a>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Toast */}

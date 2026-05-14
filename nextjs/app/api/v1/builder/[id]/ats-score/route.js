@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import Groq from 'groq-sdk';
+import { deductCredits, getBalance } from '@/lib/credits.js';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -108,6 +109,12 @@ export async function POST(request, { params }) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    // Credit guard
+    const balance = await getBalance(user.id);
+    if (balance < 3) {
+      return NextResponse.json({ error: 'Insufficient credits. ATS analysis costs 3 credits.', code: 'insufficient_credits', balance }, { status: 402 });
+    }
+
     const { id } = await params;
 
     const { data: resume } = await supabase
@@ -172,7 +179,11 @@ export async function POST(request, { params }) {
 
     if (!result) return NextResponse.json({ error: 'AI analysis failed. Please try again.' }, { status: 502 });
 
-    return NextResponse.json(result);
+    // Deduct credits after successful analysis
+    const { ok, balance: newBalance } = await deductCredits(user.id, 'ats_score');
+    if (!ok) return NextResponse.json({ error: 'Insufficient credits.', code: 'insufficient_credits', balance: 0 }, { status: 402 });
+
+    return NextResponse.json({ ...result, credits_used: 3, credits_remaining: newBalance });
   } catch (err) {
     console.error('[ats-score]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

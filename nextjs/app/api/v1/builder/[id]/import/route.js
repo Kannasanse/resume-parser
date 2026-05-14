@@ -1,6 +1,7 @@
 import supabase from '@/lib/supabase.js';
 import { getAuthUser } from '@/lib/authUtils.js';
 import { parseResumeWithGroq } from '@/lib/parser.js';
+import { deductCredits, getBalance } from '@/lib/credits.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,6 +40,12 @@ export async function POST(req, { params }) {
     const user = await getAuthUser();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
     const { id } = await params;
+
+    // Credit guard (5 credits for AI import)
+    const balance = await getBalance(user.id);
+    if (balance < 5) {
+      return Response.json({ error: 'Insufficient credits. Resume import costs 5 credits.', code: 'insufficient_credits', balance }, { status: 402 });
+    }
 
     const { data: resume } = await supabase
       .from('builder_resumes')
@@ -210,7 +217,10 @@ export async function POST(req, { params }) {
       await supabase.from('builder_sections').insert(sections);
     }
 
-    return Response.json({ data: { personalInfo, sectionCount: sections.length } });
+    // Deduct credits after successful import
+    const { balance: newBalance } = await deductCredits(user.id, 'resume_import');
+
+    return Response.json({ data: { personalInfo, sectionCount: sections.length, credits_used: 5, credits_remaining: newBalance } });
   } catch (err) {
     console.error('[builder-import]', err.message);
     return Response.json({ error: err.message }, { status: 500 });
