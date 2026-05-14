@@ -187,22 +187,23 @@ export function computeGeometricAdjustments(contentEl, config) {
 
   /**
    * Minimum vertical space required to START el on the current page without
-   * leaving an orphan.  Uses actual heading + first-N-children heights from
-   * the live DOM, not estimates.
+   * leaving an orphan heading.  Measures only the label/heading row plus the
+   * first N immediate children — never the full element height.
    */
   function minStartSpace(el) {
     const headingEl = el.firstElementChild;
     const headingH  = headingEl ? measureH(headingEl) : 20;
 
     if (el.dataset.sectionId) {
-      // Section label: must appear with at least minSkillRowsWithLabel children.
+      // Section label: needs label row + spacing + first N entry heights.
+      // Never measures the full section (sections always span pages).
       const entryEls = Array.from(el.querySelectorAll('[data-entry-id]'));
       if (entryEls.length > 0) {
         const n = Math.min(minSkillRowsWithLabel, entryEls.length);
         const itemH = entryEls.slice(0, n).reduce((s, e) => s + measureH(e), 0);
         return headingH + spacing.betweenSectionLabelAndFirstEntry + itemH;
       }
-      // Body-only section (skills, summary, languages…): heading + first 2 rows.
+      // Body-only section (skills, summary, languages…): label + first N rows.
       const bodyEl = el.children[1];
       const rows   = bodyEl ? Array.from(bodyEl.children) : [];
       if (rows.length > 0) {
@@ -210,26 +211,22 @@ export function computeGeometricAdjustments(contentEl, config) {
         const itemH = rows.slice(0, n).reduce((s, r) => s + measureH(r), 0);
         return headingH + spacing.betweenSectionLabelAndFirstEntry + itemH;
       }
-      return measureH(el); // fallback: treat as atomic
+      // Atomic body (no measurable children) — just the heading row.
+      return headingH;
     }
 
-    // Group anchor (entry): heading lines + approx first-bullet space.
-    // We cap the bullet estimate to avoid over-committing space.
+    // Entry heading: heading row + spacing + first bullet body height (capped).
     const bodyEl  = el.children[1] || el.children[2];
     const bulletH = bodyEl ? Math.min(measureH(bodyEl), 36) : 20; // ~2 lines
     return headingH + spacing.betweenHeadingAndFirstBullet + bulletH;
   }
 
-  const adj        = {};
-  let cumulative   = 0;
-
-  // Per-page usage tracking for fullness validation (§18.4).
-  const pageUsage = {}; // pageIndex (0-based) → accumulatedHeight
+  const adj      = {};
+  let cumulative = 0;
 
   contentEl.querySelectorAll('[data-section-id], [data-entry-id]').forEach((el) => {
     const rect    = el.getBoundingClientRect();
     const elTop   = rect.top - containerRect.top + cumulative;
-    const elH     = rect.height;
     const key     = el.dataset.sectionId || el.dataset.entryId;
 
     const pageEnd   = pageBoundaryAfter(elTop);
@@ -237,18 +234,13 @@ export function computeGeometricAdjustments(contentEl, config) {
 
     if (remaining <= 0) return; // already exactly at boundary — no double-push
 
-    const fitAsWhole = elH <= effH; // would fit if the page were empty
-    const needsPush  =
-      (fitAsWhole && elH > remaining)   // whole block won't fit in remaining space
-      || remaining < minStartSpace(el); // heading + required children won't fit
-
-    if (needsPush) {
-      adj[key]    = remaining; // marginTop that pushes block to next page start
+    // Push only when the minimum start space (label/heading + first N children)
+    // does not fit in the remaining space on this page.
+    // The full element height (elH) is never used — sections span pages naturally
+    // and using elH would incorrectly push entire multi-entry sections.
+    if (remaining < minStartSpace(el)) {
+      adj[key]    = remaining;
       cumulative += remaining;
-    } else {
-      // Charge this block's height to the current page for fullness tracking.
-      const pgIdx = elTop < pageH ? 0 : 1 + Math.floor((elTop - pageH) / effH);
-      pageUsage[pgIdx] = (pageUsage[pgIdx] || 0) + elH;
     }
   });
 
