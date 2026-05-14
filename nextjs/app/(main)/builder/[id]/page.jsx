@@ -22,79 +22,6 @@ import ATSPanel from '@/components/builder/ATSPanel.jsx';
 import Link from 'next/link';
 import { Sk } from '@/components/Skeleton';
 
-// ── Paged preview ─────────────────────────────────────────────────────────────
-// Renders the resume and overlays page-break lines + page shadows to match PDF export.
-
-function PagedPreview({ resume, page, zoom }) {
-  const contentRef = useRef(null);
-  const [contentHeight, setContentHeight] = useState(page.height);
-
-  useEffect(() => {
-    if (!contentRef.current) return;
-    const obs = new ResizeObserver(entries => {
-      const h = entries[0]?.contentRect?.height;
-      if (h) setContentHeight(h);
-    });
-    obs.observe(contentRef.current);
-    return () => obs.disconnect();
-  }, []);
-
-  const pageCount = Math.max(1, Math.ceil(contentHeight / page.height));
-  const scaledPageH = page.height * zoom;
-  const scaledPageW = page.width * zoom;
-
-  return (
-    <div style={{ width: scaledPageW, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {Array.from({ length: pageCount }).map((_, pi) => (
-        <div
-          key={pi}
-          style={{
-            width: scaledPageW,
-            height: scaledPageH,
-            overflow: 'hidden',
-            position: 'relative',
-            boxShadow: '0 8px 32px rgba(23,26,69,.18), 0 2px 8px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.04)',
-            background: '#fff',
-            borderRadius: 2,
-            flexShrink: 0,
-          }}
-        >
-          {/* The full resume content, offset so the correct page slice is visible.
-              printMode renders the bare template (no chrome/padding) matching the PDF exactly. */}
-          <div
-            ref={pi === 0 ? contentRef : null}
-            style={{
-              width: page.width,
-              transform: `scale(${zoom})`,
-              transformOrigin: 'top left',
-              position: 'absolute',
-              top: -pi * page.height * zoom,
-              left: 0,
-            }}
-          >
-            <ResumePreview
-              resume={resume}
-              designSettings={resume.design_settings || {}}
-              scale={1}
-              printMode
-            />
-          </div>
-
-          {/* Page number label */}
-          {pageCount > 1 && (
-            <div style={{
-              position: 'absolute', bottom: 6, right: 8,
-              fontSize: 10, color: '#9CA3AF', fontFamily: 'system-ui',
-              pointerEvents: 'none', userSelect: 'none',
-            }}>
-              {pi + 1} / {pageCount}
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
 
 // ── Save button ───────────────────────────────────────────────────────────────
 
@@ -960,9 +887,9 @@ export default function BuilderEditor() {
         </div>
 
         {/* Preview pane */}
-        <div className={`${mobileTab === 'edit' ? 'hidden md:flex' : 'flex'} flex-col md:flex-1 flex-1 overflow-y-auto items-center py-6 gap-5 bg-[#E6ECF2]`}>
+        <div className={`${mobileTab === 'edit' ? 'hidden md:flex' : 'flex'} flex-col md:flex-1 flex-1 overflow-hidden bg-[#E6ECF2]`}>
           {/* Preview toolbar */}
-          <div className="flex items-center gap-1 px-2 py-1 bg-ds-card border border-ds-border rounded-full shadow-sm text-xs flex-shrink-0">
+          <div className="flex items-center gap-1 px-2 py-1.5 bg-ds-card border-b border-ds-border text-xs flex-shrink-0 justify-center">
             <button
               onClick={() => setZoom(z => Math.max(0.35, parseFloat((z - 0.1).toFixed(1))))}
               className="w-6 h-6 flex items-center justify-center rounded-full text-ds-textMuted hover:text-ds-text hover:bg-ds-bg transition-colors"
@@ -991,11 +918,12 @@ export default function BuilderEditor() {
             <span className="text-ds-textMuted">{templateName}</span>
           </div>
 
-          {/* Resume paper — paged preview */}
-          <PagedPreview
+          {/* Resume preview — single render, correct page breaks, no slicing math */}
+          <ResumePreview
             resume={previewData}
-            page={page}
-            zoom={zoom}
+            designSettings={previewData.design_settings || {}}
+            scale={zoom}
+            className="flex-1"
           />
         </div>
 
