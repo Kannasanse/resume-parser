@@ -1215,66 +1215,53 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
   const pageBreaks = adjustedHeight > 0 ? buildPageBreaks(adjustedHeight, page.height, effectivePageHeight) : [];
   const numPages = pageBreaks.length + 1;
 
+  // Build per-page card descriptors.
+  // Each card clips the content to its slice using overflow:hidden.
+  // offsetPx: margin-top (in content px, inside the scale) to shift content into view.
+  //   Page 0: no offset — content starts at top of card
+  //   Page n≥1: content starts at pageBreaks[n-1], plus padYPx top margin within the card
+  const pageCards = Array.from({ length: numPages }, (_, i) => {
+    const contentStart = i === 0 ? 0 : pageBreaks[i - 1];
+    const topPad = i === 0 ? 0 : padYPx;
+    return { contentStart, topPad };
+  });
+
   return (
     <div ref={containerRef} className={`overflow-auto ${className}`} style={{ background: '#CBD5E1' }}>
-      <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        {/* Hidden measurement div — raw layout, no adjustments applied */}
+      <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+        {/* Hidden measurement div — raw layout, no adjustments, stable height */}
         <div style={{ position: 'absolute', visibility: 'hidden', pointerEvents: 'none', top: 0, left: 0, width: page.width }}>
           <div ref={contentRef}>
             <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
           </div>
         </div>
 
-        {/* Single render wrapper — no overflow:hidden so content never clips */}
-        <div style={{
-          width: page.width * s,
-          position: 'relative',
-          flexShrink: 0,
-          background: '#fff',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.08)',
-        }}>
-          {/* Scaled template content — with orphan adjustments applied */}
-          <div style={{
-            width: page.width,
-            transformOrigin: 'top left',
-            transform: `scale(${s})`,
+        {/* One card per page — each clips its content slice via overflow:hidden */}
+        {pageCards.map(({ contentStart, topPad }, i) => (
+          <div key={i} style={{
+            width: page.width * s,
+            height: page.height * s,
+            overflow: 'hidden',
+            flexShrink: 0,
+            position: 'relative',
+            background: '#fff',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.08)',
           }}>
-            <TemplateComp resume={resume || {}} ds={ds} ss={ss} sectionAdjustments={sectionAdjustments} />
-            {hasFooter && (
-              <div style={{ borderTop: '1px solid #e0e0e0', padding: '6px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8pt', color: '#888', background: '#fff' }}>
-                <span>{[fs.name && pi.name, fs.email && pi.email].filter(Boolean).join(' · ')}</span>
-                {fs.pageNumbers && <span>Page {numPages}</span>}
+            {/* Scale wrapper: content rendered at full width, scaled to fit card */}
+            <div style={{ width: page.width, transformOrigin: 'top left', transform: `scale(${s})` }}>
+              {/* Offset wrapper: shifts content so this page's slice is visible */}
+              <div style={{ marginTop: -contentStart + topPad }}>
+                <TemplateComp resume={resume || {}} ds={ds} ss={ss} sectionAdjustments={sectionAdjustments} />
+                {hasFooter && (
+                  <div style={{ borderTop: '1px solid #e0e0e0', padding: '6px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8pt', color: '#888', background: '#fff' }}>
+                    <span>{[fs.name && pi.name, fs.email && pi.email].filter(Boolean).join(' · ')}</span>
+                    {fs.pageNumbers && <span>Page {i + 1} of {numPages}</span>}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-
-          {/* Page break indicators — positions match PDF @page margin layout */}
-          {pageBreaks.map((breakY, i) => (
-            <div key={i} style={{
-              position: 'absolute',
-              top: breakY * s,
-              left: 0,
-              right: 0,
-              height: 0,
-              borderTop: '2px dashed #94a3b8',
-              pointerEvents: 'none',
-              zIndex: 10,
-            }}>
-              <span style={{
-                position: 'absolute',
-                right: 6,
-                top: 3,
-                fontSize: 9,
-                color: '#64748b',
-                background: '#CBD5E1',
-                borderRadius: 3,
-                padding: '1px 5px',
-                fontFamily: 'system-ui, sans-serif',
-                lineHeight: 1.4,
-              }}>page {i + 2}</span>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     </div>
   );
