@@ -1,5 +1,7 @@
 'use client';
 import { useRef, useEffect, useState, useCallback } from 'react';
+import { buildLayoutConfig, effectiveContentHeight } from '../lib/layoutConfig.js';
+import { buildBlocksFromDOM, paginateBlocks, pageBreaksToAdjustments } from '../lib/paginationEngine.js';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -1071,97 +1073,61 @@ const TEMPLATE_COMPONENTS = {
 
 // ── ResumePreview default export ──────────────────────────────────────────────
 
-// Walk offsetParent chain to root. contentEl must be position:relative so it
-// terminates the chain for all non-positioned descendants.
-function getOffsetTopFromRoot(el, root) {
-  let top = 0;
-  let cur = el;
-  while (cur && cur !== root) {
-    top += cur.offsetTop;
-    cur = cur.offsetParent;
-  }
-  return top;
+/**
+ * Build sequential page-card boundaries from the adjusted total content height.
+ * Returns an array of Y positions (in content px) where each page starts.
+ * Index 0 is always 0 (first page starts at the top).
+ */
+function buildPageStarts(totalHeight, config) {
+  const pageH   = config.page.height;
+  const effH    = effectiveContentHeight(config);
+  const starts  = [0];
+  let y = pageH; // page 1 full height; subsequent pages use effectiveContentHeight
+  while (y < totalHeight) { starts.push(y); y += effH; }
+  return starts;
 }
 
-function buildPageBreaks(totalHeight, page1Height, effectivePageHeight) {
-  const breaks = [];
-  let y = page1Height;
-  while (y < totalHeight) { breaks.push(y); y += effectivePageHeight; }
-  return breaks;
-}
+/**
+ * Run the shared pagination engine over the hidden measurement container and
+ * return a section-adjustment map (blockId → marginTopPx).
+ *
+ * Heights are measured with getBoundingClientRect().height which correctly
+ * handles subpixel rendering.  Positions are computed from the containerRect
+ * origin so cumulative adjustments can be layered on top.
+ */
+function computeAdjustments(contentEl, config) {
+  if (!contentEl) return {};
 
-// Estimate the minimum vertical space needed to START a block on a page so at
-// least the heading + 2 lines of content are visible (not immediately orphaned).
-const EST_LINE_PX = 18; // ≈ 11pt × 1.15 line-height at 96 dpi
-function minStartSpace(el) {
-  const h = e => Math.round(e ? e.scrollHeight : EST_LINE_PX);
-  if (el.dataset.sectionId) {
-    const headingH = h(el.firstElementChild) || EST_LINE_PX * 2;
-    const body     = el.children[1];
-    const itemH    = body && body.children.length > 0
-      ? Math.round(body.scrollHeight / body.children.length) : EST_LINE_PX;
-    return headingH + itemH * 2;
-  }
-  return h(el.firstElementChild) + h(el.children[1]) + EST_LINE_PX * 2;
-}
+  const { blocks } = buildBlocksFromDOM(contentEl);
+  if (!blocks.length) return {};
 
-// Recalculate page-break adjustments for all sections and entries.
-// Strategy (cumulative, single pass):
-//  • If a block fits entirely on one page but doesn't fit in remaining space → push.
-//  • If remaining space < heading + 2 lines of content → push.
-// Both mirror what the PDF does with break-inside:avoid + orphan/widow rules.
-function detectOrphanAdjustments(contentEl, page1Height, effectivePageHeight) {
-  const blocks = contentEl.querySelectorAll('[data-section-id], [data-entry-id]');
-  const adj = {};
-  let cumulative = 0;
-
-  blocks.forEach(el => {
-    const effectiveTop = Math.round(getOffsetTopFromRoot(el, contentEl)) + cumulative;
-    const elHeight     = Math.round(el.scrollHeight);
-    const key          = el.dataset.sectionId || el.dataset.entryId;
-
-    let pageEnd, nextPageH;
-    if (effectiveTop < page1Height) {
-      pageEnd = page1Height; nextPageH = effectivePageHeight;
-    } else {
-      const idx = Math.floor((effectiveTop - page1Height) / effectivePageHeight);
-      pageEnd = page1Height + (idx + 1) * effectivePageHeight;
-      nextPageH = effectivePageHeight;
-    }
-
-    const remaining = pageEnd - effectiveTop;
-    if (remaining <= 0) return; // already past boundary — no double-push
-
-    const fitAsWhole = elHeight <= nextPageH;
-    const needsPush  = (fitAsWhole && elHeight > remaining)   // whole block won't fit
-                    || remaining < minStartSpace(el);          // heading + 2 lines won't fit
-
-    if (needsPush) {
-      const push = pageEnd - effectiveTop;
-      adj[key] = push;
-      cumulative += push;
-    }
-  });
-
-  return adj;
+  const { pageBreaks } = paginateBlocks(blocks, config);
+  return pageBreaksToAdjustments(pageBreaks);
 }
 
 export default function ResumePreview({ resume, designSettings = {}, scale = null, className = '', printMode = false }) {
-  const containerRef      = useRef(null);
-  const contentRef        = useRef(null);
-  const detectionTimer    = useRef(null);
-  const [computedScale, setComputedScale] = useState(scale || 0.6);
-  const [contentHeight, setContentHeight] = useState(0);
+  const containerRef   = useRef(null);
+  const contentRef     = useRef(null);
+  const detectionTimer = useRef(null);
+
+  const [computedScale,      setComputedScale]      = useState(scale || 0.6);
+  const [contentHeight,      setContentHeight]      = useState(0);
   const [sectionAdjustments, setSectionAdjustments] = useState({});
 
   const ds = { ...DEFAULT_DESIGN, ...(designSettings || {}) };
   const ss = { ...DEFAULT_SPACING, ...(resume?.spacing_settings || {}) };
 
-  const pageId = ds.pageSize || 'a4';
-  const page   = pageId === 'letter' ? { id: 'letter', width: 816, height: 1056 } : { id: 'a4', width: 794, height: 1123 };
+  // Build the canonical layout config from current design/spacing settings.
+  const config = buildLayoutConfig(ss, ds);
+  const page   = config.page;
+
+  // ── Height measurement ───────────────────────────────────────────────────────
 
   const measureContent = useCallback(() => {
-    if (contentRef.current) setContentHeight(Math.round(contentRef.current.scrollHeight));
+    if (!contentRef.current) return;
+    // getBoundingClientRect().height reflects subpixel rendering and transforms.
+    const h = contentRef.current.getBoundingClientRect().height;
+    setContentHeight(Math.round(h));
   }, []);
 
   const updateScale = useCallback(() => {
@@ -1183,14 +1149,13 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
     return () => ro.disconnect();
   }, [updateScale, measureContent]);
 
-  // Zoom-change listener — browser zoom shifts devicePixelRatio which can
-  // change subpixel measurements. Re-measure whenever DPR changes.
+  // Zoom-change listener — DPR shifts on browser zoom; re-measure to pick up
+  // any subpixel changes.  Only re-measures — does NOT re-run pagination, so
+  // page breaks are stable across zoom changes per Section 9.3 of the spec.
   useEffect(() => {
-    const onZoom = () => measureContent();
-    // matchMedia on the current DPR; when it stops matching, DPR changed.
     let mq = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
     const rebuild = () => {
-      onZoom();
+      measureContent();
       mq.removeEventListener('change', rebuild);
       mq = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
       mq.addEventListener('change', rebuild);
@@ -1199,35 +1164,33 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
     return () => mq.removeEventListener('change', rebuild);
   }, [measureContent]);
 
-  // Re-run page-break detection on content change, debounced to 150 ms.
+  // Re-run the pagination engine whenever the measured content height changes.
+  // Debounced at LAYOUT_CONFIG.debounceMs (300 ms) to coalesce rapid edits.
+  // Only one pending call is allowed at a time (previous is cancelled).
   useEffect(() => {
     if (!contentRef.current || !contentHeight) return;
     clearTimeout(detectionTimer.current);
     detectionTimer.current = setTimeout(() => {
-      const padYPx = (ss.topBottomMargin ?? 15) * (96 / 25.4);
-      const effectivePageHeight = page.height - 2 * padYPx;
-      const newAdj = detectOrphanAdjustments(contentRef.current, page.height, effectivePageHeight);
+      const newAdj = computeAdjustments(contentRef.current, config);
       setSectionAdjustments(prev =>
-        JSON.stringify(newAdj) === JSON.stringify(prev) ? prev : newAdj
+        JSON.stringify(newAdj) === JSON.stringify(prev) ? prev : newAdj,
       );
-    }, 150);
+    }, config.debounceMs);
     return () => clearTimeout(detectionTimer.current);
-  }, [contentHeight, page.height, ss.topBottomMargin]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contentHeight, page.id, page.height, page.marginTop, page.marginBottom]);
 
   const s = scale !== null ? scale : computedScale;
 
-  const templateId = resume?.template_id || ds.template || 'modern';
+  const templateId   = resume?.template_id || ds.template || 'modern';
   const TemplateComp = TEMPLATE_COMPONENTS[templateId] || TemplateModern;
 
-  const pi = resume?.personal_info || {};
-  const fs = resume?.footer_settings;
+  const pi       = resume?.personal_info || {};
+  const fs       = resume?.footer_settings;
   const hasFooter = fs && (fs.pageNumbers || (fs.email && pi.email) || (fs.name && pi.name));
 
-  // In printMode we render a plain div — no scaling, no wrapper chrome.
-  // We use the same two-div pattern as non-printMode:
-  //   1. A hidden measurement div (no adjustments) — contentRef attaches here so
-  //      height is stable and the ResizeObserver loop cannot oscillate.
-  //   2. The visible content with sectionAdjustments applied.
+  // ── Print mode — no scaling chrome, adjustments applied ─────────────────────
+
   if (printMode) {
     return (
       <div style={{ width: page.width, background: '#fff', position: 'relative' }}>
@@ -1237,14 +1200,13 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
             .resume-entry-block   { page-break-inside: avoid; }
           }
         `}</style>
-        {/* Hidden measurement: absolute so it doesn't affect flow; position:relative
-            makes contentRef the offsetParent root for all child elements */}
+        {/* Hidden measurement div — absolute so it doesn't shift page flow */}
         <div style={{ position: 'absolute', top: 0, left: 0, width: page.width, visibility: 'hidden', pointerEvents: 'none' }}>
           <div ref={contentRef} style={{ position: 'relative' }}>
             <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
           </div>
         </div>
-        {/* Visible content with page-break adjustments applied */}
+        {/* Visible render with pagination adjustments applied */}
         <TemplateComp resume={resume || {}} ds={ds} ss={ss} sectionAdjustments={sectionAdjustments} />
         {hasFooter && (
           <div style={{ borderTop: '1px solid #e0e0e0', padding: '6px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8pt', color: '#888', background: '#fff' }}>
@@ -1256,63 +1218,58 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
     );
   }
 
-  const padYMm = ss.topBottomMargin ?? 15;
-  const padYPx = padYMm * (96 / 25.4);
-  const effectivePageHeight = page.height - 2 * padYPx;
+  // ── Preview mode — page cards ────────────────────────────────────────────────
 
-  const totalAdjustment = Object.values(sectionAdjustments).reduce((sum, v) => sum + v, 0);
-  const adjustedHeight = contentHeight + totalAdjustment;
-  const pageBreaks = adjustedHeight > 0 ? buildPageBreaks(adjustedHeight, page.height, effectivePageHeight) : [];
-  const numPages = pageBreaks.length + 1;
+  const effH = effectiveContentHeight(config);
 
-  // Build per-page card descriptors.
-  // Each card clips the content to its slice using overflow:hidden.
-  // offsetPx: margin-top (in content px, inside the scale) to shift content into view.
-  //   Page 0: no offset — content starts at top of card
-  //   Page n≥1: content starts at pageBreaks[n-1], plus padYPx top margin within the card
-  const pageCards = Array.from({ length: numPages }, (_, i) => {
-    const contentStart = i === 0 ? 0 : pageBreaks[i - 1];
-    const topPad = i === 0 ? 0 : padYPx;
-    return { contentStart, topPad };
-  });
+  const totalAdjustment = Object.values(sectionAdjustments).reduce((s, v) => s + v, 0);
+  const adjustedHeight  = contentHeight + totalAdjustment;
+
+  // pageStarts[i] = Y position (content px) where page i begins.
+  const pageStarts = adjustedHeight > 0 ? buildPageStarts(adjustedHeight, config) : [0];
+  const numPages   = pageStarts.length;
 
   return (
     <div ref={containerRef} className={`overflow-auto ${className}`} style={{ background: '#CBD5E1', position: 'relative' }}>
       <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-        {/* Hidden measurement: absolute so layout is unaffected; position:relative
-            makes contentRef the offsetParent root for all child elements */}
+        {/* Hidden measurement container — position:absolute keeps it out of flow;
+            position:relative on the inner div makes it the offsetParent root. */}
         <div style={{ position: 'absolute', top: 0, left: 0, width: page.width, visibility: 'hidden', pointerEvents: 'none' }}>
           <div ref={contentRef} style={{ position: 'relative' }}>
             <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
           </div>
         </div>
 
-        {/* One card per page — each clips its content slice via overflow:hidden */}
-        {pageCards.map(({ contentStart, topPad }, i) => (
-          <div key={i} style={{
-            width: page.width * s,
-            height: page.height * s,
-            overflow: 'hidden',
-            flexShrink: 0,
-            position: 'relative',
-            background: '#fff',
-            boxShadow: '0 4px 24px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.08)',
-          }}>
-            {/* Scale wrapper: content rendered at full width, scaled to fit card */}
-            <div style={{ width: page.width, transformOrigin: 'top left', transform: `scale(${s})` }}>
-              {/* Offset wrapper: shifts content so this page's slice is visible */}
-              <div style={{ marginTop: -contentStart + topPad }}>
-                <TemplateComp resume={resume || {}} ds={ds} ss={ss} sectionAdjustments={sectionAdjustments} />
-                {hasFooter && (
-                  <div style={{ borderTop: '1px solid #e0e0e0', padding: '6px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8pt', color: '#888', background: '#fff' }}>
-                    <span>{[fs.name && pi.name, fs.email && pi.email].filter(Boolean).join(' · ')}</span>
-                    {fs.pageNumbers && <span>Page {i + 1} of {numPages}</span>}
-                  </div>
-                )}
+        {/* One card per page.  Each card clips its content slice via overflow:hidden.
+            The inner offset wrapper shifts the full-height content so the correct
+            slice is visible within the card's fixed height. */}
+        {pageStarts.map((contentStart, i) => {
+          // Subsequent pages start with the same top margin the template applies.
+          const topPad = i === 0 ? 0 : page.marginTop;
+          return (
+            <div key={i} style={{
+              width:     page.width * s,
+              height:    page.height * s,
+              overflow:  'hidden',
+              flexShrink: 0,
+              position:  'relative',
+              background: '#fff',
+              boxShadow: '0 4px 24px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.08)',
+            }}>
+              <div style={{ width: page.width, transformOrigin: 'top left', transform: `scale(${s})` }}>
+                <div style={{ marginTop: -contentStart + topPad }}>
+                  <TemplateComp resume={resume || {}} ds={ds} ss={ss} sectionAdjustments={sectionAdjustments} />
+                  {hasFooter && (
+                    <div style={{ borderTop: '1px solid #e0e0e0', padding: '6px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8pt', color: '#888', background: '#fff' }}>
+                      <span>{[fs.name && pi.name, fs.email && pi.email].filter(Boolean).join(' · ')}</span>
+                      {fs.pageNumbers && <span>Page {i + 1} of {numPages}</span>}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

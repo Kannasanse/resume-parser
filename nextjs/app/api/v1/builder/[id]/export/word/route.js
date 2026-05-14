@@ -1,16 +1,17 @@
 import supabase from '@/lib/supabase.js';
 import { getAuthUser } from '@/lib/authUtils.js';
+import { buildLayoutConfig, pxToDxa } from '@/lib/layoutConfig.js';
+import { buildBlocksForWord, paginateBlocks } from '@/lib/paginationEngine.js';
 import {
-  Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType,
-  BorderStyle, Table, TableRow, TableCell, WidthType, ShadingType,
-  UnderlineType, convertInchesToTwip, convertMillimetersToTwip,
+  Document, Packer, Paragraph, TextRun, AlignmentType,
+  BorderStyle, convertInchesToTwip, convertMillimetersToTwip,
 } from 'docx';
 
 export const dynamic = 'force-dynamic';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-const PT = (pt) => pt * 2; // half-points (docx unit for font size)
+const PT = (pt) => pt * 2; // half-points (docx font size unit)
 
 function hr(color = 'BFBFBF', size = 6) {
   return new Paragraph({
@@ -20,16 +21,26 @@ function hr(color = 'BFBFBF', size = 6) {
   });
 }
 
-function sectionHeading(text, color = '1a1a1a') {
-  return [
+/** Section heading — two paragraphs: label + underline rule. */
+function sectionHeading(text, color = '1a1a1a', forceBreak = false) {
+  const paras = [];
+  if (forceBreak) {
+    // Explicit page break before this section heading (per shared pagination).
+    paras.push(new Paragraph({
+      children: [new TextRun({ break: 1 })],
+      spacing: { before: 0, after: 0 },
+    }));
+  }
+  paras.push(
     new Paragraph({
       children: [new TextRun({ text: text.toUpperCase(), bold: true, size: PT(10), color, font: 'Calibri', characterSpacing: 60 })],
-      spacing: { before: 200, after: 0 },
+      spacing: { before: forceBreak ? 0 : 200, after: 0 },
       keepWithNext: true,
       keepLines: true,
     }),
     hr(color.replace('#', ''), 6),
-  ];
+  );
+  return paras;
 }
 
 function bullet(text) {
@@ -40,13 +51,19 @@ function bullet(text) {
   });
 }
 
-function entryHeader(left, right, leftBold = true) {
+/**
+ * Entry header — bold left label + optional right (dates) label.
+ * forceBreak inserts an explicit page break before this paragraph when the
+ * pagination engine has determined this entry starts a new page.
+ */
+function entryHeader(left, right, forceBreak = false, leftBold = true) {
   return new Paragraph({
     children: [
+      ...(forceBreak ? [new TextRun({ break: 1 })] : []),
       new TextRun({ text: left, bold: leftBold, size: PT(11), font: 'Calibri' }),
       new TextRun({ text: right ? `  |  ${right}` : '', size: PT(10), color: '666666', font: 'Calibri' }),
     ],
-    spacing: { before: 120, after: 20 },
+    spacing: { before: forceBreak ? 0 : 120, after: 20 },
     keepWithNext: true,
     keepLines: true,
   });
@@ -63,13 +80,27 @@ function subLine(text) {
 // ── Document builder ────────────────────────────────────────────────────────────
 
 function buildDoc(resume) {
-  const pi = resume.personal_info || {};
-  const sections = (resume.sections || []).filter(s => s.enabled !== false).sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+  const pi       = resume.personal_info || {};
+  const sections = (resume.sections || [])
+    .filter(s => s.enabled !== false)
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   const accentColor = (resume.design_settings?.accentColor || '185FA5').replace('#', '');
+
+  // ── Run the shared pagination engine to determine which blocks need explicit
+  //    page breaks inserted before them in the Word XML. ──────────────────────
+  const config = buildLayoutConfig(
+    resume.spacing_settings || {},
+    resume.design_settings  || {},
+  );
+  const wordBlocks          = buildBlocksForWord(sections, config);
+  const { pageBreaks: pbMap } = paginateBlocks(wordBlocks, config);
+
+  // pbMap: section.id or entry pseudo-id → pushPx (> 0 means break before it)
+  const needsBreak = (id) => pbMap.has(id) && pbMap.get(id) > 0;
 
   const children = [];
 
-  // ── Header ───────────────────────────────────────────────────────────────────
+  // ── Contact header ────────────────────────────────────────────────────────
   children.push(new Paragraph({
     children: [new TextRun({ text: pi.name || '', bold: true, size: PT(24), font: 'Calibri', color: accentColor })],
     alignment: AlignmentType.CENTER,
@@ -84,7 +115,6 @@ function buildDoc(resume) {
     }));
   }
 
-  // Contact line
   const contacts = [pi.email, pi.phone, pi.location, pi.linkedin || pi.link].filter(Boolean);
   if (contacts.length) {
     children.push(new Paragraph({
@@ -99,33 +129,51 @@ function buildDoc(resume) {
 
   children.push(hr(accentColor, 8));
 
-  // ── Sections ─────────────────────────────────────────────────────────────────
+  // ── Sections ──────────────────────────────────────────────────────────────
   for (const sec of sections) {
-    const c = sec.content || {};
+    const c            = sec.content || {};
+    const secBreak     = needsBreak(sec.id);
 
     if (sec.type === 'summary') {
-      children.push(...sectionHeading(sec.title || 'Summary', accentColor));
-      if (c.text) children.push(new Paragraph({ children: [new TextRun({ text: c.text, size: PT(10), font: 'Calibri' })], spacing: { after: 60 } }));
+      children.push(...sectionHeading(sec.title || 'Summary', accentColor, secBreak));
+      if (c.text) children.push(new Paragraph({
+        children: [new TextRun({ text: c.text, size: PT(10), font: 'Calibri' })],
+        spacing: { after: 60 },
+      }));
 
     } else if (sec.type === 'work_experience') {
-      children.push(...sectionHeading(sec.title || 'Work Experience', accentColor));
-      for (const e of c.entries || []) {
-        children.push(entryHeader(`${e.title || ''}${e.employer ? ` — ${e.employer}` : ''}`, e.dates));
+      children.push(...sectionHeading(sec.title || 'Work Experience', accentColor, secBreak));
+      (c.entries || []).forEach((e, idx) => {
+        const entryId  = `${sec.id}-entry-${idx}`;
+        const entBreak = needsBreak(entryId);
+        children.push(entryHeader(`${e.title || ''}${e.employer ? ` — ${e.employer}` : ''}`, e.dates, entBreak));
         const loc = subLine([e.location].filter(Boolean).join(' · '));
         if (loc) children.push(loc);
-        for (const b of (e.bullets || [])) children.push(bullet(b));
-      }
+        // Support both legacy bullets array and rich HTML body (plain text fallback)
+        const bullets = (e.bullets || []).filter(Boolean);
+        for (const b of bullets) children.push(bullet(b));
+        if (!bullets.length && e.body) {
+          // Strip HTML tags for a plain-text fallback in Word
+          const plain = e.body.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+          if (plain) children.push(new Paragraph({
+            children: [new TextRun({ text: plain, size: PT(10), font: 'Calibri' })],
+            spacing: { after: 60 },
+          }));
+        }
+      });
 
     } else if (sec.type === 'education') {
-      children.push(...sectionHeading(sec.title || 'Education', accentColor));
-      for (const e of c.entries || []) {
-        children.push(entryHeader(e.school || '', e.dates));
+      children.push(...sectionHeading(sec.title || 'Education', accentColor, secBreak));
+      (c.entries || []).forEach((e, idx) => {
+        const entryId  = `${sec.id}-entry-${idx}`;
+        const entBreak = needsBreak(entryId);
+        children.push(entryHeader(e.school || '', e.dates, entBreak));
         const deg = subLine(e.degree || '');
         if (deg) children.push(deg);
-      }
+      });
 
     } else if (sec.type === 'skills') {
-      children.push(...sectionHeading(sec.title || 'Skills', accentColor));
+      children.push(...sectionHeading(sec.title || 'Skills', accentColor, secBreak));
       const names = (c.entries || []).map(e => e.name).filter(Boolean);
       if (names.length) {
         children.push(new Paragraph({
@@ -135,23 +183,32 @@ function buildDoc(resume) {
       }
 
     } else if (sec.type === 'certifications') {
-      children.push(...sectionHeading(sec.title || 'Certifications', accentColor));
-      for (const e of c.entries || []) {
+      children.push(...sectionHeading(sec.title || 'Certifications', accentColor, secBreak));
+      for (const e of (c.entries || [])) {
         const label = [e.name, e.issuer && `(${e.issuer})`, e.date].filter(Boolean).join(' ');
-        children.push(new Paragraph({ children: [new TextRun({ text: label, size: PT(10), font: 'Calibri' })], bullet: { level: 0 }, spacing: { after: 40 } }));
+        children.push(new Paragraph({
+          children: [new TextRun({ text: label, size: PT(10), font: 'Calibri' })],
+          bullet: { level: 0 },
+          spacing: { after: 40 },
+        }));
       }
 
     } else if (sec.type === 'projects') {
-      children.push(...sectionHeading(sec.title || 'Projects', accentColor));
-      for (const e of c.entries || []) {
-        children.push(entryHeader(e.title || '', e.dates));
-        if (e.role) children.push(subLine(`Technologies: ${e.role}`));
-        if (e.link) children.push(subLine(`Link: ${e.link}`));
-        if (e.description) children.push(new Paragraph({ children: [new TextRun({ text: e.description, size: PT(10), font: 'Calibri' })], spacing: { after: 60 } }));
-      }
+      children.push(...sectionHeading(sec.title || 'Projects', accentColor, secBreak));
+      (c.entries || []).forEach((e, idx) => {
+        const entryId  = `${sec.id}-entry-${idx}`;
+        const entBreak = needsBreak(entryId);
+        children.push(entryHeader(e.title || '', e.dates, entBreak));
+        if (e.role)        children.push(subLine(`Technologies: ${e.role}`));
+        if (e.link)        children.push(subLine(`Link: ${e.link}`));
+        if (e.description) children.push(new Paragraph({
+          children: [new TextRun({ text: e.description, size: PT(10), font: 'Calibri' })],
+          spacing: { after: 60 },
+        }));
+      });
 
     } else if (sec.type === 'languages') {
-      children.push(...sectionHeading(sec.title || 'Languages', accentColor));
+      children.push(...sectionHeading(sec.title || 'Languages', accentColor, secBreak));
       const langs = (c.entries || []).map(e => e.level ? `${e.name} (${e.level})` : e.name).filter(Boolean);
       if (langs.length) {
         children.push(new Paragraph({
@@ -160,10 +217,14 @@ function buildDoc(resume) {
         }));
       }
 
-    } else if (sec.type === 'hobbies' || sec.type === 'references' || sec.type === 'custom') {
-      children.push(...sectionHeading(sec.title || '', accentColor));
-      if (c.text) children.push(new Paragraph({ children: [new TextRun({ text: c.text, size: PT(10), font: 'Calibri' })], spacing: { after: 60 } }));
-      for (const e of c.entries || []) {
+    } else {
+      // hobbies, references, custom
+      children.push(...sectionHeading(sec.title || '', accentColor, secBreak));
+      if (c.text) children.push(new Paragraph({
+        children: [new TextRun({ text: c.text, size: PT(10), font: 'Calibri' })],
+        spacing: { after: 60 },
+      }));
+      for (const e of (c.entries || [])) {
         const vals = Object.values(e).filter(v => typeof v === 'string' && v);
         if (vals.length) children.push(bullet(vals.join(' · ')));
       }
@@ -177,7 +238,7 @@ function buildDoc(resume) {
       properties: {
         page: {
           size: isLetter
-            ? { width: convertInchesToTwip(8.5), height: convertInchesToTwip(11) }
+            ? { width: convertInchesToTwip(8.5),  height: convertInchesToTwip(11) }
             : { width: convertMillimetersToTwip(210), height: convertMillimetersToTwip(297) },
           margin: {
             top:    convertInchesToTwip(0.6),
