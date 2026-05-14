@@ -1077,10 +1077,17 @@ const TEMPLATE_COMPONENTS = {
 // (last ~8% of the page). Long entries are allowed to break naturally across
 // pages — we never push an entire multi-bullet entry just because it spans a
 // boundary. Returns { id: extraMarginPx }, cumulative so cascade effects are handled.
-// Get element's top relative to a root element using viewport rects.
-// Reliable regardless of positioning context (works even when root is position:static).
+// Walk the offsetParent chain to root. Requires root to have position:relative
+// so it terminates the chain — all nested elements in non-positioned templates
+// will have root as their offsetParent.
 function getOffsetTopFromRoot(el, root) {
-  return el.getBoundingClientRect().top - root.getBoundingClientRect().top;
+  let top = 0;
+  let cur = el;
+  while (cur && cur !== root) {
+    top += cur.offsetTop;
+    cur = cur.offsetParent;
+  }
+  return top;
 }
 
 // pageBreakYs: sorted array of content-space Y positions where page breaks occur.
@@ -1167,7 +1174,10 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
     updateScale();
     const ro = new ResizeObserver(() => {
       updateScale();
-      if (contentRef.current) setContentHeight(contentRef.current.scrollHeight);
+      if (contentRef.current) {
+        const inner = contentRef.current.firstElementChild;
+        setContentHeight(inner ? inner.scrollHeight : contentRef.current.scrollHeight);
+      }
     });
     if (containerRef.current) ro.observe(containerRef.current);
     if (contentRef.current)   ro.observe(contentRef.current);
@@ -1210,8 +1220,8 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
             .resume-entry-block   { page-break-inside: avoid; }
           }
         `}</style>
-        {/* Hidden measurement — no adjustments so height never changes after first measure */}
-        <div ref={contentRef} style={{ position: 'absolute', top: 0, left: 0, width: page.width, visibility: 'hidden', pointerEvents: 'none' }}>
+        {/* Hidden measurement — position:relative makes it the offsetParent root for all children */}
+        <div ref={contentRef} style={{ position: 'relative', width: page.width, visibility: 'hidden', pointerEvents: 'none', height: 0, overflow: 'hidden' }}>
           <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
         </div>
         {/* Visible content with page-break adjustments applied */}
@@ -1249,11 +1259,9 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
   return (
     <div ref={containerRef} className={`overflow-auto ${className}`} style={{ background: '#CBD5E1' }}>
       <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-        {/* Hidden measurement div — raw layout, no adjustments, stable height */}
-        <div style={{ position: 'absolute', visibility: 'hidden', pointerEvents: 'none', top: 0, left: 0, width: page.width }}>
-          <div ref={contentRef}>
-            <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
-          </div>
+        {/* Hidden measurement div — position:relative so it's the offsetParent root */}
+        <div ref={contentRef} style={{ position: 'relative', width: page.width, visibility: 'hidden', pointerEvents: 'none', height: 0, overflow: 'hidden' }}>
+          <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
         </div>
 
         {/* One card per page — each clips its content slice via overflow:hidden */}
