@@ -1,7 +1,7 @@
 'use client';
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { buildLayoutConfig, effectiveContentHeight } from '@/lib/layoutConfig.js';
-import { buildBlocksFromDOM, paginateBlocks, pageBreaksToAdjustments } from '@/lib/paginationEngine.js';
+import { computeGeometricAdjustments } from '@/lib/paginationEngine.js';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -1087,28 +1087,11 @@ function buildPageStarts(totalHeight, config) {
   return starts;
 }
 
-/**
- * Run the shared pagination engine over the hidden measurement container and
- * return a section-adjustment map (blockId → marginTopPx).
- *
- * Heights are measured with getBoundingClientRect().height which correctly
- * handles subpixel rendering.  Positions are computed from the containerRect
- * origin so cumulative adjustments can be layered on top.
- */
-function computeAdjustments(contentEl, config) {
-  if (!contentEl) return {};
-
-  const { blocks } = buildBlocksFromDOM(contentEl);
-  if (!blocks.length) return {};
-
-  const { pageBreaks } = paginateBlocks(blocks, config);
-  return pageBreaksToAdjustments(pageBreaks);
-}
-
 export default function ResumePreview({ resume, designSettings = {}, scale = null, className = '', printMode = false }) {
   const containerRef   = useRef(null);
   const contentRef     = useRef(null);
   const detectionTimer = useRef(null);
+  const fontsReady     = useRef(false);
 
   const [computedScale,      setComputedScale]      = useState(scale || 0.6);
   const [contentHeight,      setContentHeight]      = useState(0);
@@ -1121,14 +1104,7 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
   const config = buildLayoutConfig(ss, ds);
   const page   = config.page;
 
-  // ── Height measurement ───────────────────────────────────────────────────────
-
-  const measureContent = useCallback(() => {
-    if (!contentRef.current) return;
-    // getBoundingClientRect().height reflects subpixel rendering and transforms.
-    const h = contentRef.current.getBoundingClientRect().height;
-    setContentHeight(Math.round(h));
-  }, []);
+  // ── Scale (viewport → fixed-width) ──────────────────────────────────────────
 
   const updateScale = useCallback(() => {
     if (scale !== null || !containerRef.current) return;
@@ -1136,33 +1112,43 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
     setComputedScale(Math.min(containerW / page.width, 1));
   }, [scale, page.width]);
 
-  // Layout ResizeObserver — fires on container resize AND content size changes.
+  // ── Content height measurement ───────────────────────────────────────────────
+  // Only fires when the content itself changes (not on window resize).
+  // Guarded by fontsReady so we never measure with fallback font glyphs.
+
+  const measureContent = useCallback(() => {
+    if (!contentRef.current || !fontsReady.current) return;
+    const h = contentRef.current.getBoundingClientRect().height;
+    setContentHeight(Math.round(h));
+  }, []);
+
+  // Wait for all fonts to be ready before measuring for the first time (§17).
+  useEffect(() => {
+    document.fonts.ready.then(() => {
+      fontsReady.current = true;
+      measureContent();
+    });
+  }, [measureContent]);
+
+  // ── ResizeObservers — §19.3: scale and content changes are handled separately.
+  //
+  //   containerRef observer → scale only (window/panel resize).
+  //   contentRef   observer → measurement only (content edit changes height).
+  //
+  // This prevents window resize from triggering re-pagination, which is the
+  // root cause of the resize-driven reflow bug described in §19.
   useEffect(() => {
     updateScale();
     measureContent();
-    const ro = new ResizeObserver(() => {
-      updateScale();
-      measureContent();
-    });
-    if (containerRef.current) ro.observe(containerRef.current);
-    if (contentRef.current)   ro.observe(contentRef.current);
-    return () => ro.disconnect();
-  }, [updateScale, measureContent]);
 
-  // Zoom-change listener — DPR shifts on browser zoom; re-measure to pick up
-  // any subpixel changes.  Only re-measures — does NOT re-run pagination, so
-  // page breaks are stable across zoom changes per Section 9.3 of the spec.
-  useEffect(() => {
-    let mq = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
-    const rebuild = () => {
-      measureContent();
-      mq.removeEventListener('change', rebuild);
-      mq = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
-      mq.addEventListener('change', rebuild);
-    };
-    mq.addEventListener('change', rebuild);
-    return () => mq.removeEventListener('change', rebuild);
-  }, [measureContent]);
+    const scaleObs   = new ResizeObserver(() => updateScale());
+    const measureObs = new ResizeObserver(() => measureContent());
+
+    if (containerRef.current) scaleObs.observe(containerRef.current);
+    if (contentRef.current)   measureObs.observe(contentRef.current);
+
+    return () => { scaleObs.disconnect(); measureObs.disconnect(); };
+  }, [updateScale, measureContent]);
 
   // Re-run the pagination engine whenever the measured content height changes.
   // Debounced at LAYOUT_CONFIG.debounceMs (300 ms) to coalesce rapid edits.
@@ -1171,7 +1157,7 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
     if (!contentRef.current || !contentHeight) return;
     clearTimeout(detectionTimer.current);
     detectionTimer.current = setTimeout(() => {
-      const newAdj = computeAdjustments(contentRef.current, config);
+      const newAdj = computeGeometricAdjustments(contentRef.current, config);
       setSectionAdjustments(prev =>
         JSON.stringify(newAdj) === JSON.stringify(prev) ? prev : newAdj,
       );
@@ -1201,7 +1187,7 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
           }
         `}</style>
         {/* Hidden measurement div — absolute so it doesn't shift page flow */}
-        <div style={{ position: 'absolute', top: 0, left: 0, width: page.width, visibility: 'hidden', pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', top: -9999, left: -9999, width: page.width, visibility: 'hidden', pointerEvents: 'none' }}>
           <div ref={contentRef} style={{ position: 'relative' }}>
             <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
           </div>
@@ -1234,7 +1220,7 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
       <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
         {/* Hidden measurement container — position:absolute keeps it out of flow;
             position:relative on the inner div makes it the offsetParent root. */}
-        <div style={{ position: 'absolute', top: 0, left: 0, width: page.width, visibility: 'hidden', pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', top: -9999, left: -9999, width: page.width, visibility: 'hidden', pointerEvents: 'none' }}>
           <div ref={contentRef} style={{ position: 'relative' }}>
             <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
           </div>

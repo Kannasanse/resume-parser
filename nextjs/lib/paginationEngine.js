@@ -136,94 +136,139 @@ export function paginateBlocks(blocks, config) {
   return { pageBreaks, pages };
 }
 
-// ── DOM-based block builder (browser only) ────────────────────────────────────
+// ── Geometric adjustment engine (browser / live preview) ─────────────────────
 
 /**
- * Build a flat list of blocks from the hidden measurement container DOM.
+ * Compute section/entry adjustment map for the live preview using a direct
+ * geometric measurement pass over the hidden DOM container.
  *
- * Queries `[data-section-id]` (SECTION_LABEL) and `[data-entry-id]`
- * (GROUP_ANCHOR) elements.  For each section, child entries are nested as
- * GROUP_ANCHOR children so the orphan check can use their heights.
+ * This is the authoritative page-break algorithm for the live preview surface.
+ * It walks every `[data-section-id]` and `[data-entry-id]` element in DOM
+ * order, measures their positions and heights with `getBoundingClientRect`,
+ * and determines whether each element should be pushed to the next page.
  *
- * Heights are measured with `getBoundingClientRect().height` which correctly
- * handles subpixel rendering and CSS transforms.
+ * Key design points that fix the whitespace bug (§18):
+ * ─ Section labels: minimum required space = heading height + spacing +
+ *   first N children heights (NOT total section height).  Using total section
+ *   height massively over-estimates and causes premature breaks.
+ * ─ Entries are evaluated individually so a long section spanning multiple
+ *   pages has per-entry breaks rather than being treated as a monolith.
+ * ─ Cumulative adjustments carry forward correctly: after pushing block B by
+ *   pushPx, every subsequent block's effective top is shifted by the same
+ *   amount, so C's page-boundary check uses C's true post-adjustment position.
+ * ─ Inter-section spacing is not added speculatively — it is only charged when
+ *   the next block actually fits on the current page.
  *
- * @param {Element} contentEl  The measurement container (contentRef.current)
- * @returns {BlockInput[]}
+ * Key design points that fix the resize bug (§19):
+ * ─ This function is called only when content height changes (not on resize).
+ *   The ResizeObserver split in ResumePreview ensures resize events only
+ *   update the CSS scale transform.
+ *
+ * @param {Element} contentEl  contentRef.current — fixed-width measurement div
+ * @param {object}  config     from buildLayoutConfig()
+ * @returns {Record<string, number>}  blockId → marginTopPx
  */
-export function buildBlocksFromDOM(contentEl) {
-  if (!contentEl) return [];
+export function computeGeometricAdjustments(contentEl, config) {
+  if (!contentEl) return {};
 
   const containerRect = contentEl.getBoundingClientRect();
+  const pageH  = config.page.height;
+  const effH   = effectiveContentHeight(config);
+  const { minBulletsWithHeading, minSkillRowsWithLabel, spacing } = config;
+
   const measureH = (el) => Math.max(1, el.getBoundingClientRect().height);
 
-  // Collect all section elements (top-level blocks).
-  const sectionEls = Array.from(
-    contentEl.querySelectorAll('[data-section-id]'),
-  );
+  /** Y position of the next page boundary after elTop (in content coordinates). */
+  function pageBoundaryAfter(elTop) {
+    if (elTop < pageH) return pageH;
+    const n = Math.floor((elTop - pageH) / effH);
+    return pageH + (n + 1) * effH;
+  }
 
-  const blocks = sectionEls.map((secEl) => {
-    const secId   = secEl.dataset.sectionId;
-    const secType = secEl.dataset.type || '';
+  /**
+   * Minimum vertical space required to START el on the current page without
+   * leaving an orphan.  Uses actual heading + first-N-children heights from
+   * the live DOM, not estimates.
+   */
+  function minStartSpace(el) {
+    const headingEl = el.firstElementChild;
+    const headingH  = headingEl ? measureH(headingEl) : 20;
 
-    // Child entries within this section.
-    const entryEls = Array.from(secEl.querySelectorAll('[data-entry-id]'));
-    const children = entryEls.map((entryEl) => ({
-      id:       entryEl.dataset.entryId,
-      type:     BLOCK_TYPE.GROUP_ANCHOR,
-      height:   measureH(entryEl),
-      children: [], // bullet-level granularity not yet available without deeper markup
-      el:       entryEl,
-    }));
-
-    // Decide block type: sections with entry children are SECTION_LABELs;
-    // skills / languages / summary etc. with only body text are also
-    // SECTION_LABELs but their "children" are direct body rows, if any.
-    let type = BLOCK_TYPE.SECTION_LABEL;
-    let effectiveChildren = children;
-
-    if (children.length === 0) {
-      // No entry children — try body direct children as atomic rows (skills, etc.)
-      const bodyEl = secEl.children[1];
-      if (bodyEl) {
-        effectiveChildren = Array.from(bodyEl.children).map((rowEl, idx) => ({
-          id:       `${secId}-row-${idx}`,
-          type:     BLOCK_TYPE.ATOMIC,
-          height:   measureH(rowEl),
-          children: [],
-        }));
+    if (el.dataset.sectionId) {
+      // Section label: must appear with at least minSkillRowsWithLabel children.
+      const entryEls = Array.from(el.querySelectorAll('[data-entry-id]'));
+      if (entryEls.length > 0) {
+        const n = Math.min(minSkillRowsWithLabel, entryEls.length);
+        const itemH = entryEls.slice(0, n).reduce((s, e) => s + measureH(e), 0);
+        return headingH + spacing.betweenSectionLabelAndFirstEntry + itemH;
       }
+      // Body-only section (skills, summary, languages…): heading + first 2 rows.
+      const bodyEl = el.children[1];
+      const rows   = bodyEl ? Array.from(bodyEl.children) : [];
+      if (rows.length > 0) {
+        const n = Math.min(minSkillRowsWithLabel, rows.length);
+        const itemH = rows.slice(0, n).reduce((s, r) => s + measureH(r), 0);
+        return headingH + spacing.betweenSectionLabelAndFirstEntry + itemH;
+      }
+      return measureH(el); // fallback: treat as atomic
     }
 
-    return {
-      id:       secId,
-      type,
-      height:   measureH(secEl),
-      children: effectiveChildren,
-      el:       secEl,
-      secType,
-    };
+    // Group anchor (entry): heading lines + approx first-bullet space.
+    // We cap the bullet estimate to avoid over-committing space.
+    const bodyEl  = el.children[1] || el.children[2];
+    const bulletH = bodyEl ? Math.min(measureH(bodyEl), 36) : 20; // ~2 lines
+    return headingH + spacing.betweenHeadingAndFirstBullet + bulletH;
+  }
+
+  const adj        = {};
+  let cumulative   = 0;
+
+  // Per-page usage tracking for fullness validation (§18.4).
+  const pageUsage = {}; // pageIndex (0-based) → accumulatedHeight
+
+  contentEl.querySelectorAll('[data-section-id], [data-entry-id]').forEach((el) => {
+    const rect    = el.getBoundingClientRect();
+    const elTop   = rect.top - containerRect.top + cumulative;
+    const elH     = rect.height;
+    const key     = el.dataset.sectionId || el.dataset.entryId;
+
+    const pageEnd   = pageBoundaryAfter(elTop);
+    const remaining = pageEnd - elTop;
+
+    if (remaining <= 0) return; // already exactly at boundary — no double-push
+
+    const fitAsWhole = elH <= effH; // would fit if the page were empty
+    const needsPush  =
+      (fitAsWhole && elH > remaining)   // whole block won't fit in remaining space
+      || remaining < minStartSpace(el); // heading + required children won't fit
+
+    if (needsPush) {
+      adj[key]    = remaining; // marginTop that pushes block to next page start
+      cumulative += remaining;
+    } else {
+      // Charge this block's height to the current page for fullness tracking.
+      const pgIdx = elTop < pageH ? 0 : 1 + Math.floor((elTop - pageH) / effH);
+      pageUsage[pgIdx] = (pageUsage[pgIdx] || 0) + elH;
+    }
   });
 
-  return { blocks, containerRect };
-}
+  // ── Page fullness warning (§18.4) — dev console only ────────────────────────
+  if (process.env.NODE_ENV !== 'production') {
+    const pageIndices = Object.keys(pageUsage).map(Number);
+    const lastPage    = pageIndices.length > 0 ? Math.max(...pageIndices) : 0;
+    for (const pgIdx of pageIndices) {
+      if (pgIdx >= lastPage) continue; // skip final page — it's allowed to be sparse
+      const fill = pageUsage[pgIdx] / effH;
+      if (fill < 0.3) {
+        console.warn(
+          `[resume-pagination] Page ${pgIdx + 1} is only ${Math.round(fill * 100)}% full` +
+          ` — possible whitespace bug. effectiveContentHeight=${Math.round(effH)}px,` +
+          ` usedHeight=${Math.round(pageUsage[pgIdx])}px`,
+        );
+      }
+    }
+  }
 
-/**
- * Convert paginateBlocks() output to the section-adjustment map format used
- * by ResumePreview's template components.
- *
- * Each entry in the map is: blockId → marginTopPx.  A positive value means
- * "shift this block down by N px" which pushes it (and all subsequent content)
- * to the next page.
- *
- * @param {Map<string, number>} pageBreaks  from paginateBlocks()
- * @returns {Record<string, number>}
- */
-export function pageBreaksToAdjustments(pageBreaks) {
-  const adj = {};
-  pageBreaks.forEach((pushPx, id) => {
-    if (pushPx > 0) adj[id] = pushPx;
-  });
   return adj;
 }
 
