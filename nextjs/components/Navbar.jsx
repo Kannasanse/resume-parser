@@ -225,7 +225,7 @@ export default function Navbar() {
                 </>
               ) : (
                 <>
-                  {navLink('/builder', 'Builder', <PenIcon />)}
+                  {navLink('/builder', 'Resume Builder', <PenIcon />)}
                   {navLink('/self-test', 'Self-Test', <SelfTestIcon />)}
                 </>
               )}
@@ -244,14 +244,14 @@ export default function Navbar() {
             {user && creditBalance != null && (
               <Link
                 href="/credits"
-                className={`flex items-center gap-1 h-7 px-2.5 rounded-full border text-xs font-semibold transition-colors ${
-                  creditBalance < 5
-                    ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
-                    : 'bg-ds-bg border-ds-border text-ds-textMuted hover:text-ds-text hover:bg-ds-card'
-                }`}
                 title="Your credit balance — click to view history"
+                style={creditBalance < 5
+                  ? { background: 'linear-gradient(135deg, #fee2e2, #fecaca)', border: '1px solid #fca5a5', color: '#dc2626', boxShadow: '0 0 8px rgba(239,68,68,0.25)' }
+                  : { background: 'linear-gradient(135deg, #fef9c3, #fde68a)', border: '1px solid #fbbf24', color: '#92400e', boxShadow: '0 0 8px rgba(251,191,36,0.35)' }
+                }
+                className="flex items-center gap-1 h-7 px-2.5 rounded-full text-xs font-bold transition-all hover:scale-105"
               >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="11" height="11" viewBox="0 0 24 24" strokeWidth="0" fill={creditBalance < 5 ? '#dc2626' : '#d97706'}>
                   <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
                 </svg>
                 {creditBalance}
@@ -364,7 +364,7 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              {drawerLink('/builder', 'Builder', <PenIcon />)}
+              {drawerLink('/builder', 'Resume Builder', <PenIcon />)}
               {drawerLink('/self-test', 'Self-Test', <SelfTestIcon />)}
             </>
           )}
