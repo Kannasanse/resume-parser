@@ -1096,31 +1096,45 @@ function detectOrphanAdjustments(contentEl, page1Height, effectivePageHeight) {
   const blocks = contentEl.querySelectorAll('[data-section-id], [data-entry-id]');
   const adj = {};
   let cumulative = 0;
+
   blocks.forEach(el => {
     const effectiveTop = el.offsetTop + cumulative;
-    // Determine which page and position within that page
-    let posOnPage;
+    const elHeight = el.offsetHeight;
+    const effectiveBottom = effectiveTop + elHeight;
+
+    // Compute which page slot this element's top falls in
+    let pageStart, pageEnd;
     if (effectiveTop < page1Height) {
-      posOnPage = effectiveTop;
-      const orphanZone = page1Height * ORPHAN_ZONE_RATIO;
-      if (posOnPage > page1Height - orphanZone) {
-        const key = el.dataset.sectionId || el.dataset.entryId;
-        const push = page1Height - posOnPage;
-        adj[key] = push;
-        cumulative += push;
-      }
+      pageStart = 0;
+      pageEnd = page1Height;
     } else {
-      const offsetIntoP2 = effectiveTop - page1Height;
-      posOnPage = offsetIntoP2 % effectivePageHeight;
-      const orphanZone = effectivePageHeight * ORPHAN_ZONE_RATIO;
-      if (posOnPage > effectivePageHeight - orphanZone) {
-        const key = el.dataset.sectionId || el.dataset.entryId;
-        const push = effectivePageHeight - posOnPage;
-        adj[key] = push;
-        cumulative += push;
-      }
+      const idx = Math.floor((effectiveTop - page1Height) / effectivePageHeight);
+      pageStart = page1Height + idx * effectivePageHeight;
+      pageEnd = pageStart + effectivePageHeight;
+    }
+    const slotHeight = pageEnd - pageStart;
+    const posOnPage = effectiveTop - pageStart;
+    const orphanZone = slotHeight * ORPHAN_ZONE_RATIO;
+    const key = el.dataset.sectionId || el.dataset.entryId;
+
+    // Rule 1 — heading/entry starts in orphan zone (would be alone at bottom)
+    if (posOnPage > slotHeight - orphanZone) {
+      const push = pageEnd - effectiveTop;
+      adj[key] = push;
+      cumulative += push;
+      return;
+    }
+
+    // Rule 2 — entry (not section header) spans a page boundary AND fits on the
+    // next page. Mirrors CSS break-inside:avoid on .resume-entry-block in print.
+    // Only push if the entry fits; leave oversized entries to break naturally.
+    if (el.dataset.entryId && effectiveBottom > pageEnd && elHeight <= effectivePageHeight) {
+      const push = pageEnd - effectiveTop;
+      adj[key] = push;
+      cumulative += push;
     }
   });
+
   return adj;
 }
 
