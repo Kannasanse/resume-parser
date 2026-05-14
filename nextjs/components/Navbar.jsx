@@ -6,6 +6,17 @@ import { usePathname } from 'next/navigation';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 
+function useCreditBalance(enabled) {
+  const [balance, setBalance] = useState(null);
+  useEffect(() => {
+    if (!enabled) return;
+    fetch('/api/v1/credits').then(r => r.ok ? r.json() : null).then(d => {
+      if (d?.balance != null) setBalance(d.balance);
+    }).catch(() => {});
+  }, [enabled]);
+  return balance;
+}
+
 function FileIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -122,6 +133,7 @@ export default function Navbar() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const menuRef = useRef(null);
+  const creditBalance = useCreditBalance(!!user);
 
   useEffect(() => {
     const handler = (e) => {
@@ -228,6 +240,23 @@ export default function Navbar() {
             >
               {dark ? <SunIcon /> : <MoonIcon />}
             </button>
+
+            {user && creditBalance != null && (
+              <Link
+                href="/credits"
+                className={`flex items-center gap-1 h-7 px-2.5 rounded-full border text-xs font-semibold transition-colors ${
+                  creditBalance < 5
+                    ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
+                    : 'bg-ds-bg border-ds-border text-ds-textMuted hover:text-ds-text hover:bg-ds-card'
+                }`}
+                title="Your credit balance — click to view history"
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+                {creditBalance}
+              </Link>
+            )}
 
             {user && (
               <div ref={menuRef} className="relative">
