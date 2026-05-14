@@ -290,24 +290,27 @@ function RichBody({ entry, listStyle, style, entryId, visibleBlockIds }) {
   const allBullets = (entry.bullets || []).filter(b => b?.trim());
   if (!allBullets.length) return null;
 
-  // Filter bullets: show bullet if the entry itself is visible OR this specific bullet is visible.
-  const bullets = !visibleBlockIds || !entryId
-    ? allBullets
-    : allBullets.filter((_, j) => {
-        const bulletId = `${entryId}-bullet-${j}`;
-        return visibleBlockIds.includes(entryId) || visibleBlockIds.includes(bulletId);
-      });
+  // Determine filtering mode.
+  // If any bullet ID for this entry appears in visibleBlockIds, the pagination
+  // engine has split this entry at bullet granularity — use bullet-level filtering.
+  // Otherwise fall back to entry-level filtering (show all or hide all bullets).
+  const hasBulletSplit = visibleBlockIds && entryId &&
+    allBullets.some((_, j) => visibleBlockIds.includes(`${entryId}-bullet-${j}`));
 
-  if (!bullets.length) return null;
+  function isBulletVisible(j) {
+    if (!visibleBlockIds || !entryId) return true;
+    if (hasBulletSplit) return visibleBlockIds.includes(`${entryId}-bullet-${j}`);
+    return visibleBlockIds.includes(entryId);
+  }
+
+  if (!allBullets.some((_, j) => isBulletVisible(j))) return null;
 
   if (listStyle === 'hyphen') {
     return (
       <div style={{ margin: '3px 0 0', ...style }}>
         {allBullets.map((b, j) => {
+          if (!isBulletVisible(j)) return null;
           const bulletId = entryId ? `${entryId}-bullet-${j}` : undefined;
-          const hidden = visibleBlockIds && entryId &&
-            !visibleBlockIds.includes(entryId) && !visibleBlockIds.includes(bulletId);
-          if (hidden) return null;
           return (
             <div key={j} data-bullet-id={bulletId} style={{ display: 'flex', gap: 6, marginBottom: 1 }}>
               <span style={{ flexShrink: 0, color: '#6B7280' }}>–</span>
@@ -321,10 +324,8 @@ function RichBody({ entry, listStyle, style, entryId, visibleBlockIds }) {
   return (
     <ul style={{ margin: '3px 0 0', paddingLeft: 18, listStyleType: 'disc', ...style }}>
       {allBullets.map((b, j) => {
+        if (!isBulletVisible(j)) return null;
         const bulletId = entryId ? `${entryId}-bullet-${j}` : undefined;
-        const hidden = visibleBlockIds && entryId &&
-          !visibleBlockIds.includes(entryId) && !visibleBlockIds.includes(bulletId);
-        if (hidden) return null;
         return <li key={j} data-bullet-id={bulletId} style={{ marginBottom: 1, display: 'list-item' }}>{b}</li>;
       })}
     </ul>
