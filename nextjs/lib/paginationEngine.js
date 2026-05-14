@@ -252,24 +252,22 @@ export function computeGeometricAdjustments(contentEl, config) {
     }
   });
 
-  // ── Page fullness warning (§18.4) — dev console only ────────────────────────
-  if (process.env.NODE_ENV !== 'production') {
-    const pageIndices = Object.keys(pageUsage).map(Number);
-    const lastPage    = pageIndices.length > 0 ? Math.max(...pageIndices) : 0;
-    for (const pgIdx of pageIndices) {
-      if (pgIdx >= lastPage) continue; // skip final page — it's allowed to be sparse
-      const fill = pageUsage[pgIdx] / effH;
-      if (fill < 0.3) {
-        console.warn(
-          `[resume-pagination] Page ${pgIdx + 1} is only ${Math.round(fill * 100)}% full` +
-          ` — possible whitespace bug. effectiveContentHeight=${Math.round(effH)}px,` +
-          ` usedHeight=${Math.round(pageUsage[pgIdx])}px`,
-        );
-      }
-    }
+  // ── Build page slices — ordered block IDs assigned to pages ─────────────────
+  // Walk the DOM again in order and assign each ID to a page based on adj.
+  // A non-zero adj entry means "this block starts a new page".
+  const orderedIds = [];
+  contentEl.querySelectorAll('[data-section-id], [data-entry-id]').forEach((el) => {
+    orderedIds.push(el.dataset.sectionId || el.dataset.entryId);
+  });
+
+  /** @type {string[][]} */
+  const pageSlices = [[]];
+  for (const id of orderedIds) {
+    if (adj[id] > 0) pageSlices.push([]);
+    pageSlices[pageSlices.length - 1].push(id);
   }
 
-  return adj;
+  return { adj, pageSlices };
 }
 
 // ── Word-export block builder (server-side) ───────────────────────────────────

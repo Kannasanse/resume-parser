@@ -118,7 +118,7 @@ function PhotoPlaceholder({ size = 72, shape = 'circle', name = '', src = null }
 
 // ── Utility: compute render values from merged settings ────────────────────────
 
-function tmplUtils(ds, ss, ls = {}, blockAdj = {}) {
+function tmplUtils(ds, ss, ls = {}, blockAdj = {}, visibleBlockIds = null) {
   const safe = (n, lo, hi, d) => (typeof n === 'number' && !isNaN(n) ? Math.max(lo, Math.min(hi, n)) : d);
   const fontSize   = safe(ss.fontSize, 8, 14, 11);
   const lineHeight = safe(ss.lineHeight, 1, 1.8, 1.15);
@@ -136,7 +136,7 @@ function tmplUtils(ds, ss, ls = {}, blockAdj = {}) {
   const hIconSz       = Math.round(11 * titleSizeMult);
   const hFilledSz     = Math.round(15 * titleSizeMult);
   const hFilledIconSz = Math.round(8  * titleSizeMult);
-  return { fontSize, lineHeight, padX, padY, entryGapPx, accent, t, colIf, fontFamily, titleSizeMult, listStyle, hIconSz, hFilledSz, hFilledIconSz, blockAdj };
+  return { fontSize, lineHeight, padX, padY, entryGapPx, accent, t, colIf, fontFamily, titleSizeMult, listStyle, hIconSz, hFilledSz, hFilledIconSz, blockAdj, visibleBlockIds };
 }
 
 // ── Extract structured data from DB resume ────────────────────────────────────
@@ -314,7 +314,7 @@ function BulletList({ bullets, listStyle }) {
 }
 
 function ExperienceBody({ secs, util, variant }) {
-  const { entryGapPx, t, colIf, listStyle, blockAdj } = util;
+  const { entryGapPx, t, colIf, listStyle, blockAdj, visibleBlockIds } = util;
   const allEntries = secs.flatMap(sec => {
     const order = sec.display_settings?.workOrder || sec.display_settings?.order || 'title-first';
     return (sec.content?.entries || []).map((e, idx) => ({ ...e, _order: order, _secId: sec.id, _idx: idx }));
@@ -329,6 +329,7 @@ function ExperienceBody({ secs, util, variant }) {
         const primary    = titleFirst ? (e.title || '') : (e.employer || '');
         const secondary  = titleFirst ? (e.employer || '') : (e.title || '');
         const entryId    = `${e._secId}-${e._idx}`;
+        if (visibleBlockIds && !visibleBlockIds.includes(entryId)) return null;
         const adjTop     = blockAdj?.[entryId];
         if (variant === 'date-column') {
           return (
@@ -389,7 +390,7 @@ function ExperienceBody({ secs, util, variant }) {
 }
 
 function EducationBody({ secs, util, variant }) {
-  const { entryGapPx, t, colIf, blockAdj } = util;
+  const { entryGapPx, t, colIf, blockAdj, visibleBlockIds } = util;
   const allEntries = secs.flatMap(sec => {
     const order = sec.display_settings?.eduOrder || sec.display_settings?.order || 'school-first';
     return (sec.content?.entries || []).map((e, idx) => ({ ...e, _order: order, _secId: sec.id, _idx: idx }));
@@ -404,6 +405,7 @@ function EducationBody({ secs, util, variant }) {
         const primary    = schoolFirst ? (e.school || '') : (e.degree || '');
         const secondary  = schoolFirst ? (e.degree || '') : (e.school || '');
         const entryId    = `${e._secId}-${e._idx}`;
+        if (visibleBlockIds && !visibleBlockIds.includes(entryId)) return null;
         const adjTop     = blockAdj?.[entryId];
 
         if (variant === 'date-column') {
@@ -494,13 +496,14 @@ function CertsBody({ sec, util, variant }) {
 }
 
 function ProjectsBody({ sec, util }) {
-  const { entryGapPx, t, colIf, listStyle, blockAdj } = util;
+  const { entryGapPx, t, colIf, listStyle, blockAdj, visibleBlockIds } = util;
   const entries = sec?.content?.entries || [];
   if (!entries.length) return null;
   return (
     <div>
       {entries.map((p, i) => {
         const entryId = `${sec.id}-${i}`;
+        if (visibleBlockIds && !visibleBlockIds.includes(entryId)) return null;
         const adjTop  = blockAdj?.[entryId];
         return (
           <div key={i} className="resume-entry-block" data-entry-id={entryId} style={{ marginBottom: i < entries.length - 1 ? entryGapPx * 0.75 : 0, ...(adjTop ? { marginTop: adjTop } : {}) }}>
@@ -564,6 +567,32 @@ function renderSectionBody(sec, util, opts = {}) {
   return null;
 }
 
+// ── Section visibility helpers (discrete per-page rendering) ─────────────────
+
+// Section types where individual entries have data-entry-id attributes.
+const ENTRY_TRACKED_TYPES = new Set(['work_experience', 'education', 'projects']);
+
+/**
+ * Returns true if any content from this section belongs on the current page.
+ * vids = null means "show all" (measurement pass or print mode).
+ */
+function isSectionVisible(sec, vids) {
+  if (!vids) return true;
+  if (vids.includes(sec.id)) return true;
+  if (ENTRY_TRACKED_TYPES.has(sec.type)) {
+    return (sec.content?.entries || []).some((_, idx) => vids.includes(`${sec.id}-${idx}`));
+  }
+  return false;
+}
+
+/**
+ * Returns true if the section heading should be rendered on this page.
+ * Headings are omitted on continuation pages (only entries, no label).
+ */
+function showSectionHeading(sec, vids) {
+  return !vids || vids.includes(sec.id);
+}
+
 // ── Contact detail item (for Modern header) ───────────────────────────────────
 
 function buildDetailsBlock(pi, ds, util) {
@@ -619,8 +648,8 @@ function buildDetailsBlock(pi, ds, util) {
 
 // ── Template 1: Modern ────────────────────────────────────────────────────────
 
-function TemplateModern({ resume, ds, ss, sectionAdjustments }) {
-  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments);
+function TemplateModern({ resume, ds, ss, sectionAdjustments, visibleBlockIds = null, showHeader = true }) {
+  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult, hIconSz, hFilledSz, hFilledIconSz } = util;
   const { pi, sections } = buildRenderData(resume);
   const headingIcon = resume.layout_settings?.headingIcon || 'none';
@@ -646,16 +675,25 @@ function TemplateModern({ resume, ds, ss, sectionAdjustments }) {
 
   return (
     <div style={pageStyle}>
-      <div style={{ textAlign: ds.headerAlignment }}>
-        <div style={{ fontSize: '2.2em', fontWeight: 700, letterSpacing: '-0.02em', color: colIf(t.name) || '#2C2C2A', lineHeight: 1 }}>{pi.name || 'Your Name'}</div>
-        {pi.title && <div style={{ fontSize: '1.05em', fontWeight: 500, color: colIf(t.jobTitle) || accent, marginTop: 4 }}>{pi.title}</div>}
-        {buildDetailsBlock(pi, ds, util)}
-      </div>
+      {showHeader && (
+        <div style={{ textAlign: ds.headerAlignment }}>
+          <div style={{ fontSize: '2.2em', fontWeight: 700, letterSpacing: '-0.02em', color: colIf(t.name) || '#2C2C2A', lineHeight: 1 }}>{pi.name || 'Your Name'}</div>
+          {pi.title && <div style={{ fontSize: '1.05em', fontWeight: 500, color: colIf(t.jobTitle) || accent, marginTop: 4 }}>{pi.title}</div>}
+          {buildDetailsBlock(pi, ds, util)}
+        </div>
+      )}
       {sections.map(sec => {
+        if (!isSectionVisible(sec, visibleBlockIds)) return null;
         const body = renderSectionBody(sec, util);
         if (!body) return null;
         const adj = sectionAdjustments?.[sec.id];
-        return <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}><Heading iconName={SEC_ICONS[sec.type]}>{sec.title}</Heading>{body}</div>;
+        const headingVisible = showSectionHeading(sec, visibleBlockIds);
+        return (
+          <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
+            {headingVisible && <Heading iconName={SEC_ICONS[sec.type]}>{sec.title}</Heading>}
+            {body}
+          </div>
+        );
       })}
     </div>
   );
@@ -665,8 +703,8 @@ function TemplateModern({ resume, ds, ss, sectionAdjustments }) {
 
 const ATLANTIC_SIDEBAR_TYPES = new Set(['summary', 'languages', 'hobbies', 'references']);
 
-function TemplateAtlanticBlue({ resume, ds, ss, sectionAdjustments }) {
-  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments);
+function TemplateAtlanticBlue({ resume, ds, ss, sectionAdjustments, visibleBlockIds = null, showHeader = true }) {
+  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
   const { fontSize, lineHeight, accent, t, colIf, fontFamily, titleSizeMult, hIconSz, hFilledSz, hFilledIconSz } = util;
   const { pi, sections } = buildRenderData(resume);
   const sideColor = '#1F2A44';
@@ -707,25 +745,31 @@ function TemplateAtlanticBlue({ resume, ds, ss, sectionAdjustments }) {
     <div style={pageStyle}>
       {/* Sidebar */}
       <div style={{ background: sideColor, color: '#fff', padding: '24px 20px' }}>
-        <div style={{ fontSize: '1.7em', fontWeight: 700, color: colIf(t.name) || '#fff', lineHeight: 1.05 }}>{pi.name || 'Your Name'}</div>
-        <div style={{ fontSize: '1em', color: colIf(t.jobTitle) || '#B6C2D6', marginTop: 4 }}>{pi.title}</div>
-        <div style={{ marginTop: 14, display: 'flex' }}>
-          <PhotoPlaceholder size={86} shape="circle" name={pi.name} src={pi.photo || null} />
-        </div>
-        <div style={{ marginTop: 14 }}>
-          {contactRow('mail', pi.email)}
-          {contactRow('phone', pi.phone)}
-          {contactRow('pin', pi.location)}
-          {contactRow('link', pi.link)}
-        </div>
+        {showHeader && (
+          <>
+            <div style={{ fontSize: '1.7em', fontWeight: 700, color: colIf(t.name) || '#fff', lineHeight: 1.05 }}>{pi.name || 'Your Name'}</div>
+            <div style={{ fontSize: '1em', color: colIf(t.jobTitle) || '#B6C2D6', marginTop: 4 }}>{pi.title}</div>
+            <div style={{ marginTop: 14, display: 'flex' }}>
+              <PhotoPlaceholder size={86} shape="circle" name={pi.name} src={pi.photo || null} />
+            </div>
+            <div style={{ marginTop: 14 }}>
+              {contactRow('mail', pi.email)}
+              {contactRow('phone', pi.phone)}
+              {contactRow('pin', pi.location)}
+              {contactRow('link', pi.link)}
+            </div>
+          </>
+        )}
         <div style={{ color: '#E8EEF7' }}>
           {sideIds.map(sec => {
+            if (!isSectionVisible(sec, visibleBlockIds)) return null;
             const body = renderSectionBody(sec, util, { certVariant: 'compact-list' });
             if (!body) return null;
             const adj = sectionAdjustments?.[sec.id];
+            const headingVisible = showSectionHeading(sec, visibleBlockIds);
             return (
               <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
-                <SideHead iconName={SEC_ICONS[sec.type]}>{sec.title}</SideHead>
+                {headingVisible && <SideHead iconName={SEC_ICONS[sec.type]}>{sec.title}</SideHead>}
                 {body}
               </div>
             );
@@ -735,12 +779,14 @@ function TemplateAtlanticBlue({ resume, ds, ss, sectionAdjustments }) {
       {/* Main body */}
       <div style={{ padding: '24px 22px' }}>
         {bodyIds.map(sec => {
+          if (!isSectionVisible(sec, visibleBlockIds)) return null;
           const body = renderSectionBody(sec, util, { expVariant: 'stacked' });
           if (!body) return null;
           const adj = sectionAdjustments?.[sec.id];
+          const headingVisible = showSectionHeading(sec, visibleBlockIds);
           return (
             <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
-              <PillHead iconName={SEC_ICONS[sec.type]}>{sec.title}</PillHead>
+              {headingVisible && <PillHead iconName={SEC_ICONS[sec.type]}>{sec.title}</PillHead>}
               {body}
             </div>
           );
@@ -752,8 +798,8 @@ function TemplateAtlanticBlue({ resume, ds, ss, sectionAdjustments }) {
 
 // ── Template 3: Corporate (centered, classic) ─────────────────────────────────
 
-function TemplateCorporate({ resume, ds, ss, sectionAdjustments }) {
-  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments);
+function TemplateCorporate({ resume, ds, ss, sectionAdjustments, visibleBlockIds = null, showHeader = true }) {
+  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult, hIconSz, hFilledSz, hFilledIconSz } = util;
   const { pi, sections } = buildRenderData(resume);
   const headingIcon = resume.layout_settings?.headingIcon || 'none';
@@ -782,26 +828,35 @@ function TemplateCorporate({ resume, ds, ss, sectionAdjustments }) {
 
   return (
     <div style={pageStyle}>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '2em', fontWeight: 700, color: colIf(t.name) || '#1F2937', lineHeight: 1 }}>{pi.name || 'Your Name'}</div>
-        {pi.title && <div style={{ fontSize: '1.05em', fontStyle: 'italic', color: colIf(t.jobTitle) || '#374151', marginTop: 4 }}>{pi.title}</div>}
-        {contactItems.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px', marginTop: 10, fontSize: '0.9em', color: '#374151', justifyContent: 'center' }}>
-            {contactItems.map(([k, v], i) => (
-              <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                <Icon name={k} size={11} color={colIf(t.headerIcons) || '#374151'} />{v}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+      {showHeader && (
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '2em', fontWeight: 700, color: colIf(t.name) || '#1F2937', lineHeight: 1 }}>{pi.name || 'Your Name'}</div>
+          {pi.title && <div style={{ fontSize: '1.05em', fontStyle: 'italic', color: colIf(t.jobTitle) || '#374151', marginTop: 4 }}>{pi.title}</div>}
+          {contactItems.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px', marginTop: 10, fontSize: '0.9em', color: '#374151', justifyContent: 'center' }}>
+              {contactItems.map(([k, v], i) => (
+                <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  <Icon name={k} size={11} color={colIf(t.headerIcons) || '#374151'} />{v}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       {sections.map(sec => {
+        if (!isSectionVisible(sec, visibleBlockIds)) return null;
         const certVariant = sec.type === 'certifications' ? 'three-col-bullets' : undefined;
         const skillsCols  = (sec.type === 'skills' && (sec.display_settings?.layout === 'rows' || !sec.display_settings?.layout)) ? 3 : undefined;
         const body = renderSectionBody(sec, util, { certVariant, skillsCols });
         if (!body) return null;
         const adj = sectionAdjustments?.[sec.id];
-        return <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}><Heading iconName={SEC_ICONS[sec.type]}>{sec.title}</Heading>{body}</div>;
+        const headingVisible = showSectionHeading(sec, visibleBlockIds);
+        return (
+          <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
+            {headingVisible && <Heading iconName={SEC_ICONS[sec.type]}>{sec.title}</Heading>}
+            {body}
+          </div>
+        );
       })}
     </div>
   );
@@ -811,8 +866,8 @@ function TemplateCorporate({ resume, ds, ss, sectionAdjustments }) {
 
 const CREST_LEFT_TYPES = new Set(['summary', 'skills', 'languages', 'certifications', 'hobbies']);
 
-function TemplateAtlanticCrest({ resume, ds, ss, sectionAdjustments }) {
-  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments);
+function TemplateAtlanticCrest({ resume, ds, ss, sectionAdjustments, visibleBlockIds = null, showHeader = true }) {
+  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult, hIconSz, hFilledSz, hFilledIconSz } = util;
   const { pi, sections } = buildRenderData(resume);
   const bannerColor = '#1F2A44';
@@ -842,35 +897,51 @@ function TemplateAtlanticCrest({ resume, ds, ss, sectionAdjustments }) {
   return (
     <div style={pageStyle}>
       {/* Dark banner */}
-      <div style={{ background: bannerColor, color: '#fff', padding: `${padY}mm ${padX}mm`, display: 'grid', gridTemplateColumns: '1fr auto', gap: 18, alignItems: 'center' }}>
-        <div>
-          <div style={{ fontSize: '1.9em', fontWeight: 700, color: colIf(t.name) || '#fff', lineHeight: 1 }}>{pi.name || 'Your Name'}</div>
-          {pi.title && <div style={{ fontSize: '1em', color: colIf(t.jobTitle) || '#B6C2D6', marginTop: 4 }}>{pi.title}</div>}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 18px', marginTop: 10, maxWidth: 460 }}>
-            {contact('mail', pi.email)}
-            {contact('phone', pi.phone)}
-            {contact('link', pi.link)}
-            {contact('pin', pi.location)}
+      {showHeader && (
+        <div style={{ background: bannerColor, color: '#fff', padding: `${padY}mm ${padX}mm`, display: 'grid', gridTemplateColumns: '1fr auto', gap: 18, alignItems: 'center' }}>
+          <div>
+            <div style={{ fontSize: '1.9em', fontWeight: 700, color: colIf(t.name) || '#fff', lineHeight: 1 }}>{pi.name || 'Your Name'}</div>
+            {pi.title && <div style={{ fontSize: '1em', color: colIf(t.jobTitle) || '#B6C2D6', marginTop: 4 }}>{pi.title}</div>}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 18px', marginTop: 10, maxWidth: 460 }}>
+              {contact('mail', pi.email)}
+              {contact('phone', pi.phone)}
+              {contact('link', pi.link)}
+              {contact('pin', pi.location)}
+            </div>
           </div>
+          <PhotoPlaceholder size={96} shape="circle" name={pi.name} src={pi.photo || null} />
         </div>
-        <PhotoPlaceholder size={96} shape="circle" name={pi.name} src={pi.photo || null} />
-      </div>
+      )}
       {/* Two-column body */}
       <div style={{ padding: `${padY * 0.6}mm ${padX}mm`, display: 'grid', gridTemplateColumns: '38% 1fr', gap: 18 }}>
         <div>
           {leftIds.map(sec => {
+            if (!isSectionVisible(sec, visibleBlockIds)) return null;
             const body = renderSectionBody(sec, util);
             if (!body) return null;
             const adj = sectionAdjustments?.[sec.id];
-            return <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}><PillHead iconName={SEC_ICONS[sec.type]}>{sec.title}</PillHead>{body}</div>;
+            const headingVisible = showSectionHeading(sec, visibleBlockIds);
+            return (
+              <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
+                {headingVisible && <PillHead iconName={SEC_ICONS[sec.type]}>{sec.title}</PillHead>}
+                {body}
+              </div>
+            );
           })}
         </div>
         <div>
           {rightIds.map(sec => {
+            if (!isSectionVisible(sec, visibleBlockIds)) return null;
             const body = renderSectionBody(sec, util, { expVariant: 'stacked' });
             if (!body) return null;
             const adj = sectionAdjustments?.[sec.id];
-            return <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}><PillHead iconName={SEC_ICONS[sec.type]}>{sec.title}</PillHead>{body}</div>;
+            const headingVisible = showSectionHeading(sec, visibleBlockIds);
+            return (
+              <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
+                {headingVisible && <PillHead iconName={SEC_ICONS[sec.type]}>{sec.title}</PillHead>}
+                {body}
+              </div>
+            );
           })}
         </div>
       </div>
@@ -880,8 +951,8 @@ function TemplateAtlanticCrest({ resume, ds, ss, sectionAdjustments }) {
 
 // ── Template 5: Mercury Flow (gray banner + date column) ──────────────────────
 
-function TemplateMercuryFlow({ resume, ds, ss, sectionAdjustments }) {
-  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments);
+function TemplateMercuryFlow({ resume, ds, ss, sectionAdjustments, visibleBlockIds = null, showHeader = true }) {
+  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult, hIconSz, hFilledSz, hFilledIconSz } = util;
   const { pi, sections } = buildRenderData(resume);
   const headingIcon = resume.layout_settings?.headingIcon || 'none';
@@ -910,26 +981,35 @@ function TemplateMercuryFlow({ resume, ds, ss, sectionAdjustments }) {
   return (
     <div style={pageStyle}>
       {/* Gray banner */}
-      <div style={{ background: '#E5E7EB', padding: `${padY * 0.7}mm ${padX}mm`, display: 'flex', alignItems: 'center', gap: 16 }}>
-        <PhotoPlaceholder size={70} shape="circle" name={pi.name} src={pi.photo || null} />
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '1.5em', fontWeight: 700, color: colIf(t.name) || '#1F2937', lineHeight: 1.05 }}>{pi.name || 'Your Name'}</div>
-          {pi.title && <div style={{ fontSize: '0.95em', color: colIf(t.jobTitle) || '#374151', marginTop: 2 }}>{pi.title}</div>}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px 14px', marginTop: 6 }}>
-            {contact('mail', pi.email)}
-            {contact('phone', pi.phone)}
-            {contact('link', pi.link)}
-            {contact('pin', pi.location)}
+      {showHeader && (
+        <div style={{ background: '#E5E7EB', padding: `${padY * 0.7}mm ${padX}mm`, display: 'flex', alignItems: 'center', gap: 16 }}>
+          <PhotoPlaceholder size={70} shape="circle" name={pi.name} src={pi.photo || null} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '1.5em', fontWeight: 700, color: colIf(t.name) || '#1F2937', lineHeight: 1.05 }}>{pi.name || 'Your Name'}</div>
+            {pi.title && <div style={{ fontSize: '0.95em', color: colIf(t.jobTitle) || '#374151', marginTop: 2 }}>{pi.title}</div>}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px 14px', marginTop: 6 }}>
+              {contact('mail', pi.email)}
+              {contact('phone', pi.phone)}
+              {contact('link', pi.link)}
+              {contact('pin', pi.location)}
+            </div>
           </div>
         </div>
-      </div>
+      )}
       <div style={{ padding: `${padY * 0.5}mm ${padX}mm` }}>
         {sections.map(sec => {
+          if (!isSectionVisible(sec, visibleBlockIds)) return null;
           const isDateCol = sec.type === 'work_experience' || sec.type === 'education';
           const body = renderSectionBody(sec, util, isDateCol ? { expVariant: 'date-column', eduVariant: 'date-column' } : {});
           if (!body) return null;
           const adj = sectionAdjustments?.[sec.id];
-          return <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}><BarHead iconName={SEC_ICONS[sec.type]}>{sec.title}</BarHead>{body}</div>;
+          const headingVisible = showSectionHeading(sec, visibleBlockIds);
+          return (
+            <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
+              {headingVisible && <BarHead iconName={SEC_ICONS[sec.type]}>{sec.title}</BarHead>}
+              {body}
+            </div>
+          );
         })}
       </div>
     </div>
@@ -938,8 +1018,8 @@ function TemplateMercuryFlow({ resume, ds, ss, sectionAdjustments }) {
 
 // ── Template 6: Steady Form (photo right + gray bar headings) ─────────────────
 
-function TemplateSteadyForm({ resume, ds, ss, sectionAdjustments }) {
-  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments);
+function TemplateSteadyForm({ resume, ds, ss, sectionAdjustments, visibleBlockIds = null, showHeader = true }) {
+  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult, hIconSz, hFilledSz, hFilledIconSz } = util;
   const { pi, sections } = buildRenderData(resume);
   const headingIcon = resume.layout_settings?.headingIcon || 'none';
@@ -971,22 +1051,25 @@ function TemplateSteadyForm({ resume, ds, ss, sectionAdjustments }) {
   return (
     <div style={pageStyle}>
       {/* Name+contacts left, photo right */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 16, alignItems: 'center', marginBottom: 6 }}>
-        <div>
-          <div style={{ fontSize: '1.6em' }}>
-            <span style={{ fontWeight: 700, color: colIf(t.name) || '#1F2937' }}>{pi.name || 'Your Name'}</span>
-            {pi.title && <span style={{ fontStyle: 'italic', fontWeight: 400, color: colIf(t.jobTitle) || '#374151', marginLeft: 10 }}>{pi.title}</span>}
+      {showHeader && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 16, alignItems: 'center', marginBottom: 6 }}>
+          <div>
+            <div style={{ fontSize: '1.6em' }}>
+              <span style={{ fontWeight: 700, color: colIf(t.name) || '#1F2937' }}>{pi.name || 'Your Name'}</span>
+              {pi.title && <span style={{ fontStyle: 'italic', fontWeight: 400, color: colIf(t.jobTitle) || '#374151', marginLeft: 10 }}>{pi.title}</span>}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px', marginTop: 10 }}>
+              {contact('mail', pi.email)}
+              {contact('phone', pi.phone)}
+              {contact('link', pi.link)}
+              {contact('pin', pi.location)}
+            </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px', marginTop: 10 }}>
-            {contact('mail', pi.email)}
-            {contact('phone', pi.phone)}
-            {contact('link', pi.link)}
-            {contact('pin', pi.location)}
-          </div>
+          <PhotoPlaceholder size={78} shape="circle" name={pi.name} src={pi.photo || null} />
         </div>
-        <PhotoPlaceholder size={78} shape="circle" name={pi.name} src={pi.photo || null} />
-      </div>
+      )}
       {sections.map(sec => {
+        if (!isSectionVisible(sec, visibleBlockIds)) return null;
         const skillsCols   = (sec.type === 'skills' && (sec.display_settings?.layout === 'rows' || !sec.display_settings?.layout)) ? 3 : undefined;
         const certVariant  = sec.type === 'certifications' ? 'three-col-bullets' : undefined;
         const body = renderSectionBody(sec, util, {
@@ -997,7 +1080,13 @@ function TemplateSteadyForm({ resume, ds, ss, sectionAdjustments }) {
         });
         if (!body) return null;
         const adj = sectionAdjustments?.[sec.id];
-        return <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}><BarHead iconName={SEC_ICONS[sec.type]}>{sec.title}</BarHead>{body}</div>;
+        const headingVisible = showSectionHeading(sec, visibleBlockIds);
+        return (
+          <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
+            {headingVisible && <BarHead iconName={SEC_ICONS[sec.type]}>{sec.title}</BarHead>}
+            {body}
+          </div>
+        );
       })}
     </div>
   );
@@ -1005,8 +1094,8 @@ function TemplateSteadyForm({ resume, ds, ss, sectionAdjustments }) {
 
 // ── Template 7: Executive (editorial serif, date-column) ──────────────────────
 
-function TemplateExecutive({ resume, ds, ss, sectionAdjustments }) {
-  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments);
+function TemplateExecutive({ resume, ds, ss, sectionAdjustments, visibleBlockIds = null, showHeader = true }) {
+  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult, hIconSz, hFilledSz, hFilledIconSz } = util;
   const { pi, sections } = buildRenderData(resume);
   const headingIcon = resume.layout_settings?.headingIcon || 'none';
@@ -1033,27 +1122,38 @@ function TemplateExecutive({ resume, ds, ss, sectionAdjustments }) {
 
   return (
     <div style={pageStyle}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: '1.8em', fontWeight: 700, color: colIf(t.name) || '#1F2937' }}>{pi.name || 'Your Name'}</span>
-        {pi.title && <span style={{ fontSize: '1.05em', fontStyle: 'italic', color: colIf(t.jobTitle) || '#374151' }}>{pi.title}</span>}
-      </div>
-      {contactItems.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 18px', marginTop: 8, fontSize: '0.9em', color: '#374151' }}>
-          {contactItems.map(([k, v], i) => (
-            <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-              <Icon name={k} size={11} color={colIf(t.headerIcons) || '#374151'} />{v}
-            </span>
-          ))}
-        </div>
+      {showHeader && (
+        <>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '1.8em', fontWeight: 700, color: colIf(t.name) || '#1F2937' }}>{pi.name || 'Your Name'}</span>
+            {pi.title && <span style={{ fontSize: '1.05em', fontStyle: 'italic', color: colIf(t.jobTitle) || '#374151' }}>{pi.title}</span>}
+          </div>
+          {contactItems.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 18px', marginTop: 8, fontSize: '0.9em', color: '#374151' }}>
+              {contactItems.map(([k, v], i) => (
+                <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  <Icon name={k} size={11} color={colIf(t.headerIcons) || '#374151'} />{v}
+                </span>
+              ))}
+            </div>
+          )}
+        </>
       )}
       {sections.map(sec => {
+        if (!isSectionVisible(sec, visibleBlockIds)) return null;
         const body = renderSectionBody(sec, util, {
           expVariant: sec.type === 'work_experience' ? 'date-column' : undefined,
           eduVariant: sec.type === 'education' ? 'date-column' : undefined,
         });
         if (!body) return null;
         const adj = sectionAdjustments?.[sec.id];
-        return <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}><Heading iconName={SEC_ICONS[sec.type]}>{sec.title}</Heading>{body}</div>;
+        const headingVisible = showSectionHeading(sec, visibleBlockIds);
+        return (
+          <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
+            {headingVisible && <Heading iconName={SEC_ICONS[sec.type]}>{sec.title}</Heading>}
+            {body}
+          </div>
+        );
       })}
     </div>
   );
@@ -1095,7 +1195,11 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
 
   const [computedScale,      setComputedScale]      = useState(scale || 0.6);
   const [contentHeight,      setContentHeight]      = useState(0);
+  // sectionAdjustments: print-mode margin pushes (adj map from computeGeometricAdjustments)
   const [sectionAdjustments, setSectionAdjustments] = useState({});
+  // pageSlices: discrete per-page block ID arrays for preview mode.
+  // null = pre-first-measurement (show all content on a single card).
+  const [pageSlices,         setPageSlices]         = useState(null);
 
   const ds = { ...DEFAULT_DESIGN, ...(designSettings || {}) };
   const ss = { ...DEFAULT_SPACING, ...(resume?.spacing_settings || {}) };
@@ -1157,9 +1261,12 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
     if (!contentRef.current || !contentHeight) return;
     clearTimeout(detectionTimer.current);
     detectionTimer.current = setTimeout(() => {
-      const newAdj = computeGeometricAdjustments(contentRef.current, config);
+      const { adj: newAdj, pageSlices: newSlices } = computeGeometricAdjustments(contentRef.current, config);
       setSectionAdjustments(prev =>
         JSON.stringify(newAdj) === JSON.stringify(prev) ? prev : newAdj,
+      );
+      setPageSlices(prev =>
+        JSON.stringify(newSlices) === JSON.stringify(prev) ? prev : newSlices,
       );
     }, config.debounceMs);
     return () => clearTimeout(detectionTimer.current);
@@ -1204,58 +1311,58 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
     );
   }
 
-  // ── Preview mode — page cards ────────────────────────────────────────────────
+  // ── Preview mode — discrete per-page cards ───────────────────────────────────
+  //
+  // pageSlices is null until the first measurement completes.  During that
+  // pre-measurement window we render one card with no filtering (all content)
+  // so the user sees something immediately.  After measurement each card
+  // renders only the blocks that belong on that page — no embedded whitespace.
 
-  const effH = effectiveContentHeight(config);
-
-  const totalAdjustment = Object.values(sectionAdjustments).reduce((s, v) => s + v, 0);
-  const adjustedHeight  = contentHeight + totalAdjustment;
-
-  // pageStarts[i] = Y position (content px) where page i begins.
-  const pageStarts = adjustedHeight > 0 ? buildPageStarts(adjustedHeight, config) : [0];
-  const numPages   = pageStarts.length;
+  // (null || [null]) = [null] → one card, visibleBlockIds=null → show all
+  const slices   = pageSlices || [null];
+  const numPages = slices.length;
 
   return (
     <div ref={containerRef} className={`overflow-auto ${className}`} style={{ background: '#CBD5E1', position: 'relative' }}>
       <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-        {/* Hidden measurement container — position:absolute keeps it out of flow;
-            position:relative on the inner div makes it the offsetParent root. */}
+        {/* Hidden measurement container — renders all content at fixed width for
+            getBoundingClientRect measurement; invisible and out of document flow. */}
         <div style={{ position: 'absolute', top: -9999, left: -9999, width: page.width, visibility: 'hidden', pointerEvents: 'none' }}>
           <div ref={contentRef} style={{ position: 'relative' }}>
             <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
           </div>
         </div>
 
-        {/* One card per page.  Each card clips its content slice via overflow:hidden.
-            The inner offset wrapper shifts the full-height content so the correct
-            slice is visible within the card's fixed height. */}
-        {pageStarts.map((contentStart, i) => {
-          // Subsequent pages start with the same top margin the template applies.
-          const topPad = i === 0 ? 0 : page.marginTop;
-          return (
-            <div key={i} style={{
-              width:     page.width * s,
-              height:    page.height * s,
-              overflow:  'hidden',
-              flexShrink: 0,
-              position:  'relative',
-              background: '#fff',
-              boxShadow: '0 4px 24px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.08)',
-            }}>
-              <div style={{ width: page.width, transformOrigin: 'top left', transform: `scale(${s})` }}>
-                <div style={{ marginTop: -contentStart + topPad }}>
-                  <TemplateComp resume={resume || {}} ds={ds} ss={ss} sectionAdjustments={sectionAdjustments} />
-                  {hasFooter && (
-                    <div style={{ borderTop: '1px solid #e0e0e0', padding: '6px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8pt', color: '#888', background: '#fff' }}>
-                      <span>{[fs.name && pi.name, fs.email && pi.email].filter(Boolean).join(' · ')}</span>
-                      {fs.pageNumbers && <span>Page {i + 1} of {numPages}</span>}
-                    </div>
-                  )}
+        {/* One card per page.  Each card renders only its assigned blocks via
+            visibleBlockIds.  overflow:hidden clips the last page if content is
+            shorter than page.height (correct) or overflows due to a single
+            oversized block (acceptable fallback). */}
+        {slices.map((sliceIds, i) => (
+          <div key={i} style={{
+            width:     page.width * s,
+            height:    page.height * s,
+            overflow:  'hidden',
+            flexShrink: 0,
+            position:  'relative',
+            background: '#fff',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.08)',
+          }}>
+            <div style={{ width: page.width, transformOrigin: 'top left', transform: `scale(${s})` }}>
+              <TemplateComp
+                resume={resume || {}} ds={ds} ss={ss}
+                sectionAdjustments={{}}
+                visibleBlockIds={sliceIds}
+                showHeader={i === 0}
+              />
+              {hasFooter && i === numPages - 1 && (
+                <div style={{ borderTop: '1px solid #e0e0e0', padding: '6px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8pt', color: '#888', background: '#fff' }}>
+                  <span>{[fs.name && pi.name, fs.email && pi.email].filter(Boolean).join(' · ')}</span>
+                  {fs.pageNumbers && <span>Page {i + 1} of {numPages}</span>}
                 </div>
-              </div>
+              )}
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
     </div>
   );
