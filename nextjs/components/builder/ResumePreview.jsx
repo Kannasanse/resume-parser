@@ -1071,34 +1071,26 @@ const TEMPLATE_COMPONENTS = {
 
 // ── ResumePreview default export ──────────────────────────────────────────────
 
-// Detect sections whose headings would be orphaned at a page bottom.
-// Returns a map of { sectionId: extraMarginPx } using a single cumulative pass
-// so that cascading effects (earlier pushes shifting later sections) are handled.
+// Detect headings (section titles and entry headers) that would be orphaned at
+// a page bottom with no room for content beneath them.
+// Rule: push to the next page only when the element STARTS in the orphan zone
+// (last ~8% of the page). Long entries are allowed to break naturally across
+// pages — we never push an entire multi-bullet entry just because it spans a
+// boundary. Returns { id: extraMarginPx }, cumulative so cascade effects are handled.
 function detectOrphanAdjustments(contentEl, pageHeight) {
-  const ORPHAN_ZONE = pageHeight * 0.1; // last 10% of page (~84px on A4)
-  // Process sections and entries together in DOM order
+  const ORPHAN_ZONE = pageHeight * 0.08; // last ~90px on A4
   const blocks = contentEl.querySelectorAll('[data-section-id], [data-entry-id]');
   const adj = {};
   let cumulative = 0;
   blocks.forEach(el => {
     const effectiveTop = el.offsetTop + cumulative;
     const posOnPage = effectiveTop % pageHeight;
-
-    if (el.dataset.sectionId) {
-      // Push section heading to next page if it falls in the orphan zone
-      if (posOnPage > pageHeight - ORPHAN_ZONE) {
-        const push = pageHeight - posOnPage;
-        adj[el.dataset.sectionId] = push;
-        cumulative += push;
-      }
-    } else if (el.dataset.entryId) {
-      // Push entry to next page if it would be cut by a page boundary
-      const entryHeight = el.offsetHeight;
-      if (posOnPage > 0 && posOnPage + entryHeight > pageHeight) {
-        const push = pageHeight - posOnPage;
-        adj[el.dataset.entryId] = push;
-        cumulative += push;
-      }
+    // Push to next page only if the heading/entry header starts in the orphan zone
+    if (posOnPage > pageHeight - ORPHAN_ZONE) {
+      const key = el.dataset.sectionId || el.dataset.entryId;
+      const push = pageHeight - posOnPage;
+      adj[key] = push;
+      cumulative += push;
     }
   });
   return adj;
