@@ -1094,19 +1094,15 @@ function buildPageBreaks(totalHeight, page1Height, effectivePageHeight) {
 // least the heading + 2 lines of content are visible (not immediately orphaned).
 const EST_LINE_PX = 18; // ≈ 11pt × 1.15 line-height at 96 dpi
 function minStartSpace(el) {
+  const h = e => Math.round(e ? e.scrollHeight : EST_LINE_PX);
   if (el.dataset.sectionId) {
-    const headingH = el.firstElementChild ? el.firstElementChild.scrollHeight : EST_LINE_PX * 2;
+    const headingH = h(el.firstElementChild) || EST_LINE_PX * 2;
     const body     = el.children[1];
     const itemH    = body && body.children.length > 0
-      ? body.scrollHeight / body.children.length : EST_LINE_PX;
+      ? Math.round(body.scrollHeight / body.children.length) : EST_LINE_PX;
     return headingH + itemH * 2;
   }
-  // entry: title row + subtitle row + 2 body lines
-  const r1 = el.firstElementChild;
-  const r2 = el.children[1];
-  return (r1 ? r1.scrollHeight : EST_LINE_PX)
-       + (r2 ? r2.scrollHeight : EST_LINE_PX)
-       + EST_LINE_PX * 2;
+  return h(el.firstElementChild) + h(el.children[1]) + EST_LINE_PX * 2;
 }
 
 // Recalculate page-break adjustments for all sections and entries.
@@ -1120,8 +1116,8 @@ function detectOrphanAdjustments(contentEl, page1Height, effectivePageHeight) {
   let cumulative = 0;
 
   blocks.forEach(el => {
-    const effectiveTop = getOffsetTopFromRoot(el, contentEl) + cumulative;
-    const elHeight     = el.scrollHeight;
+    const effectiveTop = Math.round(getOffsetTopFromRoot(el, contentEl)) + cumulative;
+    const elHeight     = Math.round(el.scrollHeight);
     const key          = el.dataset.sectionId || el.dataset.entryId;
 
     let pageEnd, nextPageH;
@@ -1164,22 +1160,44 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
   const pageId = ds.pageSize || 'a4';
   const page   = pageId === 'letter' ? { id: 'letter', width: 816, height: 1056 } : { id: 'a4', width: 794, height: 1123 };
 
+  const measureContent = useCallback(() => {
+    if (contentRef.current) setContentHeight(Math.round(contentRef.current.scrollHeight));
+  }, []);
+
   const updateScale = useCallback(() => {
     if (scale !== null || !containerRef.current) return;
     const containerW = containerRef.current.clientWidth - 16;
     setComputedScale(Math.min(containerW / page.width, 1));
   }, [scale, page.width]);
 
+  // Layout ResizeObserver — fires on container resize AND content size changes.
   useEffect(() => {
     updateScale();
+    measureContent();
     const ro = new ResizeObserver(() => {
       updateScale();
-      if (contentRef.current) setContentHeight(contentRef.current.scrollHeight);
+      measureContent();
     });
     if (containerRef.current) ro.observe(containerRef.current);
     if (contentRef.current)   ro.observe(contentRef.current);
     return () => ro.disconnect();
-  }, [updateScale]);
+  }, [updateScale, measureContent]);
+
+  // Zoom-change listener — browser zoom shifts devicePixelRatio which can
+  // change subpixel measurements. Re-measure whenever DPR changes.
+  useEffect(() => {
+    const onZoom = () => measureContent();
+    // matchMedia on the current DPR; when it stops matching, DPR changed.
+    let mq = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+    const rebuild = () => {
+      onZoom();
+      mq.removeEventListener('change', rebuild);
+      mq = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+      mq.addEventListener('change', rebuild);
+    };
+    mq.addEventListener('change', rebuild);
+    return () => mq.removeEventListener('change', rebuild);
+  }, [measureContent]);
 
   // Re-run page-break detection on content change, debounced to 150 ms.
   useEffect(() => {
