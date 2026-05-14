@@ -1,7 +1,7 @@
 'use client';
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { buildLayoutConfig, effectiveContentHeight } from '../lib/layoutConfig.js';
-import { buildBlocksFromDOM, paginateBlocks, pageBreaksToAdjustments } from '../lib/paginationEngine.js';
+import { buildLayoutConfig, effectiveContentHeight } from '@/lib/layoutConfig.js';
+import { buildBlocksFromDOM, paginateBlocks, pageBreaksToAdjustments } from '@/lib/paginationEngine.js';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
