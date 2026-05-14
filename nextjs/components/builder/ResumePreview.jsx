@@ -1077,15 +1077,10 @@ const TEMPLATE_COMPONENTS = {
 // (last ~8% of the page). Long entries are allowed to break naturally across
 // pages — we never push an entire multi-bullet entry just because it spans a
 // boundary. Returns { id: extraMarginPx }, cumulative so cascade effects are handled.
-// Walk up offsetParent chain to get element's true top relative to a root element.
+// Get element's top relative to a root element using viewport rects.
+// Reliable regardless of positioning context (works even when root is position:static).
 function getOffsetTopFromRoot(el, root) {
-  let top = 0;
-  let cur = el;
-  while (cur && cur !== root) {
-    top += cur.offsetTop;
-    cur = cur.offsetParent;
-  }
-  return top;
+  return el.getBoundingClientRect().top - root.getBoundingClientRect().top;
 }
 
 // pageBreakYs: sorted array of content-space Y positions where page breaks occur.
