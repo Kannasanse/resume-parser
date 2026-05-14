@@ -116,7 +116,7 @@ function PhotoPlaceholder({ size = 72, shape = 'circle', name = '', src = null }
 
 // ── Utility: compute render values from merged settings ────────────────────────
 
-function tmplUtils(ds, ss, ls = {}) {
+function tmplUtils(ds, ss, ls = {}, blockAdj = {}) {
   const safe = (n, lo, hi, d) => (typeof n === 'number' && !isNaN(n) ? Math.max(lo, Math.min(hi, n)) : d);
   const fontSize   = safe(ss.fontSize, 8, 14, 11);
   const lineHeight = safe(ss.lineHeight, 1, 1.8, 1.15);
@@ -134,7 +134,7 @@ function tmplUtils(ds, ss, ls = {}) {
   const hIconSz       = Math.round(11 * titleSizeMult);
   const hFilledSz     = Math.round(15 * titleSizeMult);
   const hFilledIconSz = Math.round(8  * titleSizeMult);
-  return { fontSize, lineHeight, padX, padY, entryGapPx, accent, t, colIf, fontFamily, titleSizeMult, listStyle, hIconSz, hFilledSz, hFilledIconSz };
+  return { fontSize, lineHeight, padX, padY, entryGapPx, accent, t, colIf, fontFamily, titleSizeMult, listStyle, hIconSz, hFilledSz, hFilledIconSz, blockAdj };
 }
 
 // ── Extract structured data from DB resume ────────────────────────────────────
@@ -312,11 +312,10 @@ function BulletList({ bullets, listStyle }) {
 }
 
 function ExperienceBody({ secs, util, variant }) {
-  const { entryGapPx, t, colIf, listStyle } = util;
+  const { entryGapPx, t, colIf, listStyle, blockAdj } = util;
   const allEntries = secs.flatMap(sec => {
-    // Support both key names: workOrder (DesignPanel) and legacy order key
     const order = sec.display_settings?.workOrder || sec.display_settings?.order || 'title-first';
-    return (sec.content?.entries || []).map(e => ({ ...e, _order: order }));
+    return (sec.content?.entries || []).map((e, idx) => ({ ...e, _order: order, _secId: sec.id, _idx: idx }));
   });
   if (!allEntries.length) return null;
 
@@ -327,9 +326,11 @@ function ExperienceBody({ secs, util, variant }) {
         const titleFirst = e._order !== 'employer-first';
         const primary    = titleFirst ? (e.title || '') : (e.employer || '');
         const secondary  = titleFirst ? (e.employer || '') : (e.title || '');
+        const entryId    = `${e._secId}-${e._idx}`;
+        const adjTop     = blockAdj?.[entryId];
         if (variant === 'date-column') {
           return (
-            <div key={i} className="resume-entry-block" style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: 14, marginBottom: gap }}>
+            <div key={i} className="resume-entry-block" data-entry-id={entryId} style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: 14, marginBottom: gap, ...(adjTop ? { marginTop: adjTop } : {}) }}>
               <div style={{ fontSize: '0.88em', color: colIf(t.dates) || '#374151' }}>
                 <div>{e.dates}</div>
                 <div style={{ color: '#6B7280' }}>{e.location}</div>
@@ -344,7 +345,7 @@ function ExperienceBody({ secs, util, variant }) {
         }
         if (variant === 'stacked') {
           return (
-            <div key={i} className="resume-entry-block" style={{ marginBottom: gap }}>
+            <div key={i} className="resume-entry-block" data-entry-id={entryId} style={{ marginBottom: gap, ...(adjTop ? { marginTop: adjTop } : {}) }}>
               <div style={{ fontWeight: 700 }}>{primary}</div>
               <div style={{ fontStyle: 'italic', fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</div>
               <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280', marginBottom: 3 }}>{e.dates}{e.location ? ` | ${e.location}` : ''}</div>
@@ -354,7 +355,7 @@ function ExperienceBody({ secs, util, variant }) {
         }
         if (variant === 'inline-title-role') {
           return (
-            <div key={i} className="resume-entry-block" style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 14, marginBottom: gap }}>
+            <div key={i} className="resume-entry-block" data-entry-id={entryId} style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 14, marginBottom: gap, ...(adjTop ? { marginTop: adjTop } : {}) }}>
               <div style={{ fontSize: '0.88em', color: colIf(t.dates) || '#374151' }}>
                 <div>{e.dates}</div>
                 <div style={{ color: '#6B7280' }}>{e.location}</div>
@@ -368,7 +369,7 @@ function ExperienceBody({ secs, util, variant }) {
         }
         // default
         return (
-          <div key={i} className="resume-entry-block" style={{ marginBottom: gap }}>
+          <div key={i} className="resume-entry-block" data-entry-id={entryId} style={{ marginBottom: gap, ...(adjTop ? { marginTop: adjTop } : {}) }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
               <div style={{ fontWeight: 700 }}>{primary}</div>
               <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280', whiteSpace: 'nowrap' }}>{e.dates}</div>
@@ -386,11 +387,10 @@ function ExperienceBody({ secs, util, variant }) {
 }
 
 function EducationBody({ secs, util, variant }) {
-  const { entryGapPx, t, colIf } = util;
+  const { entryGapPx, t, colIf, blockAdj } = util;
   const allEntries = secs.flatMap(sec => {
-    // Support both key names: eduOrder (DesignPanel) and legacy order key
     const order = sec.display_settings?.eduOrder || sec.display_settings?.order || 'school-first';
-    return (sec.content?.entries || []).map(e => ({ ...e, _order: order }));
+    return (sec.content?.entries || []).map((e, idx) => ({ ...e, _order: order, _secId: sec.id, _idx: idx }));
   });
   if (!allEntries.length) return null;
 
@@ -401,10 +401,12 @@ function EducationBody({ secs, util, variant }) {
         const schoolFirst = e._order !== 'degree-first';
         const primary    = schoolFirst ? (e.school || '') : (e.degree || '');
         const secondary  = schoolFirst ? (e.degree || '') : (e.school || '');
+        const entryId    = `${e._secId}-${e._idx}`;
+        const adjTop     = blockAdj?.[entryId];
 
         if (variant === 'date-column') {
           return (
-            <div key={i} style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: 14, marginBottom: gap }}>
+            <div key={i} className="resume-entry-block" data-entry-id={entryId} style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: 14, marginBottom: gap, ...(adjTop ? { marginTop: adjTop } : {}) }}>
               <div style={{ fontSize: '0.88em', color: colIf(t.dates) || '#374151' }}>
                 <div>{e.dates}</div>
                 <div style={{ color: '#6B7280' }}>{e.location}</div>
@@ -417,7 +419,7 @@ function EducationBody({ secs, util, variant }) {
           );
         }
         return (
-          <div key={i} style={{ marginBottom: gap }}>
+          <div key={i} className="resume-entry-block" data-entry-id={entryId} style={{ marginBottom: gap, ...(adjTop ? { marginTop: adjTop } : {}) }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
               <div style={{ fontWeight: 700 }}>{primary}</div>
               <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280' }}>{e.dates}</div>
@@ -490,22 +492,26 @@ function CertsBody({ sec, util, variant }) {
 }
 
 function ProjectsBody({ sec, util }) {
-  const { entryGapPx, t, colIf, listStyle } = util;
+  const { entryGapPx, t, colIf, listStyle, blockAdj } = util;
   const entries = sec?.content?.entries || [];
   if (!entries.length) return null;
   return (
     <div>
-      {entries.map((p, i) => (
-        <div key={i} className="resume-entry-block" style={{ marginBottom: i < entries.length - 1 ? entryGapPx * 0.75 : 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <div style={{ fontWeight: 700 }}>{p.title}</div>
-            {p.dates && <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280' }}>{p.dates}</div>}
+      {entries.map((p, i) => {
+        const entryId = `${sec.id}-${i}`;
+        const adjTop  = blockAdj?.[entryId];
+        return (
+          <div key={i} className="resume-entry-block" data-entry-id={entryId} style={{ marginBottom: i < entries.length - 1 ? entryGapPx * 0.75 : 0, ...(adjTop ? { marginTop: adjTop } : {}) }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <div style={{ fontWeight: 700 }}>{p.title}</div>
+              {p.dates && <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280' }}>{p.dates}</div>}
+            </div>
+            {p.role && <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{p.role}</div>}
+            {p.link && <div style={{ fontSize: '0.85em', color: '#6B7280' }}>{p.link}</div>}
+            <RichBody entry={p} listStyle={listStyle} />
           </div>
-          {p.role && <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{p.role}</div>}
-          {p.link && <div style={{ fontSize: '0.85em', color: '#6B7280' }}>{p.link}</div>}
-          <RichBody entry={p} listStyle={listStyle} />
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -612,7 +618,7 @@ function buildDetailsBlock(pi, ds, util) {
 // ── Template 1: Modern ────────────────────────────────────────────────────────
 
 function TemplateModern({ resume, ds, ss, sectionAdjustments }) {
-  const util = tmplUtils(ds, ss, resume.layout_settings || {});
+  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult, hIconSz, hFilledSz, hFilledIconSz } = util;
   const { pi, sections } = buildRenderData(resume);
   const headingIcon = resume.layout_settings?.headingIcon || 'none';
@@ -658,7 +664,7 @@ function TemplateModern({ resume, ds, ss, sectionAdjustments }) {
 const ATLANTIC_SIDEBAR_TYPES = new Set(['summary', 'languages', 'hobbies', 'references']);
 
 function TemplateAtlanticBlue({ resume, ds, ss, sectionAdjustments }) {
-  const util = tmplUtils(ds, ss, resume.layout_settings || {});
+  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments);
   const { fontSize, lineHeight, accent, t, colIf, fontFamily, titleSizeMult, hIconSz, hFilledSz, hFilledIconSz } = util;
   const { pi, sections } = buildRenderData(resume);
   const sideColor = '#1F2A44';
@@ -745,7 +751,7 @@ function TemplateAtlanticBlue({ resume, ds, ss, sectionAdjustments }) {
 // ── Template 3: Corporate (centered, classic) ─────────────────────────────────
 
 function TemplateCorporate({ resume, ds, ss, sectionAdjustments }) {
-  const util = tmplUtils(ds, ss, resume.layout_settings || {});
+  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult, hIconSz, hFilledSz, hFilledIconSz } = util;
   const { pi, sections } = buildRenderData(resume);
   const headingIcon = resume.layout_settings?.headingIcon || 'none';
@@ -804,7 +810,7 @@ function TemplateCorporate({ resume, ds, ss, sectionAdjustments }) {
 const CREST_LEFT_TYPES = new Set(['summary', 'skills', 'languages', 'certifications', 'hobbies']);
 
 function TemplateAtlanticCrest({ resume, ds, ss, sectionAdjustments }) {
-  const util = tmplUtils(ds, ss, resume.layout_settings || {});
+  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult, hIconSz, hFilledSz, hFilledIconSz } = util;
   const { pi, sections } = buildRenderData(resume);
   const bannerColor = '#1F2A44';
@@ -873,7 +879,7 @@ function TemplateAtlanticCrest({ resume, ds, ss, sectionAdjustments }) {
 // ── Template 5: Mercury Flow (gray banner + date column) ──────────────────────
 
 function TemplateMercuryFlow({ resume, ds, ss, sectionAdjustments }) {
-  const util = tmplUtils(ds, ss, resume.layout_settings || {});
+  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult, hIconSz, hFilledSz, hFilledIconSz } = util;
   const { pi, sections } = buildRenderData(resume);
   const headingIcon = resume.layout_settings?.headingIcon || 'none';
@@ -931,7 +937,7 @@ function TemplateMercuryFlow({ resume, ds, ss, sectionAdjustments }) {
 // ── Template 6: Steady Form (photo right + gray bar headings) ─────────────────
 
 function TemplateSteadyForm({ resume, ds, ss, sectionAdjustments }) {
-  const util = tmplUtils(ds, ss, resume.layout_settings || {});
+  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult, hIconSz, hFilledSz, hFilledIconSz } = util;
   const { pi, sections } = buildRenderData(resume);
   const headingIcon = resume.layout_settings?.headingIcon || 'none';
@@ -998,7 +1004,7 @@ function TemplateSteadyForm({ resume, ds, ss, sectionAdjustments }) {
 // ── Template 7: Executive (editorial serif, date-column) ──────────────────────
 
 function TemplateExecutive({ resume, ds, ss, sectionAdjustments }) {
-  const util = tmplUtils(ds, ss, resume.layout_settings || {});
+  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult, hIconSz, hFilledSz, hFilledIconSz } = util;
   const { pi, sections } = buildRenderData(resume);
   const headingIcon = resume.layout_settings?.headingIcon || 'none';
@@ -1070,16 +1076,29 @@ const TEMPLATE_COMPONENTS = {
 // so that cascading effects (earlier pushes shifting later sections) are handled.
 function detectOrphanAdjustments(contentEl, pageHeight) {
   const ORPHAN_ZONE = pageHeight * 0.1; // last 10% of page (~84px on A4)
-  const blocks = contentEl.querySelectorAll('[data-section-id]');
+  // Process sections and entries together in DOM order
+  const blocks = contentEl.querySelectorAll('[data-section-id], [data-entry-id]');
   const adj = {};
   let cumulative = 0;
   blocks.forEach(el => {
     const effectiveTop = el.offsetTop + cumulative;
     const posOnPage = effectiveTop % pageHeight;
-    if (posOnPage > pageHeight - ORPHAN_ZONE) {
-      const push = pageHeight - posOnPage;
-      adj[el.dataset.sectionId] = push;
-      cumulative += push;
+
+    if (el.dataset.sectionId) {
+      // Push section heading to next page if it falls in the orphan zone
+      if (posOnPage > pageHeight - ORPHAN_ZONE) {
+        const push = pageHeight - posOnPage;
+        adj[el.dataset.sectionId] = push;
+        cumulative += push;
+      }
+    } else if (el.dataset.entryId) {
+      // Push entry to next page if it would be cut by a page boundary
+      const entryHeight = el.offsetHeight;
+      if (posOnPage > 0 && posOnPage + entryHeight > pageHeight) {
+        const push = pageHeight - posOnPage;
+        adj[el.dataset.entryId] = push;
+        cumulative += push;
+      }
     }
   });
   return adj;
@@ -1134,7 +1153,9 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
   const fs = resume?.footer_settings;
   const hasFooter = fs && (fs.pageNumbers || (fs.email && pi.email) || (fs.name && pi.name));
 
-  // In printMode we render a plain div — no scaling, no wrapper chrome
+  // In printMode we render a plain div — no scaling, no wrapper chrome.
+  // sectionAdjustments (computed by effects below) are passed so entries/sections
+  // that would be cut at page boundaries are pushed to the next page, matching the PDF.
   if (printMode) {
     return (
       <div style={{ width: page.width, background: '#fff' }}>
@@ -1145,7 +1166,7 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
           }
         `}</style>
         <div ref={contentRef}>
-          <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
+          <TemplateComp resume={resume || {}} ds={ds} ss={ss} sectionAdjustments={sectionAdjustments} />
         </div>
         {hasFooter && (
           <div style={{ borderTop: '1px solid #e0e0e0', padding: '6px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8pt', color: '#888', background: '#fff' }}>
