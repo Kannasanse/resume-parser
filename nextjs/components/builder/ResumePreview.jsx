@@ -1222,7 +1222,11 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
 
   const measureContent = useCallback(() => {
     if (!contentRef.current || !fontsReady.current) return;
-    const h = contentRef.current.getBoundingClientRect().height;
+    // scrollHeight returns the true unscaled layout height regardless of any
+    // CSS transform applied to ancestors.  getBoundingClientRect().height
+    // returns the visual (scaled) height which underestimates the content
+    // height when the preview panel is narrow and s < 1.
+    const h = contentRef.current.scrollHeight;
     setContentHeight(Math.round(h));
   }, []);
 

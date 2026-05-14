@@ -224,6 +224,18 @@ export function computeGeometricAdjustments(contentEl, config) {
   const adj      = {};
   let cumulative = 0;
 
+  /** 0-based index of the page that contains the given adjusted top position. */
+  function pageIdxFor(adjustedTop) {
+    if (adjustedTop < pageH) return 0;
+    return 1 + Math.floor((adjustedTop - pageH) / effH);
+  }
+
+  // blockPageIdx stores the page each block effectively lands on after all
+  // cumulative adjustments.  Blocks that were never pushed still carry the
+  // page index derived from their natural position in the measurement DOM.
+  /** @type {Record<string, number>} */
+  const blockPageIdx = {};
+
   contentEl.querySelectorAll('[data-section-id], [data-entry-id]').forEach((el) => {
     const rect    = el.getBoundingClientRect();
     const elTop   = rect.top - containerRect.top + cumulative;
@@ -232,31 +244,39 @@ export function computeGeometricAdjustments(contentEl, config) {
     const pageEnd   = pageBoundaryAfter(elTop);
     const remaining = pageEnd - elTop;
 
-    if (remaining <= 0) return; // already exactly at boundary — no double-push
+    if (remaining <= 0) {
+      // Already sitting exactly at a page boundary — no push, keep position.
+      blockPageIdx[key] = pageIdxFor(elTop);
+      return;
+    }
 
     // Push only when the minimum start space (label/heading + first N children)
     // does not fit in the remaining space on this page.
-    // The full element height (elH) is never used — sections span pages naturally
-    // and using elH would incorrectly push entire multi-entry sections.
     if (remaining < minStartSpace(el)) {
       adj[key]    = remaining;
       cumulative += remaining;
+      // Block now starts at the next page boundary (pageEnd).
+      blockPageIdx[key] = pageIdxFor(pageEnd);
+    } else {
+      blockPageIdx[key] = pageIdxFor(elTop);
     }
   });
 
-  // ── Build page slices — ordered block IDs assigned to pages ─────────────────
-  // Walk the DOM again in order and assign each ID to a page based on adj.
-  // A non-zero adj entry means "this block starts a new page".
+  // ── Build page slices ────────────────────────────────────────────────────────
+  // Assign each block to the page it naturally or forcibly lands on.
+  // Using position-based page indices (blockPageIdx) instead of adj-presence
+  // ensures blocks that naturally flow past a page boundary (no push needed)
+  // are still assigned to the correct page slice.
   const orderedIds = [];
   contentEl.querySelectorAll('[data-section-id], [data-entry-id]').forEach((el) => {
     orderedIds.push(el.dataset.sectionId || el.dataset.entryId);
   });
 
+  const totalPages = orderedIds.reduce((m, id) => Math.max(m, (blockPageIdx[id] || 0) + 1), 1);
   /** @type {string[][]} */
-  const pageSlices = [[]];
+  const pageSlices = Array.from({ length: totalPages }, () => []);
   for (const id of orderedIds) {
-    if (adj[id] > 0) pageSlices.push([]);
-    pageSlices[pageSlices.length - 1].push(id);
+    pageSlices[blockPageIdx[id] || 0].push(id);
   }
 
   return { adj, pageSlices };
