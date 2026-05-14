@@ -80,6 +80,49 @@ export async function sendPasswordResetEmail({ to, resetUrl }) {
   });
 }
 
+export async function sendCreditRequestNotification({ to, userName, userEmail, amount, reason, reviewUrl }) {
+  await sendEmail({
+    to,
+    subject: `Credit request from ${userName} — Resume Builder`,
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+        <h2>New credit request</h2>
+        <p><strong>${userName}</strong> (${userEmail}) has requested <strong>${amount} credits</strong>.</p>
+        ${reason ? `<p style="background:#f5f5f5;padding:12px;border-radius:6px;font-style:italic">"${reason}"</p>` : ''}
+        <p style="margin:24px 0">
+          <a href="${reviewUrl}" style="background:#FF7814;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600">
+            Review Request
+          </a>
+        </p>
+        <p style="color:#888;font-size:12px">Or visit: ${reviewUrl}</p>
+      </div>
+    `,
+  });
+}
+
+export async function sendCreditRequestDecisionEmail({ to, action, amount, adminNotes }) {
+  const approved = action === 'approve';
+  await sendEmail({
+    to,
+    subject: `Your credit request was ${approved ? 'approved' : 'rejected'} — Resume Builder`,
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+        <h2>Credit request ${approved ? 'approved' : 'rejected'}</h2>
+        ${approved
+          ? `<p>Great news! Your credit request for <strong>${amount} credits</strong> has been approved and added to your account.</p>`
+          : `<p>Your credit request has been reviewed and was not approved at this time.</p>`
+        }
+        ${adminNotes ? `<p style="background:#f5f5f5;padding:12px;border-radius:6px;font-style:italic">Admin note: "${adminNotes}"</p>` : ''}
+        <p style="margin:24px 0">
+          <a href="${APP_URL}/credits" style="background:#FF7814;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600">
+            View Credits
+          </a>
+        </p>
+      </div>
+    `,
+  });
+}
+
 export async function sendRoleChangedEmail({ to, newRole }) {
   await sendEmail({
     to,

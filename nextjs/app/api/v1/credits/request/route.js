@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth-helpers.js';
 import supabase from '@/lib/supabase.js';
+import { sendCreditRequestNotification } from '@/lib/email.js';
 
 // POST /api/v1/credits/request — submit credit request
 export async function POST(request) {
@@ -31,6 +32,34 @@ export async function POST(request) {
     }).select().single();
 
     if (error) throw error;
+
+    // Notify all admins by email (fire-and-forget)
+    const { data: requesterProfile } = await supabase
+      .from('profiles')
+      .select('first_name, last_name, email')
+      .eq('id', user.id)
+      .single();
+
+    const { data: admins } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('role', 'admin');
+
+    if (admins?.length && requesterProfile) {
+      const userName = [requesterProfile.first_name, requesterProfile.last_name].filter(Boolean).join(' ') || requesterProfile.email;
+      const reviewUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/admin/credits`;
+      await Promise.allSettled(
+        admins.map(a => sendCreditRequestNotification({
+          to: a.email,
+          userName,
+          userEmail: requesterProfile.email,
+          amount: amount_requested,
+          reason,
+          reviewUrl,
+        }))
+      );
+    }
+
     return NextResponse.json({ ok: true, request: data });
   } catch (err) {
     if (err instanceof Response) return err;

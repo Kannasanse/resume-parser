@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth-helpers.js';
 import supabase from '@/lib/supabase.js';
 import { grantCredits } from '@/lib/credits.js';
+import { sendCreditRequestDecisionEmail } from '@/lib/email.js';
 
 // POST /api/v1/admin/credits/requests/[reqId] — approve or reject
 export async function POST(request, { params }) {
@@ -37,6 +38,23 @@ export async function POST(request, { params }) {
         status: 'rejected', reviewed_by: adminUser.id, reviewed_at: now,
         admin_notes: admin_notes || null, updated_at: now,
       }).eq('id', reqId);
+    }
+
+    // Notify user of decision (fire-and-forget)
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('id', req.user_id)
+      .single();
+
+    if (userProfile?.email) {
+      const finalAmount = action === 'approve' ? (amount_override || req.amount_requested) : null;
+      sendCreditRequestDecisionEmail({
+        to: userProfile.email,
+        action,
+        amount: finalAmount,
+        adminNotes: admin_notes || null,
+      }).catch(() => {});
     }
 
     return NextResponse.json({ ok: true });

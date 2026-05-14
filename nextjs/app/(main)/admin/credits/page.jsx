@@ -6,6 +6,28 @@ function fmt(date) {
   return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+function fmtTime(date) {
+  if (!date) return '—';
+  return new Date(date).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
+const TX_TYPE_LABELS = {
+  ats_score:        'ATS Score Analysis',
+  resume_import:    'Resume Import (AI)',
+  admin_grant:      'Admin Grant',
+  initial_grant:    'Welcome Credits',
+  request_approved: 'Request Approved',
+};
+
+function TxAmount({ amount }) {
+  const positive = amount > 0;
+  return (
+    <span style={{ color: positive ? '#059669' : '#D93025', fontWeight: 600 }}>
+      {positive ? '+' : ''}{amount}
+    </span>
+  );
+}
+
 const STATUS_CONFIG = {
   pending:  { label: 'Pending',  bg: '#FEF3C7', color: '#D97706', border: '#FDE68A' },
   approved: { label: 'Approved', bg: '#ECFDF5', color: '#059669', border: '#BBF7D0' },
@@ -146,8 +168,13 @@ function ReviewModal({ req, onClose, onDone }) {
 export default function AdminCreditsPage() {
   const [users, setUsers] = useState([]);
   const [requests, setRequests] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [txTotal, setTxTotal] = useState(0);
+  const [txPage, setTxPage] = useState(1);
+  const [txUserFilter, setTxUserFilter] = useState('');
   const [reqFilter, setReqFilter] = useState('pending');
   const [loading, setLoading] = useState(true);
+  const [txLoading, setTxLoading] = useState(false);
   const [grantTarget, setGrantTarget] = useState(null);
   const [reviewTarget, setReviewTarget] = useState(null);
   const [successMsg, setSuccessMsg] = useState('');
@@ -165,7 +192,19 @@ export default function AdminCreditsPage() {
     setLoading(false);
   }, [reqFilter]);
 
+  const loadTransactions = useCallback(async () => {
+    setTxLoading(true);
+    const params = new URLSearchParams({ page: txPage });
+    if (txUserFilter) params.set('user_id', txUserFilter);
+    const res = await fetch(`/api/v1/admin/credits/transactions?${params}`);
+    const json = await res.json();
+    setTransactions(json.transactions || []);
+    setTxTotal(json.total || 0);
+    setTxLoading(false);
+  }, [txPage, txUserFilter]);
+
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { if (activeTab === 'history') loadTransactions(); }, [activeTab, loadTransactions]);
 
   const handleDone = (msg) => {
     setSuccessMsg(msg);
@@ -193,6 +232,7 @@ export default function AdminCreditsPage() {
         {[
           { id: 'requests', label: `Requests${pendingCount > 0 ? ` (${pendingCount})` : ''}` },
           { id: 'users',    label: 'All Users' },
+          { id: 'history',  label: 'Usage History' },
         ].map(t => (
           <button key={t.id} onClick={() => setActiveTab(t.id)}
             className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors
@@ -301,6 +341,84 @@ export default function AdminCreditsPage() {
               }
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Usage History tab */}
+      {activeTab === 'history' && (
+        <div>
+          {/* User filter */}
+          <div className="flex gap-3 items-center mb-4">
+            <select
+              value={txUserFilter}
+              onChange={e => { setTxUserFilter(e.target.value); setTxPage(1); }}
+              className="h-8 px-3 text-xs border border-ds-border rounded-lg bg-ds-card text-ds-text focus:outline-none focus:border-primary"
+            >
+              <option value="">All users</option>
+              {users.map(u => (
+                <option key={u.id} value={u.id}>{u.first_name} {u.last_name} ({u.email})</option>
+              ))}
+            </select>
+            <span className="text-xs text-ds-textMuted">{txTotal} total transactions</span>
+          </div>
+
+          <div className="bg-ds-card border border-ds-border rounded-xl overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-ds-border bg-ds-bg">
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-ds-textMuted">User</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-ds-textMuted">Type</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-ds-textMuted">Description</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-ds-textMuted">Credits</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-ds-textMuted">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {txLoading
+                  ? Array.from({length: 8}).map((_, i) => (
+                      <tr key={i}><td colSpan={5} className="px-4 py-3"><div className="h-4 bg-ds-border rounded animate-pulse" /></td></tr>
+                    ))
+                  : transactions.length === 0
+                    ? <tr><td colSpan={5} className="px-4 py-16 text-center text-ds-textMuted text-sm">No transactions found</td></tr>
+                    : transactions.map((tx, i) => (
+                        <tr key={tx.id} className={`${i > 0 ? 'border-t border-ds-border' : ''} hover:bg-ds-bg transition-colors`}>
+                          <td className="px-4 py-3">
+                            <div className="font-medium text-ds-text text-xs">{tx.profiles?.first_name} {tx.profiles?.last_name}</div>
+                            <div className="text-xs text-ds-textMuted">{tx.profiles?.email}</div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="text-xs font-medium text-ds-text">{TX_TYPE_LABELS[tx.type] || tx.type}</span>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-ds-textMuted max-w-xs truncate">{tx.description || '—'}</td>
+                          <td className="px-4 py-3 text-right text-sm"><TxAmount amount={tx.amount} /></td>
+                          <td className="px-4 py-3 text-right text-xs text-ds-textMuted whitespace-nowrap">{fmtTime(tx.created_at)}</td>
+                        </tr>
+                      ))
+                }
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {txTotal > 50 && (
+            <div className="flex justify-center gap-2 mt-4">
+              <button
+                onClick={() => setTxPage(p => Math.max(1, p - 1))}
+                disabled={txPage === 1}
+                className="h-8 px-3 text-xs font-semibold border border-ds-border rounded-lg text-ds-text hover:bg-ds-bg disabled:opacity-40 transition-colors">
+                Previous
+              </button>
+              <span className="h-8 px-3 text-xs flex items-center text-ds-textMuted">
+                Page {txPage} of {Math.ceil(txTotal / 50)}
+              </span>
+              <button
+                onClick={() => setTxPage(p => p + 1)}
+                disabled={txPage >= Math.ceil(txTotal / 50)}
+                className="h-8 px-3 text-xs font-semibold border border-ds-border rounded-lg text-ds-text hover:bg-ds-bg disabled:opacity-40 transition-colors">
+                Next
+              </button>
+            </div>
+          )}
         </div>
       )}
 
