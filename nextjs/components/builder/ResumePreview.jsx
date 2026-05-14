@@ -1071,15 +1071,8 @@ const TEMPLATE_COMPONENTS = {
 
 // ── ResumePreview default export ──────────────────────────────────────────────
 
-// Detect headings (section titles and entry headers) that would be orphaned at
-// a page bottom with no room for content beneath them.
-// Rule: push to the next page only when the element STARTS in the orphan zone
-// (last ~8% of the page). Long entries are allowed to break naturally across
-// pages — we never push an entire multi-bullet entry just because it spans a
-// boundary. Returns { id: extraMarginPx }, cumulative so cascade effects are handled.
-// Walk the offsetParent chain to root. Requires root to have position:relative
-// so it terminates the chain — all nested elements in non-positioned templates
-// will have root as their offsetParent.
+// Walk offsetParent chain to root. contentEl must be position:relative so it
+// terminates the chain for all non-positioned descendants.
 function getOffsetTopFromRoot(el, root) {
   let top = 0;
   let cur = el;
@@ -1090,58 +1083,64 @@ function getOffsetTopFromRoot(el, root) {
   return top;
 }
 
-// pageBreakYs: sorted array of content-space Y positions where page breaks occur.
-// Page 1 fills [0, page1Height]. Pages 2+ each fill effectivePageHeight.
-// This mirrors the PDF's @page rule: @page :first has no top/bottom margin,
-// pages 2+ get padY top+bottom margins, shrinking their content area.
 function buildPageBreaks(totalHeight, page1Height, effectivePageHeight) {
   const breaks = [];
   let y = page1Height;
-  while (y < totalHeight) {
-    breaks.push(y);
-    y += effectivePageHeight;
-  }
+  while (y < totalHeight) { breaks.push(y); y += effectivePageHeight; }
   return breaks;
 }
 
+// Estimate the minimum vertical space needed to START a block on a page so at
+// least the heading + 2 lines of content are visible (not immediately orphaned).
+const EST_LINE_PX = 18; // ≈ 11pt × 1.15 line-height at 96 dpi
+function minStartSpace(el) {
+  if (el.dataset.sectionId) {
+    const headingH = el.firstElementChild ? el.firstElementChild.scrollHeight : EST_LINE_PX * 2;
+    const body     = el.children[1];
+    const itemH    = body && body.children.length > 0
+      ? body.scrollHeight / body.children.length : EST_LINE_PX;
+    return headingH + itemH * 2;
+  }
+  // entry: title row + subtitle row + 2 body lines
+  const r1 = el.firstElementChild;
+  const r2 = el.children[1];
+  return (r1 ? r1.scrollHeight : EST_LINE_PX)
+       + (r2 ? r2.scrollHeight : EST_LINE_PX)
+       + EST_LINE_PX * 2;
+}
+
+// Recalculate page-break adjustments for all sections and entries.
+// Strategy (cumulative, single pass):
+//  • If a block fits entirely on one page but doesn't fit in remaining space → push.
+//  • If remaining space < heading + 2 lines of content → push.
+// Both mirror what the PDF does with break-inside:avoid + orphan/widow rules.
 function detectOrphanAdjustments(contentEl, page1Height, effectivePageHeight) {
-  const ORPHAN_ZONE_RATIO = 0.08;
   const blocks = contentEl.querySelectorAll('[data-section-id], [data-entry-id]');
   const adj = {};
   let cumulative = 0;
 
   blocks.forEach(el => {
     const effectiveTop = getOffsetTopFromRoot(el, contentEl) + cumulative;
-    const elHeight = el.offsetHeight;
-    const effectiveBottom = effectiveTop + elHeight;
+    const elHeight     = el.scrollHeight;
+    const key          = el.dataset.sectionId || el.dataset.entryId;
 
-    // Compute which page slot this element's top falls in
-    let pageStart, pageEnd;
+    let pageEnd, nextPageH;
     if (effectiveTop < page1Height) {
-      pageStart = 0;
-      pageEnd = page1Height;
+      pageEnd = page1Height; nextPageH = effectivePageHeight;
     } else {
       const idx = Math.floor((effectiveTop - page1Height) / effectivePageHeight);
-      pageStart = page1Height + idx * effectivePageHeight;
-      pageEnd = pageStart + effectivePageHeight;
-    }
-    const slotHeight = pageEnd - pageStart;
-    const posOnPage = effectiveTop - pageStart;
-    const orphanZone = slotHeight * ORPHAN_ZONE_RATIO;
-    const key = el.dataset.sectionId || el.dataset.entryId;
-
-    // Rule 1 — heading/entry starts in orphan zone (would be alone at bottom)
-    if (posOnPage > slotHeight - orphanZone) {
-      const push = pageEnd - effectiveTop;
-      adj[key] = push;
-      cumulative += push;
-      return;
+      pageEnd = page1Height + (idx + 1) * effectivePageHeight;
+      nextPageH = effectivePageHeight;
     }
 
-    // Rule 2 — entry (not section header) spans a page boundary AND fits on the
-    // next page. Mirrors CSS break-inside:avoid on .resume-entry-block in print.
-    // Only push if the entry fits; leave oversized entries to break naturally.
-    if (el.dataset.entryId && effectiveBottom > pageEnd && elHeight <= effectivePageHeight) {
+    const remaining = pageEnd - effectiveTop;
+    if (remaining <= 0) return; // already past boundary — no double-push
+
+    const fitAsWhole = elHeight <= nextPageH;
+    const needsPush  = (fitAsWhole && elHeight > remaining)   // whole block won't fit
+                    || remaining < minStartSpace(el);          // heading + 2 lines won't fit
+
+    if (needsPush) {
       const push = pageEnd - effectiveTop;
       adj[key] = push;
       cumulative += push;
@@ -1152,8 +1151,9 @@ function detectOrphanAdjustments(contentEl, page1Height, effectivePageHeight) {
 }
 
 export default function ResumePreview({ resume, designSettings = {}, scale = null, className = '', printMode = false }) {
-  const containerRef = useRef(null);
-  const contentRef  = useRef(null);
+  const containerRef      = useRef(null);
+  const contentRef        = useRef(null);
+  const detectionTimer    = useRef(null);
   const [computedScale, setComputedScale] = useState(scale || 0.6);
   const [contentHeight, setContentHeight] = useState(0);
   const [sectionAdjustments, setSectionAdjustments] = useState({});
@@ -1174,27 +1174,26 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
     updateScale();
     const ro = new ResizeObserver(() => {
       updateScale();
-      if (contentRef.current) {
-        const inner = contentRef.current.firstElementChild;
-        setContentHeight(inner ? inner.scrollHeight : contentRef.current.scrollHeight);
-      }
+      if (contentRef.current) setContentHeight(contentRef.current.scrollHeight);
     });
     if (containerRef.current) ro.observe(containerRef.current);
     if (contentRef.current)   ro.observe(contentRef.current);
     return () => ro.disconnect();
   }, [updateScale]);
 
-  // Re-run orphan detection whenever raw content height changes
+  // Re-run page-break detection on content change, debounced to 150 ms.
   useEffect(() => {
     if (!contentRef.current || !contentHeight) return;
-    const padYMm = ss.topBottomMargin ?? 15;
-    const padYPx = padYMm * (96 / 25.4);
-    const effectivePageHeight = page.height - 2 * padYPx;
-    const newAdj = detectOrphanAdjustments(contentRef.current, page.height, effectivePageHeight);
-    setSectionAdjustments(prev => {
-      if (JSON.stringify(newAdj) === JSON.stringify(prev)) return prev;
-      return newAdj;
-    });
+    clearTimeout(detectionTimer.current);
+    detectionTimer.current = setTimeout(() => {
+      const padYPx = (ss.topBottomMargin ?? 15) * (96 / 25.4);
+      const effectivePageHeight = page.height - 2 * padYPx;
+      const newAdj = detectOrphanAdjustments(contentRef.current, page.height, effectivePageHeight);
+      setSectionAdjustments(prev =>
+        JSON.stringify(newAdj) === JSON.stringify(prev) ? prev : newAdj
+      );
+    }, 150);
+    return () => clearTimeout(detectionTimer.current);
   }, [contentHeight, page.height, ss.topBottomMargin]);
 
   const s = scale !== null ? scale : computedScale;
@@ -1220,9 +1219,12 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
             .resume-entry-block   { page-break-inside: avoid; }
           }
         `}</style>
-        {/* Hidden measurement — position:relative makes it the offsetParent root for all children */}
-        <div ref={contentRef} style={{ position: 'relative', width: page.width, visibility: 'hidden', pointerEvents: 'none', height: 0, overflow: 'hidden' }}>
-          <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
+        {/* Hidden measurement: absolute so it doesn't affect flow; position:relative
+            makes contentRef the offsetParent root for all child elements */}
+        <div style={{ position: 'absolute', top: 0, left: 0, width: page.width, visibility: 'hidden', pointerEvents: 'none' }}>
+          <div ref={contentRef} style={{ position: 'relative' }}>
+            <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
+          </div>
         </div>
         {/* Visible content with page-break adjustments applied */}
         <TemplateComp resume={resume || {}} ds={ds} ss={ss} sectionAdjustments={sectionAdjustments} />
@@ -1257,11 +1259,14 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
   });
 
   return (
-    <div ref={containerRef} className={`overflow-auto ${className}`} style={{ background: '#CBD5E1' }}>
+    <div ref={containerRef} className={`overflow-auto ${className}`} style={{ background: '#CBD5E1', position: 'relative' }}>
       <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-        {/* Hidden measurement div — position:relative so it's the offsetParent root */}
-        <div ref={contentRef} style={{ position: 'relative', width: page.width, visibility: 'hidden', pointerEvents: 'none', height: 0, overflow: 'hidden' }}>
-          <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
+        {/* Hidden measurement: absolute so layout is unaffected; position:relative
+            makes contentRef the offsetParent root for all child elements */}
+        <div style={{ position: 'absolute', top: 0, left: 0, width: page.width, visibility: 'hidden', pointerEvents: 'none' }}>
+          <div ref={contentRef} style={{ position: 'relative' }}>
+            <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
+          </div>
         </div>
 
         {/* One card per page — each clips its content slice via overflow:hidden */}
