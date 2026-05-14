@@ -262,14 +262,37 @@ export function computeGeometricAdjustments(contentEl, config) {
     }
   });
 
+  // ── Bullet pass ──────────────────────────────────────────────────────────────
+  // For each legacy bullet, if its bottom edge crosses the page boundary, push
+  // it (and all subsequent bullets in the same entry) to the next page.
+  // The entry heading itself is already placed above; only the bullet rows move.
+  contentEl.querySelectorAll('[data-bullet-id]').forEach((el) => {
+    const rect      = el.getBoundingClientRect();
+    const elTop     = rect.top  - containerRect.top + cumulative;
+    const elBottom  = rect.bottom - containerRect.top + cumulative;
+    const key       = el.dataset.bulletId;
+
+    const pageEnd   = pageBoundaryAfter(elTop);
+
+    if (elBottom > pageEnd && elTop < pageEnd) {
+      // Bullet straddles the boundary — push it to the next page.
+      const push = pageEnd - elTop;
+      adj[key]    = push;
+      cumulative += push;
+      blockPageIdx[key] = pageIdxFor(pageEnd);
+    } else {
+      blockPageIdx[key] = pageIdxFor(elTop);
+    }
+  });
+
   // ── Build page slices ────────────────────────────────────────────────────────
   // Assign each block to the page it naturally or forcibly lands on.
   // Using position-based page indices (blockPageIdx) instead of adj-presence
   // ensures blocks that naturally flow past a page boundary (no push needed)
   // are still assigned to the correct page slice.
   const orderedIds = [];
-  contentEl.querySelectorAll('[data-section-id], [data-entry-id]').forEach((el) => {
-    orderedIds.push(el.dataset.sectionId || el.dataset.entryId);
+  contentEl.querySelectorAll('[data-section-id], [data-entry-id], [data-bullet-id]').forEach((el) => {
+    orderedIds.push(el.dataset.sectionId || el.dataset.entryId || el.dataset.bulletId);
   });
 
   const totalPages = orderedIds.reduce((m, id) => Math.max(m, (blockPageIdx[id] || 0) + 1), 1);

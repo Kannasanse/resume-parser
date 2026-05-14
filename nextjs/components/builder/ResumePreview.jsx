@@ -275,7 +275,7 @@ function SkillsBody({ sec, util, variantCols }) {
 
 // Renders rich HTML body (new format) or falls back to old bullets array / plain text.
 // listStyle only affects the old bullets fallback (hyphen vs disc).
-function RichBody({ entry, listStyle, style }) {
+function RichBody({ entry, listStyle, style, entryId, visibleBlockIds }) {
   // New: HTML body stored by RichTextEditor
   if (entry.body) {
     return (
@@ -287,23 +287,46 @@ function RichBody({ entry, listStyle, style }) {
     );
   }
   // Legacy: bullets array
-  const bullets = (entry.bullets || []).filter(b => b?.trim());
+  const allBullets = (entry.bullets || []).filter(b => b?.trim());
+  if (!allBullets.length) return null;
+
+  // Filter bullets: show bullet if the entry itself is visible OR this specific bullet is visible.
+  const bullets = !visibleBlockIds || !entryId
+    ? allBullets
+    : allBullets.filter((_, j) => {
+        const bulletId = `${entryId}-bullet-${j}`;
+        return visibleBlockIds.includes(entryId) || visibleBlockIds.includes(bulletId);
+      });
+
   if (!bullets.length) return null;
+
   if (listStyle === 'hyphen') {
     return (
       <div style={{ margin: '3px 0 0', ...style }}>
-        {bullets.map((b, j) => (
-          <div key={j} style={{ display: 'flex', gap: 6, marginBottom: 1 }}>
-            <span style={{ flexShrink: 0, color: '#6B7280' }}>–</span>
-            <span>{b}</span>
-          </div>
-        ))}
+        {allBullets.map((b, j) => {
+          const bulletId = entryId ? `${entryId}-bullet-${j}` : undefined;
+          const hidden = visibleBlockIds && entryId &&
+            !visibleBlockIds.includes(entryId) && !visibleBlockIds.includes(bulletId);
+          if (hidden) return null;
+          return (
+            <div key={j} data-bullet-id={bulletId} style={{ display: 'flex', gap: 6, marginBottom: 1 }}>
+              <span style={{ flexShrink: 0, color: '#6B7280' }}>–</span>
+              <span>{b}</span>
+            </div>
+          );
+        })}
       </div>
     );
   }
   return (
     <ul style={{ margin: '3px 0 0', paddingLeft: 18, listStyleType: 'disc', ...style }}>
-      {bullets.map((b, j) => <li key={j} style={{ marginBottom: 1, display: 'list-item' }}>{b}</li>)}
+      {allBullets.map((b, j) => {
+        const bulletId = entryId ? `${entryId}-bullet-${j}` : undefined;
+        const hidden = visibleBlockIds && entryId &&
+          !visibleBlockIds.includes(entryId) && !visibleBlockIds.includes(bulletId);
+        if (hidden) return null;
+        return <li key={j} data-bullet-id={bulletId} style={{ marginBottom: 1, display: 'list-item' }}>{b}</li>;
+      })}
     </ul>
   );
 }
@@ -329,19 +352,23 @@ function ExperienceBody({ secs, util, variant }) {
         const primary    = titleFirst ? (e.title || '') : (e.employer || '');
         const secondary  = titleFirst ? (e.employer || '') : (e.title || '');
         const entryId    = `${e._secId}-${e._idx}`;
-        if (visibleBlockIds && !visibleBlockIds.includes(entryId)) return null;
+        // Show entry if the entry heading is visible OR any of its bullets are visible.
+        const entryVisible = !visibleBlockIds || visibleBlockIds.includes(entryId) ||
+          (e.bullets || []).some((_, j) => visibleBlockIds.includes(`${entryId}-bullet-${j}`));
+        if (!entryVisible) return null;
+        const showHeading = !visibleBlockIds || visibleBlockIds.includes(entryId);
         const adjTop     = blockAdj?.[entryId];
         if (variant === 'date-column') {
           return (
             <div key={i} className="resume-entry-block" data-entry-id={entryId} style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: 14, marginBottom: gap, ...(adjTop ? { marginTop: adjTop } : {}) }}>
-              <div style={{ fontSize: '0.88em', color: colIf(t.dates) || '#374151' }}>
+              {showHeading && <div style={{ fontSize: '0.88em', color: colIf(t.dates) || '#374151' }}>
                 <div>{e.dates}</div>
                 <div style={{ color: '#6B7280' }}>{e.location}</div>
-              </div>
-              <div>
-                <div style={{ fontWeight: 700 }}>{primary}</div>
-                <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</div>
-                <RichBody entry={e} listStyle={listStyle} />
+              </div>}
+              <div style={showHeading ? {} : { gridColumn: '1 / -1' }}>
+                {showHeading && <div style={{ fontWeight: 700 }}>{primary}</div>}
+                {showHeading && <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</div>}
+                <RichBody entry={e} listStyle={listStyle} entryId={entryId} visibleBlockIds={visibleBlockIds} />
               </div>
             </div>
           );
@@ -349,23 +376,23 @@ function ExperienceBody({ secs, util, variant }) {
         if (variant === 'stacked') {
           return (
             <div key={i} className="resume-entry-block" data-entry-id={entryId} style={{ marginBottom: gap, ...(adjTop ? { marginTop: adjTop } : {}) }}>
-              <div style={{ fontWeight: 700 }}>{primary}</div>
-              <div style={{ fontStyle: 'italic', fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</div>
-              <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280', marginBottom: 3 }}>{e.dates}{e.location ? ` | ${e.location}` : ''}</div>
-              <RichBody entry={e} listStyle={listStyle} />
+              {showHeading && <div style={{ fontWeight: 700 }}>{primary}</div>}
+              {showHeading && <div style={{ fontStyle: 'italic', fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</div>}
+              {showHeading && <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280', marginBottom: 3 }}>{e.dates}{e.location ? ` | ${e.location}` : ''}</div>}
+              <RichBody entry={e} listStyle={listStyle} entryId={entryId} visibleBlockIds={visibleBlockIds} />
             </div>
           );
         }
         if (variant === 'inline-title-role') {
           return (
             <div key={i} className="resume-entry-block" data-entry-id={entryId} style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 14, marginBottom: gap, ...(adjTop ? { marginTop: adjTop } : {}) }}>
-              <div style={{ fontSize: '0.88em', color: colIf(t.dates) || '#374151' }}>
+              {showHeading && <div style={{ fontSize: '0.88em', color: colIf(t.dates) || '#374151' }}>
                 <div>{e.dates}</div>
                 <div style={{ color: '#6B7280' }}>{e.location}</div>
-              </div>
-              <div>
-                <div><strong>{primary},</strong> <em style={{ color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</em></div>
-                <RichBody entry={e} listStyle={listStyle} />
+              </div>}
+              <div style={showHeading ? {} : { gridColumn: '1 / -1' }}>
+                {showHeading && <div><strong>{primary},</strong> <em style={{ color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</em></div>}
+                <RichBody entry={e} listStyle={listStyle} entryId={entryId} visibleBlockIds={visibleBlockIds} />
               </div>
             </div>
           );
@@ -373,15 +400,15 @@ function ExperienceBody({ secs, util, variant }) {
         // default
         return (
           <div key={i} className="resume-entry-block" data-entry-id={entryId} style={{ marginBottom: gap, ...(adjTop ? { marginTop: adjTop } : {}) }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+            {showHeading && <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
               <div style={{ fontWeight: 700 }}>{primary}</div>
               <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280', whiteSpace: 'nowrap' }}>{e.dates}</div>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+            </div>}
+            {showHeading && <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
               <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</div>
               {e.location && <div style={{ fontSize: '0.85em', color: '#6B7280' }}>{e.location}</div>}
-            </div>
-            <RichBody entry={e} listStyle={listStyle} />
+            </div>}
+            <RichBody entry={e} listStyle={listStyle} entryId={entryId} visibleBlockIds={visibleBlockIds} />
           </div>
         );
       })}
@@ -503,17 +530,20 @@ function ProjectsBody({ sec, util }) {
     <div>
       {entries.map((p, i) => {
         const entryId = `${sec.id}-${i}`;
-        if (visibleBlockIds && !visibleBlockIds.includes(entryId)) return null;
+        const entryVisible = !visibleBlockIds || visibleBlockIds.includes(entryId) ||
+          (p.bullets || []).some((_, j) => visibleBlockIds.includes(`${entryId}-bullet-${j}`));
+        if (!entryVisible) return null;
+        const showHeading = !visibleBlockIds || visibleBlockIds.includes(entryId);
         const adjTop  = blockAdj?.[entryId];
         return (
           <div key={i} className="resume-entry-block" data-entry-id={entryId} style={{ marginBottom: i < entries.length - 1 ? entryGapPx * 0.75 : 0, ...(adjTop ? { marginTop: adjTop } : {}) }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            {showHeading && <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
               <div style={{ fontWeight: 700 }}>{p.title}</div>
               {p.dates && <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280' }}>{p.dates}</div>}
-            </div>
-            {p.role && <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{p.role}</div>}
-            {p.link && <div style={{ fontSize: '0.85em', color: '#6B7280' }}>{p.link}</div>}
-            <RichBody entry={p} listStyle={listStyle} />
+            </div>}
+            {showHeading && p.role && <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{p.role}</div>}
+            {showHeading && p.link && <div style={{ fontSize: '0.85em', color: '#6B7280' }}>{p.link}</div>}
+            <RichBody entry={p} listStyle={listStyle} entryId={entryId} visibleBlockIds={visibleBlockIds} />
           </div>
         );
       })}
@@ -580,7 +610,12 @@ function isSectionVisible(sec, vids) {
   if (!vids) return true;
   if (vids.includes(sec.id)) return true;
   if (ENTRY_TRACKED_TYPES.has(sec.type)) {
-    return (sec.content?.entries || []).some((_, idx) => vids.includes(`${sec.id}-${idx}`));
+    return (sec.content?.entries || []).some((_, idx) => {
+      const eid = `${sec.id}-${idx}`;
+      if (vids.includes(eid)) return true;
+      // Check if any bullet of this entry is on this page.
+      return vids.some(id => id.startsWith(`${eid}-bullet-`));
+    });
   }
   return false;
 }
