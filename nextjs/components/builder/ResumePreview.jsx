@@ -1077,20 +1077,48 @@ const TEMPLATE_COMPONENTS = {
 // (last ~8% of the page). Long entries are allowed to break naturally across
 // pages — we never push an entire multi-bullet entry just because it spans a
 // boundary. Returns { id: extraMarginPx }, cumulative so cascade effects are handled.
-function detectOrphanAdjustments(contentEl, pageHeight) {
-  const ORPHAN_ZONE = pageHeight * 0.08; // last ~90px on A4
+// pageBreakYs: sorted array of content-space Y positions where page breaks occur.
+// Page 1 fills [0, page1Height]. Pages 2+ each fill effectivePageHeight.
+// This mirrors the PDF's @page rule: @page :first has no top/bottom margin,
+// pages 2+ get padY top+bottom margins, shrinking their content area.
+function buildPageBreaks(totalHeight, page1Height, effectivePageHeight) {
+  const breaks = [];
+  let y = page1Height;
+  while (y < totalHeight) {
+    breaks.push(y);
+    y += effectivePageHeight;
+  }
+  return breaks;
+}
+
+function detectOrphanAdjustments(contentEl, page1Height, effectivePageHeight) {
+  const ORPHAN_ZONE_RATIO = 0.08;
   const blocks = contentEl.querySelectorAll('[data-section-id], [data-entry-id]');
   const adj = {};
   let cumulative = 0;
   blocks.forEach(el => {
     const effectiveTop = el.offsetTop + cumulative;
-    const posOnPage = effectiveTop % pageHeight;
-    // Push to next page only if the heading/entry header starts in the orphan zone
-    if (posOnPage > pageHeight - ORPHAN_ZONE) {
-      const key = el.dataset.sectionId || el.dataset.entryId;
-      const push = pageHeight - posOnPage;
-      adj[key] = push;
-      cumulative += push;
+    // Determine which page and position within that page
+    let posOnPage;
+    if (effectiveTop < page1Height) {
+      posOnPage = effectiveTop;
+      const orphanZone = page1Height * ORPHAN_ZONE_RATIO;
+      if (posOnPage > page1Height - orphanZone) {
+        const key = el.dataset.sectionId || el.dataset.entryId;
+        const push = page1Height - posOnPage;
+        adj[key] = push;
+        cumulative += push;
+      }
+    } else {
+      const offsetIntoP2 = effectiveTop - page1Height;
+      posOnPage = offsetIntoP2 % effectivePageHeight;
+      const orphanZone = effectivePageHeight * ORPHAN_ZONE_RATIO;
+      if (posOnPage > effectivePageHeight - orphanZone) {
+        const key = el.dataset.sectionId || el.dataset.entryId;
+        const push = effectivePageHeight - posOnPage;
+        adj[key] = push;
+        cumulative += push;
+      }
     }
   });
   return adj;
@@ -1129,12 +1157,15 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
   // Re-run orphan detection whenever raw content height changes
   useEffect(() => {
     if (!contentRef.current || !contentHeight) return;
-    const newAdj = detectOrphanAdjustments(contentRef.current, page.height);
+    const padYMm = ss.topBottomMargin ?? 15;
+    const padYPx = padYMm * (96 / 25.4);
+    const effectivePageHeight = page.height - 2 * padYPx;
+    const newAdj = detectOrphanAdjustments(contentRef.current, page.height, effectivePageHeight);
     setSectionAdjustments(prev => {
       if (JSON.stringify(newAdj) === JSON.stringify(prev)) return prev;
       return newAdj;
     });
-  }, [contentHeight, page.height]);
+  }, [contentHeight, page.height, ss.topBottomMargin]);
 
   const s = scale !== null ? scale : computedScale;
 
@@ -1175,9 +1206,14 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
     );
   }
 
+  const padYMm = ss.topBottomMargin ?? 15;
+  const padYPx = padYMm * (96 / 25.4);
+  const effectivePageHeight = page.height - 2 * padYPx;
+
   const totalAdjustment = Object.values(sectionAdjustments).reduce((sum, v) => sum + v, 0);
   const adjustedHeight = contentHeight + totalAdjustment;
-  const numPages = adjustedHeight > 0 ? Math.max(1, Math.ceil(adjustedHeight / page.height)) : 1;
+  const pageBreaks = adjustedHeight > 0 ? buildPageBreaks(adjustedHeight, page.height, effectivePageHeight) : [];
+  const numPages = pageBreaks.length + 1;
 
   return (
     <div ref={containerRef} className={`overflow-auto ${className}`} style={{ background: '#CBD5E1' }}>
@@ -1212,35 +1248,32 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
             )}
           </div>
 
-          {/* Page break indicators — thin dashed lines, no content obscured */}
-          {numPages > 1 && Array.from({ length: numPages - 1 }, (_, i) => {
-            const lineY = (i + 1) * page.height * s;
-            return (
-              <div key={i} style={{
+          {/* Page break indicators — positions match PDF @page margin layout */}
+          {pageBreaks.map((breakY, i) => (
+            <div key={i} style={{
+              position: 'absolute',
+              top: breakY * s,
+              left: 0,
+              right: 0,
+              height: 0,
+              borderTop: '2px dashed #94a3b8',
+              pointerEvents: 'none',
+              zIndex: 10,
+            }}>
+              <span style={{
                 position: 'absolute',
-                top: lineY,
-                left: 0,
-                right: 0,
-                height: 0,
-                borderTop: '2px dashed #94a3b8',
-                pointerEvents: 'none',
-                zIndex: 10,
-              }}>
-                <span style={{
-                  position: 'absolute',
-                  right: 6,
-                  top: 3,
-                  fontSize: 9,
-                  color: '#64748b',
-                  background: '#CBD5E1',
-                  borderRadius: 3,
-                  padding: '1px 5px',
-                  fontFamily: 'system-ui, sans-serif',
-                  lineHeight: 1.4,
-                }}>page {i + 2}</span>
-              </div>
-            );
-          })}
+                right: 6,
+                top: 3,
+                fontSize: 9,
+                color: '#64748b',
+                background: '#CBD5E1',
+                borderRadius: 3,
+                padding: '1px 5px',
+                fontFamily: 'system-ui, sans-serif',
+                lineHeight: 1.4,
+              }}>page {i + 2}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
