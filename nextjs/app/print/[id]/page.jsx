@@ -60,12 +60,14 @@ export default function PrintPage() {
         @page {
           size: ${isLetter ? '8.5in 11in' : 'A4'};
           /*
-            Match the resume's own padding so page 2+ have correct top/bottom space.
-            Page 1 top padding is already inside the template wrapper div,
-            so we only need the margin for subsequent pages.
-            Using @page :first to suppress the top margin on page 1 avoids doubling.
+            Vertical margins only — the template wrapper already has paddingLeft/Right
+            equal to padX mm, so horizontal @page margins would double the spacing and
+            cause Chrome to scale the content down to fit (794px body in a narrower
+            printable area), making the PDF paginate differently from the live preview.
+            Page 1 top/bottom are suppressed via @page :first; the template's own
+            paddingTop/Bottom handle page 1 spacing.
           */
-          margin: ${padY}mm ${padX}mm;
+          margin: ${padY}mm 0;
         }
         @page :first {
           margin-top: 0;
