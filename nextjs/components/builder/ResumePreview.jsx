@@ -1154,20 +1154,25 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
   const hasFooter = fs && (fs.pageNumbers || (fs.email && pi.email) || (fs.name && pi.name));
 
   // In printMode we render a plain div — no scaling, no wrapper chrome.
-  // sectionAdjustments (computed by effects below) are passed so entries/sections
-  // that would be cut at page boundaries are pushed to the next page, matching the PDF.
+  // We use the same two-div pattern as non-printMode:
+  //   1. A hidden measurement div (no adjustments) — contentRef attaches here so
+  //      height is stable and the ResizeObserver loop cannot oscillate.
+  //   2. The visible content with sectionAdjustments applied.
   if (printMode) {
     return (
-      <div style={{ width: page.width, background: '#fff' }}>
+      <div style={{ width: page.width, background: '#fff', position: 'relative' }}>
         <style>{`
           @media print {
             .resume-section-block { page-break-inside: avoid; }
             .resume-entry-block   { page-break-inside: avoid; }
           }
         `}</style>
-        <div ref={contentRef}>
-          <TemplateComp resume={resume || {}} ds={ds} ss={ss} sectionAdjustments={sectionAdjustments} />
+        {/* Hidden measurement — no adjustments so height never changes after first measure */}
+        <div ref={contentRef} style={{ position: 'absolute', top: 0, left: 0, width: page.width, visibility: 'hidden', pointerEvents: 'none' }}>
+          <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
         </div>
+        {/* Visible content with page-break adjustments applied */}
+        <TemplateComp resume={resume || {}} ds={ds} ss={ss} sectionAdjustments={sectionAdjustments} />
         {hasFooter && (
           <div style={{ borderTop: '1px solid #e0e0e0', padding: '6px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8pt', color: '#888', background: '#fff' }}>
             <span>{[fs.name && pi.name, fs.email && pi.email].filter(Boolean).join(' · ')}</span>
