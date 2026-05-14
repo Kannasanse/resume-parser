@@ -59,22 +59,25 @@ function PagedPreview({ resume, page, zoom }) {
             flexShrink: 0,
           }}
         >
-          {/* The full resume content, offset so the correct page slice is visible */}
-          <div style={{
-            width: page.width,
-            transform: `scale(${zoom})`,
-            transformOrigin: 'top left',
-            position: 'absolute',
-            top: -pi * page.height * zoom,
-            left: 0,
-          }}>
-            <div ref={pi === 0 ? contentRef : null}>
-              <ResumePreview
-                resume={resume}
-                designSettings={resume.design_settings || {}}
-                scale={1}
-              />
-            </div>
+          {/* The full resume content, offset so the correct page slice is visible.
+              printMode renders the bare template (no chrome/padding) matching the PDF exactly. */}
+          <div
+            ref={pi === 0 ? contentRef : null}
+            style={{
+              width: page.width,
+              transform: `scale(${zoom})`,
+              transformOrigin: 'top left',
+              position: 'absolute',
+              top: -pi * page.height * zoom,
+              left: 0,
+            }}
+          >
+            <ResumePreview
+              resume={resume}
+              designSettings={resume.design_settings || {}}
+              scale={1}
+              printMode
+            />
           </div>
 
           {/* Page number label */}
