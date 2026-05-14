@@ -419,23 +419,41 @@ export default function BuilderEditor() {
   const [atsState, setAtsState] = useState('idle');
   const [atsData, setAtsData] = useState(null);
   const [atsError, setAtsError] = useState('');
+  const [atsStale, setAtsStale] = useState(false);
+  const atsLastScoredAt = useRef(null);
 
   const [insufficientCredits, setInsufficientCredits] = useState(null); // { message }
 
-  const handleAnalyzeATS = useCallback(async () => {
+  const handleAnalyzeATS = useCallback(async (jobDescription = null) => {
     setAtsState('loading');
     setAtsError('');
+    setAtsStale(false);
     try {
-      const res = await fetch(`/api/v1/builder/${id}/ats-score`, { method: 'POST' });
+      const res = await fetch(`/api/v1/builder/${id}/ats-score`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobDescription: jobDescription || '' }),
+      });
       const json = await res.json();
       if (res.status === 402 && json.code === 'insufficient_credits') {
         setAtsState('idle');
         setInsufficientCredits({ message: json.error });
         return;
       }
-      if (!res.ok) throw new Error(json.error || 'Analysis failed');
+      if (res.status === 422) {
+        setAtsState('error');
+        setAtsError(json.error || 'Validation error');
+        return;
+      }
+      if (res.status === 504) {
+        setAtsState('error');
+        setAtsError('Scoring is taking longer than expected. Please try again.');
+        return;
+      }
+      if (!res.ok) throw new Error(json.error || "We couldn't generate your score right now. Please try again in a moment.");
       setAtsData(json);
       setAtsState('done');
+      atsLastScoredAt.current = Date.now();
     } catch (err) {
       setAtsError(err.message);
       setAtsState('error');
@@ -531,6 +549,7 @@ export default function BuilderEditor() {
       return { ...prev, sections: prev.sections.map(s => s.id === sectionId ? { ...s, content } : s) };
     });
     setSaveState('idle');
+    setAtsStale(true);
   }, []);
 
   const handleSectionTitleChange = useCallback((sectionId, title) => {
@@ -540,6 +559,7 @@ export default function BuilderEditor() {
       return { ...prev, sections: prev.sections.map(s => s.id === sectionId ? { ...s, title } : s) };
     });
     setSaveState('idle');
+    setAtsStale(true);
   }, []);
 
   const handleToggleSection = useCallback((sectionId, enabled) => {
@@ -548,11 +568,13 @@ export default function BuilderEditor() {
       return { ...prev, sections: prev.sections.map(s => s.id === sectionId ? { ...s, enabled } : s) };
     });
     setSaveState('idle');
+    setAtsStale(true);
   }, []);
 
   const handlePersonalInfoChange = useCallback((pi) => {
     setPreviewResume(prev => prev ? { ...prev, personal_info: pi } : prev);
     setSaveState('idle');
+    setAtsStale(true);
   }, []);
 
   const handleDesignChange = useCallback((ds) => {
@@ -1041,6 +1063,7 @@ export default function BuilderEditor() {
             atsData={atsData}
             atsError={atsError}
             onAnalyze={handleAnalyzeATS}
+            isStale={atsStale}
           />
         </>
       )}
