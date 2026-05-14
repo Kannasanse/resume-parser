@@ -1077,6 +1077,17 @@ const TEMPLATE_COMPONENTS = {
 // (last ~8% of the page). Long entries are allowed to break naturally across
 // pages — we never push an entire multi-bullet entry just because it spans a
 // boundary. Returns { id: extraMarginPx }, cumulative so cascade effects are handled.
+// Walk up offsetParent chain to get element's true top relative to a root element.
+function getOffsetTopFromRoot(el, root) {
+  let top = 0;
+  let cur = el;
+  while (cur && cur !== root) {
+    top += cur.offsetTop;
+    cur = cur.offsetParent;
+  }
+  return top;
+}
+
 // pageBreakYs: sorted array of content-space Y positions where page breaks occur.
 // Page 1 fills [0, page1Height]. Pages 2+ each fill effectivePageHeight.
 // This mirrors the PDF's @page rule: @page :first has no top/bottom margin,
@@ -1098,7 +1109,7 @@ function detectOrphanAdjustments(contentEl, page1Height, effectivePageHeight) {
   let cumulative = 0;
 
   blocks.forEach(el => {
-    const effectiveTop = el.offsetTop + cumulative;
+    const effectiveTop = getOffsetTopFromRoot(el, contentEl) + cumulative;
     const elHeight = el.offsetHeight;
     const effectiveBottom = effectiveTop + elHeight;
 
