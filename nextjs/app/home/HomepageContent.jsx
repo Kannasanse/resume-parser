@@ -64,7 +64,7 @@ const ALL_NAV_LINKS = [
   { label: 'Pricing',      id: 'pricing',      sectionKey: 'pricing'  },
 ];
 
-function Navbar({ heroCta, activeSection, visibleSectionKeys }) {
+function Navbar({ heroCta, activeSection, visibleSectionKeys, userRole }) {
   const [scrolled, setScrolled] = useState(false);
   const [drawerOpen, setDrawer] = useState(false);
 
@@ -96,8 +96,19 @@ function Navbar({ heroCta, activeSection, visibleSectionKeys }) {
             {navLinks.map(l => <NavLink key={l.id} {...l} />)}
           </div>
           <div className="hidden sm:flex items-center gap-2">
-            <Link href="/login" style={{ fontSize: 14, fontWeight: 500, color: C.primary, border: `1px solid ${C.primary}`, borderRadius: 8, padding: '7px 18px', background: 'transparent', textDecoration: 'none', transition: 'background 200ms' }} onMouseEnter={e => e.currentTarget.style.background = C.light} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>Log in</Link>
-            <Link href="/signup" style={{ fontSize: 14, fontWeight: 600, color: '#fff', background: C.primary, borderRadius: 8, padding: '7px 18px', textDecoration: 'none', boxShadow: '0 4px 16px rgba(12,68,124,0.20)', transition: 'background 200ms' }} onMouseEnter={e => e.currentTarget.style.background = C.dark} onMouseLeave={e => e.currentTarget.style.background = C.primary}>{ctaLabel}</Link>
+            {userRole ? (
+              <Link href={userRole === 'admin' ? '/resumes' : '/builder'}
+                style={{ fontSize: 14, fontWeight: 600, color: '#fff', background: C.primary, borderRadius: 8, padding: '7px 18px', textDecoration: 'none', boxShadow: '0 4px 16px rgba(12,68,124,0.20)', transition: 'background 200ms' }}
+                onMouseEnter={e => e.currentTarget.style.background = C.dark}
+                onMouseLeave={e => e.currentTarget.style.background = C.primary}>
+                {userRole === 'admin' ? 'Dashboard' : 'My Resumes'}
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" style={{ fontSize: 14, fontWeight: 500, color: C.primary, border: `1px solid ${C.primary}`, borderRadius: 8, padding: '7px 18px', background: 'transparent', textDecoration: 'none', transition: 'background 200ms' }} onMouseEnter={e => e.currentTarget.style.background = C.light} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>Log in</Link>
+                <Link href="/signup" style={{ fontSize: 14, fontWeight: 600, color: '#fff', background: C.primary, borderRadius: 8, padding: '7px 18px', textDecoration: 'none', boxShadow: '0 4px 16px rgba(12,68,124,0.20)', transition: 'background 200ms' }} onMouseEnter={e => e.currentTarget.style.background = C.dark} onMouseLeave={e => e.currentTarget.style.background = C.primary}>{ctaLabel}</Link>
+              </>
+            )}
           </div>
           <button className="sm:hidden" onClick={() => setDrawer(true)} aria-label="Open menu" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.charcoal, padding: 4 }}><MenuIcon /></button>
         </div>
@@ -114,8 +125,16 @@ function Navbar({ heroCta, activeSection, visibleSectionKeys }) {
               {navLinks.map(l => <NavLink key={l.id} {...l} mobile />)}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>
-              <Link href="/login" style={{ textAlign: 'center', fontSize: 14, fontWeight: 500, color: C.primary, border: `1px solid ${C.primary}`, borderRadius: 8, padding: '10px 0', textDecoration: 'none' }}>Log in</Link>
-              <Link href="/signup" style={{ textAlign: 'center', fontSize: 14, fontWeight: 600, color: '#fff', background: C.primary, borderRadius: 8, padding: '10px 0', textDecoration: 'none' }}>{ctaLabel}</Link>
+              {userRole ? (
+                <Link href={userRole === 'admin' ? '/resumes' : '/builder'} style={{ textAlign: 'center', fontSize: 14, fontWeight: 600, color: '#fff', background: C.primary, borderRadius: 8, padding: '10px 0', textDecoration: 'none' }}>
+                  {userRole === 'admin' ? 'Dashboard' : 'My Resumes'}
+                </Link>
+              ) : (
+                <>
+                  <Link href="/login" style={{ textAlign: 'center', fontSize: 14, fontWeight: 500, color: C.primary, border: `1px solid ${C.primary}`, borderRadius: 8, padding: '10px 0', textDecoration: 'none' }}>Log in</Link>
+                  <Link href="/signup" style={{ textAlign: 'center', fontSize: 14, fontWeight: 600, color: '#fff', background: C.primary, borderRadius: 8, padding: '10px 0', textDecoration: 'none' }}>{ctaLabel}</Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -473,7 +492,7 @@ const renderSection = (section) => {
 };
 
 // ── Main export ────────────────────────────────────────────────────────────────
-export default function HomepageContent({ sections = [], isPreview = false }) {
+export default function HomepageContent({ sections = [], isPreview = false, userRole = null }) {
   const [activeSection, setActiveSection] = useState('');
   const visibleKeys = sections.map(s => s.section_key);
 
@@ -498,7 +517,7 @@ export default function HomepageContent({ sections = [], isPreview = false }) {
   return (
     <div style={{ fontFamily: 'Inter, system-ui, sans-serif', overflowX: 'hidden', paddingTop: isPreview ? 44 : 0 }}>
       {isPreview && <PreviewBanner />}
-      <Navbar heroCta={heroCta} activeSection={activeSection} visibleSectionKeys={visibleKeys} />
+      <Navbar heroCta={heroCta} activeSection={activeSection} visibleSectionKeys={visibleKeys} userRole={userRole} />
       <main>
         {mainSections.map(s => renderSection(s))}
       </main>
