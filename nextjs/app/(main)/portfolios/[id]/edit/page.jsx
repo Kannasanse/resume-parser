@@ -385,7 +385,7 @@ function SettingsTab({ portfolio, onUpdate, onDelete }) {
     router.push('/portfolios');
   };
 
-  const publishedUrl = `proflect.com/p/${portfolio.slug}`;
+  const publishedUrl = `proflect-neo.vercel.app/portfolios/${portfolio.slug}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(`https://${publishedUrl}`);
