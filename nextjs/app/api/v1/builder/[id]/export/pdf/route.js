@@ -1,11 +1,48 @@
-import puppeteer from 'puppeteer';
+import puppeteerCore from 'puppeteer-core';
 import { getAuthUser } from '@/lib/authUtils.js';
 import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
-// Extend timeout — Puppeteer launch + render can take 10–20 s.
+// Extend timeout — Chromium launch + render can take 10–20 s in serverless.
 export const maxDuration = 60;
+
+/**
+ * Resolve the Chromium executable path.
+ *
+ * - In serverless / Lambda environments (NODE_ENV=production or no local
+ *   Chrome) we use @sparticuz/chromium which ships a compatible binary.
+ * - In local development we fall back to the bundled Chromium that the
+ *   full `puppeteer` package installs, if present.
+ */
+async function getChromiumArgs() {
+  // Try @sparticuz/chromium first — works in Lambda / Vercel / Railway.
+  try {
+    const chromium = (await import('@sparticuz/chromium')).default;
+    return {
+      executablePath: await chromium.executablePath(),
+      args: [
+        ...chromium.args,
+        '--font-render-hinting=none',
+      ],
+      defaultViewport: chromium.defaultViewport,
+    };
+  } catch {
+    // Fall back to locally installed Chrome (development).
+    const puppeteer = (await import('puppeteer')).default;
+    return {
+      executablePath: puppeteer.executablePath(),
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--font-render-hinting=none',
+      ],
+      defaultViewport: { width: 794, height: 1123 },
+    };
+  }
+}
 
 export async function GET(req, { params }) {
   const user = await getAuthUser();
@@ -13,31 +50,26 @@ export async function GET(req, { params }) {
 
   const { id } = await params;
 
-  // Determine the base URL so Puppeteer can navigate to the print page.
-  const host = req.headers.get('host') || 'localhost:3000';
+  const host  = req.headers.get('host') || 'localhost:3000';
   const proto = host.startsWith('localhost') || host.startsWith('127.') ? 'http' : 'https';
   const printUrl = `${proto}://${host}/print/${id}`;
 
-  // Forward all auth cookies so the print page can load the resume.
   const cookieStore = await cookies();
-  const allCookies = cookieStore.getAll();
+  const allCookies  = cookieStore.getAll();
 
   let browser;
   try {
-    browser = await puppeteer.launch({
+    const { executablePath, args, defaultViewport } = await getChromiumArgs();
+
+    browser = await puppeteerCore.launch({
+      executablePath,
+      args,
+      defaultViewport,
       headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--font-render-hinting=none', // sharper font rendering in headless
-      ],
     });
 
     const page = await browser.newPage();
 
-    // Pass auth session cookies so the print page can authenticate.
     if (allCookies.length > 0) {
       await page.setCookie(...allCookies.map(c => ({
         name:   c.name,
@@ -49,24 +81,22 @@ export async function GET(req, { params }) {
 
     await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 1 });
 
-    // Suppress the auto-print dialog — we generate the PDF ourselves.
+    // Suppress the auto-print dialog triggered by the print page.
     await page.evaluateOnNewDocument(() => { window.print = () => {}; });
 
     await page.goto(printUrl, { waitUntil: 'networkidle0', timeout: 30_000 });
 
-    // Wait for web fonts and the pagination engine to settle.
     await page.evaluateHandle('document.fonts.ready');
     await new Promise(r => setTimeout(r, 1_500));
 
-    // Derive filename from page title (set by the print page to "First_Last_Resume").
     const pageTitle = await page.title();
     const filename  = pageTitle ? `${pageTitle}.pdf` : 'Resume.pdf';
 
     const pdfBuffer = await page.pdf({
-      format:           'A4',
-      printBackground:  true,  // preserve accent colours, coloured headings, etc.
-      preferCSSPageSize: true,  // honour the @page size declaration
-      tagged:           true,   // embeds PDF accessibility tags — improves ATS parsing
+      format:            'A4',
+      printBackground:   true,
+      preferCSSPageSize: true,
+      tagged:            true,
     });
 
     return new Response(pdfBuffer, {
