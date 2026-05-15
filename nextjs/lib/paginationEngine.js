@@ -184,7 +184,10 @@ export function computeGeometricAdjustments(contentEl, config) {
   const effH   = effectiveContentHeight(config);
   const { minBulletsWithHeading, minSkillRowsWithLabel, spacing } = config;
 
-  const measureH = (el) => Math.max(1, el.getBoundingClientRect().height);
+  // scrollHeight is never clipped by ancestor overflow:hidden — always the full
+  // layout height. Fall back to getBoundingClientRect().height if scrollHeight
+  // is 0 (display:none or not yet laid out).
+  const measureH = (el) => Math.max(1, el.scrollHeight || el.getBoundingClientRect().height);
 
   /** Y position of the next page boundary after elTop (in content coordinates). */
   function pageBoundaryAfter(elTop) {
@@ -308,7 +311,8 @@ export function computeGeometricAdjustments(contentEl, config) {
 
   contentEl.querySelectorAll('[data-bullet-id]').forEach((el) => {
     const rect     = el.getBoundingClientRect();
-    const elHeight = Math.max(1, rect.height);
+    // scrollHeight for the same reason as measureH — unaffected by overflow clipping
+    const elHeight = Math.max(1, el.scrollHeight || rect.height);
     const elTop    = rect.top - containerRect.top + cumulative;
     const elBottom = elTop + elHeight;
     const key      = el.dataset.bulletId;

@@ -1388,8 +1388,8 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
           }
         `}</style>
         {/* Hidden measurement div — absolute so it doesn't shift page flow */}
-        <div style={{ position: 'absolute', top: -9999, left: -9999, width: page.width, visibility: 'hidden', pointerEvents: 'none', transform: 'none', zoom: 'normal' }}>
-          <div ref={contentRef} style={{ position: 'relative', transform: 'none' }}>
+        <div style={{ position: 'absolute', top: -9999, left: -9999, width: page.width, height: 'auto', maxHeight: 'none', overflow: 'visible', visibility: 'hidden', pointerEvents: 'none', transform: 'none', zoom: 'normal', contain: 'none' }}>
+          <div ref={contentRef} style={{ position: 'relative', transform: 'none', height: 'auto', overflow: 'visible' }}>
             <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
           </div>
         </div>
@@ -1423,8 +1423,8 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
             getBoundingClientRect measurement; invisible and out of document flow.
             transform:none + zoom:normal prevent any inherited scale from corrupting
             getBoundingClientRect values used by computeGeometricAdjustments. */}
-        <div style={{ position: 'absolute', top: -9999, left: -9999, width: page.width, visibility: 'hidden', pointerEvents: 'none', transform: 'none', zoom: 'normal' }}>
-          <div ref={contentRef} style={{ position: 'relative', transform: 'none' }}>
+        <div style={{ position: 'absolute', top: -9999, left: -9999, width: page.width, height: 'auto', maxHeight: 'none', overflow: 'visible', visibility: 'hidden', pointerEvents: 'none', transform: 'none', zoom: 'normal', contain: 'none' }}>
+          <div ref={contentRef} style={{ position: 'relative', transform: 'none', height: 'auto', overflow: 'visible' }}>
             <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
           </div>
         </div>
