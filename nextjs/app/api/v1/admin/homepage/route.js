@@ -1,3 +1,4 @@
+import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth-helpers.js';
 import { getAllHomepageSections, publishHomepage, getLastPublished, upsertSection } from '@/lib/homepage.js';
 
@@ -49,13 +50,7 @@ export async function POST(req) {
 
   try {
     const result = await publishHomepage(body.sections, user.id);
-    // Fire-and-forget ISR revalidation using internal fetch
-    const host = req.headers.get('host') || 'localhost:3000';
-    const proto = host.startsWith('localhost') || host.startsWith('127.') ? 'http' : 'https';
-    fetch(`${proto}://${host}/api/revalidate`, {
-      method: 'POST',
-      headers: { cookie: req.headers.get('cookie') || '' },
-    }).catch(() => {}); // non-fatal if revalidation fails
+    revalidatePath('/home');
     return Response.json({ published: true, published_at: result.published_at });
   } catch (err) {
     return Response.json({ error: err.message }, { status: 500 });
