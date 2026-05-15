@@ -1,17 +1,49 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TEMPLATES, TEMPLATE_CATEGORIES } from './templates.js';
 import { TemplateThumbnail } from './ResumePreview.jsx';
 
+function StarBadge() {
+  return (
+    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-semibold bg-yellow-400/20 text-yellow-700 rounded border border-yellow-400/40">
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+      Featured
+    </span>
+  );
+}
+
 export default function TemplateGallery({ currentTemplateId, onSelect, onClose }) {
-  const [category, setCategory] = useState('All');
-  const [search, setSearch] = useState('');
-  const [preview, setPreview] = useState(null);
+  const [category, setCategory]     = useState('All');
+  const [search, setSearch]         = useState('');
+  const [preview, setPreview]       = useState(null);
+  const [featuredIds, setFeaturedIds] = useState([]);
+
+  useEffect(() => {
+    fetch('/api/v1/templates')
+      .then(r => r.json())
+      .then(d => setFeaturedIds(d.featuredIds || []))
+      .catch(() => {});
+  }, []);
+
+  const isFeatured = id => featuredIds.includes(id);
+
+  // "Featured" is a virtual category — not a style value.
+  const ALL_CATS = featuredIds.length > 0
+    ? ['All', 'Featured', ...TEMPLATE_CATEGORIES.filter(c => c !== 'All')]
+    : TEMPLATE_CATEGORIES;
 
   const filtered = TEMPLATES.filter(t => {
-    const matchCat = category === 'All' || t.style === category;
+    if (category === 'Featured') return isFeatured(t.id);
+    const matchCat    = category === 'All' || t.style === category;
     const matchSearch = !search || t.name.toLowerCase().includes(search.toLowerCase()) || t.style.toLowerCase().includes(search.toLowerCase());
     return matchCat && matchSearch;
+  }).sort((a, b) => {
+    // Featured templates sort first within each category.
+    const aF = isFeatured(a.id) ? 0 : 1;
+    const bF = isFeatured(b.id) ? 0 : 1;
+    return aF - bF;
   });
 
   const previewTpl = preview ? TEMPLATES.find(t => t.id === preview) : null;
@@ -40,14 +72,18 @@ export default function TemplateGallery({ currentTemplateId, onSelect, onClose }
             className="flex-1 max-w-xs px-3 py-1.5 text-sm border border-ds-inputBorder rounded bg-ds-bg text-ds-text placeholder:text-ds-textMuted focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
           />
           <div className="flex gap-1 overflow-x-auto">
-            {TEMPLATE_CATEGORIES.map(cat => (
+            {ALL_CATS.map(cat => (
               <button
                 key={cat}
                 onClick={() => setCategory(cat)}
                 className={`flex-shrink-0 px-3 py-1 text-xs font-medium rounded-btn transition-colors
-                  ${category === cat ? 'bg-primary text-white' : 'bg-ds-bg text-ds-textMuted hover:text-ds-text border border-ds-border'}`}
+                  ${category === cat
+                    ? cat === 'Featured' ? 'bg-yellow-400 text-yellow-900' : 'bg-primary text-white'
+                    : cat === 'Featured'
+                      ? 'bg-yellow-50 text-yellow-700 border border-yellow-300 hover:bg-yellow-100'
+                      : 'bg-ds-bg text-ds-textMuted hover:text-ds-text border border-ds-border'}`}
               >
-                {cat}
+                {cat === 'Featured' ? '★ Featured' : cat}
               </button>
             ))}
           </div>
@@ -60,7 +96,12 @@ export default function TemplateGallery({ currentTemplateId, onSelect, onClose }
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {filtered.map(t => (
-                <div key={t.id} onClick={() => setPreview(t.id)} className="cursor-pointer">
+                <div key={t.id} className="relative cursor-pointer" onClick={() => setPreview(t.id)}>
+                  {isFeatured(t.id) && (
+                    <div className="absolute top-2 left-2 z-10">
+                      <StarBadge />
+                    </div>
+                  )}
                   <TemplateThumbnail
                     templateId={t.id}
                     active={t.id === currentTemplateId}
@@ -83,11 +124,13 @@ export default function TemplateGallery({ currentTemplateId, onSelect, onClose }
             {/* Preview header */}
             <div className="flex items-center justify-between px-5 py-3 border-b border-ds-border flex-shrink-0">
               <div>
-                <h3 className="font-heading font-bold text-ds-text">{previewTpl.name}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-heading font-bold text-ds-text">{previewTpl.name}</h3>
+                  {isFeatured(previewTpl.id) && <StarBadge />}
+                </div>
                 <p className="text-xs text-ds-textMuted">{previewTpl.description}</p>
               </div>
               <div className="flex items-center gap-2">
-                {/* Prev/Next arrows */}
                 <button
                   disabled={previewIdx <= 0}
                   onClick={() => setPreview(filtered[previewIdx - 1]?.id)}

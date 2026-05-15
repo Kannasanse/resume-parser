@@ -90,6 +90,14 @@ function AdminIcon() {
   );
 }
 
+function LayoutIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>
+    </svg>
+  );
+}
+
 function SunIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -221,6 +229,7 @@ export default function Navbar() {
                   {navLink('/builder', 'Builder', <PenIcon />)}
                   {navLink('/admin/tests', 'Tests', <TestIcon />)}
                   {navLink('/admin/question-library', 'Library', <LibraryIcon />)}
+                  {navLink('/admin/templates', 'Templates', <LayoutIcon />)}
                   {navLink('/admin', 'Dashboard', <AdminIcon />, true)}
                 </>
               ) : (
@@ -360,6 +369,7 @@ export default function Navbar() {
               {drawerLink('/builder', 'Builder', <PenIcon />)}
               {drawerLink('/admin/tests', 'Tests', <TestIcon />)}
               {drawerLink('/admin/question-library', 'Library', <LibraryIcon />)}
+              {drawerLink('/admin/templates', 'Templates', <LayoutIcon />)}
               {drawerLink('/admin', 'Dashboard', <AdminIcon />, true)}
             </>
           ) : (
