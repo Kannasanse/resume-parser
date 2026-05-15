@@ -479,7 +479,8 @@ function ExperienceBody({ secs, util, variant }) {
         const entryId    = `${e._secId}-${e._idx}`;
         // Show entry if the entry heading is visible OR any of its bullets are visible.
         const entryVisible = !visibleBlockIds || visibleBlockIds.includes(entryId) ||
-          (e.bullets || []).some((_, j) => visibleBlockIds.includes(`${entryId}-bullet-${j}`));
+          (e.bullets || []).some((_, j) => visibleBlockIds.includes(`${entryId}-bullet-${j}`)) ||
+          visibleBlockIds.some(id => id.startsWith(`${entryId}-bullet-`));
         if (!entryVisible) return null;
         const showHeading = !visibleBlockIds || visibleBlockIds.includes(entryId);
         const adjTop     = blockAdj?.[entryId];
@@ -656,7 +657,8 @@ function ProjectsBody({ sec, util }) {
       {entries.map((p, i) => {
         const entryId = `${sec.id}-${i}`;
         const entryVisible = !visibleBlockIds || visibleBlockIds.includes(entryId) ||
-          (p.bullets || []).some((_, j) => visibleBlockIds.includes(`${entryId}-bullet-${j}`));
+          (p.bullets || []).some((_, j) => visibleBlockIds.includes(`${entryId}-bullet-${j}`)) ||
+          visibleBlockIds.some(id => id.startsWith(`${entryId}-bullet-`));
         if (!entryVisible) return null;
         const showHeading = !visibleBlockIds || visibleBlockIds.includes(entryId);
         const adjTop  = blockAdj?.[entryId];
