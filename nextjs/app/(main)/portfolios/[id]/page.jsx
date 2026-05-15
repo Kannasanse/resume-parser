@@ -20,12 +20,10 @@ async function getPortfolioData(slug) {
 }
 
 export async function generateMetadata({ params }) {
-  const { slug } = await params;
+  const { id: slug } = await params;
   const data = await getPortfolioData(slug);
 
-  if (!data?.portfolio) {
-    return { title: 'Portfolio not found' };
-  }
+  if (!data?.portfolio) return { title: 'Portfolio not found' };
 
   const { portfolio } = data;
   const canonical = `${CANONICAL_BASE}/portfolios/${slug}`;
@@ -46,10 +44,10 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function PublicPortfolioRoute({ params }) {
-  const { slug } = await params;
+  const { id: slug } = await params;
   const data = await getPortfolioData(slug);
 
-  if (!data?.portfolio || data.portfolio.published === false) {
+  if (!data?.portfolio || data.portfolio.status !== 'published') {
     notFound();
   }
 
