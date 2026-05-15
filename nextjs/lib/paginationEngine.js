@@ -210,12 +210,11 @@ export function computeGeometricAdjustments(contentEl, config) {
       const entryEls = Array.from(el.querySelectorAll('[data-entry-id]'));
 
       if (entryEls.length > 0) {
-        // Work Experience / Education style — has entry headings.
-        // Measure only the heading ROW of each entry (firstElementChild),
-        // NOT the full entry (which includes all bullets → massively over-estimates).
+        // Measure only the heading row of each entry — use data-entry-heading when
+        // present (reliable for grid layouts), fall back to firstElementChild.
         const n = Math.min(minSkillRowsWithLabel ?? 2, entryEls.length);
         const entryHeadingH = entryEls.slice(0, n).reduce((sum, entryEl) => {
-          const headingRow = entryEl.firstElementChild;
+          const headingRow = entryEl.querySelector('[data-entry-heading]') ?? entryEl.firstElementChild;
           return sum + (headingRow ? measureH(headingRow) : 24);
         }, 0);
         return headingH + spacing.betweenSectionLabelAndFirstEntry + entryHeadingH;
@@ -236,23 +235,20 @@ export function computeGeometricAdjustments(contentEl, config) {
 
     // ── Entry heading (job title + company + dates + location) ───────────────
     if (el.dataset.entryId) {
-      // Find the bullet list wrapper (children[1] or children[2]).
-      // Measure first N [data-bullet-id] elements directly — NOT the container.
-      // The old Math.min(..., 36) cap on the container height was wrong because
-      // it measured all bullets combined then silently capped the result.
-      const bulletContainer = el.children[1] || el.children[2];
-      if (bulletContainer) {
-        const bulletEls = Array.from(bulletContainer.querySelectorAll('[data-bullet-id]'));
-        if (bulletEls.length > 0) {
-          const n = Math.min(minBulletsWithHeading ?? 2, bulletEls.length);
-          const firstNH = bulletEls.slice(0, n).reduce((sum, b) => sum + measureH(b), 0);
-          return headingH + spacing.betweenHeadingAndFirstBullet + firstNH;
-        }
-        // No data-bullet-id found — fall back to first child of container.
-        const firstChild = bulletContainer.firstElementChild;
-        return headingH + spacing.betweenHeadingAndFirstBullet + (firstChild ? measureH(firstChild) : 24);
+      // Use data-entry-heading when present — reliable across all layout variants
+      // (grid, stacked, inline). Falls back to firstElementChild.
+      const entryHeadingEl = el.querySelector('[data-entry-heading]') ?? el.firstElementChild;
+      const entryHeadingH  = entryHeadingEl ? measureH(entryHeadingEl) : 24;
+
+      // Query bullets directly from the entry element — works regardless of DOM
+      // depth (grid columns, nested wrappers, etc.).
+      const bulletEls = Array.from(el.querySelectorAll('[data-bullet-id]'));
+      if (bulletEls.length > 0) {
+        const n = Math.min(minBulletsWithHeading ?? 2, bulletEls.length);
+        const firstNH = bulletEls.slice(0, n).reduce((sum, b) => sum + measureH(b), 0);
+        return entryHeadingH + spacing.betweenHeadingAndFirstBullet + firstNH;
       }
-      return headingH + spacing.betweenHeadingAndFirstBullet + 24;
+      return entryHeadingH + spacing.betweenHeadingAndFirstBullet + 24;
     }
 
     return headingH;
@@ -346,7 +342,19 @@ export function computeGeometricAdjustments(contentEl, config) {
     pageSlices[blockPageIdx[id] || 0].push(id);
   }
 
-  return { adj, pageSlices };
+  // Deduplicate — each block ID must appear on exactly one page slice.
+  // Floating-point boundary conditions can occasionally assign the same ID
+  // to two adjacent pages; keep only the first occurrence.
+  const seenIds = new Set();
+  const deduplicatedSlices = pageSlices.map(slice =>
+    slice.filter(id => {
+      if (seenIds.has(id)) return false;
+      seenIds.add(id);
+      return true;
+    })
+  );
+
+  return { adj, pageSlices: deduplicatedSlices };
 }
 
 // ── Word-export block builder (server-side) ───────────────────────────────────

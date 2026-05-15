@@ -492,8 +492,12 @@ function ExperienceBody({ secs, util, variant }) {
                 <div style={{ color: '#6B7280' }}>{e.location}</div>
               </div>}
               <div style={showHeading ? {} : { gridColumn: '1 / -1' }}>
-                {showHeading && <div style={{ fontWeight: 700 }}>{primary}</div>}
-                {showHeading && <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</div>}
+                {showHeading && (
+                  <div data-entry-heading>
+                    <div style={{ fontWeight: 700 }}>{primary}</div>
+                    <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</div>
+                  </div>
+                )}
                 <RichBody entry={e} listStyle={listStyle} entryId={entryId} visibleBlockIds={visibleBlockIds} />
               </div>
             </div>
@@ -502,9 +506,13 @@ function ExperienceBody({ secs, util, variant }) {
         if (variant === 'stacked') {
           return (
             <div key={i} className="resume-entry-block" data-entry-id={entryId} style={{ marginBottom: gap, ...(adjTop ? { marginTop: adjTop } : {}) }}>
-              {showHeading && <div style={{ fontWeight: 700 }}>{primary}</div>}
-              {showHeading && <div style={{ fontStyle: 'italic', fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</div>}
-              {showHeading && <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280', marginBottom: 3 }}>{e.dates}{e.location ? ` | ${e.location}` : ''}</div>}
+              {showHeading && (
+                <div data-entry-heading>
+                  <div style={{ fontWeight: 700 }}>{primary}</div>
+                  <div style={{ fontStyle: 'italic', fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</div>
+                  <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280', marginBottom: 3 }}>{e.dates}{e.location ? ` | ${e.location}` : ''}</div>
+                </div>
+              )}
               <RichBody entry={e} listStyle={listStyle} entryId={entryId} visibleBlockIds={visibleBlockIds} />
             </div>
           );
@@ -517,7 +525,11 @@ function ExperienceBody({ secs, util, variant }) {
                 <div style={{ color: '#6B7280' }}>{e.location}</div>
               </div>}
               <div style={showHeading ? {} : { gridColumn: '1 / -1' }}>
-                {showHeading && <div><strong>{primary},</strong> <em style={{ color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</em></div>}
+                {showHeading && (
+                  <div data-entry-heading>
+                    <div><strong>{primary},</strong> <em style={{ color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</em></div>
+                  </div>
+                )}
                 <RichBody entry={e} listStyle={listStyle} entryId={entryId} visibleBlockIds={visibleBlockIds} />
               </div>
             </div>
@@ -526,14 +538,18 @@ function ExperienceBody({ secs, util, variant }) {
         // default
         return (
           <div key={i} className="resume-entry-block" data-entry-id={entryId} style={{ marginBottom: gap, ...(adjTop ? { marginTop: adjTop } : {}) }}>
-            {showHeading && <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
-              <div style={{ fontWeight: 700 }}>{primary}</div>
-              <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280', whiteSpace: 'nowrap' }}>{e.dates}</div>
-            </div>}
-            {showHeading && <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
-              <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</div>
-              {e.location && <div style={{ fontSize: '0.85em', color: '#6B7280' }}>{e.location}</div>}
-            </div>}
+            {showHeading && (
+              <div data-entry-heading>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+                  <div style={{ fontWeight: 700 }}>{primary}</div>
+                  <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280', whiteSpace: 'nowrap' }}>{e.dates}</div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+                  <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</div>
+                  {e.location && <div style={{ fontSize: '0.85em', color: '#6B7280' }}>{e.location}</div>}
+                </div>
+              </div>
+            )}
             <RichBody entry={e} listStyle={listStyle} entryId={entryId} visibleBlockIds={visibleBlockIds} />
           </div>
         );
@@ -664,12 +680,16 @@ function ProjectsBody({ sec, util }) {
         const adjTop  = blockAdj?.[entryId];
         return (
           <div key={i} className="resume-entry-block" data-entry-id={entryId} style={{ marginBottom: i < entries.length - 1 ? entryGapPx * 0.75 : 0, ...(adjTop ? { marginTop: adjTop } : {}) }}>
-            {showHeading && <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <div style={{ fontWeight: 700 }}>{p.title}</div>
-              {p.dates && <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280' }}>{p.dates}</div>}
-            </div>}
-            {showHeading && p.role && <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{p.role}</div>}
-            {showHeading && p.link && <div style={{ fontSize: '0.85em', color: '#6B7280' }}>{p.link}</div>}
+            {showHeading && (
+              <div data-entry-heading>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <div style={{ fontWeight: 700 }}>{p.title}</div>
+                  {p.dates && <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280' }}>{p.dates}</div>}
+                </div>
+                {p.role && <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{p.role}</div>}
+                {p.link && <div style={{ fontSize: '0.85em', color: '#6B7280' }}>{p.link}</div>}
+              </div>
+            )}
             <RichBody entry={p} listStyle={listStyle} entryId={entryId} visibleBlockIds={visibleBlockIds} />
           </div>
         );
