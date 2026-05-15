@@ -297,19 +297,25 @@ export function computeGeometricAdjustments(contentEl, config) {
   });
 
   // ── Bullet pass ──────────────────────────────────────────────────────────────
-  // For each legacy bullet, if its bottom edge crosses the page boundary, push
-  // it (and all subsequent bullets in the same entry) to the next page.
-  // The entry heading itself is already placed above; only the bullet rows move.
+  // For each bullet, if its bottom edge crosses the page boundary, push it to
+  // the next page.  The entry heading is already placed by the pass above.
+  //
+  // elBottom is computed as elTop + rect.height rather than rect.bottom -
+  // containerRect.top to avoid any margin/overflow interference on rect.bottom.
+  // A 1px CLIP_TOLERANCE catches subpixel rendering clips where the bullet's
+  // bottom is fractionally inside the boundary but visually cut by overflow:hidden.
+  const CLIP_TOLERANCE = 1;
+
   contentEl.querySelectorAll('[data-bullet-id]').forEach((el) => {
-    const rect      = el.getBoundingClientRect();
-    const elTop     = rect.top  - containerRect.top + cumulative;
-    const elBottom  = rect.bottom - containerRect.top + cumulative;
-    const key       = el.dataset.bulletId;
+    const rect     = el.getBoundingClientRect();
+    const elHeight = Math.max(1, rect.height);
+    const elTop    = rect.top - containerRect.top + cumulative;
+    const elBottom = elTop + elHeight;
+    const key      = el.dataset.bulletId;
 
-    const pageEnd   = pageBoundaryAfter(elTop);
+    const pageEnd  = pageBoundaryAfter(elTop);
 
-    if (elBottom > pageEnd && elTop < pageEnd) {
-      // Bullet straddles the boundary — push it to the next page.
+    if (elBottom > pageEnd - CLIP_TOLERANCE && elTop < pageEnd) {
       const push = pageEnd - elTop;
       adj[key]    = push;
       cumulative += push;
