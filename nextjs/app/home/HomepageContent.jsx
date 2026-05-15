@@ -90,7 +90,7 @@ function Navbar({ heroCta, activeSection, visibleSectionKeys }) {
       <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: C.surface, borderBottom: `1px solid ${C.border}`, boxShadow: scrolled ? '0 2px 8px rgba(12,68,124,0.10)' : 'none', transition: 'box-shadow 150ms', height: 64 }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} className="px-4 sm:px-8">
           <Link href="/home" style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-            <Image src="/logo.png" alt="Proflect" width={120} height={32} style={{ height: 32, width: 'auto', objectFit: 'contain' }} priority />
+            <Image src="/logo.png" alt="Proflect" width={120} height={133} style={{ height: 40, width: 'auto' }} priority unoptimized />
           </Link>
           <div className="hidden lg:flex items-center gap-1">
             {navLinks.map(l => <NavLink key={l.id} {...l} />)}
@@ -107,7 +107,7 @@ function Navbar({ heroCta, activeSection, visibleSectionKeys }) {
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }} onClick={() => setDrawer(false)} />
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, background: C.surface, borderBottom: `1px solid ${C.border}`, padding: 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <Image src="/logo.png" alt="Proflect" width={100} height={28} style={{ height: 28, width: 'auto' }} />
+              <Image src="/logo.png" alt="Proflect" width={120} height={133} style={{ height: 40, width: 'auto' }} unoptimized />
               <button onClick={() => setDrawer(false)} aria-label="Close menu" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.charcoal }}><CloseIcon /></button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -352,7 +352,7 @@ function Footer({ data }) {
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px' }} className="px-4 sm:px-8">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 40, paddingBottom: 40 }}>
           <div>
-            <Image src="/logo.png" alt="Proflect" width={100} height={28} style={{ height: 28, width: 'auto', filter: 'brightness(0) invert(1)' }} />
+            <Image src="/logo.png" alt="Proflect" width={120} height={133} style={{ height: 40, width: 'auto', filter: 'brightness(0) invert(1)' }} unoptimized />
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', marginTop: 12, maxWidth: 220, lineHeight: 1.6 }}>{d.tagline}</p>
             <div style={{ display: 'flex', gap: 16, marginTop: 20 }}>
               {[{ ic: <LinkedInIcon />, label: 'LinkedIn' }, { ic: <XIcon />, label: 'Twitter' }, { ic: <GithubIcon />, label: 'GitHub' }].map(({ ic, label }) => (
