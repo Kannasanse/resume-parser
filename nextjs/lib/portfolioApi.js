@@ -28,3 +28,33 @@ export const listProjects     = (pid)            => fetch(`${BASE}/${pid}/projec
 export const createProject    = (pid, data)      => fetch(`${BASE}/${pid}/projects`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json());
 export const updateProject    = (pid, projId, data) => fetch(`${BASE}/${pid}/projects/${projId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json());
 export const deleteProject    = (pid, projId)       => fetch(`${BASE}/${pid}/projects/${projId}`, { method: 'DELETE' }).then(r => r.json());
+
+// Analytics
+export async function trackEvent(portfolioId, eventType, extras = {}) {
+  return req('/analytics', {
+    method: 'POST',
+    body: JSON.stringify({ portfolioId, eventType, referrer: document.referrer, ...extras }),
+  });
+}
+
+// AI features
+export async function generateBio(payload) {
+  return req('/ai/bio', { method: 'POST', body: JSON.stringify(payload) });
+}
+export async function generateTaglines(payload) {
+  return req('/ai/tagline', { method: 'POST', body: JSON.stringify(payload) });
+}
+export async function enhanceProjectDescription(payload) {
+  return req('/ai/project-description', { method: 'POST', body: JSON.stringify(payload) });
+}
+export async function analyseSkillsGap(payload) {
+  return req('/ai/skills-gap', { method: 'POST', body: JSON.stringify(payload) });
+}
+export async function generateSeoSuggestions(payload) {
+  return req('/ai/seo', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+// Revalidate ISR cache
+export async function revalidatePortfolio(slug) {
+  return req('/revalidate', { method: 'POST', body: JSON.stringify({ slug }) });
+}
