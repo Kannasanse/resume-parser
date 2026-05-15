@@ -31,12 +31,16 @@ export default function WritingAssistantModal({ loading, improved, error, onAcce
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[2px]"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[2px] p-4"
       onMouseDown={e => { if (e.target === overlayRef.current) onDismiss(); }}
     >
-      <div className="bg-ds-card border border-ds-border rounded-xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center gap-2 px-5 py-3.5 border-b border-ds-border">
+      {/* Modal — fixed height, flex column so header/footer are sticky */}
+      <div
+        className="bg-ds-card border border-ds-border rounded-xl shadow-2xl w-full max-w-2xl flex flex-col"
+        style={{ maxHeight: 'min(80vh, 640px)' }}
+      >
+        {/* Header — fixed */}
+        <div className="flex items-center gap-2 px-5 py-3.5 border-b border-ds-border flex-shrink-0">
           <span className="text-primary"><SparkleIcon size={18} /></span>
           <span className="text-[14px] font-semibold text-ds-text">Writing Assistant</span>
           <button
@@ -50,10 +54,10 @@ export default function WritingAssistantModal({ loading, improved, error, onAcce
           </button>
         </div>
 
-        {/* Body */}
-        <div className="p-5">
+        {/* Body — scrollable */}
+        <div className="flex-1 overflow-y-auto p-5 min-h-0">
           {loading && (
-            <div className="flex flex-col items-center justify-center gap-3 py-10 text-ds-textMuted">
+            <div className="flex flex-col items-center justify-center gap-3 py-12 text-ds-textMuted">
               <span className="text-primary"><SpinnerIcon /></span>
               <span className="text-[13px]">Improving your content…</span>
             </div>
@@ -66,32 +70,30 @@ export default function WritingAssistantModal({ loading, improved, error, onAcce
           )}
 
           {improved && !loading && (
-            <div className="flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-3">
-                {/* Original */}
-                <div className="flex flex-col gap-1.5">
-                  <div className="text-[11px] font-semibold uppercase tracking-wide text-ds-textMuted">Original</div>
-                  <div
-                    className="border border-ds-border rounded-lg px-3 py-2.5 text-[13px] text-ds-text leading-relaxed prose-rte min-h-[80px] bg-ds-bg"
-                    dangerouslySetInnerHTML={{ __html: originalHtml || '' }}
-                  />
-                </div>
-                {/* Suggested */}
-                <div className="flex flex-col gap-1.5">
-                  <div className="text-[11px] font-semibold uppercase tracking-wide text-primary">AI Suggestion</div>
-                  <div
-                    className="border border-primary/40 rounded-lg px-3 py-2.5 text-[13px] text-ds-text leading-relaxed prose-rte min-h-[80px] bg-primary/[0.03]"
-                    dangerouslySetInnerHTML={{ __html: improved }}
-                  />
-                </div>
+            <div className="grid grid-cols-2 gap-3">
+              {/* Original */}
+              <div className="flex flex-col gap-1.5">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-ds-textMuted">Original</div>
+                <div
+                  className="border border-ds-border rounded-lg px-3 py-2.5 text-[13px] text-ds-text leading-relaxed prose-rte bg-ds-bg"
+                  dangerouslySetInnerHTML={{ __html: originalHtml || '' }}
+                />
+              </div>
+              {/* Suggested */}
+              <div className="flex flex-col gap-1.5">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-primary">AI Suggestion</div>
+                <div
+                  className="border border-primary/40 rounded-lg px-3 py-2.5 text-[13px] text-ds-text leading-relaxed prose-rte bg-primary/[0.03]"
+                  dangerouslySetInnerHTML={{ __html: improved }}
+                />
               </div>
             </div>
           )}
         </div>
 
-        {/* Footer */}
+        {/* Footer — fixed */}
         {!loading && (
-          <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-ds-border bg-ds-bg">
+          <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-ds-border bg-ds-bg flex-shrink-0">
             <button
               type="button"
               onClick={onDismiss}
