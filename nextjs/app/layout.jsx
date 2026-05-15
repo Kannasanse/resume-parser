@@ -2,7 +2,7 @@ import './globals.css';
 import Providers from '@/components/providers';
 
 export const metadata = {
-  title: 'Profile Stream',
+  title: 'Proflect',
   description: 'AI-powered resume parsing and candidate scoring',
   icons: {
     icon: '/favicon.png',
