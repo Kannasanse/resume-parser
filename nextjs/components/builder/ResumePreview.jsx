@@ -275,18 +275,142 @@ function SkillsBody({ sec, util, variantCols }) {
 
 // Renders rich HTML body (new format) or falls back to old bullets array / plain text.
 // listStyle only affects the old bullets fallback (hyphen vs disc).
+// Parse an HTML string from RichTextEditor into a flat array of block descriptors.
+// Each descriptor: { tag: 'li'|'p'|'div', html: string (inner HTML) }
+// <li> elements are extracted from their <ul>/<ol> parent.
+// Consecutive <p> blocks are kept as individual items so each gets data-bullet-id.
+function parseBodyBlocks(html) {
+  if (!html) return [];
+  // Run in browser only — SSR guard
+  if (typeof document === 'undefined') return [{ tag: 'p', html }];
+
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+
+  const blocks = [];
+  tmp.childNodes.forEach((node) => {
+    if (node.nodeType !== 1) return; // skip text nodes
+    const tag = node.tagName.toLowerCase();
+    if (tag === 'ul' || tag === 'ol') {
+      node.querySelectorAll('li').forEach((li) => {
+        // li may contain a nested <p> — unwrap it for cleaner output
+        const inner = li.querySelector('p') ? li.querySelector('p').innerHTML : li.innerHTML;
+        blocks.push({ tag: 'li', listTag: tag, html: inner });
+      });
+    } else {
+      // <p>, <div>, or anything else — keep as-is
+      blocks.push({ tag, html: node.innerHTML || node.textContent });
+    }
+  });
+
+  // Filter out empty/whitespace-only blocks
+  return blocks.filter(b => b.html.replace(/<[^>]+>/g, '').trim().length > 0 || b.html.includes('<img'));
+}
+
 function RichBody({ entry, listStyle, style, entryId, visibleBlockIds }) {
-  // New: HTML body stored by RichTextEditor
+  // ── New: HTML body stored by RichTextEditor ──────────────────────────────────
   if (entry.body) {
-    return (
-      <div
-        className="resume-rich-body"
-        dangerouslySetInnerHTML={{ __html: entry.body }}
-        style={{ marginTop: 3, ...style }}
-      />
-    );
+    const blocks = parseBodyBlocks(entry.body);
+
+    // If parsing produced no blocks (SSR or empty), fall back to raw HTML
+    if (!blocks.length) {
+      return (
+        <div
+          className="resume-rich-body"
+          dangerouslySetInnerHTML={{ __html: entry.body }}
+          style={{ marginTop: 3, ...style }}
+        />
+      );
+    }
+
+    // Determine bullet-level visibility (same logic as legacy path)
+    const hasBulletSplit = visibleBlockIds && entryId &&
+      blocks.some((_, j) => visibleBlockIds.includes(`${entryId}-bullet-${j}`));
+
+    function isBlockVisible(j) {
+      if (!visibleBlockIds || !entryId) return true;
+      if (hasBulletSplit) return visibleBlockIds.includes(`${entryId}-bullet-${j}`);
+      return visibleBlockIds.includes(entryId);
+    }
+
+    if (blocks.length > 0 && !blocks.some((_, j) => isBlockVisible(j))) return null;
+
+    // Group consecutive <li> blocks that share the same list tag so they render
+    // inside a single <ul>/<ol>. Non-li blocks render standalone with data-bullet-id.
+    const rendered = [];
+    let liBuffer = [];
+    let liBufferTag = null;
+    let liBufferStart = 0;
+
+    function flushLiBuffer() {
+      if (!liBuffer.length) return;
+      const ListTag = liBufferTag || 'ul';
+      const listStyle_ = ListTag === 'ul' ? 'disc' : 'decimal';
+      rendered.push(
+        <ListTag
+          key={`ul-${liBufferStart}`}
+          style={{ margin: '3px 0 0', paddingLeft: 18, listStyleType: listStyle_ }}
+        >
+          {liBuffer.map(({ j, html }) => {
+            const bulletId = entryId ? `${entryId}-bullet-${j}` : undefined;
+            return (
+              <li
+                key={j}
+                data-bullet-id={bulletId}
+                style={{ marginBottom: 1, display: 'list-item' }}
+                dangerouslySetInnerHTML={{ __html: html }}
+              />
+            );
+          })}
+        </ListTag>
+      );
+      liBuffer = [];
+      liBufferTag = null;
+    }
+
+    blocks.forEach((block, j) => {
+      if (!isBlockVisible(j)) return;
+      const bulletId = entryId ? `${entryId}-bullet-${j}` : undefined;
+
+      if (block.tag === 'li') {
+        if (liBufferTag && liBufferTag !== block.listTag) flushLiBuffer();
+        if (!liBuffer.length) liBufferStart = j;
+        liBufferTag = block.listTag || 'ul';
+        liBuffer.push({ j, html: block.html });
+      } else {
+        flushLiBuffer();
+        // Hyphen style for non-li blocks that look like bullets
+        if (listStyle === 'hyphen' && block.tag === 'p') {
+          rendered.push(
+            <div
+              key={j}
+              data-bullet-id={bulletId}
+              style={{ display: 'flex', gap: 6, marginBottom: 1 }}
+            >
+              <span style={{ flexShrink: 0, color: '#6B7280' }}>–</span>
+              <span dangerouslySetInnerHTML={{ __html: block.html }} />
+            </div>
+          );
+        } else {
+          rendered.push(
+            <div
+              key={j}
+              data-bullet-id={bulletId}
+              style={{ marginBottom: 1 }}
+              dangerouslySetInnerHTML={{ __html: block.html }}
+            />
+          );
+        }
+      }
+    });
+    flushLiBuffer();
+
+    if (!rendered.length) return null;
+
+    return <div style={{ marginTop: 3, ...style }}>{rendered}</div>;
   }
-  // Legacy: bullets array
+
+  // ── Legacy: bullets array ────────────────────────────────────────────────────
   const allBullets = (entry.bullets || []).filter(b => b?.trim());
   if (!allBullets.length) return null;
 

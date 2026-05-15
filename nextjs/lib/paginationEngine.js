@@ -182,9 +182,6 @@ export function computeGeometricAdjustments(contentEl, config) {
   const containerRect = contentEl.getBoundingClientRect();
   const pageH  = config.page.height;
   const effH   = effectiveContentHeight(config);
-
-  // TEMPORARY DIAGNOSTIC — remove after fixing
-  console.log('[PaginationEngine] config:', { pageH, effH, pageWidth: config.page.width });
   const { minBulletsWithHeading, minSkillRowsWithLabel, spacing } = config;
 
   // scrollHeight is never clipped by ancestor overflow:hidden — always the full
@@ -301,29 +298,6 @@ export function computeGeometricAdjustments(contentEl, config) {
       blockPageIdx[key] = pageIdxFor(elTop);
     }
   });
-
-  // TEMPORARY DIAGNOSTIC — remove after fixing
-  console.group('[PaginationEngine] Bullet measurements near page boundary');
-  contentEl.querySelectorAll('[data-bullet-id]').forEach((el) => {
-    const rect     = el.getBoundingClientRect();
-    const elTop    = rect.top - containerRect.top + cumulative;
-    const elBottom = elTop + Math.max(1, el.scrollHeight || rect.height);
-    const pageEnd  = pageBoundaryAfter(elTop);
-    if (elTop > pageH - 200) {
-      console.log({
-        id:         el.dataset.bulletId,
-        elTop:      +elTop.toFixed(2),
-        elBottom:   +elBottom.toFixed(2),
-        pageEnd:    +pageEnd.toFixed(2),
-        rectHeight: +rect.height.toFixed(2),
-        scrollH:    el.scrollHeight,
-        overflow:   +(elBottom - pageEnd).toFixed(2),
-        wouldPush:  elBottom > pageEnd - 1 && elTop < pageEnd,
-        cumulative: +cumulative.toFixed(2),
-      });
-    }
-  });
-  console.groupEnd();
 
   // ── Bullet pass ──────────────────────────────────────────────────────────────
   // For each bullet, if its bottom edge crosses the page boundary, push it to
