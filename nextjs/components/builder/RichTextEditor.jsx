@@ -125,7 +125,7 @@ function Toolbar({ editor, onAssist, hasAssist }) {
 
 export default function RichTextEditor({ value, onChange, placeholder, assistConfig }) {
   const isFocused = useRef(false);
-  const [assistState, setAssistState] = useState(null); // null | { loading, improved, error, original }
+  const [assistState, setAssistState] = useState(null); // null | { open, loading, improved, error, original }
 
   const editor = useEditor({
     extensions: [
@@ -154,10 +154,22 @@ export default function RichTextEditor({ value, onChange, placeholder, assistCon
     },
   });
 
-  async function handleAssist() {
+  function openAssist() {
     if (!editor || !assistConfig) return;
     const html = editor.isEmpty ? '' : editor.getHTML();
-    setAssistState({ loading: true, improved: null, error: null, original: html });
+    setAssistState({ loading: false, improved: null, error: null, original: html });
+  }
+
+  async function handleAssist(feedback = '') {
+    if (!editor || !assistConfig) return;
+    const html = editor.isEmpty ? '' : editor.getHTML();
+    setAssistState(s => ({
+      ...s,
+      loading: true,
+      improved: null,
+      error: null,
+      original: s?.original ?? html,
+    }));
     try {
       const res = await fetch(`/api/v1/builder/${assistConfig.resumeId}/writing-assist`, {
         method: 'POST',
@@ -166,6 +178,7 @@ export default function RichTextEditor({ value, onChange, placeholder, assistCon
           content: html,
           sectionType: assistConfig.sectionType,
           context: assistConfig.context || {},
+          feedback,
         }),
       });
       const data = await res.json();
@@ -201,11 +214,12 @@ export default function RichTextEditor({ value, onChange, placeholder, assistCon
         error={assistState.error}
         originalHtml={assistState.original}
         onAccept={handleAccept}
+        onImprove={handleAssist}
         onDismiss={() => setAssistState(null)}
       />
     )}
     <div className="border border-ds-inputBorder rounded-[7px] bg-ds-card focus-within:border-primary focus-within:ring-[3px] focus-within:ring-primary/10 transition-colors overflow-hidden">
-      <Toolbar editor={editor} onAssist={handleAssist} hasAssist={!!assistConfig} />
+      <Toolbar editor={editor} onAssist={openAssist} hasAssist={!!assistConfig} />
       <div className="relative">
         {editor?.isEmpty && placeholder && (
           <div className="absolute top-2 left-3 text-[13px] text-ds-textMuted pointer-events-none select-none">

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth-helpers.js';
+import { deductCredits, getBalance } from '@/lib/credits.js';
 import Groq from 'groq-sdk';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
@@ -41,12 +42,22 @@ function stripHtml(html) {
 }
 
 export async function POST(req, { params }) {
+  let user;
   try {
-    await requireUser(req);
+    ({ user } = await requireUser(req));
   } catch (e) { return e; }
 
+  // Credit guard — 1 credit per improvement
+  const balance = await getBalance(user.id);
+  if (balance < 1) {
+    return NextResponse.json(
+      { error: 'Insufficient credits. AI Writing Assistant costs 1 credit.', code: 'insufficient_credits', balance },
+      { status: 402 }
+    );
+  }
+
   const body = await req.json().catch(() => null);
-  const { content, sectionType, context = {} } = body || {};
+  const { content, sectionType, context = {}, feedback = '' } = body || {};
 
   if (!content || !sectionType) {
     return NextResponse.json({ error: 'content and sectionType required' }, { status: 400 });
@@ -68,9 +79,11 @@ export async function POST(req, { params }) {
   if (context.project)   contextLines.push(`Project: ${context.project}`);
   if (context.role)      contextLines.push(`Role / tech: ${context.role}`);
 
+  const feedbackLine = feedback?.trim() ? `\nAdditional instruction: ${feedback.trim()}` : '';
+
   const userMessage = contextLines.length
-    ? `${contextLines.join('\n')}\n\nCurrent content:\n${plainText}`
-    : `Current content:\n${plainText}`;
+    ? `${contextLines.join('\n')}${feedbackLine}\n\nCurrent content:\n${plainText}`
+    : `${feedbackLine ? feedbackLine.trimStart() + '\n\n' : ''}Current content:\n${plainText}`;
 
   try {
     const completion = await groq.chat.completions.create({
@@ -93,7 +106,8 @@ export async function POST(req, { params }) {
       improved = `<p>${improved.replace(/\n+/g, '</p><p>')}</p>`;
     }
 
-    return NextResponse.json({ improved });
+    const { balance: newBalance } = await deductCredits(user.id, 'writing_assist');
+    return NextResponse.json({ improved, balance: newBalance });
   } catch (err) {
     console.error('[writing-assist] Groq error:', err.message);
 
@@ -122,7 +136,8 @@ export async function POST(req, { params }) {
       if (!improved.includes('<')) {
         improved = `<p>${improved.replace(/\n+/g, '</p><p>')}</p>`;
       }
-      return NextResponse.json({ improved });
+      const { balance: newBalance } = await deductCredits(user.id, 'writing_assist');
+      return NextResponse.json({ improved, balance: newBalance });
     } catch (fallbackErr) {
       console.error('[writing-assist] fallback error:', fallbackErr.message);
       return NextResponse.json({ error: 'AI service unavailable. Please try again.' }, { status: 503 });

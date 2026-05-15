@@ -1,15 +1,17 @@
 import supabase from './supabase.js';
 
 export const CREDIT_COSTS = {
-  ats_score:     3,
-  resume_import: 5,
+  ats_score:      3,
+  resume_import:  5,
+  writing_assist: 1,
 };
 
 export const CREDIT_LABELS = {
-  ats_score:     'ATS Score Analysis',
-  resume_import: 'Resume Import (AI)',
-  admin_grant:   'Credits granted by admin',
-  initial_grant: 'Welcome credits',
+  ats_score:        'ATS Score Analysis',
+  resume_import:    'Resume Import (AI)',
+  writing_assist:   'AI Writing Assistant',
+  admin_grant:      'Credits granted by admin',
+  initial_grant:    'Welcome credits',
   request_approved: 'Credits from approved request',
 };
 

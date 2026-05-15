@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 function SpinnerIcon() {
   return (
@@ -19,14 +19,35 @@ function SparkleIcon({ size = 16 }) {
   );
 }
 
-export default function WritingAssistantModal({ loading, improved, error, onAccept, onDismiss, originalHtml }) {
+const QUICK_SUGGESTIONS = [
+  'Make it shorter',
+  'Make it longer',
+  'Use stronger action verbs',
+  'Add more quantifiable results',
+  'Make it more formal',
+];
+
+export default function WritingAssistantModal({
+  loading,
+  improved,
+  error,
+  onAccept,
+  onDismiss,
+  onImprove,
+  originalHtml,
+}) {
   const overlayRef = useRef(null);
+  const [feedback, setFeedback] = useState('');
 
   useEffect(() => {
     function onKey(e) { if (e.key === 'Escape') onDismiss(); }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onDismiss]);
+
+  const handleImprove = () => onImprove(feedback.trim());
+
+  const isInsufficientCredits = error?.includes('Insufficient credits') || error?.includes('insufficient_credits');
 
   return (
     <div
@@ -37,12 +58,13 @@ export default function WritingAssistantModal({ loading, improved, error, onAcce
       {/* Modal — fixed height, flex column so header/footer are sticky */}
       <div
         className="bg-ds-card border border-ds-border rounded-xl shadow-2xl w-full max-w-2xl flex flex-col"
-        style={{ maxHeight: 'min(80vh, 640px)' }}
+        style={{ maxHeight: 'min(85vh, 680px)' }}
       >
         {/* Header — fixed */}
         <div className="flex items-center gap-2 px-5 py-3.5 border-b border-ds-border flex-shrink-0">
           <span className="text-primary"><SparkleIcon size={18} /></span>
           <span className="text-[14px] font-semibold text-ds-text">Writing Assistant</span>
+          <span className="ml-1 text-[11px] text-ds-textMuted font-normal">· 1 credit</span>
           <button
             type="button"
             onClick={onDismiss}
@@ -55,22 +77,66 @@ export default function WritingAssistantModal({ loading, improved, error, onAcce
         </div>
 
         {/* Body — scrollable */}
-        <div className="flex-1 overflow-y-auto p-5 min-h-0">
+        <div className="flex-1 overflow-y-auto p-5 min-h-0 flex flex-col gap-4">
+
+          {/* Feedback input — always visible */}
+          {!loading && (
+            <div className="flex flex-col gap-2 flex-shrink-0">
+              <label className="text-[12px] font-semibold text-ds-text">
+                Additional instructions <span className="font-normal text-ds-textMuted">(optional)</span>
+              </label>
+              <textarea
+                rows={2}
+                value={feedback}
+                onChange={e => setFeedback(e.target.value)}
+                placeholder="e.g. Make it shorter, focus on leadership, add more metrics…"
+                className="w-full px-3 py-2 text-[13px] border border-ds-inputBorder rounded-lg bg-ds-card text-ds-text placeholder:text-ds-textMuted focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-primary/10 transition-colors resize-none leading-relaxed"
+              />
+              {/* Quick suggestion chips */}
+              <div className="flex flex-wrap gap-1.5">
+                {QUICK_SUGGESTIONS.map(s => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setFeedback(s)}
+                    className={`text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors ${
+                      feedback === s
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-ds-border text-ds-textMuted hover:border-primary hover:text-primary hover:bg-primary/5'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Loading */}
           {loading && (
-            <div className="flex flex-col items-center justify-center gap-3 py-12 text-ds-textMuted">
+            <div className="flex flex-col items-center justify-center gap-3 py-12 text-ds-textMuted flex-1">
               <span className="text-primary"><SpinnerIcon /></span>
               <span className="text-[13px]">Improving your content…</span>
             </div>
           )}
 
+          {/* Error */}
           {error && !loading && (
-            <div className="text-[13px] text-ds-danger bg-ds-dangerLight rounded-lg px-4 py-3">
-              {error}
+            <div className={`text-[13px] rounded-lg px-4 py-3 flex-shrink-0 ${
+              isInsufficientCredits
+                ? 'text-amber-700 bg-amber-50 border border-amber-200'
+                : 'text-ds-danger bg-ds-dangerLight'
+            }`}>
+              {isInsufficientCredits
+                ? <>You don't have enough credits. <a href="/credits" className="underline font-semibold">Get more credits →</a></>
+                : error
+              }
             </div>
           )}
 
+          {/* Side-by-side comparison */}
           {improved && !loading && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 flex-shrink-0">
               {/* Original */}
               <div className="flex flex-col gap-1.5">
                 <div className="text-[11px] font-semibold uppercase tracking-wide text-ds-textMuted">Original</div>
@@ -101,6 +167,26 @@ export default function WritingAssistantModal({ loading, improved, error, onAcce
             >
               Dismiss
             </button>
+            {improved && (
+              <button
+                type="button"
+                onClick={() => handleImprove()}
+                className="h-8 px-4 text-[13px] font-semibold rounded-lg border border-ds-border text-ds-text hover:bg-ds-bg transition-colors flex items-center gap-1.5"
+              >
+                <SparkleIcon size={12} />
+                Try again
+              </button>
+            )}
+            {!improved && !error && (
+              <button
+                type="button"
+                onClick={handleImprove}
+                className="h-8 px-4 text-[13px] font-semibold rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors flex items-center gap-1.5"
+              >
+                <SparkleIcon size={13} />
+                Improve · 1 credit
+              </button>
+            )}
             {improved && (
               <button
                 type="button"
