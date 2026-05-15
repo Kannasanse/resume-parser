@@ -1,6 +1,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth-helpers.js';
 import { getAllHomepageSections, publishHomepage, getLastPublished, upsertSection } from '@/lib/homepage.js';
+import supabase from '@/lib/supabase.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,6 +51,13 @@ export async function POST(req) {
 
   try {
     const result = await publishHomepage(body.sections, user.id);
+    if (body.sectionsToDelete?.length) {
+      const { error: delErr } = await supabase
+        .from('homepage_sections')
+        .delete()
+        .in('section_key', body.sectionsToDelete);
+      if (delErr) console.warn('[homepage] delete sections error:', delErr.message);
+    }
     revalidatePath('/home');
     return Response.json({ published: true, published_at: result.published_at });
   } catch (err) {
