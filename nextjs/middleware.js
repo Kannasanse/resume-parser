@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 
-const PUBLIC_PATHS   = ['/login', '/signup', '/verify-email', '/forgot-password', '/reset-password', '/join', '/access-denied'];
+const PUBLIC_PATHS   = ['/home', '/login', '/signup', '/verify-email', '/forgot-password', '/reset-password', '/join', '/access-denied'];
 const ADMIN_ONLY_PATHS = ['/resumes', '/jobs', '/upload', '/admin'];
 const ADMIN_ONLY_API   = ['/api/v1/resumes', '/api/v1/jobs', '/api/v1/admin', '/api/v1/organizations'];
 
