@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { buildLayoutConfig, effectiveContentHeight } from '@/lib/layoutConfig.js';
 import { computeGeometricAdjustments } from '@/lib/paginationEngine.js';
 
@@ -1224,10 +1224,10 @@ function buildPageStarts(totalHeight, config) {
 }
 
 export default function ResumePreview({ resume, designSettings = {}, scale = null, className = '', printMode = false }) {
-  const containerRef   = useRef(null);
-  const contentRef     = useRef(null);
-  const detectionTimer = useRef(null);
-  const fontsReady     = useRef(false);
+  const containerRef = useRef(null);
+  const contentRef   = useRef(null);
+  const fontsReady   = useRef(false);
+  const rafHandle    = useRef(null);
 
   const [computedScale,      setComputedScale]      = useState(scale || 0.6);
   const [contentHeight,      setContentHeight]      = useState(0);
@@ -1266,13 +1266,63 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
     setContentHeight(Math.round(h));
   }, []);
 
-  // Wait for all fonts to be ready before measuring for the first time (§17).
+  // ── Core pagination runner ────────────────────────────────────────────────────
+  // Always reads from contentRef (stable ref — never a stale closure capture).
+  // Uses double-rAF so measurement runs after browser layout/paint is complete,
+  // ensuring getBoundingClientRect returns post-edit heights not pre-edit ones.
+
+  const runPagination = useCallback(() => {
+    cancelAnimationFrame(rafHandle.current);
+    rafHandle.current = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const contentEl = contentRef.current;
+        if (!contentEl || !fontsReady.current) return;
+        // Fresh adj object — never reuse previous run (Fix 3)
+        const { adj: newAdj, pageSlices: newSlices } = computeGeometricAdjustments(contentEl, config);
+        // Always replace entirely — never merge (Fix 3)
+        setSectionAdjustments(prev =>
+          JSON.stringify(newAdj) === JSON.stringify(prev) ? prev : newAdj,
+        );
+        setPageSlices(prev =>
+          JSON.stringify(newSlices) === JSON.stringify(prev) ? prev : newSlices,
+        );
+      });
+    });
+  // config is rebuilt every render from ss/ds; only stable page dimensions as deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page.id, page.height, page.marginTop, page.marginBottom]);
+
+  // Debounced version for keystroke-level triggers (text edits that produce
+  // rapid onChange events). Uses a plain closure timer rather than lodash so
+  // there is no external dependency.
+  const debouncedPaginate = useMemo(() => {
+    let timer = null;
+    function debounced() {
+      clearTimeout(timer);
+      timer = setTimeout(() => runPagination(), config.debounceMs);
+    }
+    debounced.cancel = () => clearTimeout(timer);
+    return debounced;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runPagination, config.debounceMs]);
+
+  // Cancel pending timers/rAFs on unmount to prevent setState on unmounted component
+  useEffect(() => {
+    return () => {
+      debouncedPaginate.cancel();
+      cancelAnimationFrame(rafHandle.current);
+    };
+  }, [debouncedPaginate]);
+
+  // Wait for all fonts to be ready before first measurement (§17).
+  // Re-run pagination after fonts load since glyph sizes change layout heights.
   useEffect(() => {
     document.fonts.ready.then(() => {
       fontsReady.current = true;
       measureContent();
+      runPagination();
     });
-  }, [measureContent]);
+  }, [measureContent, runPagination]);
 
   // ── ResizeObservers — §19.3: scale and content changes are handled separately.
   //
@@ -1294,24 +1344,29 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
     return () => { scaleObs.disconnect(); measureObs.disconnect(); };
   }, [updateScale, measureContent]);
 
-  // Re-run the pagination engine whenever the measured content height changes.
-  // Debounced at LAYOUT_CONFIG.debounceMs (300 ms) to coalesce rapid edits.
-  // Only one pending call is allowed at a time (previous is cancelled).
+  // Re-run pagination whenever the measured content height changes.
+  // Covers structural edits: add/remove bullet, new entry, section reorder,
+  // template/font-size switch — anything that changes total scrollHeight.
   useEffect(() => {
-    if (!contentRef.current || !contentHeight) return;
-    clearTimeout(detectionTimer.current);
-    detectionTimer.current = setTimeout(() => {
-      const { adj: newAdj, pageSlices: newSlices } = computeGeometricAdjustments(contentRef.current, config);
-      setSectionAdjustments(prev =>
-        JSON.stringify(newAdj) === JSON.stringify(prev) ? prev : newAdj,
-      );
-      setPageSlices(prev =>
-        JSON.stringify(newSlices) === JSON.stringify(prev) ? prev : newSlices,
-      );
-    }, config.debounceMs);
-    return () => clearTimeout(detectionTimer.current);
+    if (!contentHeight) return;
+    runPagination();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contentHeight, page.id, page.height, page.marginTop, page.marginBottom]);
+
+  // Re-run pagination whenever section content changes text that may NOT change
+  // total scrollHeight (e.g. rewording a bullet to the same line count, changing
+  // a job title). Serialise only sections to avoid expensive full-resume stringify.
+  const sectionsKey = useMemo(
+    () => JSON.stringify(resume?.sections),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [resume?.sections],
+  );
+
+  useEffect(() => {
+    if (!contentHeight) return;
+    debouncedPaginate();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sectionsKey]);
 
   const s = scale !== null ? scale : computedScale;
 
