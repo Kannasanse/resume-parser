@@ -200,33 +200,59 @@ export function computeGeometricAdjustments(contentEl, config) {
    */
   function minStartSpace(el) {
     const headingEl = el.firstElementChild;
-    const headingH  = headingEl ? measureH(headingEl) : 20;
+    const headingH  = headingEl ? measureH(headingEl) : 24;
 
+    // ── Section label (WORK EXPERIENCE, SKILLS, EDUCATION …) ─────────────────
     if (el.dataset.sectionId) {
-      // Section label: needs label row + spacing + first N entry heights.
-      // Never measures the full section (sections always span pages).
       const entryEls = Array.from(el.querySelectorAll('[data-entry-id]'));
+
       if (entryEls.length > 0) {
-        const n = Math.min(minSkillRowsWithLabel, entryEls.length);
-        const itemH = entryEls.slice(0, n).reduce((s, e) => s + measureH(e), 0);
-        return headingH + spacing.betweenSectionLabelAndFirstEntry + itemH;
+        // Work Experience / Education style — has entry headings.
+        // Measure only the heading ROW of each entry (firstElementChild),
+        // NOT the full entry (which includes all bullets → massively over-estimates).
+        const n = Math.min(minSkillRowsWithLabel ?? 2, entryEls.length);
+        const entryHeadingH = entryEls.slice(0, n).reduce((sum, entryEl) => {
+          const headingRow = entryEl.firstElementChild;
+          return sum + (headingRow ? measureH(headingRow) : 24);
+        }, 0);
+        return headingH + spacing.betweenSectionLabelAndFirstEntry + entryHeadingH;
       }
-      // Body-only section (skills, summary, languages…): label + first N rows.
+
+      // Skills / flat list style — rows without data-entry-id.
       const bodyEl = el.children[1];
       const rows   = bodyEl ? Array.from(bodyEl.children) : [];
       if (rows.length > 0) {
-        const n = Math.min(minSkillRowsWithLabel, rows.length);
+        const n = Math.min(minSkillRowsWithLabel ?? 2, rows.length);
         const itemH = rows.slice(0, n).reduce((s, r) => s + measureH(r), 0);
         return headingH + spacing.betweenSectionLabelAndFirstEntry + itemH;
       }
-      // Atomic body (no measurable children) — just the heading row.
+
+      // Atomic body (summary, languages, hobbies…) — just the heading row.
       return headingH;
     }
 
-    // Entry heading: heading row + spacing + first bullet body height (capped).
-    const bodyEl  = el.children[1] || el.children[2];
-    const bulletH = bodyEl ? Math.min(measureH(bodyEl), 36) : 20; // ~2 lines
-    return headingH + spacing.betweenHeadingAndFirstBullet + bulletH;
+    // ── Entry heading (job title + company + dates + location) ───────────────
+    if (el.dataset.entryId) {
+      // Find the bullet list wrapper (children[1] or children[2]).
+      // Measure first N [data-bullet-id] elements directly — NOT the container.
+      // The old Math.min(..., 36) cap on the container height was wrong because
+      // it measured all bullets combined then silently capped the result.
+      const bulletContainer = el.children[1] || el.children[2];
+      if (bulletContainer) {
+        const bulletEls = Array.from(bulletContainer.querySelectorAll('[data-bullet-id]'));
+        if (bulletEls.length > 0) {
+          const n = Math.min(minBulletsWithHeading ?? 2, bulletEls.length);
+          const firstNH = bulletEls.slice(0, n).reduce((sum, b) => sum + measureH(b), 0);
+          return headingH + spacing.betweenHeadingAndFirstBullet + firstNH;
+        }
+        // No data-bullet-id found — fall back to first child of container.
+        const firstChild = bulletContainer.firstElementChild;
+        return headingH + spacing.betweenHeadingAndFirstBullet + (firstChild ? measureH(firstChild) : 24);
+      }
+      return headingH + spacing.betweenHeadingAndFirstBullet + 24;
+    }
+
+    return headingH;
   }
 
   const adj      = {};

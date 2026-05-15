@@ -1388,8 +1388,8 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
           }
         `}</style>
         {/* Hidden measurement div — absolute so it doesn't shift page flow */}
-        <div style={{ position: 'absolute', top: -9999, left: -9999, width: page.width, visibility: 'hidden', pointerEvents: 'none' }}>
-          <div ref={contentRef} style={{ position: 'relative' }}>
+        <div style={{ position: 'absolute', top: -9999, left: -9999, width: page.width, visibility: 'hidden', pointerEvents: 'none', transform: 'none', zoom: 'normal' }}>
+          <div ref={contentRef} style={{ position: 'relative', transform: 'none' }}>
             <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
           </div>
         </div>
@@ -1420,9 +1420,11 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
     <div ref={containerRef} className={`overflow-auto ${className}`} style={{ background: '#CBD5E1', position: 'relative' }}>
       <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
         {/* Hidden measurement container — renders all content at fixed width for
-            getBoundingClientRect measurement; invisible and out of document flow. */}
-        <div style={{ position: 'absolute', top: -9999, left: -9999, width: page.width, visibility: 'hidden', pointerEvents: 'none' }}>
-          <div ref={contentRef} style={{ position: 'relative' }}>
+            getBoundingClientRect measurement; invisible and out of document flow.
+            transform:none + zoom:normal prevent any inherited scale from corrupting
+            getBoundingClientRect values used by computeGeometricAdjustments. */}
+        <div style={{ position: 'absolute', top: -9999, left: -9999, width: page.width, visibility: 'hidden', pointerEvents: 'none', transform: 'none', zoom: 'normal' }}>
+          <div ref={contentRef} style={{ position: 'relative', transform: 'none' }}>
             <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
           </div>
         </div>
