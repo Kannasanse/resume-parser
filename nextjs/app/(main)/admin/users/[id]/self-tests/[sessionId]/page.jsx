@@ -129,7 +129,7 @@ export default function AdminSelfTestDetailPage() {
         <span>/</span>
         <Link href={`/admin/users/${userId}`} className="hover:text-ds-text">Profile</Link>
         <span>/</span>
-        <Link href={backUrl} className="hover:text-ds-text">Self-Tests</Link>
+        <Link href={backUrl} className="hover:text-ds-text">Interview Prep</Link>
         <span>/</span>
         <span className="text-ds-text font-medium">Test #{shortId}</span>
       </nav>
@@ -138,7 +138,7 @@ export default function AdminSelfTestDetailPage() {
       <div className="bg-ds-card border border-ds-border rounded-lg p-6 space-y-4">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="space-y-1">
-            <p className="text-xs text-ds-textMuted uppercase tracking-wide font-medium">Self-Test</p>
+            <p className="text-xs text-ds-textMuted uppercase tracking-wide font-medium">Interview Prep</p>
             <h1 className="text-lg font-bold text-ds-text font-heading">{MODE_LABELS[session.input_type] || session.input_type}</h1>
             <p className="text-xs text-ds-textMuted">Test ID: {sessionId}</p>
           </div>
@@ -258,7 +258,7 @@ export default function AdminSelfTestDetailPage() {
       {/* Back */}
       <div className="pb-6">
         <Link href={backUrl} className="inline-flex items-center gap-1.5 text-sm text-ds-textMuted hover:text-ds-text transition-colors">
-          ← Back to Self-Tests
+          ← Back to Interview Prep
         </Link>
       </div>
     </div>

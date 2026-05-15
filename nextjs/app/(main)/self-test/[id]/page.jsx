@@ -267,7 +267,7 @@ export default function SelfTestPage() {
     return (
       <div className="max-w-md mx-auto text-center py-16 space-y-3">
         <p className="text-ds-text font-medium">Test not found or unavailable.</p>
-        <Link href="/self-test" className="text-sm text-primary hover:underline">← Create a new test</Link>
+        <Link href="/self-test" className="text-sm text-primary hover:underline">← Back to Interview Prep</Link>
       </div>
     );
   }

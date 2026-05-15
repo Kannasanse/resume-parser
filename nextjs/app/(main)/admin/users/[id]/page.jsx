@@ -257,7 +257,7 @@ function SelfTestsTab({ userId, userName }) {
           <div className="flex flex-wrap gap-2">{activeFilters.map(f => <FilterChip key={f.key} label={f.label} onRemove={f.clear} />)}</div>
         )}
       </div>
-      <p className="text-sm text-ds-textMuted">{loading ? 'Loading…' : `${total} self-test${total !== 1 ? 's' : ''} found`}</p>
+      <p className="text-sm text-ds-textMuted">{loading ? 'Loading…' : `${total} interview prep session${total !== 1 ? 's' : ''} found`}</p>
       {error && (
         <div className="bg-ds-dangerLight border border-ds-danger/30 text-ds-danger text-sm rounded px-3 py-2.5 flex items-center justify-between">
           <span>{error}</span><button onClick={() => load(page)} className="text-xs font-semibold underline">Retry</button>
@@ -268,7 +268,7 @@ function SelfTestsTab({ userId, userName }) {
           <div className="p-4 space-y-2">{Array.from({ length: 5 }).map((_, i) => <Sk key={i} className="h-10 w-full" />)}</div>
         ) : data.length === 0 ? (
           <div className="py-12 text-center text-sm text-ds-textMuted">
-            {activeFilters.length > 0 ? <>No self-tests match the selected filters. <button onClick={clearFilters} className="text-primary hover:underline">Clear Filters</button></> : 'This user has not taken any self-tests yet.'}
+            {activeFilters.length > 0 ? <>No sessions match the selected filters. <button onClick={clearFilters} className="text-primary hover:underline">Clear Filters</button></> : 'This user has not taken any interview prep sessions yet.'}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -624,7 +624,7 @@ export default function AdminUserDetailPage() {
 
   const TABS = [
     { id: 'account',    label: 'Account' },
-    { id: 'self-tests', label: 'Self-Tests' },
+    { id: 'self-tests', label: 'Interview Prep' },
     { id: 'resumes',    label: 'Resumes' },
   ];
 

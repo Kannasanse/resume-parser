@@ -235,7 +235,7 @@ export default function Navbar() {
               ) : (
                 <>
                   {navLink('/builder', 'Resume Builder', <PenIcon />)}
-                  {navLink('/self-test', 'Self-Test', <SelfTestIcon />)}
+                  {navLink('/self-test', 'Interview Prep', <SelfTestIcon />)}
                 </>
               )}
             </div>
@@ -375,7 +375,7 @@ export default function Navbar() {
           ) : (
             <>
               {drawerLink('/builder', 'Resume Builder', <PenIcon />)}
-              {drawerLink('/self-test', 'Self-Test', <SelfTestIcon />)}
+              {drawerLink('/self-test', 'Interview Prep', <SelfTestIcon />)}
             </>
           )}
         </nav>

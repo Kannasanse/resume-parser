@@ -375,7 +375,7 @@ export default function SelfTestCreate() {
 
   // ── Page header ─────────────────────────────────────────────────────────────
   const STEP_TITLES = {
-    'mode-select': 'How would you like to be assessed today?',
+    'mode-select': 'Interview Prep',
     'form':        mode === 'skills' ? 'Assess by Skill' : 'Assess by Content',
     'jd-input':   'Assess by Job Description',
     'jd-skills':  'Review Extracted Skills',
