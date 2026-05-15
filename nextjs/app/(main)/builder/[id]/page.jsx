@@ -217,6 +217,7 @@ function Toast({ message, type = 'info', onDismiss }) {
 function ExportShareButton({ resumeId, onShare }) {
   const [open, setOpen] = useState(false);
   const [wordLoading, setWordLoading] = useState(false);
+  const [pdfLoading,  setPdfLoading]  = useState(false);
   const ref = useRef(null);
 
   useEffect(() => {
@@ -225,6 +226,28 @@ function ExportShareButton({ resumeId, onShare }) {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
+
+  const downloadPdf = async () => {
+    setPdfLoading(true);
+    setOpen(false);
+    try {
+      const res = await fetch(`/api/v1/builder/${resumeId}/export/pdf`);
+      if (!res.ok) throw new Error(await res.text());
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const cd = res.headers.get('Content-Disposition') || '';
+      const match = cd.match(/filename="([^"]+)"/);
+      a.href = url;
+      a.download = match ? match[1] : 'Resume.pdf';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('PDF export failed: ' + err.message);
+    } finally {
+      setPdfLoading(false);
+    }
+  };
 
   const downloadWord = async () => {
     setWordLoading(true);
@@ -286,8 +309,9 @@ function ExportShareButton({ resumeId, onShare }) {
 
           {/* PDF */}
           <button
-            onClick={() => { window.open(`/print/${resumeId}`, '_blank'); setOpen(false); }}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-ds-text hover:bg-ds-bg transition-colors"
+            onClick={downloadPdf}
+            disabled={pdfLoading}
+            className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-ds-text hover:bg-ds-bg transition-colors disabled:opacity-60"
           >
             <span className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -295,8 +319,8 @@ function ExportShareButton({ resumeId, onShare }) {
               </svg>
             </span>
             <div className="text-left">
-              <div className="font-semibold text-[12px]">Download PDF</div>
-              <div className="text-[11px] text-ds-textMuted">Print-ready PDF file</div>
+              <div className="font-semibold text-[12px]">{pdfLoading ? 'Generating PDF…' : 'Download PDF'}</div>
+              <div className="text-[11px] text-ds-textMuted">ATS-friendly text-based PDF</div>
             </div>
           </button>
 
