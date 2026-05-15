@@ -1,5 +1,6 @@
 import './globals.css';
 import Providers from '@/components/providers';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export const metadata = {
   title: 'Proflect',
@@ -18,6 +19,7 @@ export default function RootLayout({ children }) {
         <Providers>
           {children}
         </Providers>
+        <SpeedInsights />
       </body>
     </html>
   );
