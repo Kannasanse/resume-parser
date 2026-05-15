@@ -26,6 +26,51 @@ export const BLOCK_TYPE = /** @type {const} */ ({
 });
 
 /**
+ * Minimum space required to START `block` on the current page without
+ * leaving an orphan heading.  Uses only the label/heading row plus the
+ * first N children — never the full block height — so large sections are
+ * never incorrectly treated as "doesn't fit on this page".
+ *
+ * Works with estimated heights (px or DXA) supplied by each block's
+ * `.height` and `.children[n].height` fields.
+ *
+ * @param {object} block
+ * @param {object} config  from buildLayoutConfig()
+ * @returns {number}
+ */
+export function minStartSpace(block, config) {
+  const { spacing, minBulletsWithHeading, minSkillRowsWithLabel } = config;
+  if (block.type === BLOCK_TYPE.SECTION_LABEL) {
+    const n      = Math.min(minSkillRowsWithLabel, (block.children || []).length);
+    const childH = (block.children || []).slice(0, n).reduce((s, c) => s + c.height, 0);
+    return block.height + spacing.betweenSectionLabelAndFirstEntry + childH;
+  }
+  if (block.type === BLOCK_TYPE.GROUP_ANCHOR) {
+    const n       = Math.min(minBulletsWithHeading, (block.children || []).length);
+    const bulletH = (block.children || []).slice(0, n).reduce((s, c) => s + c.height, 0);
+    return block.height + spacing.betweenHeadingAndFirstBullet + bulletH;
+  }
+  return block.height;
+}
+
+/**
+ * Decide whether `block` should be pushed to the next page.
+ *
+ * Never triggers when the page is empty (remaining === pageHeight) to
+ * avoid infinite loops for blocks that exceed a full page height.
+ *
+ * @param {object} block
+ * @param {number} remaining   px remaining on the current page
+ * @param {number} pageHeight  full page height
+ * @param {object} config
+ * @returns {boolean}
+ */
+export function shouldPushBlock(block, remaining, pageHeight, config) {
+  if (remaining >= pageHeight) return false; // page is empty — never push
+  return minStartSpace(block, config) > remaining;
+}
+
+/**
  * Compute page-break positions for an ordered list of blocks.
  *
  * Input blocks must carry measured heights.  Child arrays on SECTION_LABEL
@@ -43,11 +88,6 @@ export const BLOCK_TYPE = /** @type {const} */ ({
  */
 export function paginateBlocks(blocks, config) {
   const pageHeight = effectiveContentHeight(config);
-  const {
-    spacing,
-    minBulletsWithHeading,
-    minSkillRowsWithLabel,
-  } = config;
 
   /** @type {Map<string, number>} */
   const pageBreaks = new Map();
@@ -88,40 +128,8 @@ export function paginateBlocks(blocks, config) {
   for (let i = 0; i < blocks.length; i++) {
     const block = blocks[i];
 
-    // ── Minimum space required to START this block on the current page ─────
-
-    let minRequired;
-
-    if (block.type === BLOCK_TYPE.SECTION_LABEL) {
-      const n = Math.min(minSkillRowsWithLabel, (block.children || []).length);
-      const childH = (block.children || [])
-        .slice(0, n)
-        .reduce((s, c) => s + c.height, 0);
-      minRequired =
-        block.height
-        + spacing.betweenSectionLabelAndFirstEntry
-        + childH;
-    } else if (block.type === BLOCK_TYPE.GROUP_ANCHOR) {
-      const n = Math.min(minBulletsWithHeading, (block.children || []).length);
-      const bulletH = (block.children || [])
-        .slice(0, n)
-        .reduce((s, c) => s + c.height, 0);
-      minRequired =
-        block.height
-        + spacing.betweenHeadingAndFirstBullet
-        + bulletH;
-    } else {
-      minRequired = block.height;
-    }
-
-    // ── Break decision ─────────────────────────────────────────────────────
-
-    // Only break if there is *some* content already on this page (available <
-    // pageHeight) — avoids infinite looping when a single block exceeds the
-    // full page height.
-    const pageHasContent = available < pageHeight;
-
-    if (minRequired > available && pageHasContent) {
+    // ── Break decision via shared shouldPushBlock ──────────────────────────
+    if (shouldPushBlock(block, available, pageHeight, config)) {
       if (!recordBreak(block)) break;
     }
 

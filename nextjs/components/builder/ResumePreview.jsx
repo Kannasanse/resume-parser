@@ -1329,8 +1329,7 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
       <div style={{ width: page.width, background: '#fff', position: 'relative' }}>
         <style>{`
           @media print {
-            .resume-section-block { page-break-inside: avoid; }
-            .resume-entry-block   { page-break-inside: avoid; }
+            .resume-entry-block { page-break-inside: avoid; }
           }
         `}</style>
         {/* Hidden measurement div — absolute so it doesn't shift page flow */}
