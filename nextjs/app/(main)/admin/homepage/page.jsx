@@ -82,7 +82,7 @@ function SectionListItem({ section, isSelected, onSelect, onToggleVisibility }) 
       </button>
 
       {/* Label */}
-      <button onClick={() => onSelect(section.id)} style={{ flex: 1, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 500, color: section.is_visible ? C.charcoal : C.secondary, fontStyle: section.is_visible ? 'normal' : 'italic', padding: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <button onClick={() => onSelect(section.section_key)} style={{ flex: 1, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 500, color: section.is_visible ? C.charcoal : C.secondary, fontStyle: section.is_visible ? 'normal' : 'italic', padding: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {SECTION_LABELS[section.section_type] || section.section_key}
       </button>
     </div>
