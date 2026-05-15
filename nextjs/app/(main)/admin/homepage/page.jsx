@@ -301,6 +301,10 @@ export default function HomepageCMS() {
             </div>
           ) : loadError ? (
             <p style={{ fontSize: 13, color: C.error }}>{loadError}</p>
+          ) : sections.length === 0 ? (
+            <p style={{ fontSize: 12, color: C.secondary, lineHeight: 1.6 }}>
+              No sections found. Run <code style={{ fontFamily: 'monospace', background: C.bg, padding: '1px 4px', borderRadius: 3 }}>database/homepage_schema.sql</code> in Supabase to seed the homepage data.
+            </p>
           ) : (
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleSectionDragEnd}>
               <SortableContext items={sections.map(s => s.id)} strategy={verticalListSortingStrategy}>
@@ -337,9 +341,16 @@ export default function HomepageCMS() {
               <EditorHeader section={currentSection} />
               {renderEditor()}
             </div>
+          ) : sections.length === 0 ? (
+            <div style={{ background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 12, padding: 24, maxWidth: 720 }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: '#92400E', margin: '0 0 8px' }}>Database not seeded</p>
+              <p style={{ fontSize: 14, color: '#92400E', margin: 0, lineHeight: 1.6 }}>
+                Run <code style={{ fontFamily: 'monospace', background: 'rgba(0,0,0,0.06)', padding: '1px 6px', borderRadius: 3 }}>database/homepage_schema.sql</code> in the Supabase SQL editor to create and seed the homepage sections table.
+              </p>
+            </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200 }}>
-              <p style={{ fontSize: 14, color: C.secondary }}>Select a section to edit.</p>
+              <p style={{ fontSize: 14, color: C.secondary }}>Select a section from the left panel.</p>
             </div>
           )}
         </div>
@@ -351,7 +362,7 @@ export default function HomepageCMS() {
         isSaving={isSaving}
         lastPublished={lastPublished}
         onSaveDraft={saveDraft}
-        onPreview={() => window.open('/home?preview=true', '_blank')}
+        onPreview={() => window.open('/home/preview', '_blank')}
         onPublish={() => setPublishDialog(true)}
       />
 

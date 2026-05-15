@@ -1,8 +1,12 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 
-const PUBLIC_PATHS   = ['/home', '/login', '/signup', '/verify-email', '/forgot-password', '/reset-password', '/join', '/access-denied'];
-const ADMIN_ONLY_PATHS = ['/resumes', '/jobs', '/upload', '/admin'];
+// Marketing pages — accessible to everyone, no redirect when authenticated
+const MARKETING_PATHS  = ['/home'];
+// Auth pages — redirect away when authenticated
+const AUTH_PAGES       = ['/login', '/signup', '/verify-email', '/forgot-password', '/reset-password', '/join', '/access-denied'];
+const PUBLIC_PATHS     = [...MARKETING_PATHS, ...AUTH_PAGES];
+const ADMIN_ONLY_PATHS = ['/resumes', '/jobs', '/upload', '/admin', '/home/preview'];
 const ADMIN_ONLY_API   = ['/api/v1/resumes', '/api/v1/jobs', '/api/v1/admin', '/api/v1/organizations'];
 
 export async function middleware(request) {
@@ -30,6 +34,8 @@ export async function middleware(request) {
   const { data: { user } } = await supabase.auth.getUser();
 
   const isPublicPath    = PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'));
+  const isMarketingPath = MARKETING_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'));
+  const isAuthPage      = AUTH_PAGES.some(p => pathname === p || pathname.startsWith(p + '/'));
   const isPublicShare   = pathname.startsWith('/r/') || pathname.startsWith('/api/public/');
   const isPublicApiAuth = pathname.startsWith('/api/v1/auth/');
 
@@ -65,8 +71,11 @@ export async function middleware(request) {
     return NextResponse.redirect(new URL('/verify-email', request.url));
   }
 
-  // Redirect confirmed users away from public auth pages
-  if (isPublicPath && pathname !== '/access-denied') {
+  // Marketing pages (/home) — let authenticated users view them too, no redirect
+  if (isMarketingPath) return supabaseResponse;
+
+  // Redirect confirmed users away from auth pages (login, signup etc.)
+  if (isAuthPage && pathname !== '/access-denied') {
     return NextResponse.redirect(new URL(isAdmin ? '/resumes' : '/builder', request.url));
   }
 
