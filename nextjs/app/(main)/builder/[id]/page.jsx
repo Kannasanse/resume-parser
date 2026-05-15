@@ -885,6 +885,7 @@ export default function BuilderEditor() {
                       section={previewSection}
                       onContentChange={(content) => handleSectionContentChange(previewSection.id, content)}
                       onTitleChange={(title) => handleSectionTitleChange(previewSection.id, title)}
+                      resumeId={id}
                     />
                   ) : null}
                 />

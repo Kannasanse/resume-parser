@@ -4,7 +4,8 @@ import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import TextAlign from '@tiptap/extension-text-align';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import WritingAssistantModal from './WritingAssistantModal.jsx';
 
 // ── Toolbar icons ─────────────────────────────────────────────────────────────
 
@@ -29,7 +30,17 @@ function Divider() {
   return <span className="w-px h-5 bg-ds-border mx-0.5 flex-shrink-0" />;
 }
 
-function Toolbar({ editor }) {
+function SparkleIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/>
+      <path d="M5 17l.75 2.25L8 20l-2.25.75L5 23l-.75-2.25L2 20l2.25-.75L5 17z"/>
+      <path d="M19 3l.5 1.5L21 5l-1.5.5L19 7l-.5-1.5L17 5l1.5-.5L19 3z"/>
+    </svg>
+  );
+}
+
+function Toolbar({ editor, onAssist, hasAssist }) {
   if (!editor) return null;
 
   const align = editor.getAttributes('paragraph')?.textAlign || 'left';
@@ -91,14 +102,30 @@ function Toolbar({ editor }) {
       <TbBtn active={align === 'justify'} title="Justify" onClick={() => editor.chain().focus().setTextAlign('justify').run()}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </TbBtn>
+
+      {hasAssist && (
+        <>
+          <Divider />
+          <button
+            type="button"
+            title="AI Writing Assistant"
+            onMouseDown={e => { e.preventDefault(); onAssist(); }}
+            className="flex items-center gap-1 h-7 px-2 rounded transition-colors text-[12px] font-semibold text-primary hover:bg-primary/10"
+          >
+            <SparkleIcon />
+            Improve
+          </button>
+        </>
+      )}
     </div>
   );
 }
 
 // ── Editor ────────────────────────────────────────────────────────────────────
 
-export default function RichTextEditor({ value, onChange, placeholder }) {
+export default function RichTextEditor({ value, onChange, placeholder, assistConfig }) {
   const isFocused = useRef(false);
+  const [assistState, setAssistState] = useState(null); // null | { loading, improved, error, original }
 
   const editor = useEditor({
     extensions: [
@@ -127,6 +154,35 @@ export default function RichTextEditor({ value, onChange, placeholder }) {
     },
   });
 
+  async function handleAssist() {
+    if (!editor || !assistConfig) return;
+    const html = editor.isEmpty ? '' : editor.getHTML();
+    setAssistState({ loading: true, improved: null, error: null, original: html });
+    try {
+      const res = await fetch(`/api/v1/builder/${assistConfig.resumeId}/writing-assist`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: html,
+          sectionType: assistConfig.sectionType,
+          context: assistConfig.context || {},
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed');
+      setAssistState(s => ({ ...s, loading: false, improved: data.improved }));
+    } catch (err) {
+      setAssistState(s => ({ ...s, loading: false, error: err.message }));
+    }
+  }
+
+  function handleAccept() {
+    if (!editor || !assistState?.improved) return;
+    editor.commands.setContent(assistState.improved, false);
+    onChange(assistState.improved);
+    setAssistState(null);
+  }
+
   // Only sync external value when the editor is not focused (e.g. switching entries)
   useEffect(() => {
     if (!editor || isFocused.current) return;
@@ -137,8 +193,19 @@ export default function RichTextEditor({ value, onChange, placeholder }) {
   }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
+    <>
+    {assistState && (
+      <WritingAssistantModal
+        loading={assistState.loading}
+        improved={assistState.improved}
+        error={assistState.error}
+        originalHtml={assistState.original}
+        onAccept={handleAccept}
+        onDismiss={() => setAssistState(null)}
+      />
+    )}
     <div className="border border-ds-inputBorder rounded-[7px] bg-ds-card focus-within:border-primary focus-within:ring-[3px] focus-within:ring-primary/10 transition-colors overflow-hidden">
-      <Toolbar editor={editor} />
+      <Toolbar editor={editor} onAssist={handleAssist} hasAssist={!!assistConfig} />
       <div className="relative">
         {editor?.isEmpty && placeholder && (
           <div className="absolute top-2 left-3 text-[13px] text-ds-textMuted pointer-events-none select-none">
@@ -157,5 +224,6 @@ export default function RichTextEditor({ value, onChange, placeholder }) {
         .prose-rte a { color: #185FA5; text-decoration: underline; }
       `}</style>
     </div>
+    </>
   );
 }

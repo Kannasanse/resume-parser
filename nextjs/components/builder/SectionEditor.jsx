@@ -109,12 +109,13 @@ function bulletsToHtml(bullets) {
 
 // ── Summary ───────────────────────────────────────────────────────────────────
 
-function SummaryEditor({ content, onChange }) {
+function SummaryEditor({ content, onChange, resumeId }) {
   return (
     <RichTextEditor
       value={content.text || ''}
       onChange={val => onChange({ ...content, text: val })}
       placeholder="Write a compelling professional summary…"
+      assistConfig={resumeId ? { resumeId, sectionType: 'summary', context: {} } : undefined}
     />
   );
 }
@@ -196,7 +197,7 @@ function SkillsEditor({ content, onChange }) {
 
 // ── Work Experience ───────────────────────────────────────────────────────────
 
-function WorkExperienceEditor({ content, onChange }) {
+function WorkExperienceEditor({ content, onChange, resumeId }) {
   const entries = content.entries || [];
 
   const update = (i, patch) => onChange({ ...content, entries: entries.map((e, j) => j === i ? { ...e, ...patch } : e) });
@@ -234,6 +235,7 @@ function WorkExperienceEditor({ content, onChange }) {
               value={e.body || bulletsToHtml(e.bullets)}
               onChange={val => update(i, { body: val })}
               placeholder="Add an accomplishment, bullet points, or description…"
+              assistConfig={resumeId ? { resumeId, sectionType: 'work_experience', context: { jobTitle: e.title, employer: e.employer } } : undefined}
             />
           </Field>
         </EntryCard>
@@ -245,7 +247,7 @@ function WorkExperienceEditor({ content, onChange }) {
 
 // ── Education ─────────────────────────────────────────────────────────────────
 
-function EducationEditor({ content, onChange }) {
+function EducationEditor({ content, onChange, resumeId }) {
   const entries = content.entries || [];
 
   const update = (i, patch) => onChange({ ...content, entries: entries.map((e, j) => j === i ? { ...e, ...patch } : e) });
@@ -283,6 +285,7 @@ function EducationEditor({ content, onChange }) {
               value={e.body || ''}
               onChange={val => update(i, { body: val })}
               placeholder="Add a description of your education entry…"
+              assistConfig={resumeId ? { resumeId, sectionType: 'education', context: { school: e.school, degree: e.degree } } : undefined}
             />
           </Field>
         </EntryCard>
@@ -324,7 +327,7 @@ function CertificationsEditor({ content, onChange }) {
 
 // ── Projects ──────────────────────────────────────────────────────────────────
 
-function ProjectsEditor({ content, onChange }) {
+function ProjectsEditor({ content, onChange, resumeId }) {
   const entries = content.entries || [];
   const update = (i, patch) => onChange({ ...content, entries: entries.map((e, j) => j === i ? { ...e, ...patch } : e) });
   const remove = (i) => onChange({ ...content, entries: entries.filter((_, j) => j !== i) });
@@ -355,6 +358,7 @@ function ProjectsEditor({ content, onChange }) {
               value={e.body || bulletsToHtml(e.bullets)}
               onChange={val => update(i, { body: val })}
               placeholder="Add a description, bullet points, or achievements…"
+              assistConfig={resumeId ? { resumeId, sectionType: 'project', context: { project: e.title, role: e.role } } : undefined}
             />
           </Field>
         </EntryCard>
@@ -453,7 +457,7 @@ const EDITORS = {
   custom:         CustomEditor,
 };
 
-export default function SectionEditor({ section, onContentChange, onTitleChange }) {
+export default function SectionEditor({ section, onContentChange, onTitleChange, resumeId }) {
   const EditorComp = EDITORS[section.type];
 
   return (
@@ -470,7 +474,7 @@ export default function SectionEditor({ section, onContentChange, onTitleChange 
       </div>
 
       {EditorComp
-        ? <EditorComp content={section.content || {}} onChange={onContentChange} />
+        ? <EditorComp content={section.content || {}} onChange={onContentChange} resumeId={resumeId} />
         : <p className="text-sm text-ds-textMuted">Unknown section type: {section.type}</p>
       }
     </div>
