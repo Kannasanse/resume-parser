@@ -873,7 +873,7 @@ function TemplateAtlanticBlue({ resume, ds, ss, sectionAdjustments, visibleBlock
   const sideIds = sections.filter(s => ATLANTIC_SIDEBAR_TYPES.has(s.type));
   const bodyIds = sections.filter(s => !ATLANTIC_SIDEBAR_TYPES.has(s.type));
 
-  const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#2C2C2A', display: 'grid', gridTemplateColumns: '32% 1fr', minHeight: '100%' };
+  const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#2C2C2A', display: 'grid', gridTemplateColumns: '32% 1fr', minHeight: '100%', alignItems: 'stretch' };
 
   const PillHead = ({ iconName, children }) => (
     <div style={{ background: '#E5E7EB', padding: '5px 10px', marginTop: '0.9em', marginBottom: '0.4em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
@@ -903,8 +903,8 @@ function TemplateAtlanticBlue({ resume, ds, ss, sectionAdjustments, visibleBlock
 
   return (
     <div style={pageStyle}>
-      {/* Sidebar */}
-      <div style={{ background: sideColor, color: '#fff', padding: '24px 20px' }}>
+      {/* Sidebar — minHeight:100% fills the full page height even when content is short */}
+      <div style={{ background: sideColor, color: '#fff', padding: '24px 20px', minHeight: '100%', boxSizing: 'border-box' }}>
         {showHeader && (
           <>
             <div style={{ fontSize: '1.7em', fontWeight: 700, color: colIf(t.name) || '#fff', lineHeight: 1.05 }}>{pi.name || 'Your Name'}</div>
