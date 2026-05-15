@@ -54,6 +54,15 @@ function UploadIcon() {
   );
 }
 
+function PortfolioIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="3" width="20" height="14" rx="2"/>
+      <path d="M8 21h8M12 17v4"/>
+    </svg>
+  );
+}
+
 function SelfTestIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -216,7 +225,7 @@ export default function Navbar() {
               <HamburgerIcon />
             </button>
 
-            <Link href={isAdmin ? '/resumes' : '/builder'} className="flex items-center flex-shrink-0">
+            <Link href="/home" className="flex items-center flex-shrink-0">
               <Image src="/logo.png" alt="Proflect" width={120} height={133} className="object-contain" priority unoptimized />
             </Link>
 
@@ -235,6 +244,7 @@ export default function Navbar() {
               ) : (
                 <>
                   {navLink('/builder', 'Resume Builder', <PenIcon />)}
+                  {navLink('/portfolios', 'Portfolios', <PortfolioIcon />)}
                   {navLink('/self-test', 'Interview Prep', <SelfTestIcon />)}
                 </>
               )}
@@ -349,7 +359,7 @@ export default function Navbar() {
       {/* Mobile drawer */}
       <div className={`fixed top-0 left-0 h-full w-[280px] bg-ds-card border-r border-ds-border z-50 flex flex-col transition-transform duration-200 sm:hidden ${drawerOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="h-16 flex items-center justify-between px-4 border-b border-ds-border flex-shrink-0">
-          <Link href={isAdmin ? '/resumes' : '/builder'} onClick={() => setDrawerOpen(false)}>
+          <Link href="/home" onClick={() => setDrawerOpen(false)}>
             <Image src="/logo.png" alt="Proflect" width={90} height={100} className="object-contain" unoptimized />
           </Link>
           <button
@@ -375,6 +385,7 @@ export default function Navbar() {
           ) : (
             <>
               {drawerLink('/builder', 'Resume Builder', <PenIcon />)}
+              {drawerLink('/portfolios', 'Portfolios', <PortfolioIcon />)}
               {drawerLink('/self-test', 'Interview Prep', <SelfTestIcon />)}
             </>
           )}
