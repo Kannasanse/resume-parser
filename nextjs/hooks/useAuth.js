@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
+import { setAuthToken, clearAuthToken } from '@/lib/authToken';
 
 export function useAuth() {
   const [user, setUser]       = useState(null);
@@ -26,12 +27,15 @@ export function useAuth() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       const u = session?.user ?? null;
       setUser(u);
+      if (session?.access_token) setAuthToken(session.access_token);
       fetchProfile(u?.id).finally(() => setLoading(false));
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       const u = session?.user ?? null;
       setUser(u);
+      if (session?.access_token) setAuthToken(session.access_token);
+      else clearAuthToken();
       fetchProfile(u?.id);
     });
 
@@ -41,6 +45,7 @@ export function useAuth() {
   const signOut = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
+    clearAuthToken();
     setUser(null);
     setProfile(null);
     router.push('/login');

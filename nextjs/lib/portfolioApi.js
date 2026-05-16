@@ -1,60 +1,51 @@
+import { authHeaders } from './authToken.js';
+
 const BASE = '/api/v1/portfolios';
 
 async function req(path, opts = {}) {
-  const url = path.startsWith('/') ? path : `${BASE}${path ? '/' + path : ''}`;
-  const res = await fetch(url.startsWith('http') ? url : `${BASE}${path.startsWith('/') ? path : '/' + path}`, {
-    headers: { 'Content-Type': 'application/json' },
+  const url = `${BASE}${path.startsWith('/') ? path : path ? '/' + path : ''}`;
+  const res = await fetch(url, {
     ...opts,
+    headers: { ...authHeaders(), ...opts.headers },
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.error || res.statusText);
   return body;
 }
 
-export const listPortfolios   = ()         => fetch(BASE, { headers: { 'Content-Type': 'application/json' } }).then(r => r.json());
-export const createPortfolio  = (data)     => fetch(BASE, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json());
-export const getPortfolio     = (id)       => fetch(`${BASE}/${id}`, { headers: { 'Content-Type': 'application/json' } }).then(r => r.json());
-export const updatePortfolio  = (id, data) => fetch(`${BASE}/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json());
-export const deletePortfolio  = (id)       => fetch(`${BASE}/${id}`, { method: 'DELETE' }).then(r => r.json());
-export const checkSlug        = (slug, id) => fetch(`${BASE}/check-slug?slug=${encodeURIComponent(slug)}${id ? `&id=${id}` : ''}`).then(r => r.json());
+export const listPortfolios   = ()         => req('');
+export const createPortfolio  = (data)     => req('', { method: 'POST', body: JSON.stringify(data) });
+export const getPortfolio     = (id)       => req(`/${id}`);
+export const updatePortfolio  = (id, data) => req(`/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const deletePortfolio  = (id)       => req(`/${id}`, { method: 'DELETE' });
+export const checkSlug        = (slug, id) => req(`/check-slug?slug=${encodeURIComponent(slug)}${id ? `&id=${id}` : ''}`);
 
-export const listSections     = (pid)            => fetch(`${BASE}/${pid}/sections`).then(r => r.json());
-export const createSection    = (pid, data)      => fetch(`${BASE}/${pid}/sections`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json());
-export const updateSection    = (pid, sid, data) => fetch(`${BASE}/${pid}/sections/${sid}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json());
-export const deleteSection    = (pid, sid)       => fetch(`${BASE}/${pid}/sections/${sid}`, { method: 'DELETE' }).then(r => r.json());
-export const reorderSections  = (pid, orders)    => fetch(`${BASE}/${pid}/sections/reorder`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orders }) }).then(r => r.json());
+export const listSections     = (pid)            => req(`/${pid}/sections`);
+export const createSection    = (pid, data)      => req(`/${pid}/sections`, { method: 'POST', body: JSON.stringify(data) });
+export const updateSection    = (pid, sid, data) => req(`/${pid}/sections/${sid}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const deleteSection    = (pid, sid)       => req(`/${pid}/sections/${sid}`, { method: 'DELETE' });
+export const reorderSections  = (pid, orders)    => req(`/${pid}/sections/reorder`, { method: 'POST', body: JSON.stringify({ orders }) });
 
-export const listProjects     = (pid)            => fetch(`${BASE}/${pid}/projects`).then(r => r.json());
-export const createProject    = (pid, data)      => fetch(`${BASE}/${pid}/projects`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json());
-export const updateProject    = (pid, projId, data) => fetch(`${BASE}/${pid}/projects/${projId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json());
-export const deleteProject    = (pid, projId)       => fetch(`${BASE}/${pid}/projects/${projId}`, { method: 'DELETE' }).then(r => r.json());
+export const listProjects     = (pid)               => req(`/${pid}/projects`);
+export const createProject    = (pid, data)         => req(`/${pid}/projects`, { method: 'POST', body: JSON.stringify(data) });
+export const updateProject    = (pid, projId, data) => req(`/${pid}/projects/${projId}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const deleteProject    = (pid, projId)       => req(`/${pid}/projects/${projId}`, { method: 'DELETE' });
 
-// Analytics
+// Analytics (no auth needed — public endpoint)
 export async function trackEvent(portfolioId, eventType, extras = {}) {
-  return req('/analytics', {
+  return fetch('/api/v1/portfolios/analytics', {
     method: 'POST',
-    body: JSON.stringify({ portfolioId, eventType, referrer: document.referrer, ...extras }),
-  });
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ portfolio_id: portfolioId, event_type: eventType, referrer: document.referrer, ...extras }),
+  }).then(r => r.json());
 }
 
 // AI features
-export async function generateBio(payload) {
-  return req('/ai/bio', { method: 'POST', body: JSON.stringify(payload) });
-}
-export async function generateTaglines(payload) {
-  return req('/ai/tagline', { method: 'POST', body: JSON.stringify(payload) });
-}
-export async function enhanceProjectDescription(payload) {
-  return req('/ai/project-description', { method: 'POST', body: JSON.stringify(payload) });
-}
-export async function analyseSkillsGap(payload) {
-  return req('/ai/skills-gap', { method: 'POST', body: JSON.stringify(payload) });
-}
-export async function generateSeoSuggestions(payload) {
-  return req('/ai/seo', { method: 'POST', body: JSON.stringify(payload) });
-}
+export const generateBio               = (payload) => req('/ai/bio', { method: 'POST', body: JSON.stringify(payload) });
+export const generateTaglines          = (payload) => req('/ai/tagline', { method: 'POST', body: JSON.stringify(payload) });
+export const enhanceProjectDescription = (payload) => req('/ai/project-description', { method: 'POST', body: JSON.stringify(payload) });
+export const analyseSkillsGap          = (payload) => req('/ai/skills-gap', { method: 'POST', body: JSON.stringify(payload) });
+export const generateSeoSuggestions   = (payload) => req('/ai/seo', { method: 'POST', body: JSON.stringify(payload) });
 
 // Revalidate ISR cache
-export async function revalidatePortfolio(slug) {
-  return req('/revalidate', { method: 'POST', body: JSON.stringify({ slug }) });
-}
+export const revalidatePortfolio = (slug) => req('/revalidate', { method: 'POST', body: JSON.stringify({ slug }) });

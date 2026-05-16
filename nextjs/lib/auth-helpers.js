@@ -2,8 +2,25 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import supabase from './supabase.js'; // service-role client
 
-// Build a cookie-based Supabase client from a Next.js Request object
-function buildSupabaseFromRequest(request) {
+// Extract JWT from Authorization: Bearer <token> header
+function extractBearer(request) {
+  const auth = request.headers.get('authorization') || '';
+  if (auth.startsWith('Bearer ')) return auth.slice(7).trim();
+  return null;
+}
+
+// Resolve a Supabase user from a Bearer token or fall back to session cookie
+async function resolveUser(request) {
+  const token = extractBearer(request);
+
+  if (token) {
+    // JWT path — validate token directly with Supabase
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) return null;
+    return user;
+  }
+
+  // Cookie path — build SSR client and read session
   let res = NextResponse.next({ request });
   const client = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -19,13 +36,13 @@ function buildSupabaseFromRequest(request) {
       },
     }
   );
-  return { client, res };
+  const { data: { user } } = await client.auth.getUser();
+  return user ?? null;
 }
 
 // Returns { user, profile } or throws a Response with appropriate status
 export async function requireAdmin(request) {
-  const { client } = buildSupabaseFromRequest(request);
-  const { data: { user } } = await client.auth.getUser();
+  const user = await resolveUser(request);
 
   if (!user) {
     throw Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -52,8 +69,7 @@ export async function requireAdmin(request) {
 
 // Returns { user, profile } or throws
 export async function requireUser(request) {
-  const { client } = buildSupabaseFromRequest(request);
-  const { data: { user } } = await client.auth.getUser();
+  const user = await resolveUser(request);
 
   if (!user) {
     throw Response.json({ error: 'Unauthorized' }, { status: 401 });

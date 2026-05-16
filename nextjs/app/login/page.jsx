@@ -3,6 +3,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase-browser';
+import { setAuthToken } from '@/lib/authToken';
 
 function GoogleIcon() {
   return (
@@ -82,6 +83,7 @@ function LoginContent() {
         return;
       }
 
+      if (data.access_token) setAuthToken(data.access_token);
       router.push(redirect || (data.isAdmin ? '/resumes' : '/builder'));
       router.refresh();
     } catch {
