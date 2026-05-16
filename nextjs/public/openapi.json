@@ -1,0 +1,1395 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Proflect API",
+    "version": "1.0.0",
+    "description": "REST API for the Proflect platform — resume parsing, resume builder, portfolio builder, self-test, admin management, and more."
+  },
+  "servers": [
+    { "url": "https://proflect-neo.vercel.app", "description": "Production" },
+    { "url": "http://localhost:3000", "description": "Local development" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "sb-access-token",
+        "description": "Supabase session cookie set on login"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" }
+        }
+      },
+      "Pagination": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer" },
+          "pageSize": { "type": "integer" },
+          "total": { "type": "integer" }
+        }
+      },
+      "Resume": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "filename": { "type": "string" },
+          "status": { "type": "string", "enum": ["pending", "parsed", "error"] },
+          "parsed_data": { "type": "object" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "JobProfile": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "required_skills": { "type": "array", "items": { "type": "string" } },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "BuilderResume": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "title": { "type": "string" },
+          "template_id": { "type": "string" },
+          "sections": { "type": "array", "items": { "type": "object" } },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Portfolio": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "slug": { "type": "string" },
+          "status": { "type": "string", "enum": ["draft", "published"] },
+          "is_indexed": { "type": "boolean" },
+          "meta_title": { "type": "string" },
+          "meta_description": { "type": "string" },
+          "og_image_url": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "PortfolioSection": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "portfolio_id": { "type": "string", "format": "uuid" },
+          "type": { "type": "string", "enum": ["about", "experience", "education", "skills", "projects", "contact", "custom"] },
+          "title": { "type": "string" },
+          "content": { "type": "object" },
+          "position": { "type": "integer" },
+          "is_visible": { "type": "boolean" }
+        }
+      },
+      "Project": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "portfolio_id": { "type": "string", "format": "uuid" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "tech_stack": { "type": "array", "items": { "type": "string" } },
+          "live_url": { "type": "string" },
+          "repo_url": { "type": "string" },
+          "image_url": { "type": "string" }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "email": { "type": "string", "format": "email" },
+          "first_name": { "type": "string" },
+          "last_name": { "type": "string" },
+          "role": { "type": "string", "enum": ["user", "admin"] },
+          "status": { "type": "string", "enum": ["active", "locked", "invited"] },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Test": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "title": { "type": "string" },
+          "duration_minutes": { "type": "integer" },
+          "status": { "type": "string", "enum": ["draft", "published", "archived"] },
+          "passing_score": { "type": "integer" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Question": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "text": { "type": "string" },
+          "type": { "type": "string", "enum": ["mcq", "true_false", "short_answer"] },
+          "options": { "type": "array", "items": { "type": "object" } },
+          "points": { "type": "integer" },
+          "difficulty": { "type": "string", "enum": ["easy", "medium", "hard"] },
+          "skill": { "type": "string" }
+        }
+      },
+      "SelfTestSession": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "mode": { "type": "string", "enum": ["skill", "jd", "free"] },
+          "skill": { "type": "string" },
+          "difficulty": { "type": "string", "enum": ["easy", "medium", "hard", "mixed"] },
+          "status": { "type": "string", "enum": ["pending", "in_progress", "completed"] },
+          "score": { "type": "integer" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Credit": {
+        "type": "object",
+        "properties": {
+          "balance": { "type": "integer" },
+          "transactions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string", "format": "uuid" },
+                "amount": { "type": "integer" },
+                "reason": { "type": "string" },
+                "created_at": { "type": "string", "format": "date-time" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [{ "cookieAuth": [] }],
+  "tags": [
+    { "name": "Auth", "description": "Authentication — signup, login, invite acceptance" },
+    { "name": "Profile", "description": "Current user profile and avatar" },
+    { "name": "Resumes", "description": "Resume upload, parsing, scoring (admin)" },
+    { "name": "Job Profiles", "description": "Job profiles and candidate matching" },
+    { "name": "Resume Builder", "description": "Editor for building resumes from templates" },
+    { "name": "Public", "description": "Unauthenticated public endpoints" },
+    { "name": "Portfolios", "description": "Portfolio CRUD, publishing, and AI features" },
+    { "name": "Portfolio AI", "description": "AI-powered portfolio content generation" },
+    { "name": "Self-Test", "description": "Candidate skill self-assessment" },
+    { "name": "Credits", "description": "User credit balance and requests" },
+    { "name": "Admin — Users", "description": "Admin user management" },
+    { "name": "Admin — Tests", "description": "Admin test management" },
+    { "name": "Admin — Question Library", "description": "Admin question bank" },
+    { "name": "Admin — Credits", "description": "Admin credit management" },
+    { "name": "Admin — Templates", "description": "Resume template management" },
+    { "name": "Admin — Homepage CMS", "description": "Homepage content management" }
+  ],
+  "paths": {
+    "/api/v1/auth/signup": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Register a new user",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string", "minLength": 8 },
+                  "first_name": { "type": "string" },
+                  "last_name": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "User created" },
+          "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "409": { "description": "Email already registered" }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Authenticate with email and password",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Login successful, session cookie set" },
+          "401": { "description": "Invalid credentials" },
+          "429": { "description": "Too many attempts" }
+        }
+      }
+    },
+    "/api/v1/auth/resend-verification": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Resend email verification link",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email"],
+                "properties": { "email": { "type": "string", "format": "email" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Verification email sent" },
+          "429": { "description": "Rate limited" }
+        }
+      }
+    },
+    "/api/v1/auth/invite": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Validate invite token",
+        "security": [],
+        "parameters": [
+          { "name": "token", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Valid invite — returns email and role" },
+          "404": { "description": "Invalid or expired token" }
+        }
+      }
+    },
+    "/api/v1/auth/accept-invite": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Accept invite and set name/password",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["token", "password", "first_name"],
+                "properties": {
+                  "token": { "type": "string" },
+                  "password": { "type": "string", "minLength": 8 },
+                  "first_name": { "type": "string" },
+                  "last_name": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Account activated" },
+          "400": { "description": "Invalid token or validation error" }
+        }
+      }
+    },
+    "/api/v1/profile": {
+      "get": {
+        "tags": ["Profile"],
+        "summary": "Get current user profile",
+        "responses": {
+          "200": { "description": "User profile", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } },
+          "401": { "description": "Unauthenticated" }
+        }
+      },
+      "patch": {
+        "tags": ["Profile"],
+        "summary": "Update name fields",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "first_name": { "type": "string" },
+                  "last_name": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Profile updated" },
+          "401": { "description": "Unauthenticated" }
+        }
+      }
+    },
+    "/api/v1/profile/avatar": {
+      "post": {
+        "tags": ["Profile"],
+        "summary": "Upload user avatar",
+        "requestBody": {
+          "required": true,
+          "content": { "multipart/form-data": { "schema": { "type": "object", "properties": { "file": { "type": "string", "format": "binary" } } } } }
+        },
+        "responses": {
+          "200": { "description": "Avatar URL returned" },
+          "400": { "description": "Invalid file" }
+        }
+      }
+    },
+    "/api/v1/resumes": {
+      "get": {
+        "tags": ["Resumes"],
+        "summary": "List parsed resumes (paginated)",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "pageSize", "in": "query", "schema": { "type": "integer", "default": 20 } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated resume list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "resumes": { "type": "array", "items": { "$ref": "#/components/schemas/Resume" } },
+                    "pagination": { "$ref": "#/components/schemas/Pagination" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Resumes"],
+        "summary": "Create a resume entry",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "filename": { "type": "string" } } } } }
+        },
+        "responses": {
+          "201": { "description": "Resume created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Resume" } } } }
+        }
+      }
+    },
+    "/api/v1/resumes/upload": {
+      "post": {
+        "tags": ["Resumes"],
+        "summary": "Upload and parse a resume file",
+        "requestBody": {
+          "required": true,
+          "content": { "multipart/form-data": { "schema": { "type": "object", "properties": { "file": { "type": "string", "format": "binary", "description": "PDF or DOCX file" } } } } }
+        },
+        "responses": {
+          "201": { "description": "Resume uploaded and parsed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Resume" } } } },
+          "400": { "description": "Invalid file type or size" }
+        }
+      }
+    },
+    "/api/v1/resumes/{id}": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": {
+        "tags": ["Resumes"],
+        "summary": "Get resume with parsed data",
+        "responses": {
+          "200": { "description": "Resume detail", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Resume" } } } },
+          "404": { "description": "Not found" }
+        }
+      },
+      "put": {
+        "tags": ["Resumes"],
+        "summary": "Update resume fields",
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": { "200": { "description": "Updated" } }
+      },
+      "delete": {
+        "tags": ["Resumes"],
+        "summary": "Delete a resume",
+        "responses": { "204": { "description": "Deleted" }, "404": { "description": "Not found" } }
+      }
+    },
+    "/api/v1/resumes/{id}/score": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "post": {
+        "tags": ["Resumes"],
+        "summary": "Score resume against a job profile",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "required": ["job_id"], "properties": { "job_id": { "type": "string", "format": "uuid" } } } } }
+        },
+        "responses": {
+          "200": { "description": "Score result", "content": { "application/json": { "schema": { "type": "object", "properties": { "score": { "type": "number" }, "band": { "type": "string" }, "breakdown": { "type": "object" } } } } } }
+        }
+      }
+    },
+    "/api/v1/resumes/{id}/reparse": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "post": {
+        "tags": ["Resumes"],
+        "summary": "Re-parse resume from stored file",
+        "responses": { "200": { "description": "Re-parsed successfully" } }
+      }
+    },
+    "/api/v1/resumes/{id}/export": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": {
+        "tags": ["Resumes"],
+        "summary": "Export resume as CSV or JSON",
+        "parameters": [{ "name": "format", "in": "query", "schema": { "type": "string", "enum": ["csv", "json"], "default": "json" } }],
+        "responses": { "200": { "description": "File download" } }
+      }
+    },
+    "/api/v1/jobs": {
+      "get": {
+        "tags": ["Job Profiles"],
+        "summary": "List job profiles",
+        "responses": {
+          "200": { "description": "Job list", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/JobProfile" } } } } }
+        }
+      },
+      "post": {
+        "tags": ["Job Profiles"],
+        "summary": "Create a job profile",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobProfile" } } }
+        },
+        "responses": { "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobProfile" } } } } }
+      }
+    },
+    "/api/v1/jobs/{id}": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": {
+        "tags": ["Job Profiles"],
+        "summary": "Get job profile",
+        "responses": { "200": { "description": "Job profile", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobProfile" } } } } }
+      },
+      "put": {
+        "tags": ["Job Profiles"],
+        "summary": "Update job profile",
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobProfile" } } } },
+        "responses": { "200": { "description": "Updated" } }
+      },
+      "delete": {
+        "tags": ["Job Profiles"],
+        "summary": "Delete job profile",
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+    "/api/v1/jobs/{id}/candidates": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": {
+        "tags": ["Job Profiles"],
+        "summary": "Get candidates scored for this job",
+        "responses": { "200": { "description": "Candidate list sorted by score band" } }
+      }
+    },
+    "/api/v1/jobs/{id}/candidates/{resumeId}": {
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+        { "name": "resumeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+      ],
+      "delete": {
+        "tags": ["Job Profiles"],
+        "summary": "Remove candidate from job",
+        "responses": { "204": { "description": "Removed" } }
+      }
+    },
+    "/api/v1/jobs/{id}/score/{resumeId}": {
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+        { "name": "resumeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+      ],
+      "post": {
+        "tags": ["Job Profiles"],
+        "summary": "Score a specific resume against this job",
+        "responses": { "200": { "description": "Score result" } }
+      }
+    },
+    "/api/v1/jobs/parse-skills": {
+      "post": {
+        "tags": ["Job Profiles"],
+        "summary": "AI-extract skills from job description text",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "required": ["description"], "properties": { "description": { "type": "string" } } } } }
+        },
+        "responses": { "200": { "description": "Extracted skills array" } }
+      }
+    },
+    "/api/v1/builder": {
+      "get": {
+        "tags": ["Resume Builder"],
+        "summary": "List user's builder resumes",
+        "responses": { "200": { "description": "Builder resume list", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/BuilderResume" } } } } } }
+      },
+      "post": {
+        "tags": ["Resume Builder"],
+        "summary": "Create new builder resume",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "title": { "type": "string" }, "template_id": { "type": "string" } } } } }
+        },
+        "responses": { "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BuilderResume" } } } } }
+      }
+    },
+    "/api/v1/builder/{id}": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": {
+        "tags": ["Resume Builder"],
+        "summary": "Get builder resume with sections",
+        "responses": { "200": { "description": "Builder resume", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BuilderResume" } } } } }
+      },
+      "put": {
+        "tags": ["Resume Builder"],
+        "summary": "Update builder resume title/template",
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object", "properties": { "title": { "type": "string" }, "template_id": { "type": "string" } } } } } },
+        "responses": { "200": { "description": "Updated" } }
+      },
+      "delete": {
+        "tags": ["Resume Builder"],
+        "summary": "Delete builder resume",
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+    "/api/v1/builder/{id}/duplicate": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "post": {
+        "tags": ["Resume Builder"],
+        "summary": "Duplicate a builder resume",
+        "responses": { "201": { "description": "New resume created with '— Copy' suffix" } }
+      }
+    },
+    "/api/v1/builder/{id}/sections": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": {
+        "tags": ["Resume Builder"],
+        "summary": "List all sections",
+        "responses": { "200": { "description": "Sections array" } }
+      },
+      "post": {
+        "tags": ["Resume Builder"],
+        "summary": "Add a new section",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "type": { "type": "string" }, "title": { "type": "string" }, "content": { "type": "object" } } } } } },
+        "responses": { "201": { "description": "Section created" } }
+      }
+    },
+    "/api/v1/builder/{id}/sections/{sectionId}": {
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+        { "name": "sectionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+      ],
+      "patch": {
+        "tags": ["Resume Builder"],
+        "summary": "Update section content/title/position",
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": { "200": { "description": "Updated" } }
+      },
+      "delete": {
+        "tags": ["Resume Builder"],
+        "summary": "Delete a section",
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+    "/api/v1/builder/{id}/photo": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "post": {
+        "tags": ["Resume Builder"],
+        "summary": "Upload profile photo",
+        "requestBody": { "content": { "multipart/form-data": { "schema": { "type": "object", "properties": { "file": { "type": "string", "format": "binary" } } } } } },
+        "responses": { "200": { "description": "Photo URL returned" } }
+      }
+    },
+    "/api/v1/builder/{id}/share": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": {
+        "tags": ["Resume Builder"],
+        "summary": "Get share link status",
+        "responses": { "200": { "description": "Share token and enabled flag" } }
+      },
+      "put": {
+        "tags": ["Resume Builder"],
+        "summary": "Enable/disable public sharing",
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object", "properties": { "enabled": { "type": "boolean" } } } } } },
+        "responses": { "200": { "description": "Share status updated" } }
+      }
+    },
+    "/api/v1/builder/{id}/import": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "post": {
+        "tags": ["Resume Builder"],
+        "summary": "Import resume from file into builder",
+        "requestBody": { "content": { "multipart/form-data": { "schema": { "type": "object", "properties": { "file": { "type": "string", "format": "binary" } } } } } },
+        "responses": { "200": { "description": "Sections populated from import" } }
+      }
+    },
+    "/api/v1/builder/{id}/ats-score": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "post": {
+        "tags": ["Resume Builder"],
+        "summary": "Get ATS compatibility score",
+        "responses": { "200": { "description": "ATS score and issues list" } }
+      }
+    },
+    "/api/v1/builder/{id}/export/pdf": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "post": {
+        "tags": ["Resume Builder"],
+        "summary": "Export resume as PDF",
+        "responses": { "200": { "description": "PDF file download" } }
+      }
+    },
+    "/api/v1/builder/{id}/export/word": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "post": {
+        "tags": ["Resume Builder"],
+        "summary": "Export resume as .docx",
+        "responses": { "200": { "description": "Word file download" } }
+      }
+    },
+    "/api/v1/builder/{id}/writing-assist": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "post": {
+        "tags": ["Resume Builder"],
+        "summary": "AI writing assistance for section content",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "required": ["section_type", "content"], "properties": { "section_type": { "type": "string", "enum": ["summary", "experience", "education"] }, "content": { "type": "string" } } } } }
+        },
+        "responses": { "200": { "description": "Improved content returned" } }
+      }
+    },
+    "/api/public/resume/{token}": {
+      "parameters": [{ "name": "token", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "get": {
+        "tags": ["Public"],
+        "summary": "View publicly shared resume by token",
+        "security": [],
+        "responses": {
+          "200": { "description": "Resume data (sanitized)" },
+          "404": { "description": "Not found or sharing disabled" }
+        }
+      }
+    },
+    "/api/v1/portfolios": {
+      "get": {
+        "tags": ["Portfolios"],
+        "summary": "List user's portfolios",
+        "responses": { "200": { "description": "Portfolio list", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Portfolio" } } } } } }
+      },
+      "post": {
+        "tags": ["Portfolios"],
+        "summary": "Create a new portfolio",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "required": ["name"], "properties": { "name": { "type": "string" }, "slug": { "type": "string" } } } } }
+        },
+        "responses": { "201": { "description": "Portfolio created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Portfolio" } } } } }
+      }
+    },
+    "/api/v1/portfolios/check-slug": {
+      "get": {
+        "tags": ["Portfolios"],
+        "summary": "Check slug availability",
+        "parameters": [
+          { "name": "slug", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "exclude_id", "in": "query", "schema": { "type": "string", "format": "uuid", "description": "Exclude current portfolio from check" } }
+        ],
+        "responses": { "200": { "description": "{ available: boolean }" } }
+      }
+    },
+    "/api/v1/portfolios/public/{slug}": {
+      "parameters": [{ "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "get": {
+        "tags": ["Public"],
+        "summary": "Get published portfolio by slug",
+        "security": [],
+        "responses": {
+          "200": { "description": "Portfolio with sections and projects" },
+          "404": { "description": "Not found or not published" }
+        }
+      }
+    },
+    "/api/v1/portfolios/analytics": {
+      "post": {
+        "tags": ["Portfolios"],
+        "summary": "Track a portfolio analytics event",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["portfolio_id", "event_type"],
+                "properties": {
+                  "portfolio_id": { "type": "string", "format": "uuid" },
+                  "event_type": { "type": "string", "enum": ["page_view", "link_click", "project_click"] },
+                  "referrer": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Event recorded" } }
+      }
+    },
+    "/api/v1/portfolios/revalidate": {
+      "post": {
+        "tags": ["Portfolios"],
+        "summary": "Trigger ISR revalidation for portfolio page",
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object", "required": ["slug"], "properties": { "slug": { "type": "string" } } } } } },
+        "responses": { "200": { "description": "Revalidated" } }
+      }
+    },
+    "/api/v1/portfolios/{id}": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": {
+        "tags": ["Portfolios"],
+        "summary": "Get portfolio with sections and projects",
+        "responses": { "200": { "description": "Portfolio detail", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Portfolio" } } } } }
+      },
+      "patch": {
+        "tags": ["Portfolios"],
+        "summary": "Update portfolio settings",
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Portfolio" } } } },
+        "responses": { "200": { "description": "Updated" } }
+      },
+      "delete": {
+        "tags": ["Portfolios"],
+        "summary": "Delete portfolio",
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+    "/api/v1/portfolios/{id}/publish": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "post": {
+        "tags": ["Portfolios"],
+        "summary": "Publish portfolio (makes it public)",
+        "responses": { "200": { "description": "Portfolio published with public URL" } }
+      }
+    },
+    "/api/v1/portfolios/{id}/sections": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": {
+        "tags": ["Portfolios"],
+        "summary": "List portfolio sections",
+        "responses": { "200": { "description": "Sections array", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/PortfolioSection" } } } } } }
+      },
+      "post": {
+        "tags": ["Portfolios"],
+        "summary": "Add a section",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PortfolioSection" } } } },
+        "responses": { "201": { "description": "Section created" } }
+      }
+    },
+    "/api/v1/portfolios/{id}/sections/{sectionId}": {
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+        { "name": "sectionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+      ],
+      "patch": {
+        "tags": ["Portfolios"],
+        "summary": "Update a portfolio section",
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PortfolioSection" } } } },
+        "responses": { "200": { "description": "Updated" } }
+      },
+      "delete": {
+        "tags": ["Portfolios"],
+        "summary": "Delete a section",
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+    "/api/v1/portfolios/{id}/sections/reorder": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "post": {
+        "tags": ["Portfolios"],
+        "summary": "Reorder portfolio sections",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "order": { "type": "array", "items": { "type": "string", "format": "uuid" } } } } } } },
+        "responses": { "200": { "description": "Reordered" } }
+      }
+    },
+    "/api/v1/portfolios/{id}/projects": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": {
+        "tags": ["Portfolios"],
+        "summary": "List portfolio projects",
+        "responses": { "200": { "description": "Projects array", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Project" } } } } } }
+      },
+      "post": {
+        "tags": ["Portfolios"],
+        "summary": "Add a project",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Project" } } } },
+        "responses": { "201": { "description": "Project created" } }
+      }
+    },
+    "/api/v1/portfolios/{id}/projects/{projectId}": {
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+        { "name": "projectId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+      ],
+      "get": {
+        "tags": ["Portfolios"],
+        "summary": "Get project detail",
+        "responses": { "200": { "description": "Project", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Project" } } } } }
+      },
+      "patch": {
+        "tags": ["Portfolios"],
+        "summary": "Update project",
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Project" } } } },
+        "responses": { "200": { "description": "Updated" } }
+      },
+      "delete": {
+        "tags": ["Portfolios"],
+        "summary": "Delete project",
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+    "/api/v1/portfolios/ai/bio": {
+      "post": {
+        "tags": ["Portfolio AI"],
+        "summary": "AI-generate portfolio bio",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "portfolio_id": { "type": "string", "format": "uuid" }, "context": { "type": "string" } } } } } },
+        "responses": {
+          "200": { "description": "Generated bio text" },
+          "402": { "description": "Monthly AI usage limit reached (5/month on free plan)" }
+        }
+      }
+    },
+    "/api/v1/portfolios/ai/tagline": {
+      "post": {
+        "tags": ["Portfolio AI"],
+        "summary": "AI-generate portfolio headline options",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "portfolio_id": { "type": "string", "format": "uuid" }, "role": { "type": "string" } } } } } },
+        "responses": {
+          "200": { "description": "Array of tagline options" },
+          "402": { "description": "Monthly AI usage limit reached" }
+        }
+      }
+    },
+    "/api/v1/portfolios/ai/project-description": {
+      "post": {
+        "tags": ["Portfolio AI"],
+        "summary": "AI-improve project description",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["project_id"], "properties": { "project_id": { "type": "string", "format": "uuid" }, "description": { "type": "string" } } } } } },
+        "responses": {
+          "200": { "description": "Improved description" },
+          "402": { "description": "Monthly AI usage limit reached" }
+        }
+      }
+    },
+    "/api/v1/portfolios/ai/skills-gap": {
+      "post": {
+        "tags": ["Portfolio AI"],
+        "summary": "AI-identify missing skills for a target role",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["portfolio_id", "target_role"], "properties": { "portfolio_id": { "type": "string", "format": "uuid" }, "target_role": { "type": "string" } } } } } },
+        "responses": {
+          "200": { "description": "Skills gap analysis" },
+          "402": { "description": "Monthly AI usage limit reached" }
+        }
+      }
+    },
+    "/api/v1/portfolios/ai/seo": {
+      "post": {
+        "tags": ["Portfolio AI"],
+        "summary": "AI-generate SEO meta tags",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["portfolio_id"], "properties": { "portfolio_id": { "type": "string", "format": "uuid" } } } } } },
+        "responses": {
+          "200": { "description": "meta_title and meta_description" },
+          "402": { "description": "Monthly AI usage limit reached" }
+        }
+      }
+    },
+    "/api/v1/self-test": {
+      "post": {
+        "tags": ["Self-Test"],
+        "summary": "Create a new self-test session",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["mode"],
+                "properties": {
+                  "mode": { "type": "string", "enum": ["skill", "jd", "free"] },
+                  "skill": { "type": "string" },
+                  "difficulty": { "type": "string", "enum": ["easy", "medium", "hard", "mixed"] },
+                  "question_count": { "type": "integer", "default": 10 },
+                  "jd_text": { "type": "string", "description": "Job description text (mode=jd)" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Session created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SelfTestSession" } } } } }
+      }
+    },
+    "/api/v1/self-test/{id}": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": {
+        "tags": ["Self-Test"],
+        "summary": "Get test session with questions (answers stripped)",
+        "responses": { "200": { "description": "Session + questions" } }
+      }
+    },
+    "/api/v1/self-test/{id}/submit": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "post": {
+        "tags": ["Self-Test"],
+        "summary": "Submit answers and get scored result",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "required": ["answers"], "properties": { "answers": { "type": "object", "additionalProperties": { "type": "string" } } } } } }
+        },
+        "responses": { "200": { "description": "Score, breakdown, and correct answers" } }
+      }
+    },
+    "/api/v1/self-test/skills": {
+      "get": {
+        "tags": ["Self-Test"],
+        "summary": "List available skills for self-test",
+        "responses": { "200": { "description": "Skills list" } }
+      }
+    },
+    "/api/v1/self-test/jd-extract": {
+      "post": {
+        "tags": ["Self-Test"],
+        "summary": "Extract skills from job description",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["jd_text"], "properties": { "jd_text": { "type": "string" } } } } } },
+        "responses": { "200": { "description": "Extracted skills" } }
+      }
+    },
+    "/api/v1/review/{id}": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": {
+        "tags": ["Self-Test"],
+        "summary": "View test attempt result (user or admin)",
+        "responses": { "200": { "description": "Attempt with scored responses" } }
+      }
+    },
+    "/api/v1/credits": {
+      "get": {
+        "tags": ["Credits"],
+        "summary": "Get user credit balance and recent transactions",
+        "responses": { "200": { "description": "Balance and transactions", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Credit" } } } } }
+      }
+    },
+    "/api/v1/credits/request": {
+      "post": {
+        "tags": ["Credits"],
+        "summary": "Request additional credits",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "required": ["amount", "reason"], "properties": { "amount": { "type": "integer" }, "reason": { "type": "string" } } } } }
+        },
+        "responses": { "201": { "description": "Request submitted" } }
+      }
+    },
+    "/api/v1/admin/users": {
+      "get": {
+        "tags": ["Admin — Users"],
+        "summary": "List users (with filters)",
+        "parameters": [
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          { "name": "role", "in": "query", "schema": { "type": "string", "enum": ["user", "admin"] } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["active", "locked", "invited"] } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "pageSize", "in": "query", "schema": { "type": "integer", "default": 20 } }
+        ],
+        "responses": { "200": { "description": "Paginated user list" } }
+      }
+    },
+    "/api/v1/admin/users/{id}": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": {
+        "tags": ["Admin — Users"],
+        "summary": "Get user detail",
+        "responses": { "200": { "description": "User detail", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } } }
+      },
+      "patch": {
+        "tags": ["Admin — Users"],
+        "summary": "Update role/status or unlock account",
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object", "properties": { "role": { "type": "string" }, "status": { "type": "string" } } } } } },
+        "responses": { "200": { "description": "Updated" } }
+      }
+    },
+    "/api/v1/admin/users/{id}/actions": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": {
+        "tags": ["Admin — Users"],
+        "summary": "View user auth events",
+        "responses": { "200": { "description": "Auth event log" } }
+      },
+      "post": {
+        "tags": ["Admin — Users"],
+        "summary": "Send password reset or invite",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["action"], "properties": { "action": { "type": "string", "enum": ["password_reset", "resend_invite"] } } } } } },
+        "responses": { "200": { "description": "Action performed" } }
+      }
+    },
+    "/api/v1/admin/users/{id}/resumes": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": {
+        "tags": ["Admin — Users"],
+        "summary": "List user's parsed resumes",
+        "responses": { "200": { "description": "Resume list" } }
+      }
+    },
+    "/api/v1/admin/users/{id}/resumes/{resumeId}": {
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+        { "name": "resumeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+      ],
+      "get": {
+        "tags": ["Admin — Users"],
+        "summary": "View specific user resume",
+        "responses": { "200": { "description": "Resume detail" } }
+      }
+    },
+    "/api/v1/admin/users/{id}/self-tests": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": {
+        "tags": ["Admin — Users"],
+        "summary": "List user's self-test sessions",
+        "responses": { "200": { "description": "Test session list" } }
+      }
+    },
+    "/api/v1/admin/users/{id}/self-tests/{sessionId}": {
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+        { "name": "sessionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+      ],
+      "get": {
+        "tags": ["Admin — Users"],
+        "summary": "Get user's specific test session",
+        "responses": { "200": { "description": "Session detail with results" } }
+      }
+    },
+    "/api/v1/admin/invite": {
+      "post": {
+        "tags": ["Admin — Users"],
+        "summary": "Send bulk invites",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "required": ["invites"], "properties": { "invites": { "type": "array", "items": { "type": "object", "properties": { "email": { "type": "string", "format": "email" }, "role": { "type": "string", "enum": ["user", "admin"] } } } } } } } }
+        },
+        "responses": { "200": { "description": "Invite results with per-email success/failure" } }
+      }
+    },
+    "/api/v1/admin/import": {
+      "get": {
+        "tags": ["Admin — Users"],
+        "summary": "Download CSV import template",
+        "responses": { "200": { "description": "CSV file download" } }
+      },
+      "post": {
+        "tags": ["Admin — Users"],
+        "summary": "Bulk import users from CSV",
+        "requestBody": { "content": { "multipart/form-data": { "schema": { "type": "object", "properties": { "file": { "type": "string", "format": "binary" } } } } } },
+        "responses": { "200": { "description": "Import results" } }
+      }
+    },
+    "/api/v1/admin/tests": {
+      "get": {
+        "tags": ["Admin — Tests"],
+        "summary": "List tests (with filters)",
+        "parameters": [
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["draft", "published", "archived"] } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } }
+        ],
+        "responses": { "200": { "description": "Test list" } }
+      }
+    },
+    "/api/v1/admin/tests/{id}": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": {
+        "tags": ["Admin — Tests"],
+        "summary": "Get test details",
+        "responses": { "200": { "description": "Test", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Test" } } } } }
+      },
+      "put": {
+        "tags": ["Admin — Tests"],
+        "summary": "Update test settings",
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Test" } } } },
+        "responses": { "200": { "description": "Updated" } }
+      },
+      "delete": {
+        "tags": ["Admin — Tests"],
+        "summary": "Delete test",
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+    "/api/v1/admin/tests/{id}/questions": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": {
+        "tags": ["Admin — Tests"],
+        "summary": "List test questions",
+        "responses": { "200": { "description": "Questions array" } }
+      },
+      "post": {
+        "tags": ["Admin — Tests"],
+        "summary": "Add a question to the test",
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Question" } } } },
+        "responses": { "201": { "description": "Question added" } }
+      }
+    },
+    "/api/v1/admin/tests/{id}/questions/{qid}": {
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+        { "name": "qid", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+      ],
+      "patch": {
+        "tags": ["Admin — Tests"],
+        "summary": "Update question",
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Question" } } } },
+        "responses": { "200": { "description": "Updated" } }
+      },
+      "delete": {
+        "tags": ["Admin — Tests"],
+        "summary": "Delete question from test",
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+    "/api/v1/admin/tests/{id}/questions/reorder": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "post": {
+        "tags": ["Admin — Tests"],
+        "summary": "Reorder test questions",
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object", "properties": { "order": { "type": "array", "items": { "type": "string", "format": "uuid" } } } } } } },
+        "responses": { "200": { "description": "Reordered" } }
+      }
+    },
+    "/api/v1/admin/tests/{id}/questions/from-library": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "post": {
+        "tags": ["Admin — Tests"],
+        "summary": "Add questions from question library",
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object", "properties": { "question_ids": { "type": "array", "items": { "type": "string", "format": "uuid" } } } } } } },
+        "responses": { "200": { "description": "Questions added" } }
+      }
+    },
+    "/api/v1/admin/tests/{id}/links": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": {
+        "tags": ["Admin — Tests"],
+        "summary": "List test invite links",
+        "responses": { "200": { "description": "Links list" } }
+      },
+      "post": {
+        "tags": ["Admin — Tests"],
+        "summary": "Create a test invite link",
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object", "properties": { "email": { "type": "string", "format": "email" }, "expires_at": { "type": "string", "format": "date-time" } } } } } },
+        "responses": { "201": { "description": "Link created" } }
+      }
+    },
+    "/api/v1/admin/tests/{id}/links/{lid}": {
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+        { "name": "lid", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+      ],
+      "patch": {
+        "tags": ["Admin — Tests"],
+        "summary": "Revoke link or resend invite",
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object", "properties": { "action": { "type": "string", "enum": ["revoke", "resend"] } } } } } },
+        "responses": { "200": { "description": "Updated" } }
+      }
+    },
+    "/api/v1/admin/tests/{id}/attempts": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": {
+        "tags": ["Admin — Tests"],
+        "summary": "Get all attempts for a test",
+        "responses": { "200": { "description": "Attempts list" } }
+      }
+    },
+    "/api/v1/admin/tests/{id}/attempts/{aid}": {
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+        { "name": "aid", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+      ],
+      "get": {
+        "tags": ["Admin — Tests"],
+        "summary": "View single attempt with scoring",
+        "responses": { "200": { "description": "Attempt detail" } }
+      }
+    },
+    "/api/v1/test/{token}": {
+      "parameters": [{ "name": "token", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "get": {
+        "tags": ["Self-Test"],
+        "summary": "Fetch test by invite token (answers stripped)",
+        "security": [],
+        "responses": { "200": { "description": "Test with questions" }, "404": { "description": "Invalid or expired token" } }
+      }
+    },
+    "/api/v1/test/{token}/save": {
+      "parameters": [{ "name": "token", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "post": {
+        "tags": ["Self-Test"],
+        "summary": "Auto-save test responses",
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object", "properties": { "answers": { "type": "object" }, "time_remaining": { "type": "integer" } } } } } },
+        "responses": { "200": { "description": "Saved" } }
+      }
+    },
+    "/api/v1/test/{token}/integrity": {
+      "parameters": [{ "name": "token", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "post": {
+        "tags": ["Self-Test"],
+        "summary": "Report integrity event (tab switch, copy/paste, etc.)",
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object", "properties": { "event": { "type": "string", "enum": ["tab_switch", "copy", "paste", "focus_lost"] } } } } } },
+        "responses": { "200": { "description": "Event recorded" } }
+      }
+    },
+    "/api/v1/admin/question-library": {
+      "get": {
+        "tags": ["Admin — Question Library"],
+        "summary": "List questions (with filters)",
+        "parameters": [
+          { "name": "skill", "in": "query", "schema": { "type": "string" } },
+          { "name": "difficulty", "in": "query", "schema": { "type": "string", "enum": ["easy", "medium", "hard"] } },
+          { "name": "type", "in": "query", "schema": { "type": "string", "enum": ["mcq", "true_false", "short_answer"] } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Questions list" } }
+      },
+      "post": {
+        "tags": ["Admin — Question Library"],
+        "summary": "Create a library question",
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Question" } } } },
+        "responses": { "201": { "description": "Question created" } }
+      }
+    },
+    "/api/v1/admin/question-library/{qid}": {
+      "parameters": [{ "name": "qid", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": {
+        "tags": ["Admin — Question Library"],
+        "summary": "Get question with options",
+        "responses": { "200": { "description": "Question detail" } }
+      },
+      "patch": {
+        "tags": ["Admin — Question Library"],
+        "summary": "Update question",
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Question" } } } },
+        "responses": { "200": { "description": "Updated" } }
+      },
+      "delete": {
+        "tags": ["Admin — Question Library"],
+        "summary": "Delete question",
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+    "/api/v1/admin/question-library/generate": {
+      "post": {
+        "tags": ["Admin — Question Library"],
+        "summary": "AI-generate questions for a skill",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "required": ["skill", "difficulty", "count"], "properties": { "skill": { "type": "string" }, "difficulty": { "type": "string", "enum": ["easy", "medium", "hard"] }, "count": { "type": "integer", "minimum": 1, "maximum": 20 } } } } }
+        },
+        "responses": { "200": { "description": "Generated questions array" } }
+      }
+    },
+    "/api/v1/admin/credits": {
+      "get": {
+        "tags": ["Admin — Credits"],
+        "summary": "List users with credit info",
+        "responses": { "200": { "description": "Users and their credit balances" } }
+      }
+    },
+    "/api/v1/admin/credits/requests": {
+      "get": {
+        "tags": ["Admin — Credits"],
+        "summary": "List credit requests",
+        "parameters": [{ "name": "status", "in": "query", "schema": { "type": "string", "enum": ["pending", "approved", "rejected"] } }],
+        "responses": { "200": { "description": "Requests list" } }
+      }
+    },
+    "/api/v1/admin/credits/requests/{reqId}": {
+      "parameters": [{ "name": "reqId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "post": {
+        "tags": ["Admin — Credits"],
+        "summary": "Approve or reject a credit request",
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object", "required": ["action"], "properties": { "action": { "type": "string", "enum": ["approve", "reject"] }, "override_amount": { "type": "integer" } } } } } },
+        "responses": { "200": { "description": "Request processed" } }
+      }
+    },
+    "/api/v1/admin/credits/transactions": {
+      "get": {
+        "tags": ["Admin — Credits"],
+        "summary": "View all credit transactions",
+        "responses": { "200": { "description": "Transactions list" } }
+      }
+    },
+    "/api/v1/templates": {
+      "get": {
+        "tags": ["Admin — Templates"],
+        "summary": "List featured template IDs (public)",
+        "security": [],
+        "responses": { "200": { "description": "Featured template IDs" } }
+      }
+    },
+    "/api/v1/admin/templates": {
+      "get": {
+        "tags": ["Admin — Templates"],
+        "summary": "Get all templates with featured status",
+        "responses": { "200": { "description": "Templates list" } }
+      },
+      "patch": {
+        "tags": ["Admin — Templates"],
+        "summary": "Toggle featured status for a template",
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object", "required": ["template_id", "featured"], "properties": { "template_id": { "type": "string" }, "featured": { "type": "boolean" } } } } } },
+        "responses": { "200": { "description": "Updated" } }
+      }
+    },
+    "/api/v1/admin/homepage": {
+      "get": {
+        "tags": ["Admin — Homepage CMS"],
+        "summary": "Get homepage CMS sections",
+        "responses": { "200": { "description": "Homepage content sections" } }
+      },
+      "put": {
+        "tags": ["Admin — Homepage CMS"],
+        "summary": "Update a homepage section",
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": { "200": { "description": "Updated" } }
+      },
+      "post": {
+        "tags": ["Admin — Homepage CMS"],
+        "summary": "Create a homepage section",
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": { "201": { "description": "Created" } }
+      }
+    },
+    "/api/revalidate": {
+      "post": {
+        "tags": ["Admin — Homepage CMS"],
+        "summary": "Revalidate /home page cache",
+        "responses": { "200": { "description": "Cache revalidated" } }
+      }
+    }
+  }
+}
