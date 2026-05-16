@@ -99,6 +99,57 @@ Proflect is a career platform built with Next.js 15 providing:
 | FR-AUTH-07 | Role-based routing middleware |
 | FR-AUTH-08 | Session timeout — 25-minute inactivity warning, 30-minute auto sign-out |
 
+### 5.1 Token-Based Authentication (JWT)
+
+All API routes use **JWT Bearer token** authentication backed by Supabase Auth.
+
+**Flow:**
+
+1. Client calls `POST /api/v1/auth/login` with email + password
+2. Server returns `{ access_token, refresh_token, expires_in, isAdmin }` in the response body
+3. Client stores `access_token` in `localStorage` via `lib/authToken.js`
+4. Every subsequent API request includes `Authorization: Bearer <access_token>`
+5. Server resolves the user by calling `supabase.auth.getUser(token)` against the JWT
+6. On sign-out, token is cleared from `localStorage`
+
+**Dual-mode support:** Page navigation (SSR) still uses Supabase session cookies via middleware. API routes accept either a Bearer token (preferred) or the cookie session as a fallback — so browser-driven page loads and direct API calls both work.
+
+**Token storage:** `lib/authToken.js`
+
+| Function | Purpose |
+|----------|---------|
+| `setAuthToken(token)` | Persist token to `localStorage` |
+| `getAuthToken()` | Read token from `localStorage` |
+| `clearAuthToken()` | Remove on sign-out |
+| `authHeaders()` | Returns `{ Authorization: 'Bearer …', 'Content-Type': 'application/json' }` |
+| `authHeadersFormData()` | Returns `{ Authorization: 'Bearer …' }` without Content-Type (for `FormData` uploads) |
+
+**Where tokens are attached:**
+
+- `lib/api.js` — all resume, job, builder, and admin API calls
+- `lib/portfolioApi.js` — all portfolio CRUD and AI feature calls
+- `hooks/useAuth.js` — persists token on `onAuthStateChange`, clears on sign-out
+- `app/login/page.jsx` — saves token immediately on successful login response
+
+**Server-side auth guard (`lib/auth-helpers.js`):**
+
+```js
+// Reads Authorization: Bearer <token> first; falls back to cookie session
+export async function requireUser(request) { … }
+export async function requireAdmin(request) { … }
+```
+
+Resolution order:
+1. Extract `Authorization: Bearer <token>` from request headers
+2. If found → `supabase.auth.getUser(token)` (JWT validation)
+3. If not found → build SSR Supabase client from request cookies
+
+**Swagger / API Docs:**
+
+The Swagger UI at `/admin/api-docs` uses `bearerAuth` (HTTP Bearer / JWT). To authenticate:
+1. Call `POST /api/v1/auth/login` in Swagger → copy `access_token` from response
+2. Click **Authorize** → paste token → all subsequent requests are authenticated
+
 ---
 
 ## 6. Design System Summary
@@ -158,9 +209,24 @@ import { Sk } from '@/components/Skeleton'
 <Sk className="h-5 w-32" />
 ```
 
-**API auth guard:**
+**API auth guard (Bearer token + cookie fallback):**
 ```js
-import { requireUser } from '@/lib/auth-helpers.js'
+import { requireUser, requireAdmin } from '@/lib/auth-helpers.js'
+
+// In any API route handler:
+const { user, profile } = await requireUser(request);   // throws 401/403 on failure
+const { user, profile } = await requireAdmin(request);  // additionally enforces role === 'admin'
+```
+
+**Attaching auth headers in client-side fetches:**
+```js
+import { authHeaders, authHeadersFormData } from '@/lib/authToken.js'
+
+// JSON request
+fetch('/api/v1/...', { headers: authHeaders() })
+
+// File upload (FormData)
+fetch('/api/v1/...', { method: 'POST', headers: authHeadersFormData(), body: formData })
 ```
 
 **Supabase client (API routes, service-role):**
