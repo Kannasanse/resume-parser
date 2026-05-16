@@ -1,494 +1,726 @@
-# Resume Parser & Builder — Requirements
+# Proflect — Requirements Document
 
-## Overview
-
-A full-stack web application with two personas:
-
-- **Admin** — uploads resumes, manages job profiles, scores candidates, and administers platform users
-- **User** — builds and manages personal resumes using an AI-assisted resume builder with multiple templates
-
-Authentication supports email/password and Google SSO. Role-based access control (RBAC) gates all routes and API endpoints. All data is stored in Supabase (PostgreSQL) and exposed via Next.js API routes consumed by the same Next.js frontend.
+**Version:** 2.0  
+**Last Updated:** 2026-05-15  
+**Platform:** https://proflect-neo.vercel.app
 
 ---
 
-## Tech Stack
+## Table of Contents
 
-| Layer        | Technology                                                                                  |
-|--------------|---------------------------------------------------------------------------------------------|
-| Frontend     | Next.js 15 (App Router), React 18.3, TailwindCSS 3.4, TanStack Query 5.74                 |
-| API          | Next.js API Routes (`/app/api/v1/...`) — same deployment as the frontend                   |
-| Backend      | Node.js, Express 4.x (handles file upload, parsing, storage; separate Vercel deployment)   |
-| Database     | Supabase (PostgreSQL)                                                                       |
-| Storage      | Supabase Storage (bucket: `resumes`)                                                        |
-| Auth         | Supabase Auth (`@supabase/ssr`) — email/password + Google OAuth                            |
-| Email        | Resend (transactional email); console fallback in development                               |
-| Parsing      | pdf-parse 1.1 (PDF), mammoth 1.9 (DOCX), pdfjs-dist 5.6 (PDF fallback)                    |
-| AI — Parse   | OpenRouter (`meta-llama/llama-3.3-70b-instruct:free`) → Groq (`meta-llama/llama-4-scout-17b-16e-instruct`) → regex fallback |
-| AI — Score Summary | OpenRouter → Groq fallback — generates strengths/gaps JSON after each score        |
-| Scoring      | Custom 7-factor engine (rule-based + TF-IDF cosine similarity)                             |
-| Export       | SheetJS (`xlsx`) — client-side Excel export for candidates list                            |
-| Deployment   | Vercel — Next.js app; Express backend as separate project                                   |
-
----
-
-## User Roles
-
-| Role  | Access                                                                                      |
-|-------|---------------------------------------------------------------------------------------------|
-| Admin | Profiles, Job Profiles, Builder, Dashboard (user management, invites, import)              |
-| User  | Builder only                                                                                |
+1. [Overview](#1-overview)
+2. [Tech Stack](#2-tech-stack)
+3. [Deployment](#3-deployment)
+4. [User Roles & Access](#4-user-roles--access)
+5. [Authentication](#5-authentication)
+6. [Design System Summary](#6-design-system-summary)
+7. [Admin Features](#7-admin-features)
+8. [Resume Upload & Parsing (Admin)](#8-resume-upload--parsing-admin)
+9. [Job Profile Management (Admin)](#9-job-profile-management-admin)
+10. [Resume Builder (User)](#10-resume-builder-user)
+11. [Portfolio Builder (User)](#11-portfolio-builder-user)
+12. [Interview Prep (User)](#12-interview-prep-user)
+13. [Database Schema](#13-database-schema)
+14. [API Endpoints](#14-api-endpoints)
+15. [Non-Functional Requirements](#15-non-functional-requirements)
+16. [Known Limitations](#16-known-limitations)
 
 ---
 
-## Functional Requirements
+## 1. Overview
+
+Proflect is a career platform built with Next.js 15 providing:
+
+- **Resume parsing and scoring** for admins managing candidate pipelines
+- **Resume builder** with 20 templates and live preview
+- **Portfolio builder** with AI-assisted content and public pages
+- **Interview prep** (self-test) with multiple assessment modes
 
 ---
 
-### Authentication & Access Control
+## 2. Tech Stack
 
-#### FR-AUTH-01 — User Sign-Up (Email/Password)
-- Sign-up form collects First Name, Last Name, Email, Password, Confirm Password
-- Password strength meter (4-segment bar: Weak / Fair / Good / Strong) — requires 8+ chars, uppercase, number, special character
-- Show/hide password toggle
-- Inline validation for all fields; `EMAIL_EXISTS` code returns field-level error
-- On success: verification email sent via Resend; "Check your inbox" confirmation screen shown
-- Resend verification link available from confirmation screen (rate-limited: 3 per hour)
-
-#### FR-AUTH-02 — Google SSO
-- "Continue with Google" button on both Login and Sign-Up pages
-- Uses Supabase OAuth with Google provider; no password required
-- Google users are auto-confirmed (no email verification step)
-- First name / last name parsed from Google's `given_name` / `family_name` / `full_name` metadata
-- After OAuth callback, routed by role: admin → `/resumes`, user → `/builder`
-
-#### FR-AUTH-03 — Login
-- Email + password login via `/api/v1/auth/login`
-- Show/hide password toggle
-- "Forgot password?" link
-- **Rate limiting**: 5 failed attempts → 15-minute account lockout; lockout message shows minutes remaining
-- **Unverified account**: shows inline prompt with "Resend verification email" link
-- On success: admin routed to `/resumes`, user routed to `/builder` (or original `?redirect=` destination)
-
-#### FR-AUTH-04 — Forgot / Reset Password
-- Forgot Password page: email field, sends Supabase reset link (expires 1 hour)
-- Reset Password page: validates recovery token via `PASSWORD_RECOVERY` auth event; new password + confirm with strength meter; redirects to login on success
-
-#### FR-AUTH-05 — Email Verification
-- Verify Email page shows holding screen with resend button
-- Resend rate-limited to 3 per hour (per email) via `email_resend_limits` table
-- Countdown timer after each resend
-
-#### FR-AUTH-06 — Invite Acceptance
-- `/join?token=` page validates invite token (expired / used / invalid states shown)
-- Pre-fills email (read-only) and role badge from token
-- Collects First Name, Last Name, Password, Confirm Password
-- Invited users are auto-confirmed (no verification step)
-- Token marked `used_at` after acceptance
-
-#### FR-AUTH-07 — Role-Based Routing (Middleware)
-- Unauthenticated users redirected to `/login` with `?redirect=` param
-- Unconfirmed email users redirected to `/verify-email`
-- Non-admin users redirected from admin-only pages (`/resumes`, `/jobs`, `/upload`, `/admin`) to `/builder`
-- Root `/` redirects: admin → `/resumes`, user → `/builder`
-- `/access-denied` page with role-appropriate dashboard link
-
-#### FR-AUTH-08 — Session Timeout
-- 25-minute idle warning modal ("Session expiring soon") with "Stay signed in" / "Sign out" buttons
-- 30-minute idle auto sign-out
-- Activity events (mouse, keyboard, scroll, click) reset the timer
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Next.js 15 (App Router), React, TailwindCSS 3.4 |
+| API | Next.js API Routes at `/app/api/v1/...` |
+| Database | Supabase (PostgreSQL) with Row Level Security |
+| Auth | Supabase Auth (`@supabase/ssr`) — email/password + Google OAuth |
+| AI — Resume parsing | OpenRouter (`meta-llama/llama-3.3-70b-instruct:free`) → Groq (`meta-llama/llama-4-scout-17b-16e-instruct`) → regex fallback |
+| AI — Portfolio features | Anthropic Claude (`claude-sonnet-4-6`) — bio, tagline, project description, skills gap, SEO suggestions |
+| Email | Resend (transactional) |
+| Scoring | Custom 7-factor engine (Skills, Experience, Education, Title, Certifications, Projects, Quality) + TF-IDF cosine similarity |
+| Export | SheetJS (XLSX, client-side), Puppeteer (PDF — portfolio, planned) |
 
 ---
 
-### Admin — User Management
+## 3. Deployment
 
-#### FR-ADMIN-01 — Dashboard
-- Stats: Total Users (links to user list), Pending Invitations (links to invite page)
-- Quick Actions: Manage Users tile; Invite Users tile with "Invite" and "Bulk Import CSV" CTAs
+| App | Platform | URL |
+|-----|----------|-----|
+| Next.js (frontend + API) | Vercel | https://proflect-neo.vercel.app |
+| Express backend (file processing) | Vercel | Separate Vercel project |
 
-#### FR-ADMIN-02 — User List
-- Searchable, filterable, sortable, paginated table (20 per page)
-- Search: name or email (debounced 300 ms)
-- Filter by role (All / User / Admin) and status (All / Active / Pending / Deactivated)
-- Sort by: First Name, Email, Joined date (toggle asc/desc)
-- Columns: Name, Email, Role, Status badge (color-coded), Joined date, Edit link
-- Pagination with page indicator ("Showing X–Y of Z")
+### Environment Variables
 
-#### FR-ADMIN-03 — User Detail & Edit
-- Shows account info: email, joined date, last login, failed login count
-- Locked account indicator with "Unlock" button (clears `locked_until` and `failed_login_attempts`)
-- Edit role (User / Admin) and status (Active / Pending / Deactivated)
-- Admin cannot change their own role or deactivate themselves
-- Role change syncs to Supabase auth `user_metadata` and triggers role-changed email
-- Danger zone: permanent delete with two-step confirmation (cannot delete own account)
-- All actions logged to `audit_log`
-
-#### FR-ADMIN-04 — Invite Users
-- Email chip input — type email and press Enter / comma / Tab / Space to add; paste multiple emails at once
-- Role selector (User / Admin) applies to all emails in the batch
-- Per-email result list (success / warning / error) after send
-- Pending invitations list: email, role, expiry, Cancel button
-- Invitations expire after 7 days; tokens stored in `invite_tokens` table
-
-#### FR-ADMIN-05 — Bulk Import (CSV)
-- Drag-and-drop or click-to-browse CSV upload (max 500 rows)
-- Required columns: `first_name`, `last_name`, `email`; optional: `role` (default: `user`)
-- Client-side CSV parsing with preview table (first 20 rows + overflow count)
-- Server-side validation returns per-row errors (line number, email, error list) before any rows are created
-- On confirmation: creates invite tokens and sends invite emails for valid rows
-- Skips rows where account already exists
-- Results summary: Invited / Skipped / Errors counts with per-row status table
-- CSV template download available
+| Variable | Purpose |
+|----------|---------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key (client-side) |
+| `SUPABASE_SECRET_KEY` | Supabase service-role key (server-side) |
+| `OPENROUTER_API_KEY` | OpenRouter AI (resume parsing primary) |
+| `GROQ_API_KEY` | Groq AI (resume parsing fallback) |
+| `ANTHROPIC_API_KEY` | Anthropic Claude (portfolio AI features) |
+| `RESEND_API_KEY` | Resend transactional email |
+| `RESEND_FROM_EMAIL` | Sender address for transactional email |
+| `NEXT_PUBLIC_APP_URL` | Public app base URL |
 
 ---
 
-### Resume Builder (User Persona)
+## 4. User Roles & Access
 
-#### FR-BUILDER-01 — Resume List
-- Personal resume library for the logged-in user
-- Cards show: resume name, template name, last updated date, preview thumbnail (template color swatch), Edit / Duplicate / Delete / Share actions
-- "New Resume" button; "New from Upload" imports parsed data from an uploaded resume
-
-#### FR-BUILDER-02 — Resume Editor
-- Sections: Personal Info, Summary, Skills, Work Experience, Education, Certifications, Projects, Languages, Awards, Interests, Other
-- Each section is a collapsible card; sections can be added/removed
-- Rich form fields per section type; multi-entry sections (experience, education, etc.) support add/remove/reorder
-- Live preview pane updates in real time as user types
-- Template selector: choose from 8 templates; preview updates immediately
-- Auto-save on every change (debounced)
-
-#### FR-BUILDER-03 — Resume Templates
-Twenty templates available to all users:
-
-| Template             | Style   | Description                                                            |
-|----------------------|---------|------------------------------------------------------------------------|
-| Classic Professional | Classic | Traditional layout with clear section hierarchy                        |
-| Modern Slate         | Modern  | Clean two-column layout with slate header                              |
-| Minimal White        | Minimal | Ultra-clean single-column, maximum whitespace                          |
-| ATS Clean            | ATS     | Plain formatting optimised for applicant tracking systems              |
-| Heritage             | Serif   | Centered serif name (Playfair Display), full-width hairline rules, right-aligned dates |
-| Beacon               | Modern  | Dark navy sidebar with initials avatar + contact, white main column    |
-| Banded               | Modern  | Gray rounded header card, gray title bands, left-rail date column      |
-| Foundry              | Modern  | Bordered header card with initials circle, pill section bands, multi-column skills |
-| Corporate            | Serif   | EB Garamond, spaced-caps section headers with centered hairline rules  |
-| Silver Banner        | Serif   | Left-aligned name with full-width silver/themed banner section headers |
-| Teal Sidebar         | Modern  | Lora serif main column with bold colored right sidebar                 |
-| Timeline             | Modern  | Left-rail timeline with date dots and bordered entry cards             |
-| Photo Sidebar        | Modern  | Right sidebar with avatar placeholder, contact, and skills             |
-| Creative Edge        | Modern  | Bold accent sidebar, avatar initial, top accent bar                    |
-| Executive Navy       | Classic | Dark navy header bar, spaced typography, left-aligned dates            |
-| Tech Stack           | Modern  | Monospace accents, code-styled section headers, left sidebar           |
-| Soft Gradient        | Modern  | Gradient header band with decorative circles                           |
-| Bold Impact          | Bold    | Full-width colour header, uppercase 900-weight name, black contact bar |
-| Elegant Script       | Serif   | Ornamental dividers, serif italic section titles, centred header       |
-| Beacon Dark          | Modern  | Variant of Beacon with darker sidebar accent                           |
-
-#### FR-BUILDER-06 — Layout Customization
-- **Column layout**: choose One Column, Two Column, or Mix
-  - Two Column: assign each section to left or right column via per-section toggle
-  - Mix: set each section independently to one-column or two-column width
-- **Page breaks**: insert a visible page-break marker between any two sections; remove via delete control on the indicator
-- **Section title size**: Small / Medium / Large — applied globally across all section headings
-- **Subtitle size**: Small / Medium / Large — applied globally; system warns if subtitle exceeds title size
-- **List style**: Bullet (•) or Hyphen (–) — applied globally to all list items
-- **Heading icon**: None, Outline, or Filled — applied to all section heading rows simultaneously
-- All changes reflected in the live preview immediately; all settings persisted per resume
-- Switching column layouts preserves all section content; removing page breaks preserves all content
-
-#### FR-BUILDER-07 — Spacing Customization
-- **Font size**: 9–14 pt (slider + numeric input, step 0.5)
-- **Line height**: 1.0–1.16 (slider + numeric input, step 0.01)
-- **Left / right margin**: 10–25 mm (independent sliders)
-- **Top / bottom margin**: 10–25 mm (independent sliders)
-- **Entry spacing**: 1–10 lines (slider, integer only)
-- Out-of-range values clamped with inline notice; non-numeric input rejected with `"Please enter a valid number."`
-- All values visible in the live preview in real time; persisted per resume
-- Defaults: font size 11 pt, line height 1.15, all margins 15 mm, entry spacing 2 lines
-- Resetting resume to defaults restores all spacing values to the above defaults
-
-#### FR-BUILDER-08 — Footer Options
-- Three independently toggleable checkboxes: **Page Numbers**, **Email**, **Name**
-- Any combination (including none) is valid
-- Footer appears on every resume page, visually separated from body with a hairline rule
-- Email and Name are pulled dynamically from the resume's contact data (not static copies)
-- If Email is checked but no email exists: inline warning `"No email address found. Please add one to your contact details."` — checkbox stays checked, nothing renders in footer
-- If Name is checked but no name exists: inline warning `"No name found. Please add your name to the resume."`
-- All checkbox states persisted per resume; reset to defaults unchecks all three
-
-#### FR-BUILDER-09 — Section-Specific Display Options
-- **Skills layout** (5 styles): Rows (default), Grid, Compact, Bubble, Level
-  - Level: shows skill proficiency as dot indicators; inline warning when no proficiency data is set
-- **Education order**: School → Degree (default) or Degree → School
-- **Work Experience order**: Job Title → Employer (default) or Employer → Job Title
-- Missing title/subtitle field (e.g. no employer): renders only available field, no blank line shown
-- All display settings applied instantly in preview; persisted per resume per section
-- Resetting to defaults: Skills → Rows, Education → School → Degree, Work → Job Title → Employer
-
-#### FR-BUILDER-04 — Review & Export
-- Review page shows full resume preview in selected template
-- Print / Download PDF via browser print dialog
-
-#### FR-BUILDER-05 — Public Share Link
-- Generate a shareable public URL (`/r/:token`) for a resume
-- Public page renders the resume in its template with no authentication required
-- Share link can be revoked (token deleted)
+| Role | Access |
+|------|--------|
+| Admin | Profiles, Job Profiles, Resume Builder, Tests, Question Library, Templates, Admin Dashboard, Admin CMS, Admin Credits |
+| User | Resume Builder, Portfolio Builder, Interview Prep |
 
 ---
 
-### Resume Upload & Parsing (Admin)
+## 5. Authentication
 
-#### FR-01 — Resume Upload
-- Job profile selection is **optional** at upload time
-- Upload page pre-selects job profile when accessed via `?jobId=` query param
-- Job Profile Detail page has an "Upload Resume" button linking directly to upload for that job
-- Supported formats: PDF, DOC, DOCX; maximum 10 MB
-- MIME type validated server-side; file stored in Supabase Storage
-- Resume record stores `job_id` FK when a job is selected (nullable; SET NULL on job delete)
-- On successful upload, resume is automatically scored if linked to a job profile
-- Bulk upload supported — multiple files selectable in one operation with per-file status tracking
-
-#### FR-02 — Resume Parsing
-- Raw text extracted from uploaded file (pdf-parse / pdfjs-dist for PDF, mammoth for DOCX)
-- Raw text persisted to database for future reparsing
-- **Primary parser**: OpenRouter API (`meta-llama/llama-3.3-70b-instruct:free`) extracts structured JSON with a 13-rule system prompt
-- **Fallback 1**: Groq SDK (`meta-llama/llama-4-scout-17b-16e-instruct`)
-- **Fallback 2**: Regex-based section splitter
-- Extracts: personal info, summary, skills, experience, projects, education, certifications, other
-- Full AI output stored as `raw_json` (JSONB)
-- Resume status transitions: `pending` → `processing` → `completed` / `failed`
-
-#### FR-03 — Resume Scoring Engine
-Scores a resume against a job profile across 7 factors (Skills, Experience, Education, Title, Certifications, Projects, Quality). Weighted overall score with role-type × seniority weight matrix; per-job custom weights supported.
-
-Score bands: **Strong Match** (0.80–1.00), **Good Match** (0.65–0.79), **Moderate Match** (0.50–0.64), **Weak Match** (<0.50)
-
-#### FR-03b — AI Score Summary
-- After every score/rescore, generates `{ summary, strengths[], gaps[] }` via OpenRouter → Groq fallback
-- Displayed in candidate details panel; non-blocking (score saved even if summary fails)
-
-#### FR-04 — Profiles List View
-- Search, paginate (50/100/150/200), grid/table toggle (localStorage preference)
-- Bulk delete with hold-to-delete confirmation
-
-#### FR-05 — Resume Detail View
-- All parsed sections; score breakdown panel; Export JSON/CSV; Re-parse; Delete
-
-#### FR-06 — Delete Resume
-- Cascades to `parsed_data`, `work_experience`, `education`, `resume_scores` and Supabase Storage
-
-#### FR-07 — Export
-- JSON, CSV (per resume); XLSX (candidates list from job profile)
-
-#### FR-08 — Reparse
-- Re-runs AI parsing on stored `raw_text`; re-scores automatically if linked to a job
+| ID | Requirement |
+|----|-------------|
+| FR-AUTH-01 | Email/password signup with email verification |
+| FR-AUTH-02 | Google SSO |
+| FR-AUTH-03 | Login with rate limiting — 5 failed attempts triggers 15-minute lockout |
+| FR-AUTH-04 | Forgot password / reset password flow |
+| FR-AUTH-05 | Email verification resend (max 3 per hour) |
+| FR-AUTH-06 | Invite acceptance flow |
+| FR-AUTH-07 | Role-based routing middleware |
+| FR-AUTH-08 | Session timeout — 25-minute inactivity warning, 30-minute auto sign-out |
 
 ---
 
-### Job Profile Management (Admin)
+## 6. Design System Summary
 
-#### FR-09 — Job Profile Management
-- Create/edit: title, organization, rich text description, role type, seniority, required experience, degree, certifications, custom weight sliders
-- List view: tiles with candidate count, top skills, org name; search and paginate
-- Delete with hold-to-delete confirmation
+> Full specification is in `design-system.md`. This section is a quick-reference for developers.
 
-#### FR-10 — AI Skill Extraction
-- Paste job description → AI returns structured skill array with proficiency and required flag
+**System:** Proflect Design System v2.0 · Tailwind CSS 3.4
 
-#### FR-11 — Job Profile Detail / Candidates
-- Candidates tab: search, filter by band, sort, paginate; expandable AI assessment panel per candidate; Rescore; Export XLSX; Add Existing
+### Color Tokens
 
-#### FR-12 — Post-Upload Mapping
-- "Add Existing" on any job profile discovers unlinked resumes and scores them immediately
+| Token | Value / Usage |
+|-------|--------------|
+| `bg-ds-bg` | Page background (#F4F8FC-equivalent) |
+| `bg-ds-card` | Card background (white / dark mode variant) |
+| `border-ds-border` | Dividers and card borders (#D1DCE8) |
+| `text-ds-text` | Primary text (#2C2C2A) |
+| `text-ds-textMuted` | Secondary / muted text (#6B7280) |
+| `bg-primary` | Proflect Blue (#185FA5) |
+| `bg-primary-light` | Sky Mist (#E6F1FB) |
+| `text-primary` | #185FA5 |
+| `bg-ds-successLight` | Success background |
+| `text-ds-success` | Success text (#1D9E75) |
+| `bg-ds-dangerLight` | Error background |
+| `text-ds-danger` | Error text (#D93025) |
+| `font-heading` | Heading font (Inter 600/700) |
 
----
+### Responsive Breakpoints (mobile-first)
 
-### General UI
+| Prefix | Breakpoint |
+|--------|-----------|
+| _(default)_ | Mobile |
+| `sm:` | 640px (mobile landscape) |
+| `md:` | 768px (tablet) |
+| `lg:` | 1024px (desktop) |
+| `xl:` | 1280px (wide) |
 
-#### FR-13 — Dark / Light Theme
-- Toggle in navbar; persists via localStorage; respects OS preference on first load
+### Component Patterns
 
-#### FR-14 — Organizations
-- Global lookup; job profiles optionally linked; inline creation via combobox
-
-#### FR-15 — Skeleton Loaders
-- All async loading states replaced with layout-matching animated skeleton UIs across: Profiles list, Profile detail, Jobs list, Job detail, Builder list, Builder editor, Builder review
-
----
-
-## Non-Functional Requirements
-
-### NFR-01 — Performance
-- Upload + parse + score < 15 seconds for files under 2 MB
-- Page loads < 2 seconds; search debounced at 300 ms
-
-### NFR-02 — Reliability
-- Parse never leaves a resume in `processing` state (OpenRouter → Groq → regex fallback)
-- Score upsert uses `ON CONFLICT (resume_id, job_profile_id)`
-
-### NFR-03 — Security
-- Supabase service role key used only server-side; never exposed to browser
-- All admin API routes protected by `requireAdmin()` (checks `profiles.role` via service role)
-- All authenticated API routes protected by `requireUser()`
-- Login rate limiting: 5 attempts → 15-minute lockout (`profiles.failed_login_attempts`, `locked_until`)
-- Email resend rate limiting: 3 per hour per email (`email_resend_limits` table)
-- Admin actions logged to `audit_log` (action, performer, target, IP)
-- File uploads restricted to PDF/DOCX; capped at 10 MB
-- `Secret.md` and `.env` files excluded from git
-
-### NFR-04 — Usability
-- Fully responsive (mobile + desktop)
-- Skeleton loaders on all async states
-- Hold-to-delete on all destructive actions
-- Role-aware navbar (admins: Profiles / Job Profiles / Builder / Dashboard; users: Builder only)
-
----
-
-## Database Schema
-
+**Primary button:**
 ```
--- Core (existing)
-organizations    id (UUID PK), name (TEXT UNIQUE), created_at
-resumes          id, file_name, file_url, raw_text, status, job_id* (SET NULL), created_at, updated_at
-parsed_data      id, resume_id* (CASCADE), candidate_name, email, phone, summary, skills (TEXT[]), raw_json (JSONB)
-work_experience  id, parsed_data_id* (CASCADE), company, title, start_date, end_date, description
-education        id, parsed_data_id* (CASCADE), institution, degree, field, graduation_year
-job_profiles     id, title, description, role_type, seniority, required_years_experience,
-                 required_degree, required_field, required_certs (TEXT[]), custom_weights (JSONB),
-                 organization_id* (SET NULL), created_at, updated_at
-job_skills       id, job_profile_id* (CASCADE), skill, proficiency, is_required (BOOLEAN)
-resume_scores    id, resume_id* (CASCADE), job_profile_id* (CASCADE), overall_score, band,
-                 skills_score, experience_score, education_score, title_score, certs_score,
-                 projects_score, quality_score, score_summary (JSONB), scored_at, created_at
-                 UNIQUE(resume_id, job_profile_id)
-
--- Builder
-builder_resumes  id (UUID PK), user_id* (CASCADE → auth.users), title, template_id,
-                 design_settings (JSONB), personal_info (JSONB),
-                 footer_settings (JSONB), spacing_settings (JSONB), layout_settings (JSONB),
-                 share_token (UUID), share_enabled (BOOLEAN), created_at, updated_at
-builder_sections id, resume_id* (CASCADE), type, title, position, enabled (BOOL),
-                 content (JSONB), display_settings (JSONB), created_at, updated_at
-
--- RBAC
-profiles         id (UUID PK, → auth.users CASCADE), email, first_name, last_name,
-                 role (user|admin), status (pending|active|deactivated),
-                 failed_login_attempts, locked_until, last_login_at,
-                 email_verified_at, created_at, updated_at
-invite_tokens    id, email, role, token (UNIQUE), invited_by* (SET NULL), accepted_by* (SET NULL),
-                 expires_at, used_at, cancelled_at, status, created_at
-audit_log        id, performed_by* (SET NULL), action, target_user_id, target_email,
-                 details (JSONB), ip_address, created_at
-email_resend_limits  email (PK), resend_count, window_start, updated_at
+bg-primary text-white rounded px-4 py-2 text-sm font-medium hover:bg-primary/90 transition-colors
 ```
 
-Triggers: `on_auth_user_created` auto-creates `profiles` row on signup (handles both email and Google OAuth metadata). `on_auth_user_updated` activates profile when email is confirmed.
+**Card:**
+```
+bg-ds-card border border-ds-border rounded-lg
+```
+
+**Input:**
+```
+bg-ds-bg border border-ds-border rounded px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary
+```
+
+**Skeleton loader:**
+```js
+import { Sk } from '@/components/Skeleton'
+<Sk className="h-5 w-32" />
+```
+
+**API auth guard:**
+```js
+import { requireUser } from '@/lib/auth-helpers.js'
+```
+
+**Supabase client (API routes, service-role):**
+```js
+import supabase from '@/lib/supabase.js'
+```
+
+**Dark mode:** `dark:` Tailwind prefix; toggled via `useTheme` hook, persisted in `localStorage`.
 
 ---
 
-## REST API Endpoints
+## 7. Admin Features
 
-### Auth (public)
-| Method | Endpoint                             | Description                                      |
-|--------|--------------------------------------|--------------------------------------------------|
-| POST   | /api/v1/auth/signup                  | Create account; send verification email          |
-| POST   | /api/v1/auth/login                   | Sign in with rate limiting and lockout           |
-| POST   | /api/v1/auth/resend-verification     | Resend verification email (3/hr limit)           |
-| GET    | /api/v1/auth/invite?token=           | Validate invite token                            |
-| POST   | /api/v1/auth/accept-invite           | Accept invite, set password, activate account    |
-| GET    | /auth/callback                       | Supabase OAuth callback (Google SSO + magic link)|
+### 7.1 Admin Dashboard
 
-### Admin (admin role required)
-| Method | Endpoint                             | Description                                      |
-|--------|--------------------------------------|--------------------------------------------------|
-| GET    | /api/v1/admin/users                  | List users (search, filter, sort, paginate)      |
-| GET    | /api/v1/admin/users/:id              | Get user detail                                  |
-| PATCH  | /api/v1/admin/users/:id              | Update role, status, unlock account              |
-| DELETE | /api/v1/admin/users/:id              | Delete user                                      |
-| POST   | /api/v1/admin/invite                 | Send invitations (batch emails)                  |
-| GET    | /api/v1/admin/invite                 | List invite tokens                               |
-| DELETE | /api/v1/admin/invite?id=             | Cancel pending invitation                        |
-| GET    | /api/v1/admin/import                 | Download CSV template                            |
-| POST   | /api/v1/admin/import                 | Validate + bulk create users from CSV            |
+- Summary stats: total users, pending invitations
+- Quick action links to major admin sections
 
-### Resumes (admin)
-| Method | Endpoint                          | Description                                           |
-|--------|-----------------------------------|-------------------------------------------------------|
-| POST   | /api/v1/resumes/upload            | Upload file; auto-scores if linked to a job           |
-| GET    | /api/v1/resumes                   | List with search and pagination                       |
-| GET    | /api/v1/resumes/:id               | Get with parsed data and all scores                   |
-| DELETE | /api/v1/resumes/:id               | Delete record and storage file                        |
-| GET    | /api/v1/resumes/:id/export        | Export as JSON or CSV                                 |
-| POST   | /api/v1/resumes/:id/reparse       | Re-run AI parsing; re-scores if linked                |
-| POST   | /api/v1/resumes/:id/score         | Manually score against a job; generates summary       |
+### 7.2 User Management
 
-### Jobs (admin)
-| Method | Endpoint                          | Description                                           |
-|--------|-----------------------------------|-------------------------------------------------------|
-| POST   | /api/v1/jobs/parse-skills         | AI-extract skills from job description                |
-| POST   | /api/v1/jobs                      | Create job profile                                    |
-| GET    | /api/v1/jobs                      | List all job profiles                                 |
-| GET    | /api/v1/jobs/:id                  | Get job profile with skills                           |
-| PUT    | /api/v1/jobs/:id                  | Update job profile                                    |
-| DELETE | /api/v1/jobs/:id                  | Delete job profile                                    |
-| GET    | /api/v1/jobs/:id/candidates       | List candidates with scores and AI summaries          |
-| POST   | /api/v1/jobs/:id/score/:resumeId  | Trigger or refresh scoring + summary                  |
+- List all users with search and filter
+- Edit user profile and role
+- Delete user
+- Audit log: tracks admin actions with performed_by, action, target, IP, timestamp
 
-### Builder (authenticated user)
-| Method | Endpoint                                    | Description                              |
-|--------|---------------------------------------------|------------------------------------------|
-| GET    | /api/v1/builder                             | List user's resumes                      |
-| POST   | /api/v1/builder                             | Create new resume                        |
-| GET    | /api/v1/builder/:id                         | Get resume with sections                 |
-| PATCH  | /api/v1/builder/:id                         | Update resume (title, template, design_settings, personal_info, footer_settings, spacing_settings, layout_settings) |
-| DELETE | /api/v1/builder/:id                         | Delete resume                            |
-| GET    | /api/v1/builder/:id/sections                | List sections                            |
-| POST   | /api/v1/builder/:id/sections                | Add section                              |
-| PATCH  | /api/v1/builder/:id/sections/:sectionId     | Update section (title, content, enabled, display_settings) |
-| DELETE | /api/v1/builder/:id/sections/:sectionId     | Remove section                           |
-| POST   | /api/v1/builder/:id/duplicate               | Duplicate resume                         |
-| POST   | /api/v1/builder/:id/import                  | Import from parsed resume                |
-| GET/POST | /api/v1/builder/:id/share                 | Get or create public share token         |
+### 7.3 Invite Users
 
-### Organizations (admin)
-| Method | Endpoint                | Description                    |
-|--------|-------------------------|--------------------------------|
-| GET    | /api/v1/organizations   | List all organizations         |
-| POST   | /api/v1/organizations   | Create organization            |
+- Send batch email invitations
+- View pending invitations list
+- Cancel pending invitations
+
+### 7.4 Bulk Import
+
+- CSV upload (maximum 500 rows)
+- Client-side validation before submission
+- Preview rows before import
+- Per-row success / error results after import
+
+### 7.5 Tests
+
+- Create, edit, and publish multiple-choice tests
+- Tests draw from the Question Library
+- Configurable difficulty and question count
+
+### 7.6 Question Library
+
+- Manage reusable questions tagged by skill and category
+- Questions referenced by Tests and Interview Prep
+
+### 7.7 Templates
+
+- Manage resume template availability
+
+### 7.8 Admin CMS (Homepage)
+
+- Manage homepage content sections
+- Publish sections to live homepage
+
+### 7.9 Admin Credits
+
+- View and manage user credit allocations (AI usage and other metered features)
 
 ---
 
-## Deployment
+## 8. Resume Upload & Parsing (Admin)
 
-| App                | Platform | URL                                        |
-|--------------------|----------|--------------------------------------------|
-| Next.js (full app) | Vercel   | https://profile-stream-evo.vercel.app      |
-| Express backend    | Vercel   | Separate project (file processing)         |
+### 8.1 Upload
 
-Environment variables (Vercel project settings):
-`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`,
-`OPENROUTER_API_KEY`, `GROQ_API_KEY`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `NEXT_PUBLIC_APP_URL`
+- Supported formats: PDF, DOC, DOCX
+- Maximum file size: 10 MB
+- Bulk upload with per-file status tracking
 
-Auto-deploys from GitHub `main` branch on every push.
+### 8.2 AI Parsing Chain
+
+1. **Primary:** OpenRouter (`meta-llama/llama-3.3-70b-instruct:free`)
+2. **Fallback:** Groq (`meta-llama/llama-4-scout-17b-16e-instruct`)
+3. **Final fallback:** Regex extraction
+
+Extracted fields: personal info, summary, skills, work experience, projects, education, certifications.
+
+### 8.3 Scoring
+
+**7-factor scoring engine:**
+
+| Factor | Description |
+|--------|-------------|
+| Skills | Match against job profile required and preferred skills |
+| Experience | Years and relevance of work experience |
+| Education | Degree level and field match |
+| Title | Job title alignment |
+| Certifications | Matching certifications |
+| Projects | Relevant project work |
+| Quality | Resume completeness and quality signals |
+
+- TF-IDF cosine similarity applied across factors
+- Custom per-job-profile factor weights supported
+- Result stored as overall score (0–100), band, and per-factor breakdown
+- Unique constraint: one score record per (resume, job profile) pair; rescoring updates existing record
+
+### 8.4 Other Features
+
+- AI score summary: narrative strengths/gaps paragraph per scored resume
+- Reparse: re-run AI parsing on stored `raw_text` without re-uploading
+- Export: XLSX download of candidate scores for a job profile
 
 ---
 
-## Known Limitations
+## 9. Job Profile Management (Admin)
 
-- AI parsing adds ~3–8 seconds of latency per resume (OpenRouter free tier)
-- AI summary generation adds ~2–5 seconds per score; existing candidates need a manual Rescore
-- Name detection may fail on non-standard resume layouts
-- Experience year calculation requires date patterns in text
-- Semantic similarity uses TF-IDF word overlap rather than neural embeddings
-- CSV export is a flat summary only (excludes work experience and education rows)
-- Google SSO users assigned `user` role by default; admin must promote via Dashboard
+### 9.1 Create / Edit Job Profiles
+
+Fields: title, rich text description, role type, seniority, required years of experience, required degree, required certifications, custom factor weights, organization.
+
+### 9.2 AI Skill Extraction
+
+- POST job description text → returns extracted skill list
+- Skills stored in `job_skills` with proficiency and required flag
+
+### 9.3 Candidates Tab
+
+- Lists all resumes scored against the job profile
+- Search by candidate name
+- Filter by score band
+- Sort by score, name, or date
+- Pagination
+- Rescore individual candidates
+- Export all candidates to XLSX
+- "Add Existing" — discovers resumes not yet linked to this job profile
 
 ---
 
-## Future Enhancements
+## 10. Resume Builder (User)
 
-- Neural embedding-based semantic matching (replace TF-IDF)
-- Hard filters before scoring (work authorisation, location, mandatory certs)
-- Resume comparison view (side-by-side)
-- Email notifications on strong match
-- Candidate pipeline stages (shortlisted, interviewed, offered, rejected)
-- Multi-tenant support — isolate data by organization
-- AI resume improvement suggestions in the builder
+### 10.1 Templates
+
+20 templates available:
+
+| # | Template Name |
+|---|--------------|
+| 1 | Classic Professional |
+| 2 | Modern Slate |
+| 3 | Minimal White |
+| 4 | ATS Clean |
+| 5 | Heritage |
+| 6 | Beacon |
+| 7 | Banded |
+| 8 | Foundry |
+| 9 | Corporate |
+| 10 | Silver Banner |
+| 11 | Teal Sidebar |
+| 12 | Timeline |
+| 13 | Photo Sidebar |
+| 14 | Creative Edge |
+| 15 | Executive Navy |
+| 16 | Tech Stack |
+| 17 | Soft Gradient |
+| 18 | Bold Impact |
+| 19 | Elegant Script |
+| 20 | Beacon Dark |
+
+Template selector shows 8 at a time; all 20 are accessible.
+
+### 10.2 Sections
+
+Personal Info, Summary, Skills, Work Experience, Education, Certifications, Projects, Languages, Awards, Interests, Other.
+
+### 10.3 Editor Features
+
+| Feature | Details |
+|---------|---------|
+| Live preview pane | Split-pane: editor left, rendered resume right |
+| Auto-save | Debounced |
+| Layout | One Column / Two Column / Mix; per-section column assignment |
+| Page breaks | Insert or remove between sections |
+| Section title size | Small / Medium / Large |
+| Subtitle size | Small / Medium / Large |
+| List style | Bullet or Hyphen |
+| Heading icon | None / Outline / Filled |
+| Font size | 9–14 pt (slider + number input) |
+| Line height | 1.0–1.16 |
+| Margins | Left / Right / Top / Bottom — 10–25 mm |
+| Entry spacing | 1–10 lines |
+| Footer | Page Numbers / Email / Name (independent toggles) |
+| Skills layout | Rows / Grid / Compact / Bubble / Level |
+| Education order | School→Degree or Degree→School |
+| Work Experience order | Job Title→Employer or Employer→Job Title |
+
+### 10.4 Actions
+
+- Import content from a parsed resume
+- Duplicate resume
+- Public share link at `/r/:token`
+- PDF export via browser print
+
+### 10.5 Pagination Engine
+
+- Smart page-break detection with minimum-space orphan prevention
+- `data-entry-heading` markers on section entries
+- Direct bullet-id querying for precise element positioning
+- DPR change listener with debounced re-measurement
+- Rounded measurements for cross-DPR stability
+
+---
+
+## 11. Portfolio Builder (User)
+
+### 11.1 Routes
+
+| Route | Purpose |
+|-------|---------|
+| `/portfolios` | Dashboard — list all portfolios as cards |
+| `/portfolios/[id]/edit` | Split-pane editor (Content / Design / Settings tabs) |
+| `/portfolios/[id]/analytics` | Analytics view (page views, summary cards) |
+| `/portfolios/[id]/projects` | Manage portfolio projects |
+| `/portfolios/[id]/projects/[projectId]/edit` | Project editor (7 accordion panels) |
+| `/portfolios/[id]` | Public portfolio page (SSG/ISR, revalidate 60s) |
+| `/portfolios/[id]/unlock` | Password-protected portfolio unlock (stub — not yet implemented) |
+
+### 11.2 Portfolio Core Features
+
+| Feature | Details |
+|---------|---------|
+| Multiple portfolios | Each user can have multiple portfolios |
+| Status | Draft / Published / Archived |
+| Template selection | Minimal, Creative, Developer, Corporate, Freelancer |
+| Design | Primary color picker (8 swatches), font pair selector (4 options) |
+| Custom slug | Custom URL (`proflect-neo.vercel.app/portfolios/[slug]`), real-time availability check |
+| Sections | Drag-and-drop reorder: About, Experience, Education, Skills, Projects, Certifications, Testimonials, Services, Contact, Custom, Embed |
+| Share panel | Copy URL, LinkedIn/Twitter/Email share, embed code |
+| Analytics | View count tracking per portfolio |
+| ISR revalidation | Triggered on publish |
+
+### 11.3 Portfolio Projects
+
+| Field | Details |
+|-------|---------|
+| Title | Text |
+| Tagline | Short descriptor |
+| Description | Rich text |
+| Cover image | URL |
+| Project URL | External link |
+| Source code URL | Repository link |
+| Tech stack | Array of tags |
+| Role | Role type dropdown + free text |
+| Timeline | Start date / End date, or "Ongoing" toggle |
+| Category | Web App / Mobile App / Design / Research / Writing / Other |
+| Status | Completed / In Progress / Concept |
+| Visibility | Public / Private / Unlisted |
+| Featured | Toggle |
+| Case study mode | Problem, Process, Solution, Results panels |
+| Outcomes | Metric name + value pairs |
+
+Auto-save: 1-second debounce. New project flow replaces URL after creation (no duplicate creates on refresh).
+
+### 11.4 AI Features (Portfolio)
+
+All AI features are powered by Anthropic Claude (`claude-sonnet-4-6`), auth-gated, and usage-tracked.
+
+| Feature | Description |
+|---------|-------------|
+| Bio/About generator | Generates a 2–4 sentence first-person bio |
+| Tagline generator | Returns 5 options with tone selector (Professional / Creative / Technical / Friendly) |
+| Project description enhancer | Results-focused rewrite of project description |
+| Skills gap analysis | Identifies missing skills for a target role with importance ratings |
+| SEO suggestions | Generates optimised meta title and meta description |
+
+**Usage limit:** 5 AI generations per month (free plan). Usage tracked in `ai_usage` table.
+
+**Status:** Bio and tagline generators are wired into the editor. Skills gap and SEO features have UI components but are not yet wired into the editor.
+
+### 11.5 PDF Export (Planned)
+
+- Route: `POST /api/v1/portfolios/export-pdf`
+- Engine: Puppeteer (server-side)
+- Config options: include cover page, include table of contents, page size (A4 / Letter), colour or B&W
+- Output: ATS-compliant PDF (tagged, selectable text, embedded fonts)
+- Status: route exists; Puppeteer implementation pending
+
+---
+
+## 12. Interview Prep (User)
+
+**Route:** `/self-test`
+
+### 12.1 Assessment Modes
+
+| Mode | Description |
+|------|-------------|
+| Assess by Skill | Select a skill to be tested on |
+| Assess by Content | Upload or paste content; questions generated from it |
+| Assess by JD | Paste a job description; questions target that role's requirements |
+
+### 12.2 Configuration
+
+- Difficulty: Easy / Medium / Hard
+- Question count: configurable
+- Timer: configurable duration in minutes
+
+### 12.3 Quiz Behaviour
+
+- Timed multiple-choice quiz
+- Auto-submit when timer expires
+
+### 12.4 Results
+
+| Output | Details |
+|--------|---------|
+| Score | Percentage correct |
+| Per-skill breakdown | Available in JD mode |
+| Readiness badge | Strong Match / Partial Match / Needs Improvement |
+
+### 12.5 Session History
+
+- User view: list of past sessions with scores and dates
+- Admin view: `/admin/users/[id]/self-tests/[sessionId]` — full session detail for any user
+
+---
+
+## 13. Database Schema
+
+### 13.1 Core (Admin / Parsing)
+
+```sql
+organizations
+  id, name, created_at
+
+resumes
+  id, file_name, file_url, raw_text, status, job_id, created_at, updated_at
+
+parsed_data
+  id, resume_id, candidate_name, email, phone, summary, skills[], raw_json
+
+work_experience
+  id, parsed_data_id, company, title, start_date, end_date, description
+
+education
+  id, parsed_data_id, institution, degree, field, graduation_year
+
+job_profiles
+  id, title, description, role_type, seniority, required_years, required_degree,
+  required_certs[], custom_weights, organization_id, created_at, updated_at
+
+job_skills
+  id, job_profile_id, skill, proficiency, is_required
+
+resume_scores
+  id, resume_id, job_profile_id, overall_score, band,
+  [7 factor score columns], score_summary, scored_at
+  UNIQUE(resume_id, job_profile_id)
+```
+
+### 13.2 Resume Builder
+
+```sql
+builder_resumes
+  id, user_id, title, template_id, design_settings, personal_info,
+  footer_settings, spacing_settings, layout_settings,
+  share_token, share_enabled, created_at, updated_at
+
+builder_sections
+  id, resume_id, type, title, position, enabled, content, display_settings
+```
+
+### 13.3 RBAC
+
+```sql
+profiles
+  id, email, first_name, last_name, role, status,
+  failed_login_attempts, locked_until, last_login_at, created_at, updated_at
+
+invite_tokens
+  id, email, role, token, invited_by, accepted_by, expires_at, used_at, status
+
+audit_log
+  id, performed_by, action, target_user_id, details, ip_address, created_at
+
+email_resend_limits
+  email, resend_count, window_start, updated_at
+```
+
+### 13.4 Portfolio
+
+```sql
+portfolios
+  id, user_id, resume_id (nullable), name, slug (unique), status,
+  template_id, customisation, is_linked_to_resume, meta_title,
+  meta_description, og_image_url, password_hash, is_indexed,
+  view_count, created_at, updated_at, published_at
+
+portfolio_sections
+  id, portfolio_id, section_type, sort_order, is_visible,
+  content (JSONB), created_at, updated_at
+
+portfolio_projects
+  id, portfolio_id, title, tagline, description, cover_image_url,
+  project_url, source_url, tech_stack[], my_role, role_type,
+  start_date, end_date, is_ongoing, category, is_featured,
+  is_case_study, visibility, status, media_gallery, outcomes,
+  team_size, sort_order, created_at, updated_at
+
+portfolio_analytics
+  id, portfolio_id, event_type, referrer, project_id,
+  country_code, created_at
+
+user_integrations
+  id, user_id, provider, provider_uid, access_token, refresh_token,
+  scopes[], connected_at, last_synced
+  UNIQUE(user_id, provider)
+
+ai_usage
+  id, user_id, feature, used_at
+```
+
+### 13.5 Interview Prep (Self-Test)
+
+```sql
+self_test_sessions
+  id, user_id, input_type, difficulty, question_count, timer_minutes, status, created_at
+
+self_test_attempts
+  id, session_id, score, max_score, pct, submitted_at, auto_submitted
+
+self_test_answers
+  id, attempt_id, question_id, selected_option, is_correct
+```
+
+---
+
+## 14. API Endpoints
+
+### 14.1 Auth (public)
+
+| Method | Path |
+|--------|------|
+| POST | `/api/v1/auth/signup` |
+| POST | `/api/v1/auth/login` |
+| POST | `/api/v1/auth/resend-verification` |
+| GET, POST | `/api/v1/auth/invite` |
+| GET, POST | `/api/v1/auth/accept-invite` |
+| GET | `/auth/callback` |
+
+### 14.2 Admin — User Management
+
+| Method | Path |
+|--------|------|
+| GET, PATCH, DELETE | `/api/v1/admin/users` |
+| GET, PATCH, DELETE | `/api/v1/admin/users/:id` |
+| POST, GET, DELETE | `/api/v1/admin/invite` |
+| GET, POST | `/api/v1/admin/import` |
+
+### 14.3 Admin — Tests & Questions
+
+| Method | Path |
+|--------|------|
+| GET, POST, PATCH, DELETE | `/api/v1/admin/tests` |
+| GET, PATCH, DELETE | `/api/v1/admin/tests/:id` |
+| GET, POST, PATCH, DELETE | `/api/v1/admin/question-library` |
+
+### 14.4 Admin — CMS & Credits
+
+| Method | Path |
+|--------|------|
+| GET, PATCH | `/api/v1/admin/homepage` |
+| POST | `/api/v1/admin/homepage/publish` |
+| GET, POST, PATCH | `/api/v1/admin/credits` |
+
+### 14.5 Resume (Admin)
+
+| Method | Path |
+|--------|------|
+| POST | `/api/v1/resumes/upload` |
+| GET, DELETE | `/api/v1/resumes` |
+| GET, DELETE | `/api/v1/resumes/:id` |
+| GET | `/api/v1/resumes/:id/export` |
+| POST | `/api/v1/resumes/:id/reparse` |
+| POST | `/api/v1/resumes/:id/score` |
+
+### 14.6 Jobs (Admin)
+
+| Method | Path |
+|--------|------|
+| POST | `/api/v1/jobs/parse-skills` |
+| GET, POST, PUT, DELETE | `/api/v1/jobs` |
+| GET, PUT, DELETE | `/api/v1/jobs/:id` |
+| GET | `/api/v1/jobs/:id/candidates` |
+| POST | `/api/v1/jobs/:id/score/:resumeId` |
+
+### 14.7 Resume Builder (User)
+
+| Method | Path |
+|--------|------|
+| GET, POST | `/api/v1/builder` |
+| GET, PATCH, DELETE | `/api/v1/builder/:id` |
+| GET, POST, PATCH, DELETE | `/api/v1/builder/:id/sections` |
+| PATCH, DELETE | `/api/v1/builder/:id/sections/:sectionId` |
+| POST | `/api/v1/builder/:id/duplicate` |
+| POST | `/api/v1/builder/:id/import` |
+| GET, POST | `/api/v1/builder/:id/share` |
+
+### 14.8 Portfolio (User)
+
+| Method | Path | Notes |
+|--------|------|-------|
+| GET, POST | `/api/v1/portfolios` | |
+| GET, PATCH, DELETE | `/api/v1/portfolios/:id` | |
+| GET | `/api/v1/portfolios/check-slug?slug=` | Availability check |
+| GET, POST | `/api/v1/portfolios/:id/sections` | |
+| PATCH, DELETE | `/api/v1/portfolios/:id/sections/:sectionId` | |
+| POST | `/api/v1/portfolios/:id/sections/reorder` | |
+| GET, POST | `/api/v1/portfolios/:id/projects` | |
+| GET, PATCH, DELETE | `/api/v1/portfolios/:id/projects/:projectId` | |
+| POST | `/api/v1/portfolios/:id/publish` | Triggers ISR revalidation |
+| GET | `/api/v1/portfolios/public/:slug` | No auth required |
+| POST | `/api/v1/portfolios/analytics` | Record page view events |
+| POST | `/api/v1/portfolios/revalidate` | Manual ISR revalidation |
+| POST | `/api/v1/portfolios/ai/bio` | Claude — bio generator |
+| POST | `/api/v1/portfolios/ai/tagline` | Claude — tagline generator |
+| POST | `/api/v1/portfolios/ai/project-description` | Claude — description enhancer |
+| POST | `/api/v1/portfolios/ai/skills-gap` | Claude — skills gap analysis |
+| POST | `/api/v1/portfolios/ai/seo` | Claude — SEO suggestions |
+| POST | `/api/v1/portfolios/export-pdf` | Puppeteer PDF — planned |
+
+### 14.9 Interview Prep (User)
+
+| Method | Path |
+|--------|------|
+| GET, POST | `/api/v1/self-tests/sessions` |
+| GET | `/api/v1/self-tests/sessions/:id` |
+| POST | `/api/v1/self-tests/sessions/:id/submit` |
+| GET | `/api/v1/admin/users/:id/self-tests` |
+| GET | `/api/v1/admin/users/:id/self-tests/:sessionId` |
+
+---
+
+## 15. Non-Functional Requirements
+
+| Requirement | Target |
+|-------------|--------|
+| Resume upload + parse + score | < 15 seconds for files under 2 MB |
+| Page load | < 2 seconds |
+| Search debounce | 300 ms |
+| Responsiveness | Fully responsive (mobile and desktop) |
+| Loading states | All async operations use skeleton loaders |
+| Theme | Dark and light mode supported |
+| Navigation | Role-aware navbar |
+| AI usage limit | 5 AI generations per month (free plan) |
+| Portfolio public pages | SSG/ISR, revalidate every 60 seconds for SEO performance |
+| PDF export | ATS-compliant: tagged PDF, selectable text, embedded fonts |
+
+---
+
+## 16. Known Limitations
+
+| Area | Limitation |
+|------|-----------|
+| AI parsing latency | ~3–8 seconds per resume (OpenRouter free tier) |
+| AI score summary latency | ~2–5 seconds per score |
+| Portfolio preview pane | Placeholder only — "coming soon" |
+| Portfolio PDF export | Route exists; Puppeteer implementation pending |
+| Portfolio password unlock | UI stub — "coming soon" |
+| Portfolio analytics | Page view count only; referrer and geographic breakdown planned |
+| Skills gap AI feature | UI component exists; not yet wired into the portfolio editor |
+| SEO suggestions AI feature | UI component exists; not yet wired into the portfolio editor |
