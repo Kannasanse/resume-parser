@@ -84,7 +84,7 @@ export default function AdminUsersPage() {
       <div className="flex flex-wrap gap-3">
         <input value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Search by name or email…"
-          className="flex-1 min-w-48 border border-ds-inputBorder rounded px-3 py-2 text-sm bg-ds-bg text-ds-text placeholder-ds-textMuted focus:outline-none focus:ring-2 focus:ring-primary" />
+          className="w-full sm:w-64 min-w-0 border border-ds-inputBorder rounded px-3 py-2 text-sm bg-ds-bg text-ds-text placeholder-ds-textMuted focus:outline-none focus:ring-2 focus:ring-primary" />
         <select value={role} onChange={e => setRole(e.target.value)}
           className="border border-ds-inputBorder rounded px-3 py-2 text-sm bg-ds-bg text-ds-text focus:outline-none focus:ring-2 focus:ring-primary">
           <option value="">All roles</option>
@@ -116,7 +116,7 @@ export default function AdminUsersPage() {
                 </th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-ds-textMuted uppercase tracking-wide">Role</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-ds-textMuted uppercase tracking-wide">Status</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-ds-textMuted uppercase tracking-wide cursor-pointer select-none"
+                <th className="hidden sm:table-cell text-left px-4 py-3 text-xs font-semibold text-ds-textMuted uppercase tracking-wide cursor-pointer select-none"
                   onClick={() => toggleSort('created_at')}>
                   Joined <SortIcon col="created_at" />
                 </th>
@@ -131,7 +131,7 @@ export default function AdminUsersPage() {
                       <td className="px-4 py-3"><Sk className="h-4 w-40" /></td>
                       <td className="px-4 py-3"><Sk className="h-5 w-12 rounded-full" /></td>
                       <td className="px-4 py-3"><Sk className="h-5 w-16 rounded-full" /></td>
-                      <td className="px-4 py-3"><Sk className="h-4 w-20" /></td>
+                      <td className="hidden sm:table-cell px-4 py-3"><Sk className="h-4 w-20" /></td>
                       <td className="px-4 py-3"><Sk className="h-4 w-8" /></td>
                     </tr>
                   ))
@@ -157,7 +157,7 @@ export default function AdminUsersPage() {
                           {STATUS_LABELS[u.status] || u.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-ds-textMuted text-xs">
+                      <td className="hidden sm:table-cell px-4 py-3 text-ds-textMuted text-xs">
                         {u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}
                       </td>
                       <td className="px-4 py-3">

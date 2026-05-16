@@ -39,7 +39,7 @@ export default function AdminDashboard() {
         <p className="text-sm text-ds-textMuted mt-1">Platform overview and management</p>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Total Users" value={stats?.total} href="/admin/users" loading={loading} />
         <StatCard label="Pending Invites" value={stats?.pending} href="/admin/invite" loading={loading} />
         <StatCard label="Tests" value={stats?.tests} href="/admin/tests" loading={loading} />
@@ -47,7 +47,7 @@ export default function AdminDashboard() {
 
       <div>
         <h2 className="text-sm font-semibold text-ds-textMuted uppercase tracking-wide mb-3">Quick Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
 
           <Link href="/admin/users"
             className="bg-ds-card border border-ds-border rounded-lg p-4 hover:border-ds-borderStrong transition-colors group">

@@ -24,13 +24,18 @@ export default function AdminInvitePage() {
   const [invites, setInvites]       = useState([]);
   const [loadingInvites, setLoadingInvites] = useState(true);
 
-  useEffect(() => {
+  const loadInvites = () => {
+    setLoadingInvites(true);
     fetch('/api/v1/admin/invite?limit=50')
       .then(r => r.json())
       .then(d => setInvites(d.invites || []))
       .catch(() => {})
       .finally(() => setLoadingInvites(false));
-  }, [results]);
+  };
+
+  useEffect(() => {
+    loadInvites();
+  }, []);
 
   const addEmail = (raw) => {
     const parts = raw.split(/[\s,;]+/).map(e => e.trim().toLowerCase()).filter(Boolean);
@@ -77,6 +82,7 @@ export default function AdminInvitePage() {
       setResults(data.results);
       setEmails([]);
       setEmailInput('');
+      loadInvites();
     } catch {
       setError('Failed to send invitations. Please try again.');
     } finally {

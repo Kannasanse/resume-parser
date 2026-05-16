@@ -214,7 +214,7 @@ function Toast({ message, type = 'info', onDismiss }) {
 
 // ── Export & Share dropdown ───────────────────────────────────────────────────
 
-function ExportShareButton({ resumeId, onShare }) {
+function ExportShareButton({ resumeId, onShare, onError }) {
   const [open, setOpen] = useState(false);
   const [wordLoading, setWordLoading] = useState(false);
   const [pdfLoading,  setPdfLoading]  = useState(false);
@@ -243,7 +243,7 @@ function ExportShareButton({ resumeId, onShare }) {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      alert('PDF export failed: ' + err.message);
+      onError?.('PDF export failed: ' + err.message);
     } finally {
       setPdfLoading(false);
     }
@@ -265,7 +265,7 @@ function ExportShareButton({ resumeId, onShare }) {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      alert('Word export failed: ' + err.message);
+      onError?.('Word export failed: ' + err.message);
     } finally {
       setWordLoading(false);
     }
@@ -799,7 +799,7 @@ export default function BuilderEditor() {
             </svg>
             Templates
           </button>
-          <ExportShareButton resumeId={id} onShare={() => setShowShare(true)} />
+          <ExportShareButton resumeId={id} onShare={() => setShowShare(true)} onError={(msg) => showToast(msg, 'error')} />
         </div>
       </div>
 

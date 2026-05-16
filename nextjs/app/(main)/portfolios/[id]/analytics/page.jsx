@@ -80,8 +80,7 @@ export default function PortfolioAnalyticsPage() {
       }
     }
 
-    loadPortfolio();
-    loadAnalytics();
+    Promise.all([loadPortfolio(), loadAnalytics()]);
   }, [id]);
 
   if (portfolioError) {
@@ -119,7 +118,7 @@ export default function PortfolioAnalyticsPage() {
         </div>
 
         {/* Date range filter */}
-        <div className="flex items-center gap-1 bg-ds-bg border border-ds-border rounded-lg p-1">
+        <div className="flex flex-wrap items-center gap-1 bg-ds-bg border border-ds-border rounded-lg p-1">
           {DATE_RANGES.map((r) => (
             <button
               key={r.value}
@@ -137,7 +136,7 @@ export default function PortfolioAnalyticsPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <SummaryCard
           title="Total views"
           value={portfolio?.view_count ?? 0}

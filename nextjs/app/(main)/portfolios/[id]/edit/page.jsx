@@ -550,8 +550,8 @@ export default function PortfolioEditPage() {
 
   if (loading) {
     return (
-      <div className="flex h-[calc(100vh-64px)]">
-        <div className="w-[420px] shrink-0 border-r border-ds-border p-6 space-y-4">
+      <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)]">
+        <div className="w-full lg:w-[420px] lg:shrink-0 border-b border-ds-border lg:border-b-0 lg:border-r p-6 space-y-4">
           <Sk className="h-6 w-48" />
           <Sk className="h-4 w-32" />
           <div className="space-y-2 pt-4">
@@ -584,25 +584,34 @@ export default function PortfolioEditPage() {
         </Link>
         <div className="flex-1 min-w-0 flex items-center gap-2">
           <h1 className="font-heading font-semibold text-ds-text truncate text-sm">{portfolio.name}</h1>
-          <span className={`hidden sm:inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize ${STATUS_STYLES_LOCAL[portfolio.status] || STATUS_STYLES_LOCAL.draft}`}>
+          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize ${STATUS_STYLES_LOCAL[portfolio.status] || STATUS_STYLES_LOCAL.draft}`}>
             {portfolio.status || 'draft'}
           </span>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           {saveStatus === 'saving' && <span className="text-xs text-ds-textMuted">Saving…</span>}
           {saveStatus === 'saved' && <span className="text-xs text-ds-success">Saved</span>}
-          <a
-            href={`/portfolios/${id}/preview`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="border border-ds-border text-ds-text rounded px-3 py-1.5 text-sm font-medium hover:bg-ds-bg transition-colors"
-          >
-            Preview
-          </a>
+          {portfolio.status === 'published' ? (
+            <a
+              href={`https://proflect-neo.vercel.app/portfolios/${portfolio.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="border border-ds-border text-ds-text rounded px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium hover:bg-ds-bg transition-colors"
+            >
+              Preview
+            </a>
+          ) : (
+            <span
+              title="Publish first to preview"
+              className="border border-ds-border text-ds-textMuted rounded px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium opacity-50 cursor-not-allowed select-none"
+            >
+              Preview
+            </span>
+          )}
           {portfolio.status !== 'published' && (
             <button
               onClick={() => handleUpdate({ status: 'published' })}
-              className="bg-primary text-white rounded px-3 py-1.5 text-sm font-medium hover:bg-primary/90 transition-colors"
+              className="bg-primary text-white rounded px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium hover:bg-primary/90 transition-colors"
             >
               Publish
             </button>
@@ -611,9 +620,9 @@ export default function PortfolioEditPage() {
       </div>
 
       {/* Body */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
         {/* Left pane */}
-        <div className="w-[420px] shrink-0 flex flex-col border-r border-ds-border overflow-hidden">
+        <div className="w-full lg:w-[420px] lg:shrink-0 flex flex-col border-b border-ds-border lg:border-b-0 lg:border-r overflow-hidden max-h-[50vh] lg:max-h-none">
           <div className="flex border-b border-ds-border shrink-0">
             {TABS.map(t => (
               <button
@@ -639,7 +648,7 @@ export default function PortfolioEditPage() {
         </div>
 
         {/* Right pane — preview placeholder */}
-        <div className="flex-1 overflow-auto bg-ds-bg flex items-center justify-center">
+        <div className="flex-1 overflow-auto bg-ds-bg flex items-center justify-center min-h-[300px]">
           <div className="bg-ds-card border border-ds-border rounded-lg p-10 text-center max-w-sm">
             <div className="w-12 h-12 rounded-full bg-ds-bg border border-ds-border flex items-center justify-center mx-auto mb-4">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-ds-textMuted">

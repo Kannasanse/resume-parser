@@ -360,7 +360,6 @@ export default function HomepageCMS() {
       const res = await fetch('/api/v1/admin/homepage');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const { sections: rows, lastPublished: lp } = await res.json();
-      console.log('[Admin CMS] sections loaded:', rows?.length, rows?.map(s => s.section_key));
       setSections(rows || []);
       setLastPublished(lp?.published_at || null);
       if (rows?.length) setSelected(rows[0].section_key);
@@ -390,12 +389,7 @@ export default function HomepageCMS() {
   };
 
   const toggleVisibility = (id) => {
-    setSections(prev => {
-      const next = prev.map(s => s.id === id ? { ...s, is_visible: !s.is_visible } : s);
-      const changed = next.find(s => s.id === id);
-      console.log('[Admin CMS] visibility toggle', changed?.section_key, '→ is_visible:', changed?.is_visible);
-      return next;
-    });
+    setSections(prev => prev.map(s => s.id === id ? { ...s, is_visible: !s.is_visible } : s));
     mark();
   };
 
@@ -475,7 +469,6 @@ export default function HomepageCMS() {
     setPublishDialog(false);
     setIsSaving(true);
     try {
-      console.log('[Admin CMS] publishing sections:', sections.map(s => ({ key: s.section_key, is_visible: s.is_visible })));
       const res = await fetch('/api/v1/admin/homepage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -483,7 +476,6 @@ export default function HomepageCMS() {
       });
       if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error || res.status); }
       const { published_at } = await res.json();
-      console.log('[Admin CMS] publish success, published_at:', published_at);
       setIsDirty(false);
       setLastPublished(published_at);
       setSectionsToDelete([]);

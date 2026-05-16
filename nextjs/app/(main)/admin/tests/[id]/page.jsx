@@ -772,6 +772,7 @@ export default function TestDetail() {
   const [showLibrary, setShowLibrary] = useState(false);
   const [questions, setQuestions]   = useState([]);
   const [statusSaving, setStatusSaving] = useState(false);
+  const [publishError, setPublishError] = useState('');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const dragIdx = useRef(null);
 
@@ -792,9 +793,10 @@ export default function TestDetail() {
 
   const changeStatus = async (newStatus) => {
     if (newStatus === 'published' && questions.length === 0) {
-      alert('Add at least one question before publishing.');
+      setPublishError('Add at least one question before publishing.');
       return;
     }
+    setPublishError('');
     setStatusSaving(true);
     await fetch(`/api/v1/admin/tests/${id}`, {
       method: 'PATCH',
@@ -887,16 +889,21 @@ export default function TestDetail() {
             Results
           </Link>
           {!isArchived && (
-            <button
-              disabled={statusSaving}
-              onClick={() => changeStatus(isPublished ? 'archived' : 'published')}
-              className={`text-sm px-4 py-1.5 rounded-btn font-medium disabled:opacity-50 transition-colors ${
-                isPublished
-                  ? 'bg-ds-warning/10 text-ds-warning border border-ds-warning/30 hover:bg-ds-warning/20'
-                  : 'bg-primary text-white hover:bg-primary-dark'
-              }`}>
-              {statusSaving ? '…' : isPublished ? 'Archive' : 'Publish'}
-            </button>
+            <div className="flex flex-col items-end gap-1">
+              <button
+                disabled={statusSaving}
+                onClick={() => changeStatus(isPublished ? 'archived' : 'published')}
+                className={`text-sm px-4 py-1.5 rounded-btn font-medium disabled:opacity-50 transition-colors ${
+                  isPublished
+                    ? 'bg-ds-warning/10 text-ds-warning border border-ds-warning/30 hover:bg-ds-warning/20'
+                    : 'bg-primary text-white hover:bg-primary-dark'
+                }`}>
+                {statusSaving ? '…' : isPublished ? 'Archive' : 'Publish'}
+              </button>
+              {publishError && (
+                <p className="text-xs text-ds-danger">{publishError}</p>
+              )}
+            </div>
           )}
         </div>
       </div>
