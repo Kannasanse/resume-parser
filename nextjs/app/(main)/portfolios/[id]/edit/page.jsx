@@ -55,9 +55,9 @@ function AddSectionModal({ onClose, onAdd }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-ds-card border border-ds-border rounded-lg shadow-xl w-full max-w-md p-6">
+      <div className="relative ds-modal w-full max-w-md p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-heading font-semibold text-ds-text">Add Section</h3>
+          <h3 className="font-semibold text-[var(--c-text)]">Add Section</h3>
           <button onClick={onClose} className="text-ds-textMuted hover:text-ds-text transition-colors">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -87,7 +87,7 @@ function SectionRow({ section, onToggleVisibility, onEdit, dragHandlers }) {
     <div
       draggable
       {...dragHandlers}
-      className="flex items-center gap-3 px-3 py-2.5 bg-ds-bg border border-ds-border rounded group cursor-default"
+      className="flex items-center gap-3 px-3 py-2.5 ds-paper rounded group cursor-default"
     >
       <span className="text-ds-textMuted cursor-grab active:cursor-grabbing select-none text-lg leading-none">⠿</span>
       <span className="text-base">{typeInfo.icon}</span>
@@ -223,8 +223,8 @@ function ContentTab({ portfolioId, sections, setSections }) {
       {editingSection && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setEditingSection(null)} />
-          <div className="relative bg-ds-card border border-ds-border rounded-lg shadow-xl w-full max-w-sm p-6 space-y-4">
-            <h3 className="font-heading font-semibold text-ds-text">Edit Section</h3>
+          <div className="relative ds-modal w-full max-w-sm p-6 space-y-4">
+            <h3 className="font-semibold text-[var(--c-text)]">Edit Section</h3>
             <div className="space-y-1">
               <label className="text-xs font-medium text-ds-textMuted uppercase tracking-wide">Title</label>
               <input
@@ -537,8 +537,8 @@ export default function PortfolioEditPage() {
   };
 
   const STATUS_STYLES_LOCAL = {
-    draft:     'bg-ds-bg text-ds-textMuted border border-ds-border',
-    published: 'bg-ds-successLight text-ds-success',
+    draft:     'bg-[var(--c-neutral-bg)] text-[var(--c-text-2)] border border-[var(--c-border)]',
+    published: 'bg-[var(--c-success-bg)] text-[#066043]',
     archived:  'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
   };
 
@@ -648,9 +648,9 @@ export default function PortfolioEditPage() {
         </div>
 
         {/* Right pane — preview placeholder */}
-        <div className="flex-1 overflow-auto bg-ds-bg flex items-center justify-center min-h-[300px]">
-          <div className="bg-ds-card border border-ds-border rounded-lg p-10 text-center max-w-sm">
-            <div className="w-12 h-12 rounded-full bg-ds-bg border border-ds-border flex items-center justify-center mx-auto mb-4">
+        <div className="flex-1 overflow-auto bg-[var(--c-bg)] flex items-center justify-center min-h-[300px]">
+          <div className="ds-card p-10 text-center max-w-sm">
+            <div className="stat-icon mx-auto mb-4">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-ds-textMuted">
                 <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
               </svg>

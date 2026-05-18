@@ -104,7 +104,7 @@ export default function AdminUsersPage() {
       <div className="bg-ds-card border border-ds-border rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="ds-table">
-            <thead className="border-b border-ds-border bg-ds-bg">
+            <thead>
               <tr>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-ds-textMuted uppercase tracking-wide cursor-pointer select-none"
                   onClick={() => toggleSort('first_name')}>

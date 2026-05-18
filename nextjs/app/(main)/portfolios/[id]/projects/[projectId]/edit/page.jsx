@@ -26,7 +26,7 @@ const TEAM_SIZES = [
 function AccordionPanel({ id, title, openPanel, setOpenPanel, children }) {
   const isOpen = openPanel === id;
   return (
-    <div className="border border-ds-border rounded-lg overflow-hidden">
+    <div className="ds-paper overflow-hidden">
       <button
         type="button"
         onClick={() => setOpenPanel(isOpen ? null : id)}

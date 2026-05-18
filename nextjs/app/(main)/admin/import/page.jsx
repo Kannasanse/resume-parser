@@ -150,7 +150,7 @@ export default function AdminImportPage() {
           <div className="bg-ds-card border border-ds-border rounded-lg overflow-hidden">
             <div className="overflow-x-auto max-h-80">
               <table className="ds-table">
-                <thead className="sticky top-0 border-b border-ds-border bg-ds-bg">
+                <thead className="sticky top-0">
                   <tr>
                     {['first_name', 'last_name', 'email', 'role'].map(col => (
                       <th key={col} className="text-left px-4 py-2.5 text-xs font-semibold text-ds-textMuted uppercase tracking-wide">
@@ -203,7 +203,7 @@ export default function AdminImportPage() {
 
           <div className="bg-ds-card border border-ds-border rounded-lg overflow-hidden max-h-80 overflow-y-auto">
             <table className="ds-table">
-              <thead className="sticky top-0 border-b border-ds-border bg-ds-bg">
+              <thead className="sticky top-0">
                 <tr>
                   <th className="text-left px-4 py-2.5 text-xs font-semibold text-ds-textMuted uppercase tracking-wide">Email</th>
                   <th className="text-left px-4 py-2.5 text-xs font-semibold text-ds-textMuted uppercase tracking-wide">Result</th>

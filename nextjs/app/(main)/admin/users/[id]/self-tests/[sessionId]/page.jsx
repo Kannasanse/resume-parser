@@ -206,7 +206,7 @@ export default function AdminSelfTestDetailPage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="ds-table">
-                <thead className="bg-ds-bg border-b border-ds-border">
+                <thead>
                   <tr>
                     {[['name', 'Skill'], ['type', 'Type'], ['total', 'Questions'], ['correct', 'Correct'], ['pct', 'Score']].map(([col, label]) => (
                       <th key={col}

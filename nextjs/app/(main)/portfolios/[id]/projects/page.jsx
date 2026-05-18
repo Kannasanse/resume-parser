@@ -36,7 +36,7 @@ function DeleteConfirm({ project, portfolioId, onClose, onDeleted }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-ds-card border border-ds-border rounded-lg shadow-xl w-full max-w-sm p-6 space-y-4">
+      <div className="relative ds-modal w-full max-w-sm p-6 space-y-4">
         <h2 className="font-heading font-bold text-ds-text">Delete Project?</h2>
         <p className="text-sm text-ds-textMuted">
           <span className="font-medium text-ds-text">{project.title}</span> will be permanently removed.
@@ -177,7 +177,7 @@ export default function ProjectsPage() {
       </div>
 
       {loading ? (
-        <div className="bg-ds-card border border-ds-border rounded-lg overflow-hidden">
+        <div className="ds-card overflow-hidden">
           <div className="p-4 space-y-3">
             {[1,2,3].map(i => (
               <div key={i} className="flex items-center gap-4">
@@ -208,9 +208,9 @@ export default function ProjectsPage() {
           </Link>
         </div>
       ) : (
-        <div className="bg-ds-card border border-ds-border rounded-lg overflow-hidden">
+        <div className="ds-card overflow-hidden">
           <table className="ds-table">
-            <thead className="bg-ds-bg border-b border-ds-border">
+            <thead>
               <tr>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-ds-textMuted uppercase tracking-wide">Project</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-ds-textMuted uppercase tracking-wide hidden sm:table-cell">Status</th>

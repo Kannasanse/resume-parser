@@ -30,46 +30,63 @@ export default function UnlockPortfolioPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB] px-4">
-      <div className="max-w-sm mx-auto mt-24 bg-white border border-[#D1DCE8] rounded-2xl p-8 shadow-sm">
-        <div className="flex justify-center mb-6">
-          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <rect x="8" y="18" width="24" height="18" rx="3" fill="#D1DCE8" />
-            <path d="M13 18v-5a7 7 0 0 1 14 0v5" stroke="#6B7280" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-            <circle cx="20" cy="27" r="2.5" fill="#6B7280" />
-          </svg>
+    <div className="min-h-screen bg-[var(--c-bg)] flex items-center justify-center px-4 py-8">
+      <div className="w-full max-w-sm">
+        <div className="flex flex-col items-center gap-2 mb-8">
+          <span className="nav-logo-mark">P</span>
+          <span className="text-lg font-bold tracking-tight text-[var(--c-text)]">Proflect</span>
         </div>
-        <h1 className="text-xl font-bold text-[#2C2C2A] text-center mb-1">
-          {portfolioName || 'Protected Portfolio'}
-        </h1>
-        <p className="text-sm text-[#6B7280] text-center mb-6">
-          This portfolio is password-protected. Enter the password to view it.
-        </p>
-        <form onSubmit={handleSubmit} noValidate>
-          <label htmlFor="portfolio-password" className="block text-sm font-medium text-[#2C2C2A] mb-1.5">Password</label>
-          <input
-            id="portfolio-password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            placeholder="Enter password"
-            required
-            className="w-full px-3 py-2.5 border border-[#D1DCE8] rounded-lg text-sm text-[#2C2C2A] placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#185FA5]/30 focus:border-[#185FA5] transition-colors"
-          />
-          {error && <p className="mt-2 text-sm text-red-600" role="alert">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading || !password}
-            className="mt-4 w-full bg-[#185FA5] text-white py-2.5 rounded-lg font-medium text-sm hover:bg-[#0C447C] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {loading && <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-            {loading ? 'Verifying…' : 'View portfolio'}
-          </button>
-        </form>
-        <p className="mt-6 text-center text-xs text-[#6B7280]">
-          <Link href="/home" className="hover:text-[#185FA5] transition-colors">Go to Proflect</Link>
-        </p>
+
+        <div className="auth-card space-y-5">
+          <div className="flex flex-col items-center text-center space-y-1">
+            <div className="stat-icon mb-2">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </div>
+            <h1 className="text-xl font-bold text-[var(--c-text)]">
+              {portfolioName || 'Protected Portfolio'}
+            </h1>
+            <p className="text-sm text-[var(--c-text-2)]">
+              This portfolio is password-protected. Enter the password to view it.
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            <div>
+              <label htmlFor="portfolio-password" className="block text-xs font-semibold text-[var(--c-text-2)] uppercase tracking-wide mb-1.5">
+                Password
+              </label>
+              <input
+                id="portfolio-password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="Enter password"
+                required
+                className="w-full px-3 py-2.5 border border-[var(--ds-inputBorder)] rounded-lg text-sm text-[var(--c-text)] placeholder-[var(--c-text-3)] bg-[var(--c-bg)] focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)]/30 focus:border-[var(--c-primary)] transition-colors"
+              />
+            </div>
+
+            {error && (
+              <div className="ds-alert ds-alert-error text-sm">{error}</div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading || !password}
+              className="w-full bg-[var(--c-primary)] text-white py-2.5 rounded-lg font-medium text-sm hover:bg-[var(--c-primary-dark)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {loading && <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+              {loading ? 'Verifying…' : 'View portfolio'}
+            </button>
+          </form>
+
+          <p className="text-center text-xs text-[var(--c-text-3)]">
+            <Link href="/" className="hover:text-[var(--c-primary)] transition-colors">Go to Proflect</Link>
+          </p>
+        </div>
       </div>
     </div>
   );

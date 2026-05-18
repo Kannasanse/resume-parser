@@ -15,12 +15,12 @@ const DATE_RANGES = [
 
 function SummaryCard({ title, value, loading }) {
   return (
-    <div className="bg-ds-card border border-ds-border rounded-xl p-5 flex flex-col gap-1">
-      <span className="text-xs font-medium text-ds-textMuted uppercase tracking-wide">{title}</span>
+    <div className="ds-card p-5 flex flex-col gap-1">
+      <span className="text-xs font-medium text-[var(--c-text-2)] uppercase tracking-wide">{title}</span>
       {loading ? (
-        <Sk className="h-8 w-16 mt-1" />
+        <div className="h-8 w-16 mt-1 ds-skel rounded" />
       ) : (
-        <span className="text-3xl font-bold text-ds-text">{value}</span>
+        <span className="text-3xl font-bold text-[var(--c-text)]">{value}</span>
       )}
     </div>
   );
@@ -28,9 +28,9 @@ function SummaryCard({ title, value, loading }) {
 
 function PlaceholderCard({ title, message }) {
   return (
-    <div className="bg-ds-card border border-ds-border rounded-xl p-6">
-      <h3 className="text-sm font-semibold text-ds-text mb-3">{title}</h3>
-      <p className="text-sm text-ds-textMuted italic">{message}</p>
+    <div className="ds-card p-6">
+      <h3 className="text-sm font-semibold text-[var(--c-text)] mb-3">{title}</h3>
+      <p className="text-sm text-[var(--c-text-2)] italic">{message}</p>
     </div>
   );
 }
@@ -86,9 +86,7 @@ export default function PortfolioAnalyticsPage() {
   if (portfolioError) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-12">
-        <div className="bg-ds-dangerLight text-ds-danger text-sm rounded-lg p-4">
-          Error loading portfolio: {portfolioError}
-        </div>
+        <div className="ds-alert ds-alert-error text-sm">Error loading portfolio: {portfolioError}</div>
       </div>
     );
   }
@@ -161,9 +159,7 @@ export default function PortfolioAnalyticsPage() {
 
       {/* Analytics error banner */}
       {analyticsError && (
-        <div className="bg-ds-dangerLight text-ds-danger text-xs rounded-lg px-4 py-3">
-          Analytics detail unavailable: {analyticsError}
-        </div>
+        <div className="ds-alert ds-alert-warning text-xs">Analytics detail unavailable: {analyticsError}</div>
       )}
 
       {/* Placeholder analytics cards */}

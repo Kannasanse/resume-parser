@@ -273,7 +273,7 @@ function SelfTestsTab({ userId, userName }) {
         ) : (
           <div className="overflow-x-auto">
             <table className="ds-table">
-              <thead className="bg-ds-bg border-b border-ds-border">
+              <thead>
                 <tr>
                   <TH col="input_type" label="Mode" />
                   <TH col="created_at" label="Date & Time" />
@@ -413,7 +413,7 @@ function ResumesTab({ userId }) {
         ) : (
           <div className="overflow-x-auto">
             <table className="ds-table">
-              <thead className="bg-ds-bg border-b border-ds-border">
+              <thead>
                 <tr>
                   <TH col="title"      label="Title" />
                   <TH col="template"   label="Template" hidden />

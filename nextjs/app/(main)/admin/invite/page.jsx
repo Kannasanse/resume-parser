@@ -173,7 +173,7 @@ export default function AdminInvitePage() {
               ? <p className="px-4 py-6 text-sm text-ds-textMuted text-center">No pending invitations.</p>
               : (
                 <table className="ds-table">
-                  <thead className="border-b border-ds-border bg-ds-bg">
+                  <thead>
                     <tr>
                       <th className="text-left px-4 py-2.5 text-xs font-semibold text-ds-textMuted uppercase tracking-wide">Email</th>
                       <th className="text-left px-4 py-2.5 text-xs font-semibold text-ds-textMuted uppercase tracking-wide">Role</th>
