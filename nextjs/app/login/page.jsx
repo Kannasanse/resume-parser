@@ -99,9 +99,9 @@ function LoginContent() {
   return (
     <div className="min-h-screen bg-ds-bg flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-sm">
-        <div className="flex flex-col items-center gap-2 mb-8">
-          <span className="nav-logo-mark">P</span>
-          <span className="text-lg font-bold tracking-tight text-[var(--c-text)]">Proflect</span>
+        <div className="flex justify-center mb-8">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/login-hero.png" alt="Proflect" className="max-w-[220px] object-contain" />
         </div>
 
         <div className="auth-card space-y-5">

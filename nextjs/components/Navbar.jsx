@@ -146,10 +146,10 @@ export default function Navbar() {
             <HamburgerIcon />
           </button>
 
-          {/* Logo — "P" mark + wordmark */}
-          <Link href="/home" className="flex items-center gap-2.5 text-[17px] font-extrabold tracking-tight text-[#2C2C2A] dark:text-ds-text flex-shrink-0 no-underline hover:no-underline">
-            <span className="nav-logo-mark">P</span>
-            <span className="hidden sm:inline">Proflect</span>
+          {/* Logo */}
+          <Link href="/home" className="flex items-center flex-shrink-0 no-underline hover:no-underline">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="Proflect" className="h-8 w-auto object-contain" />
           </Link>
 
           {/* Desktop nav links */}
@@ -321,9 +321,9 @@ export default function Navbar() {
       )}
       <div className={`fixed top-0 left-0 h-full w-72 bg-ds-card border-r border-ds-border z-50 flex flex-col transition-transform duration-200 sm:hidden ${drawerOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="h-16 flex items-center justify-between px-4 border-b border-ds-border flex-shrink-0">
-          <Link href="/home" onClick={() => setDrawerOpen(false)} className="flex items-center gap-2.5 font-extrabold text-[17px] tracking-tight text-[#2C2C2A] dark:text-ds-text no-underline">
-            <span className="nav-logo-mark">P</span>
-            Proflect
+          <Link href="/home" onClick={() => setDrawerOpen(false)} className="flex items-center no-underline">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="Proflect" className="h-8 w-auto object-contain" />
           </Link>
           <button onClick={() => setDrawerOpen(false)} aria-label="Close menu" className="w-8 h-8 flex items-center justify-center rounded-lg text-ds-textMuted hover:bg-ds-bg">
             <CloseIcon />
