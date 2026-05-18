@@ -6,6 +6,31 @@
 
 @layer base {
   :root {
+    /* Design system tokens */
+    --c-primary:       #185FA5;
+    --c-primary-dark:  #0C447C;
+    --c-primary-light: #E6F1FB;
+    --c-success:       #1D9E75;
+    --c-success-bg:    #D1FAE5;
+    --c-error:         #D93025;
+    --c-error-bg:      #FEE2E2;
+    --c-warning:       #F59E0B;
+    --c-warning-text:  #B45309;
+    --c-warning-bg:    #FEF3C7;
+    --c-text:          #2C2C2A;
+    --c-text-2:        #6B7280;
+    --c-text-3:        #9CA3AF;
+    --c-border:        #D1DCE8;
+    --c-surface:       #FFFFFF;
+    --c-bg:            #F4F8FC;
+    --c-neutral-bg:    #F3F4F6;
+    --shadow-card:     0 2px 8px rgba(12,68,124,0.10);
+    --shadow-modal:    0 8px 32px rgba(12,68,124,0.16);
+    --r-input:         8px;
+    --r-card:          12px;
+    --r-modal:         16px;
+
+    /* Legacy ds-* tokens (kept for backward compat) */
     --ds-bg:           #F4F8FC;
     --ds-card:         #FFFFFF;
     --ds-border:       #D1DCE8;
@@ -24,6 +49,12 @@
   }
 
   .dark {
+    --c-bg:            #0F1117;
+    --c-surface:       #1A1D1E;
+    --c-border:        #2D2D2B;
+    --c-text:          #E8E8E6;
+    --c-text-2:        #C4C4C2;
+    --c-text-3:        #9A9A98;
     --ds-bg:           #0F1117;
     --ds-card:         #1A1D1E;
     --ds-border:       #2D2D2B;
@@ -41,15 +72,125 @@
     --ds-dangerLight:  #2d0a0a;
   }
 
+  *, *::before, *::after { box-sizing: border-box; }
+
   body {
     font-family: 'Inter', system-ui, sans-serif;
     background-color: var(--ds-bg);
     color: var(--ds-text);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
   }
 
-  h1, h2, h3, h4 {
+  h1, h2, h3, h4, h5, h6 {
     font-family: 'Inter', system-ui, sans-serif;
+    margin: 0;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: var(--c-text);
   }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #D1DCE8; border-radius: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+}
+
+/* ─── Design System Utility Classes ────────────────────────────────────────── */
+
+/* Cards & surfaces */
+.ds-card  { background: #fff; border: 1px solid var(--c-border); border-radius: var(--r-card); box-shadow: var(--shadow-card); }
+.ds-paper { background: #fff; border: 1px solid var(--c-border); border-radius: var(--r-card); }
+.ds-modal { background: #fff; border-radius: var(--r-modal); box-shadow: var(--shadow-modal); }
+.dark .ds-card  { background: var(--ds-card); border-color: var(--ds-border); }
+.dark .ds-paper { background: var(--ds-card); border-color: var(--ds-border); }
+
+/* Nav logo mark — gradient square with "P" */
+.nav-logo-mark {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: linear-gradient(135deg, #185FA5, #0C447C);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 800; font-size: 14px; flex-shrink: 0;
+}
+
+/* Tables */
+.ds-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+.ds-table thead th {
+  background: var(--c-primary-light);
+  color: var(--c-primary);
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 12px 16px; text-align: left;
+  border-bottom: 1px solid var(--c-border);
+}
+.ds-table thead th:first-child { border-top-left-radius: var(--r-card); }
+.ds-table thead th:last-child  { border-top-right-radius: var(--r-card); }
+.ds-table tbody td { padding: 14px 16px; border-bottom: 1px solid var(--c-border); vertical-align: middle; }
+.ds-table tbody tr:last-child td { border-bottom: 0; }
+.ds-table tbody tr:hover { background: var(--c-bg); }
+.dark .ds-table thead th { background: rgba(24,95,165,0.15); color: #7EB6F5; border-bottom-color: var(--ds-border); }
+.dark .ds-table tbody td { border-bottom-color: var(--ds-border); }
+.dark .ds-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+
+/* Alert / banner */
+.ds-alert { display: flex; gap: 12px; padding: 12px 14px; border-radius: 8px; align-items: flex-start; font-size: 13px; }
+.ds-alert-info    { background: var(--c-primary-light); color: var(--c-primary-dark); }
+.ds-alert-success { background: var(--c-success-bg); color: #066043; }
+.ds-alert-warning { background: var(--c-warning-bg); color: var(--c-warning-text); }
+.ds-alert-error   { background: var(--c-error-bg); color: #8B1A14; }
+
+/* Progress bar */
+.ds-progress { height: 8px; background: var(--c-bg); border: 1px solid var(--c-border); border-radius: 9999px; overflow: hidden; }
+.ds-progress-fill { height: 100%; background: var(--c-primary); border-radius: 9999px; transition: width 200ms; }
+
+/* Score ring (used in resume scoring) */
+.score-ring-wrap { position: relative; display: inline-block; }
+.score-ring-inner { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+
+/* Factor bars */
+.factor-bar-row { display: grid; grid-template-columns: 110px 1fr 40px; gap: 12px; align-items: center; padding: 6px 0; }
+
+/* Auth card shell */
+.auth-card {
+  background: #fff; border: 1px solid var(--c-border);
+  border-radius: var(--r-modal); box-shadow: var(--shadow-modal);
+  padding: 40px;
+}
+.dark .auth-card { background: var(--ds-card); border-color: var(--ds-border); }
+
+/* Mode cards (self-test, etc.) hover lift */
+.mode-card {
+  background: #fff; border: 1px solid var(--c-border); border-radius: var(--r-card);
+  box-shadow: var(--shadow-card); padding: 24px;
+  transition: transform 150ms, box-shadow 150ms;
+  cursor: pointer; text-decoration: none; color: inherit; display: block;
+}
+.mode-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(12,68,124,0.12);
+  text-decoration: none;
+}
+.dark .mode-card { background: var(--ds-card); border-color: var(--ds-border); }
+
+/* Stat card icon container */
+.stat-icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  background: var(--c-primary-light); color: var(--c-primary);
+  display: grid; place-items: center; margin-bottom: 16px; flex-shrink: 0;
+}
+.dark .stat-icon { background: rgba(24,95,165,0.2); }
+
+/* Skeleton shimmer */
+@keyframes ds-wave { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+.ds-skel {
+  background: linear-gradient(90deg, #EDF2F8 25%, #F6FAFE 50%, #EDF2F8 75%);
+  background-size: 200% 100%;
+  animation: ds-wave 1.6s linear infinite;
+  border-radius: 6px;
+}
+.dark .ds-skel {
+  background: linear-gradient(90deg, #1e2025 25%, #252830 50%, #1e2025 75%);
+  background-size: 200% 100%;
 }
 
 [contenteditable][data-placeholder]:empty::before {

@@ -1,7 +1,6 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { createClient } from '@/lib/supabase-browser';
 
 function GoogleIcon() {
@@ -141,11 +140,12 @@ export default function SignUpPage() {
   return (
     <div className="min-h-screen bg-ds-bg flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <Image src="/logo.png" alt="Proflect" width={120} height={133} className="object-contain mx-auto" priority unoptimized />
+        <div className="flex flex-col items-center gap-2 mb-8">
+          <span className="nav-logo-mark">P</span>
+          <span className="text-lg font-bold tracking-tight text-[var(--c-text)]">Proflect</span>
         </div>
 
-        <div className="bg-ds-card rounded-2xl border border-ds-border shadow-lg p-10 space-y-5">
+        <div className="auth-card space-y-5">
           <div className="text-center space-y-1">
             <h1 className="text-xl font-bold text-ds-text font-heading">Create your account</h1>
             <p className="text-sm text-ds-textSecondary">Join Proflect today</p>
@@ -206,7 +206,7 @@ export default function SignUpPage() {
             </div>
 
             {serverError && (
-              <div className="text-sm text-ds-danger bg-ds-dangerLight rounded-lg px-4 py-3">{serverError}</div>
+              <div className="ds-alert ds-alert-error text-sm">{serverError}</div>
             )}
 
             <button type="submit" disabled={loading || googleLoading}

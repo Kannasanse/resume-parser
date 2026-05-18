@@ -172,7 +172,7 @@ export default function AdminInvitePage() {
             : invites.filter(i => !i.used_at && new Date(i.expires_at) > new Date()).length === 0
               ? <p className="px-4 py-6 text-sm text-ds-textMuted text-center">No pending invitations.</p>
               : (
-                <table className="w-full text-sm">
+                <table className="ds-table">
                   <thead className="border-b border-ds-border bg-ds-bg">
                     <tr>
                       <th className="text-left px-4 py-2.5 text-xs font-semibold text-ds-textMuted uppercase tracking-wide">Email</th>

@@ -425,7 +425,7 @@ export default function SelfTestCreate() {
 
       {/* ── Step: Mode selection ─────────────────────────────────────────────── */}
       {step === 'mode-select' && (
-        <div className="grid gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             {
               id: 'skills',
@@ -450,19 +450,14 @@ export default function SelfTestCreate() {
               key={card.id}
               type="button"
               onClick={() => selectMode(card.id)}
-              className={`w-full text-left flex items-start gap-4 p-5 rounded-lg border-2 transition-all min-h-[80px] ${
-                mode === card.id
-                  ? 'border-primary bg-primary/5'
-                  : 'border-ds-border bg-ds-card hover:border-primary/50 hover:bg-ds-bg'
-              }`}
+              className={`mode-card text-left ${mode === card.id ? '!border-[var(--c-primary)] ring-2 ring-[var(--c-primary-light)]' : ''}`}
             >
-              <span className={`flex-shrink-0 mt-0.5 ${mode === card.id ? 'text-primary' : 'text-ds-textMuted'}`}>
+              <span className={`stat-icon mb-3 ${mode === card.id ? '' : ''}`}>
                 {card.icon}
               </span>
-              <div>
-                <p className={`font-semibold text-sm ${mode === card.id ? 'text-primary' : 'text-ds-text'}`}>{card.title}</p>
-                <p className="text-xs text-ds-textMuted mt-0.5 leading-relaxed">{card.desc}</p>
-              </div>
+              <p className={`font-semibold text-sm mb-1 ${mode === card.id ? 'text-[var(--c-primary)]' : 'text-[var(--c-text)]'}`}>{card.title}</p>
+              <p className="text-xs text-[var(--c-text-2)] leading-relaxed">{card.desc}</p>
+              <p className="text-xs text-[var(--c-primary)] font-medium mt-3">Start →</p>
             </button>
           ))}
         </div>

@@ -149,7 +149,7 @@ export default function AdminImportPage() {
 
           <div className="bg-ds-card border border-ds-border rounded-lg overflow-hidden">
             <div className="overflow-x-auto max-h-80">
-              <table className="w-full text-sm">
+              <table className="ds-table">
                 <thead className="sticky top-0 border-b border-ds-border bg-ds-bg">
                   <tr>
                     {['first_name', 'last_name', 'email', 'role'].map(col => (
@@ -202,7 +202,7 @@ export default function AdminImportPage() {
           </div>
 
           <div className="bg-ds-card border border-ds-border rounded-lg overflow-hidden max-h-80 overflow-y-auto">
-            <table className="w-full text-sm">
+            <table className="ds-table">
               <thead className="sticky top-0 border-b border-ds-border bg-ds-bg">
                 <tr>
                   <th className="text-left px-4 py-2.5 text-xs font-semibold text-ds-textMuted uppercase tracking-wide">Email</th>

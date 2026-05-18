@@ -99,32 +99,32 @@ function LoginContent() {
   return (
     <div className="min-h-screen bg-ds-bg flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/login-hero.png" alt="Proflect" className="mx-auto max-w-[220px] object-contain" />
+        <div className="flex flex-col items-center gap-2 mb-8">
+          <span className="nav-logo-mark">P</span>
+          <span className="text-lg font-bold tracking-tight text-[var(--c-text)]">Proflect</span>
         </div>
 
-        <div className="bg-ds-card rounded-2xl border border-ds-border shadow-lg p-10 space-y-5">
+        <div className="auth-card space-y-5">
           <div className="text-center space-y-1">
             <h1 className="text-xl font-bold text-ds-text font-heading">Welcome back</h1>
             <p className="text-sm text-ds-textSecondary">Sign in to your account</p>
           </div>
 
           {hashError && (
-            <div className="text-sm text-ds-danger bg-ds-dangerLight rounded-lg px-4 py-3">
+            <div className="ds-alert ds-alert-error text-sm">
               {hashError}{' '}
               <Link href="/forgot-password" className="underline font-medium">Request new link</Link>
             </div>
           )}
 
           {lockoutMins > 0 && (
-            <div className="text-sm text-ds-danger bg-ds-dangerLight rounded-lg px-4 py-3">
+            <div className="ds-alert ds-alert-error text-sm">
               Account locked. Try again in <strong>{lockoutMins} minute{lockoutMins !== 1 ? 's' : ''}</strong>.
             </div>
           )}
 
           {unverified && (
-            <div className="text-sm text-ds-warning bg-ds-warningLight rounded-lg px-4 py-3">
+            <div className="ds-alert ds-alert-warning text-sm">
               Please verify your email.{' '}
               <Link href={`/verify-email?email=${encodeURIComponent(email)}`} className="underline font-medium">
                 Resend link
@@ -157,7 +157,7 @@ function LoginContent() {
             </div>
 
             {error && !lockoutMins && !unverified && (
-              <div className="text-sm text-ds-danger bg-ds-dangerLight rounded-lg px-4 py-3">{error}</div>
+              <div className="ds-alert ds-alert-error text-sm">{error}</div>
             )}
 
             <button type="submit" disabled={loading || googleLoading || lockoutMins > 0}

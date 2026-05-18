@@ -2,7 +2,6 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 
 function passwordStrength(pwd) {
   let score = 0;
@@ -123,10 +122,11 @@ function JoinContent() {
     return (
       <div className="min-h-screen bg-ds-bg flex items-center justify-center px-4">
         <div className="w-full max-w-sm">
-          <div className="text-center mb-8">
-            <Image src="/logo.png" alt="Proflect" width={120} height={133} className="object-contain mx-auto" priority unoptimized />
+          <div className="flex flex-col items-center gap-2 mb-8">
+            <span className="nav-logo-mark">P</span>
+            <span className="text-lg font-bold tracking-tight text-[var(--c-text)]">Proflect</span>
           </div>
-          <div className="bg-ds-card rounded-2xl border border-ds-border shadow-lg p-10 text-center space-y-4">
+          <div className="auth-card text-center space-y-4">
             <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${isDanger ? 'bg-ds-dangerLight' : 'bg-ds-warningLight'}`}>
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={isDanger ? 'text-ds-danger' : 'text-ds-warning'}>
                 <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
@@ -145,10 +145,11 @@ function JoinContent() {
     return (
       <div className="min-h-screen bg-ds-bg flex items-center justify-center px-4">
         <div className="w-full max-w-sm">
-          <div className="text-center mb-8">
-            <Image src="/logo.png" alt="Proflect" width={120} height={133} className="object-contain mx-auto" priority unoptimized />
+          <div className="flex flex-col items-center gap-2 mb-8">
+            <span className="nav-logo-mark">P</span>
+            <span className="text-lg font-bold tracking-tight text-[var(--c-text)]">Proflect</span>
           </div>
-          <div className="bg-ds-card rounded-2xl border border-ds-border shadow-lg p-10 text-center space-y-4">
+          <div className="auth-card text-center space-y-4">
             <div className="w-16 h-16 rounded-full bg-ds-successLight flex items-center justify-center mx-auto">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-ds-success">
                 <polyline points="20 6 9 17 4 12"/>
@@ -171,11 +172,12 @@ function JoinContent() {
   return (
     <div className="min-h-screen bg-ds-bg flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <Image src="/logo.png" alt="Proflect" width={120} height={133} className="object-contain mx-auto" priority unoptimized />
+        <div className="flex flex-col items-center gap-2 mb-8">
+          <span className="nav-logo-mark">P</span>
+          <span className="text-lg font-bold tracking-tight text-[var(--c-text)]">Proflect</span>
         </div>
 
-        <div className="bg-ds-card rounded-2xl border border-ds-border shadow-lg p-10 space-y-5">
+        <div className="auth-card space-y-5">
           {tokenData?.role && (
             <div className="flex justify-center">
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary bg-primary-light px-3 py-1.5 rounded-btn capitalize">
@@ -246,7 +248,7 @@ function JoinContent() {
             </div>
 
             {serverError && (
-              <div className="text-sm text-ds-danger bg-ds-dangerLight rounded-lg px-4 py-3">{serverError}</div>
+              <div className="ds-alert ds-alert-error text-sm">{serverError}</div>
             )}
 
             <button type="submit" disabled={loading}

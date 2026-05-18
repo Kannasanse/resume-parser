@@ -1,7 +1,6 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { createClient } from '@/lib/supabase-browser';
 
 export default function ForgotPasswordPage() {
@@ -34,10 +33,11 @@ export default function ForgotPasswordPage() {
     return (
       <div className="min-h-screen bg-ds-bg flex items-center justify-center px-4">
         <div className="w-full max-w-sm">
-          <div className="text-center mb-8">
-            <Image src="/logo.png" alt="Proflect" width={120} height={133} className="object-contain mx-auto" priority unoptimized />
+          <div className="flex flex-col items-center gap-2 mb-8">
+            <span className="nav-logo-mark">P</span>
+            <span className="text-lg font-bold tracking-tight text-[var(--c-text)]">Proflect</span>
           </div>
-          <div className="bg-ds-card rounded-2xl border border-ds-border shadow-lg p-10 text-center space-y-4">
+          <div className="auth-card text-center space-y-4">
             <div className="w-16 h-16 rounded-full bg-ds-successLight flex items-center justify-center mx-auto">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-ds-success">
                 <polyline points="20 6 9 17 4 12"/>
@@ -64,11 +64,12 @@ export default function ForgotPasswordPage() {
   return (
     <div className="min-h-screen bg-ds-bg flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <Image src="/logo.png" alt="Proflect" width={120} height={133} className="object-contain mx-auto" priority unoptimized />
+        <div className="flex flex-col items-center gap-2 mb-8">
+          <span className="nav-logo-mark">P</span>
+          <span className="text-lg font-bold tracking-tight text-[var(--c-text)]">Proflect</span>
         </div>
 
-        <div className="bg-ds-card rounded-2xl border border-ds-border shadow-lg p-10 space-y-5">
+        <div className="auth-card space-y-5">
           <Link href="/login" className="flex items-center gap-1.5 text-xs text-ds-textMuted hover:text-ds-text -mb-1">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M19 12H5M12 5l-7 7 7 7"/>

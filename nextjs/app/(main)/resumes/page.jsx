@@ -68,7 +68,7 @@ function BulkDeleteModal({ count, onCancel, onDelete }) {
 function ResumeTable({ items, selectedIds, onToggleSelect, onDelete, onDeleteRequest }) {
   return (
     <div className="rounded border border-ds-border overflow-hidden">
-      <table className="w-full text-sm">
+      <table className="ds-table">
         <thead className="bg-ds-bg border-b border-ds-border">
           <tr>
             <th className="w-10 px-4 py-3" />

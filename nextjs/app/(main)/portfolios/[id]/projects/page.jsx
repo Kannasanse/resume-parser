@@ -209,7 +209,7 @@ export default function ProjectsPage() {
         </div>
       ) : (
         <div className="bg-ds-card border border-ds-border rounded-lg overflow-hidden">
-          <table className="w-full text-sm">
+          <table className="ds-table">
             <thead className="bg-ds-bg border-b border-ds-border">
               <tr>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-ds-textMuted uppercase tracking-wide">Project</th>

@@ -302,13 +302,10 @@ function PortfolioCard({ portfolio, onRefresh }) {
 
   return (
     <>
-      <div className="bg-ds-card border border-ds-border rounded-lg flex flex-col">
-        <div className="p-4 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1 min-w-0">
-              <h3 className="font-heading font-semibold text-ds-text truncate">{portfolio.name}</h3>
-              <p className="text-xs text-ds-textMuted mt-0.5">/{portfolio.slug}</p>
-            </div>
+      <div className="ds-card flex flex-col overflow-hidden">
+        {/* Gradient header */}
+        <div className="h-20 bg-gradient-to-br from-[var(--c-primary)] to-[var(--c-primary-dark)] relative flex-shrink-0">
+          <div className="absolute bottom-2 right-2">
             <PortfolioCardMenu
               portfolio={portfolio}
               onRename={() => setRenaming(true)}
@@ -316,15 +313,20 @@ function PortfolioCard({ portfolio, onRefresh }) {
               onDelete={() => setDeleting(true)}
             />
           </div>
+          <span className={`absolute top-2 left-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize ${portfolio.status === 'published' ? 'bg-[var(--c-success-bg)] text-[#066043]' : portfolio.status === 'archived' ? 'bg-amber-100 text-amber-700' : 'bg-white/20 text-white'}`}>
+            {portfolio.status || 'draft'}
+          </span>
+        </div>
 
-          <div className="flex items-center gap-2 mt-3">
-            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize ${STATUS_STYLES[portfolio.status] || STATUS_STYLES.draft}`}>
-              {portfolio.status || 'draft'}
-            </span>
-            <span className="text-xs text-ds-textMuted capitalize">{portfolio.template || 'minimal'}</span>
+        <div className="p-4 flex-1">
+          <div className="flex-1 min-w-0 mb-2">
+            <h3 className="font-semibold text-[var(--c-text)] truncate">{portfolio.name}</h3>
+            <p className="text-xs text-[var(--c-text-2)] mt-0.5">/{portfolio.slug}</p>
           </div>
 
-          <div className="flex items-center gap-4 mt-3 text-xs text-ds-textMuted">
+          <p className="text-xs text-[var(--c-text-3)] capitalize mb-3">{portfolio.template || 'minimal'} template</p>
+
+          <div className="flex items-center gap-4 text-xs text-[var(--c-text-2)]">
             <span>{portfolio.section_count ?? 0} sections</span>
             <span>{portfolio.project_count ?? 0} projects</span>
             {portfolio.status === 'published' && (
@@ -337,7 +339,7 @@ function PortfolioCard({ portfolio, onRefresh }) {
             )}
           </div>
 
-          <p className="text-xs text-ds-textMuted mt-3">Updated {fmtDate(portfolio.updated_at)}</p>
+          <p className="text-xs text-[var(--c-text-3)] mt-2">Updated {fmtDate(portfolio.updated_at)}</p>
         </div>
 
         <div className="flex items-center gap-2 px-4 py-3 border-t border-ds-border">

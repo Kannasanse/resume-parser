@@ -299,7 +299,7 @@ export default function AdminCreditsPage() {
       {/* Users tab */}
       {activeTab === 'users' && (
         <div className="bg-ds-card border border-ds-border rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
+          <table className="ds-table">
             <thead>
               <tr className="border-b border-ds-border bg-ds-bg">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-ds-textMuted">User</th>
@@ -363,7 +363,7 @@ export default function AdminCreditsPage() {
           </div>
 
           <div className="bg-ds-card border border-ds-border rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
+            <table className="ds-table">
               <thead>
                 <tr className="border-b border-ds-border bg-ds-bg">
                   <th className="text-left px-4 py-3 text-xs font-semibold text-ds-textMuted">User</th>
