@@ -23,7 +23,10 @@ export async function POST(request) {
 
     const roleMap = Object.fromEntries((allRoles || []).map(r => [r.id, r]));
     const profile = session.extracted_profile;
-    const userSkills = new Set((profile.skills || []).map(s => s.toLowerCase()));
+    const userSkills = new Set([
+      ...(profile.skills || []),
+      ...(profile.topTechStack || []),
+    ].map(s => s.toLowerCase()));
 
     // BFS from selected role — expand up to 3 hops
     const visited = new Set();
@@ -32,7 +35,7 @@ export async function POST(request) {
     const queue = [{ id: selected_role_id, depth: 0 }];
 
     // Also include current role if we can infer it
-    const currentTitle = (profile.current_title || '').toLowerCase();
+    const currentTitle = (profile.currentTitle || profile.current_title || '').toLowerCase();
     const currentRoleId = (allRoles || []).find(r =>
       r.title.toLowerCase().includes(currentTitle) || currentTitle.includes(r.title.toLowerCase())
     )?.id;

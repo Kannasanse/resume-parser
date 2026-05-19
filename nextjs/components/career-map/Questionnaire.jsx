@@ -1,134 +1,225 @@
 'use client';
 import { useState } from 'react';
 
-const QUESTIONS = [
-  {
-    id: 'goal',
-    label: 'What is your primary career goal?',
-    type: 'radio',
-    options: [
-      { value: 'promotion', label: 'Get promoted in my current field' },
-      { value: 'pivot', label: 'Pivot to a new field' },
-      { value: 'senior', label: 'Move into a senior / leadership role' },
-      { value: 'salary', label: 'Increase my salary' },
-      { value: 'explore', label: 'Explore my options' },
-    ],
-  },
-  {
-    id: 'timeline',
-    label: 'What is your timeline?',
-    type: 'radio',
-    options: [
-      { value: '3months', label: 'Within 3 months' },
-      { value: '6months', label: '3–6 months' },
-      { value: '1year', label: '6–12 months' },
-      { value: '2years', label: '1–2 years' },
-    ],
-  },
-  {
-    id: 'work_style',
-    label: 'Preferred work style',
-    type: 'radio',
-    options: [
-      { value: 'individual', label: 'Individual contributor' },
-      { value: 'management', label: 'People management' },
-      { value: 'technical_lead', label: 'Technical leadership' },
-      { value: 'no_preference', label: 'No preference' },
-    ],
-  },
-  {
-    id: 'interested_areas',
-    label: 'Which areas interest you? (pick all that apply)',
-    type: 'checkbox',
-    options: [
-      { value: 'engineering', label: 'Engineering / Development' },
-      { value: 'data', label: 'Data / AI' },
-      { value: 'product', label: 'Product Management' },
-      { value: 'design', label: 'Design / UX' },
-      { value: 'devops', label: 'DevOps / Cloud' },
-      { value: 'marketing', label: 'Growth / Marketing' },
-    ],
-  },
-];
+function buildQuestions(profile) {
+  const domain = profile?.currentDomain || profile?.current_domain || 'your field';
+  const seniority = profile?.currentSeniority || profile?.current_title || 'your current level';
+  const industries = Array.isArray(profile?.industries) && profile.industries.length
+    ? profile.industries.join(', ')
+    : 'your industry';
+  const primaryIndustry = Array.isArray(profile?.industries) && profile.industries[0]
+    ? profile.industries[0]
+    : 'your industry';
+
+  return [
+    {
+      id: 'goal',
+      question: "What's your primary career goal right now?",
+      context: "We'll use this to focus your recommendations.",
+      type: 'single',
+      options: [
+        { value: 'grow', icon: '🚀', label: 'Grow in my current field', desc: `Move up within ${domain} — more responsibility, higher seniority` },
+        { value: 'transition', icon: '🔄', label: 'Transition to a new field', desc: 'Explore adjacent or completely different career paths' },
+        { value: 'leadership', icon: '⚡', label: 'Accelerate to leadership', desc: 'Move into management, team lead, or director roles' },
+        { value: 'explore', icon: '🌍', label: 'Explore my options', desc: "I'm open — show me what's possible based on my skills" },
+      ],
+    },
+    {
+      id: 'timeline',
+      question: 'How soon are you looking to make your next career move?',
+      context: 'This helps us separate short-term achievable steps from long-term goals.',
+      type: 'single',
+      options: [
+        { value: '6months', icon: '📅', label: 'Within 6 months', desc: "I'm actively looking or planning to move very soon" },
+        { value: '6_12months', icon: '📆', label: '6 months – 1 year', desc: 'I want to prepare and move within the year' },
+        { value: '1_2years', icon: '🗓', label: '1–2 years', desc: "I'm planning ahead — building skills, not rushing" },
+        { value: '3_5years', icon: '🔭', label: '3–5 years', desc: 'Long-term planning — I want to see the full picture' },
+      ],
+    },
+    {
+      id: 'work_style',
+      question: 'What kind of work environment do you prefer?',
+      context: 'This helps filter roles that match your preferred way of working.',
+      type: 'single',
+      options: [
+        { value: 'technical', icon: '💻', label: 'Technical / hands-on', desc: 'I want to stay close to code, design, or technical execution' },
+        { value: 'people', icon: '🤝', label: 'People & collaboration', desc: 'I enjoy managing teams, stakeholders, or clients' },
+        { value: 'strategy', icon: '📊', label: 'Strategy & analysis', desc: 'I prefer data, planning, and big-picture thinking' },
+        { value: 'creative', icon: '🎨', label: 'Creative & product', desc: 'I want to shape products, experiences, or brand' },
+      ],
+    },
+    {
+      id: 'seniority_ambition',
+      question: 'Where do you see yourself in terms of seniority?',
+      context: `You're currently at ${seniority} level. Where are you aiming?`,
+      type: 'single',
+      options: [
+        { value: 'next_level', icon: '📈', label: 'Next level up', desc: `Focused growth in ${domain} — same domain, one step up` },
+        { value: 'skip_level', icon: '🏆', label: 'Skip a level', desc: 'Ambitious — aiming for Lead or Principal faster than average' },
+        { value: 'management', icon: '👔', label: 'Into management', desc: 'Transition from individual contributor to people management' },
+        { value: 'lateral_pivot', icon: '🔀', label: 'Same level, new domain', desc: `Stay at ${seniority} but pivot to a different field` },
+      ],
+    },
+    {
+      id: 'learning_commitment',
+      question: 'How much time are you willing to invest in learning new skills?',
+      context: "We'll show paths that match your learning commitment.",
+      type: 'single',
+      options: [
+        { value: 'minimal', icon: '⚡', label: 'Minimal (< 5 hrs/week)', desc: 'I want paths that build on what I already know' },
+        { value: 'moderate', icon: '📚', label: 'Moderate (5–10 hrs/week)', desc: "I'm happy to learn but want achievable milestones" },
+        { value: 'high', icon: '🎓', label: 'High (10–20 hrs/week)', desc: "I'm committed — show me ambitious paths even if they're challenging" },
+        { value: 'full', icon: '🏫', label: 'Full commitment', desc: "I'd consider a bootcamp, course, or certification programme" },
+      ],
+    },
+    {
+      id: 'industry_preference',
+      question: 'Do you want to stay in your current industry or explore others?',
+      context: `You've worked in ${industries}.`,
+      type: 'single',
+      options: [
+        { value: 'stay', icon: '🏠', label: `Stay in ${primaryIndustry}`, desc: 'I know this space well and want to grow within it' },
+        { value: 'any', icon: '🌐', label: 'Open to any industry', desc: 'The role matters more than the industry' },
+        { value: 'specific', icon: '🎯', label: 'Specific industries', desc: 'I have particular industries in mind' },
+        { value: 'switch', icon: '🔄', label: 'Actively want to switch', desc: `I specifically want to move out of ${primaryIndustry}` },
+      ],
+    },
+    {
+      id: 'salary_priority',
+      question: 'How important is salary growth in your next move?',
+      context: "We'll factor this into ranking your recommended paths.",
+      type: 'single',
+      options: [
+        { value: 'top_priority', icon: '💰', label: 'Top priority', desc: 'I want the highest-paying paths highlighted first' },
+        { value: 'balanced', icon: '📊', label: 'Important but not the only factor', desc: 'Balance salary with growth potential and job satisfaction' },
+        { value: 'growth_over_pay', icon: '🌱', label: 'Growth over immediate pay', desc: "I'm willing to take a lateral pay move for the right opportunity" },
+        { value: 'not_deciding', icon: '🤷', label: 'Not a deciding factor', desc: "Show me everything — I'll evaluate salary myself" },
+      ],
+    },
+  ];
+}
 
 export default function Questionnaire({ profile, onSubmit, loading }) {
+  const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
-  function setAnswer(id, value) {
-    setAnswers(prev => ({ ...prev, [id]: value }));
+  const questions = buildQuestions(profile);
+  const q = questions[current];
+  const total = questions.length;
+  const progress = ((current) / total) * 100;
+  const selected = answers[q?.id];
+
+  function selectOption(value) {
+    setAnswers(prev => ({ ...prev, [q.id]: value }));
   }
 
-  function toggleCheckbox(id, value) {
-    setAnswers(prev => {
-      const current = prev[id] || [];
-      return { ...prev, [id]: current.includes(value) ? current.filter(v => v !== value) : [...current, value] };
-    });
+  function goBack() {
+    if (current > 0) setCurrent(c => c - 1);
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setSubmitting(true);
-    await onSubmit(answers);
-    setSubmitting(false);
+  async function goNext() {
+    if (current < total - 1) {
+      setCurrent(c => c + 1);
+    } else {
+      setSubmitting(true);
+      await onSubmit(answers);
+      setSubmitting(false);
+    }
   }
 
   if (loading) {
     return (
-      <div className="ds-card p-8 text-center space-y-4">
-        <div className="ds-skel h-4 w-48 mx-auto rounded" />
-        <div className="ds-skel h-4 w-64 mx-auto rounded" />
-        <p className="text-sm text-[var(--c-text-muted)] mt-2">Analysing your resume…</p>
+      <div className="max-w-2xl mx-auto">
+        <div className="ds-card p-10 text-center space-y-5">
+          <div className="stat-icon mx-auto">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V9"/><path d="M9 3l6 6h6"/>
+            </svg>
+          </div>
+          <div>
+            <p className="text-base font-semibold text-[var(--c-text)]">Analysing your resume…</p>
+            <p className="text-sm text-[var(--c-text-muted)] mt-1">This takes a few seconds</p>
+          </div>
+          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-full bg-[var(--c-primary)] rounded-full animate-pulse w-3/4" />
+          </div>
+        </div>
       </div>
     );
   }
 
-  const allAnswered = QUESTIONS.filter(q => q.type === 'radio').every(q => answers[q.id]);
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {profile && (
-        <div className="ds-card p-4 flex items-start gap-3">
-          <div className="stat-icon flex-shrink-0" style={{ width: 36, height: 36, borderRadius: 8 }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-            </svg>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-[var(--c-text)]">{profile.current_title || 'Professional'}</p>
-            <p className="text-xs text-[var(--c-text-muted)]">{profile.years_experience || 0} years experience · {(profile.skills || []).slice(0, 4).join(', ')}</p>
-          </div>
+    <div className="max-w-2xl mx-auto space-y-5">
+      {/* Progress */}
+      <div>
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-xs text-[var(--c-text-muted)]">Question {current + 1} of {total}</span>
+          <span className="text-xs text-[var(--c-text-muted)]">{Math.round(((current + 1) / total) * 100)}%</span>
         </div>
-      )}
-
-      {QUESTIONS.map(q => (
-        <div key={q.id} className="ds-card p-5 space-y-3">
-          <p className="text-sm font-semibold text-[var(--c-text)]">{q.label}</p>
-          <div className="space-y-2">
-            {q.options.map(opt => (
-              <label key={opt.value} className="flex items-center gap-3 cursor-pointer group">
-                <input
-                  type={q.type}
-                  name={q.id}
-                  value={opt.value}
-                  checked={q.type === 'radio' ? answers[q.id] === opt.value : (answers[q.id] || []).includes(opt.value)}
-                  onChange={() => q.type === 'radio' ? setAnswer(q.id, opt.value) : toggleCheckbox(q.id, opt.value)}
-                  className="accent-[var(--c-primary)]"
-                />
-                <span className="text-sm text-[var(--c-text)] group-hover:text-[var(--c-primary)]">{opt.label}</span>
-              </label>
-            ))}
-          </div>
+        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-[var(--c-primary)] rounded-full transition-all duration-300"
+            style={{ width: `${((current + 1) / total) * 100}%` }}
+          />
         </div>
-      ))}
+      </div>
 
-      <button
-        type="submit"
-        disabled={submitting || !allAnswered}
-        className="w-full bg-[var(--c-primary)] text-white font-medium py-2.5 rounded-lg hover:bg-[var(--c-primary-dark)] transition-colors disabled:opacity-50"
-      >
-        {submitting ? 'Finding roles…' : 'Get Recommendations →'}
-      </button>
-    </form>
+      {/* Question card */}
+      <div className="bg-white border border-[var(--c-border)] rounded-2xl p-8 shadow-[0_4px_16px_rgba(12,68,124,0.10)]">
+        <h3 className="text-xl font-semibold text-[var(--c-text)] mb-2">{q.question}</h3>
+        <p className="text-sm text-[var(--c-text-muted)] mb-7">{q.context}</p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {q.options.map(opt => {
+            const isSelected = selected === opt.value;
+            return (
+              <button
+                key={opt.value}
+                onClick={() => selectOption(opt.value)}
+                className={`relative text-left p-4 rounded-xl border transition-all duration-150 ${
+                  isSelected
+                    ? 'border-2 border-[var(--c-primary)] bg-[var(--c-primary-light)]'
+                    : 'border border-[var(--c-border)] bg-white hover:border-[var(--c-primary)] hover:bg-[#F4F8FC]'
+                }`}
+              >
+                {isSelected && (
+                  <span className="absolute top-3 right-3 text-[var(--c-primary)]">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5l-4-4 1.41-1.41L10 13.67l6.59-6.59L18 8.5l-8 8z"/>
+                    </svg>
+                  </span>
+                )}
+                <div className="flex items-start gap-3">
+                  <span className="text-xl flex-shrink-0 mt-0.5">{opt.icon}</span>
+                  <div>
+                    <p className="text-sm font-semibold text-[var(--c-text)]">{opt.label}</p>
+                    <p className="text-xs text-[var(--c-text-muted)] mt-0.5 leading-relaxed">{opt.desc}</p>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={goBack}
+          disabled={current === 0}
+          className="text-sm text-[var(--c-text-muted)] hover:text-[var(--c-text)] disabled:opacity-0 transition-colors"
+        >
+          ← Back
+        </button>
+        <button
+          onClick={goNext}
+          disabled={!selected || submitting}
+          className="bg-[var(--c-primary)] text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-[var(--c-primary-dark)] transition-colors disabled:opacity-40"
+        >
+          {submitting ? 'Finding roles…' : current === total - 1 ? 'See my recommendations →' : 'Next →'}
+        </button>
+      </div>
+    </div>
   );
 }

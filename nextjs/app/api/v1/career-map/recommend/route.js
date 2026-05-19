@@ -41,18 +41,23 @@ export async function POST(request) {
 
     const profile = session.extracted_profile;
 
-    const prompt = `You are a career advisor. Based on a professional's profile and preferences, recommend 5 suitable career roles from the provided database.
+    const prompt = `You are a career advisor. Based on this professional's profile and career goals, recommend the best-fit job profiles from the candidate list provided.
 
-Profile:
+Professional profile:
 ${JSON.stringify(profile, null, 2)}
 
-Questionnaire answers:
+Career questionnaire answers:
 ${JSON.stringify(questionnaire, null, 2)}
 
-Available roles (id + title only for brevity):
+Available roles:
 ${(allRoles || []).map(r => `${r.id}: ${r.title} (${r.category}, ${r.seniority})`).join('\n')}
 
-Return ONLY valid JSON array (no markdown) with exactly 5 role IDs, ordered best-match first:
+Task:
+1. Re-rank these roles based on all available information
+2. Add 1-2 "surprise" roles not in the list if you see strong diagonal skill overlap
+3. Return the best 5 role IDs ordered best-match first
+
+Return ONLY a JSON array of exactly 5 role IDs from the list above (no markdown):
 ["role-id-1", "role-id-2", "role-id-3", "role-id-4", "role-id-5"]`;
 
     const raw = await callGroq(prompt, 400);

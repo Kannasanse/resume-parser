@@ -32,20 +32,28 @@ export async function POST(request) {
       }
     }
 
-    const prompt = `You are a career intelligence assistant. Analyse the following resume and extract a structured professional profile.
+    const prompt = `Analyse this resume and extract structured data.
 
-Resume:
-${resumeText || 'No resume provided — use placeholder data.'}
+Resume content:
+${resumeText || 'No resume provided — use placeholder data for a generic software engineer.'}
 
-Return ONLY valid JSON (no markdown, no explanation) with this exact shape:
+Extract and return ONLY a JSON object matching this schema:
 {
-  "current_title": "string — most recent job title",
-  "years_experience": number,
-  "skills": ["array", "of", "skill", "strings"],
-  "industries": ["array", "of", "industry", "strings"],
-  "education_level": "High School | Bachelor's | Master's | PhD | Bootcamp | Self-taught",
-  "summary": "2-3 sentence professional summary"
-}`;
+  "currentTitle": "most recent job title",
+  "currentSeniority": "Junior|Mid|Senior|Lead|Principal|Director",
+  "currentDomain": "Engineering|Data|Design|Product|Management|Marketing|Finance|Operations|Other",
+  "totalYearsExp": number,
+  "skills": ["skill1", "skill2"],
+  "industries": ["industry1"],
+  "educationLevel": "Bachelor|Master|PhD|Bootcamp|Self-taught|Other",
+  "topTechStack": ["tech1", "tech2"],
+  "hasManagement": boolean,
+  "hasLeadership": boolean,
+  "certifications": ["cert1"]
+}
+
+Be conservative with seniority inference. If unclear, use the most common seniority for the title.
+Return ONLY the JSON, no preamble.`;
 
     const raw = await callGroq(prompt, 800);
     let profile;
@@ -54,12 +62,17 @@ Return ONLY valid JSON (no markdown, no explanation) with this exact shape:
       profile = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
     } catch {
       profile = {
-        current_title: 'Unknown',
-        years_experience: 0,
+        currentTitle: 'Unknown',
+        currentSeniority: 'Mid',
+        currentDomain: 'Engineering',
+        totalYearsExp: 0,
         skills: [],
         industries: [],
-        education_level: "Bachelor's",
-        summary: 'Could not parse resume.',
+        educationLevel: 'Bachelor',
+        topTechStack: [],
+        hasManagement: false,
+        hasLeadership: false,
+        certifications: [],
       };
     }
 
