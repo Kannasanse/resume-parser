@@ -1,0 +1,79 @@
+'use client';
+import { useState } from 'react';
+
+function salaryRange(min, max) {
+  if (!min && !max) return null;
+  const fmt = n => `$${Math.round(n / 1000)}k`;
+  return `${fmt(min)} – ${fmt(max)}`;
+}
+
+const OUTLOOK_COLOR = {
+  High: 'bg-[var(--c-success-bg)] text-[var(--c-success)]',
+  Medium: 'bg-yellow-50 text-yellow-700',
+  Low: 'bg-red-50 text-red-600',
+};
+
+export default function Recommendations({ roles, onSelect }) {
+  const [selecting, setSelecting] = useState(null);
+
+  async function handleSelect(roleId) {
+    setSelecting(roleId);
+    await onSelect(roleId);
+    setSelecting(null);
+  }
+
+  if (!roles.length) {
+    return (
+      <div className="ds-card p-8 text-center text-sm text-[var(--c-text-muted)]">
+        Loading recommendations…
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-lg font-semibold text-[var(--c-text)]">Recommended roles for you</h2>
+        <p className="text-sm text-[var(--c-text-muted)] mt-1">Select a role to build your career path map.</p>
+      </div>
+
+      {roles.map((role, i) => (
+        <div key={role.id} className="ds-card p-5 space-y-3 hover:border-[var(--c-primary)] transition-colors">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="stat-icon flex-shrink-0" style={{ width: 36, height: 36, borderRadius: 8, fontSize: 14, fontWeight: 700 }}>
+                #{i + 1}
+              </div>
+              <div>
+                <p className="font-semibold text-[var(--c-text)]">{role.title}</p>
+                <p className="text-xs text-[var(--c-text-muted)]">{role.category} · {role.seniority}</p>
+              </div>
+            </div>
+            <span className={`text-xs font-medium px-2 py-1 rounded-full flex-shrink-0 ${OUTLOOK_COLOR[role.growth_outlook] || OUTLOOK_COLOR.Medium}`}>
+              {role.growth_outlook} growth
+            </span>
+          </div>
+
+          <p className="text-sm text-[var(--c-text-muted)]">{role.description}</p>
+
+          <div className="flex flex-wrap gap-1.5">
+            {(role.core_skills || []).slice(0, 5).map(s => (
+              <span key={s} className="text-xs bg-[var(--c-primary-light)] text-[var(--c-primary)] px-2 py-0.5 rounded-full">{s}</span>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-sm text-[var(--c-text-muted)]">{salaryRange(role.salary_min_usd, role.salary_max_usd) || ''}</span>
+            <button
+              onClick={() => handleSelect(role.id)}
+              disabled={!!selecting}
+              className="bg-[var(--c-primary)] text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:bg-[var(--c-primary-dark)] transition-colors disabled:opacity-50"
+            >
+              {selecting === role.id ? 'Building map…' : 'Build Career Map →'}
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
