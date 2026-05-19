@@ -7,7 +7,7 @@ import Recommendations from './Recommendations';
 import CareerGraph from './CareerGraph';
 import SkillGapDrawer from './SkillGapDrawer';
 import NodeDetailPanel from './NodeDetailPanel';
-import LearningRoadmapDialog from './LearningRoadmapDialog';
+import PreferenceModal from './roadmap/PreferenceModal';
 
 const STEPS = { RESUME: 'resume', QUESTIONNAIRE: 'questionnaire', RECOMMENDATIONS: 'recommendations', GRAPH: 'graph' };
 
@@ -176,10 +176,14 @@ export default function CareerMapPage() {
       </div>
 
       {roadmapRoleId && (
-        <LearningRoadmapDialog
-          sessionId={sessionId}
-          roleId={roadmapRoleId}
+        <PreferenceModal
+          open={!!roadmapRoleId}
           onClose={() => setRoadmapRoleId(null)}
+          sessionId={sessionId}
+          targetRoleId={roadmapRoleId}
+          targetRoleTitle={skillGapData?.target_role_title || roadmapRoleId}
+          missingSkills={skillGapData?.missing_skills || []}
+          readinessScore={skillGapData?.match_percent || 0}
         />
       )}
     </div>
