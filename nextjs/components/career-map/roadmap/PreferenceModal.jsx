@@ -108,8 +108,16 @@ export default function PreferenceModal({ open, onClose, sessionId, targetRoleId
               onChange={e => setHoursPerDay(parseFloat(e.target.value))}
               className="w-full accent-[var(--c-primary)]"
             />
-            <div className="flex justify-between text-xs text-[var(--c-text-muted)]">
-              {[0.5, 1, 2, 3, 4, 6, 8].map(v => <span key={v}>{v}</span>)}
+            <div className="relative h-4">
+              {[0.5, 1, 2, 3, 4, 5, 6, 7, 8].map(v => (
+                <span
+                  key={v}
+                  className="absolute text-xs text-[var(--c-text-muted)] -translate-x-1/2"
+                  style={{ left: `${((v - 0.5) / 7.5) * 100}%` }}
+                >
+                  {v}
+                </span>
+              ))}
             </div>
           </div>
 
