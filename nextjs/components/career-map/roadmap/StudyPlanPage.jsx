@@ -63,6 +63,7 @@ export default function StudyPlanPage({ studyPlanId }) {
   }
 
   return (
+    <>
     <div className="flex flex-col h-screen bg-[var(--c-bg)]">
       {/* Top bar */}
       <div className="bg-white border-b border-[var(--c-border)] px-6 py-3 flex-shrink-0">
@@ -145,10 +146,11 @@ export default function StudyPlanPage({ studyPlanId }) {
       />
     )}
     {toast && (
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-green-700 text-white text-sm font-medium px-5 py-2.5 rounded-full shadow-lg z-50 animate-fade-in">
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-green-700 text-white text-sm font-medium px-5 py-2.5 rounded-full shadow-lg z-50">
         {toast}
         <button onClick={() => setToast('')} className="ml-3 text-white/70 hover:text-white">✕</button>
       </div>
     )}
+    </>
   );
 }
