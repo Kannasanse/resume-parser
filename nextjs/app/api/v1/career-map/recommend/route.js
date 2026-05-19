@@ -1,7 +1,18 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth-helpers.js';
 import supabase from '@/lib/supabase.js';
-import { callClaude } from '@/lib/aiHelpers.js';
+import Groq from 'groq-sdk';
+
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+async function callGroq(prompt, maxTokens = 400) {
+  const res = await groq.chat.completions.create({
+    model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+    max_tokens: maxTokens,
+    messages: [{ role: 'user', content: prompt }],
+  });
+  return res.choices?.[0]?.message?.content ?? '';
+}
 
 export async function POST(request) {
   try {
@@ -44,7 +55,7 @@ ${(allRoles || []).map(r => `${r.id}: ${r.title} (${r.category}, ${r.seniority})
 Return ONLY valid JSON array (no markdown) with exactly 5 role IDs, ordered best-match first:
 ["role-id-1", "role-id-2", "role-id-3", "role-id-4", "role-id-5"]`;
 
-    const raw = await callClaude(prompt, 400);
+    const raw = await callGroq(prompt, 400);
     let recommendedIds = [];
     try {
       const match = raw.match(/\[[\s\S]*?\]/);

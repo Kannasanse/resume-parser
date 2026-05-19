@@ -1,7 +1,18 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth-helpers.js';
 import supabase from '@/lib/supabase.js';
-import { callClaude } from '@/lib/aiHelpers.js';
+import Groq from 'groq-sdk';
+
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+async function callGroq(prompt, maxTokens = 800) {
+  const res = await groq.chat.completions.create({
+    model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+    max_tokens: maxTokens,
+    messages: [{ role: 'user', content: prompt }],
+  });
+  return res.choices?.[0]?.message?.content ?? '';
+}
 
 export async function POST(request) {
   try {
@@ -36,7 +47,7 @@ Return ONLY valid JSON (no markdown, no explanation) with this exact shape:
   "summary": "2-3 sentence professional summary"
 }`;
 
-    const raw = await callClaude(prompt, 800);
+    const raw = await callGroq(prompt, 800);
     let profile;
     try {
       const jsonMatch = raw.match(/\{[\s\S]*\}/);
