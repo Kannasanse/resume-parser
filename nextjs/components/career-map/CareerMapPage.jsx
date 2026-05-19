@@ -17,6 +17,7 @@ export default function CareerMapPage() {
   const [sessionId, setSessionId] = useState(null);
   const [profile, setProfile] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   const [graphData, setGraphData] = useState(null);
   const [skillGapData, setSkillGapData] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
@@ -52,15 +53,17 @@ export default function CareerMapPage() {
 
   async function handleQuestionnaire(answers) {
     setError('');
+    setRecommendationsLoading(true);
+    setStep(STEPS.RECOMMENDATIONS);
     const res = await fetch('/api/v1/career-map/recommend', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ session_id: sessionId, questionnaire: answers }),
     });
     const data = await res.json();
+    setRecommendationsLoading(false);
     if (!res.ok) { setError(data.error || 'Failed to get recommendations'); return; }
     setRecommendations(data.recommended_roles || []);
-    setStep(STEPS.RECOMMENDATIONS);
   }
 
   async function handleSelectRole(roleId) {
@@ -137,7 +140,7 @@ export default function CareerMapPage() {
           <Questionnaire profile={profile} onSubmit={handleQuestionnaire} loading={!profile} />
         )}
         {step === STEPS.RECOMMENDATIONS && (
-          <Recommendations roles={recommendations} onSelect={handleSelectRole} />
+          <Recommendations roles={recommendations} loading={recommendationsLoading} onSelect={handleSelectRole} />
         )}
         {step === STEPS.GRAPH && graphData && (
           <div className="relative" style={{ height: 'calc(100vh - 130px)' }}>

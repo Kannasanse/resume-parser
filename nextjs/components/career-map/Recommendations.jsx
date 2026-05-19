@@ -13,7 +13,7 @@ const OUTLOOK_COLOR = {
   Low: 'bg-red-50 text-red-600',
 };
 
-export default function Recommendations({ roles, onSelect }) {
+export default function Recommendations({ roles, loading, onSelect }) {
   const [selecting, setSelecting] = useState(null);
 
   async function handleSelect(roleId) {
@@ -22,10 +22,30 @@ export default function Recommendations({ roles, onSelect }) {
     setSelecting(null);
   }
 
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-[var(--c-text)]">Finding the best roles for you…</h2>
+          <p className="text-sm text-[var(--c-text-muted)] mt-1">Our AI is analysing your profile and preferences.</p>
+        </div>
+        {[1, 2, 3].map(i => (
+          <div key={i} className="ds-card p-5 space-y-3">
+            <div className="ds-skel h-4 w-48 rounded" />
+            <div className="ds-skel h-3 w-32 rounded" />
+            <div className="ds-skel h-3 w-full rounded" />
+            <div className="ds-skel h-3 w-3/4 rounded" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   if (!roles.length) {
     return (
-      <div className="ds-card p-8 text-center text-sm text-[var(--c-text-muted)]">
-        Loading recommendations…
+      <div className="ds-card p-8 text-center space-y-3">
+        <p className="text-sm font-medium text-[var(--c-text)]">No recommendations found</p>
+        <p className="text-xs text-[var(--c-text-muted)]">This may be because the role database hasn't been seeded yet. Please run the seed SQL in Supabase and try again.</p>
       </div>
     );
   }
