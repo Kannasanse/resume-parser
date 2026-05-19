@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import WeekNavigation from './WeekNavigation';
 import TopicCard from './TopicCard';
+import PreferenceModal from './PreferenceModal';
 
 export default function StudyPlanPage({ studyPlanId }) {
   const [plan, setPlan] = useState(null);
@@ -10,6 +11,8 @@ export default function StudyPlanPage({ studyPlanId }) {
   const [activeWeek, setActiveWeek] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showPrefs, setShowPrefs] = useState(false);
+  const [toast, setToast] = useState('');
 
   async function load() {
     setLoading(true);
@@ -28,6 +31,10 @@ export default function StudyPlanPage({ studyPlanId }) {
   }
 
   useEffect(() => { load(); }, [studyPlanId]);
+
+  useEffect(() => {
+    if (toast) { const t = setTimeout(() => setToast(''), 5000); return () => clearTimeout(t); }
+  }, [toast]);
 
   const weekTopics = topics.filter(t => t.week_number === activeWeek);
   const weeks = [...new Set(topics.map(t => t.week_number))].sort((a, b) => a - b);
@@ -77,6 +84,17 @@ export default function StudyPlanPage({ studyPlanId }) {
             <div className="w-32 h-2 bg-[var(--c-primary-light)] rounded-full overflow-hidden">
               <div className="h-full bg-[var(--c-primary)] rounded-full transition-all" style={{ width: `${plan?.overall_pct || 0}%` }} />
             </div>
+            <button
+              onClick={() => setShowPrefs(true)}
+              title="Adjust preferences"
+              className="p-2 text-[var(--c-text-muted)] hover:text-[var(--c-primary)] border border-[var(--c-border)] rounded-lg transition-colors"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
+                <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.97 16.97l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.97 7.03l2.83-2.83"/>
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -111,5 +129,26 @@ export default function StudyPlanPage({ studyPlanId }) {
         </div>
       </div>
     </div>
+
+    {plan && (
+      <PreferenceModal
+        open={showPrefs}
+        onClose={() => setShowPrefs(false)}
+        existingPlan={{
+          id: studyPlanId,
+          preferences: plan.preferences,
+          totalHours: plan.total_hours,
+          totalWeeks: plan.total_weeks,
+          targetRoleTitle: plan.target_role_title,
+        }}
+        onPlanUpdated={msg => { setToast(msg); load(); }}
+      />
+    )}
+    {toast && (
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-green-700 text-white text-sm font-medium px-5 py-2.5 rounded-full shadow-lg z-50 animate-fade-in">
+        {toast}
+        <button onClick={() => setToast('')} className="ml-3 text-white/70 hover:text-white">✕</button>
+      </div>
+    )}
   );
 }

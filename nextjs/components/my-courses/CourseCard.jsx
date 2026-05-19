@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import CourseCardMenu from './CourseCardMenu';
+import PreferenceModal from '../career-map/roadmap/PreferenceModal';
 
 const STATUS_GRADIENT = {
   active_progress: 'linear-gradient(135deg, #185FA5, #0C447C)',
@@ -34,6 +36,15 @@ function resumeHref(course) {
 }
 
 export default function CourseCard({ course, onStatusChange, onDelete, onResetProgress }) {
+  const [prefModalOpen, setPrefModalOpen] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
+
+  useEffect(() => {
+    if (!successMsg) return;
+    const t = setTimeout(() => setSuccessMsg(''), 4000);
+    return () => clearTimeout(t);
+  }, [successMsg]);
+
   const variant = getCardVariant(course);
   const chip = STATUS_CHIP[variant];
   const gradient = STATUS_GRADIENT[variant];
@@ -52,6 +63,7 @@ export default function CourseCard({ course, onStatusChange, onDelete, onResetPr
             onStatusChange={onStatusChange}
             onDelete={onDelete}
             onResetProgress={onResetProgress}
+            onAdjustPreferences={() => setPrefModalOpen(true)}
           />
         </div>
 
@@ -143,6 +155,25 @@ export default function CourseCard({ course, onStatusChange, onDelete, onResetPr
           </Link>
         </div>
       </div>
+
+      {successMsg && (
+        <div className="px-4 py-2 bg-green-50 border-t border-green-200 text-xs text-green-700 font-medium">
+          {successMsg}
+        </div>
+      )}
+
+      <PreferenceModal
+        open={prefModalOpen}
+        onClose={() => setPrefModalOpen(false)}
+        existingPlan={{
+          id: course.id,
+          preferences: course.preferences,
+          totalHours: course.totalHours,
+          totalWeeks: course.estimatedWeeks,
+          targetRoleTitle: course.targetRoleTitle,
+        }}
+        onPlanUpdated={msg => { setSuccessMsg(msg); onResetProgress(course.id); }}
+      />
     </div>
   );
 }

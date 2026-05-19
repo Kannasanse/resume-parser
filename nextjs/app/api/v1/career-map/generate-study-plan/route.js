@@ -12,6 +12,17 @@ export async function POST(request) {
     const { sessionId, targetRoleId, targetRoleTitle, missingSkills, preferences } = await request.json();
 
     const { hoursPerDay, daysPerWeek, learningStyle, currentLevel } = preferences;
+    const styles = Array.isArray(learningStyle) ? learningStyle : [learningStyle];
+    const isVideoFirst = styles.includes('video-first');
+    const isMixed = styles.includes('mixed');
+    let sectionTypeRules = '';
+    if (isVideoFirst) {
+      sectionTypeRules = `Section structure: The FIRST section of every topic must be type "video-only" with heading starting "Watch: " and estimatedReadMinutes: 0. Remaining sections are type "text".`;
+    } else if (isMixed) {
+      sectionTypeRules = `Section structure: Every 2nd section (order 2, 4, 6) must be type "video-only" with heading starting "Watch: " and estimatedReadMinutes: 0. Other sections are type "text".`;
+    } else {
+      sectionTypeRules = `Section structure: All sections are type "text". No video-only sections.`;
+    }
 
     const prompt = `You are a curriculum designer creating a personalised study plan.
 
@@ -19,8 +30,10 @@ Target role: ${targetRoleTitle}
 Skills to learn: ${missingSkills.join(', ')}
 Study hours/day: ${hoursPerDay}
 Study days/week: ${daysPerWeek}
-Learning style: ${Array.isArray(learningStyle) ? learningStyle.join(', ') : learningStyle}
+Learning style: ${styles.join(', ')}
 Current level: ${currentLevel}
+
+${sectionTypeRules}
 
 Create a week-by-week study plan. Each week contains 2-4 topics.
 Each topic covers one skill or one sub-area of a skill.
@@ -56,6 +69,7 @@ Return ONLY a JSON object:
               "id": "s1",
               "order": 1,
               "heading": "specific section heading",
+              "type": "video-only|text|text-with-video",
               "estimatedReadMinutes": number
             }
           ]
@@ -106,6 +120,7 @@ Return ONLY a JSON object:
         const sections = (topic.sections || []).map((s, i) => ({
           ...s,
           id: `${randomUUID()}`,
+          type: s.type || 'text',
           content: null,
           content_type: 'placeholder',
           is_generated: false,

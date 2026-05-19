@@ -42,6 +42,25 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
 
   useEffect(() => { load(); }, [topicId]);
 
+  // Lazy video fetch if topic has queries but no videos
+  useEffect(() => {
+    if (!topic) return;
+    if ((topic.youtube_videos?.length || 0) > 0) return;
+    if (!topic.youtube_queries?.length) return;
+    fetch('/api/v1/career-map/fetch-youtube-videos/single', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ topicId }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.videos) {
+          setTopic(prev => prev ? { ...prev, youtube_videos: data.videos } : prev);
+        }
+      })
+      .catch(() => {});
+  }, [topic?.id]);
+
   // Deep-link: scroll to ?section= after load
   useEffect(() => {
     const sectionId = searchParams?.get('section');
@@ -162,6 +181,7 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
                   onToggleComplete={(completed) => toggleSection(section.id, completed)}
                   onGenerated={(content) => handleSectionGenerated(section.id, content)}
                   precedingSections={sections.slice(0, idx).map(s => s.heading)}
+                  topicVideos={topic?.youtube_videos || []}
                 />
               </div>
             ))}

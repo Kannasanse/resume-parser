@@ -6,7 +6,7 @@ const STATUS_OPTIONS = [
   { value: 'paused', label: 'Pause course' },
 ];
 
-export default function CourseCardMenu({ course, onStatusChange, onDelete, onResetProgress }) {
+export default function CourseCardMenu({ course, onStatusChange, onDelete, onResetProgress, onAdjustPreferences }) {
   const [open, setOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -57,6 +57,13 @@ export default function CourseCardMenu({ course, onStatusChange, onDelete, onRes
                   {o.label}
                 </button>
               ))}
+              <button
+                onClick={e => { e.stopPropagation(); onAdjustPreferences(); setOpen(false); }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[#185FA5] hover:bg-blue-50 transition-colors"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41"/></svg>
+                Adjust preferences
+              </button>
               <button
                 onClick={e => { e.stopPropagation(); setConfirmReset(true); }}
                 className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"

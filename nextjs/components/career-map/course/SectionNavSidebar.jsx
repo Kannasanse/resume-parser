@@ -11,6 +11,18 @@ export default function SectionNavSidebar({ sections, completedSectionIds, activ
         {sections.map((section, idx) => {
           const isCompleted = completedSectionIds.has(section.id);
           const isActive = idx === activeIndex;
+          const type = section.type || 'text';
+          const SectionIcon = () => {
+            if (isCompleted) return (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            );
+            if (type === 'video-only') return (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D93025" strokeWidth="1.75"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16"/></svg>
+            );
+            return (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            );
+          };
           return (
             <button
               key={section.id}
@@ -20,14 +32,8 @@ export default function SectionNavSidebar({ sections, completedSectionIds, activ
                 isCompleted ? 'text-[var(--c-success)]' : 'text-[var(--c-text-muted)] hover:bg-gray-50'
               }`}
             >
-              <div className={`w-4 h-4 mt-0.5 rounded border flex-shrink-0 flex items-center justify-center ${
-                isCompleted ? 'bg-[var(--c-success)] border-[var(--c-success)]' : 'border-current'
-              }`}>
-                {isCompleted && (
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                )}
+              <div className="w-4 h-4 mt-0.5 flex-shrink-0 flex items-center justify-center">
+                <SectionIcon />
               </div>
               <div className="flex-1 min-w-0">
                 <span className="text-xs font-mono text-[var(--c-text-muted)] mr-1">
