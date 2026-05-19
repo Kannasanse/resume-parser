@@ -1,12 +1,14 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import SectionNavSidebar from './SectionNavSidebar';
 import SectionBlock from './SectionBlock';
 import BottomNavBar from './BottomNavBar';
 import CompletionCelebration from '../roadmap/CompletionCelebration';
 
 export default function CourseDetailPage({ studyPlanId, topicId }) {
+  const searchParams = useSearchParams();
   const [topic, setTopic] = useState(null);
   const [completedSectionIds, setCompletedSectionIds] = useState(new Set());
   const [activeSection, setActiveSection] = useState(0);
@@ -39,6 +41,16 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
   }
 
   useEffect(() => { load(); }, [topicId]);
+
+  // Deep-link: scroll to ?section= after load
+  useEffect(() => {
+    const sectionId = searchParams?.get('section');
+    if (!sectionId || !topic) return;
+    const idx = (topic.sections || []).findIndex(s => s.id === sectionId);
+    if (idx >= 0) {
+      setTimeout(() => scrollToSection(idx), 300);
+    }
+  }, [topic]);
 
   function scrollToSection(idx) {
     setActiveSection(idx);
