@@ -27,19 +27,20 @@ export async function POST(request) {
 
     const now = new Date().toISOString();
 
-    // Update the question row with answer
-    await supabase
-      .from('career_map_questions')
-      .update({
-        answer_value:    answerValue,
-        answer_label:    answerLabel,
-        confidence_after: confidenceAfter,
-        should_continue: shouldContinue,
-        answered_at:     now,
-      })
-      .eq('session_id', sessionId)
-      .eq('question_number', questionNumber)
-      .catch(() => {}); // non-fatal if migration not run
+    // Update the question row with answer (non-fatal if migration not run)
+    try {
+      await supabase
+        .from('career_map_questions')
+        .update({
+          answer_value:    answerValue,
+          answer_label:    answerLabel,
+          confidence_after: confidenceAfter,
+          should_continue: shouldContinue,
+          answered_at:     now,
+        })
+        .eq('session_id', sessionId)
+        .eq('question_number', questionNumber);
+    } catch (_) {}
 
     // Update session counters
     const sessionUpdate = {
@@ -51,11 +52,12 @@ export async function POST(request) {
       sessionUpdate.confidence_score       = confidenceAfter;
     }
 
-    await supabase
-      .from('career_map_sessions')
-      .update(sessionUpdate)
-      .eq('id', sessionId)
-      .catch(() => {});
+    try {
+      await supabase
+        .from('career_map_sessions')
+        .update(sessionUpdate)
+        .eq('id', sessionId);
+    } catch (_) {}
 
     return NextResponse.json({ saved: true, moveToRecommendations: !shouldContinue });
   } catch (err) {

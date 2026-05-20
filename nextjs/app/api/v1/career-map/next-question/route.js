@@ -55,19 +55,20 @@ export async function POST(request) {
     const effectiveContinue = questionNumber < 5 ? true : shouldContinue;
 
     // Save question row to DB (unanswered — answer saved by submit-answer)
-    await supabase
-      .from('career_map_questions')
-      .upsert({
-        session_id:      sessionId,
-        question_number: questionNumber,
-        question_text:   question.questionText,
-        question_type:   question.questionType,
-        question_intent: question.questionIntent,
-        options:         question.options,
-        confidence_after: confidenceAfter,
-        should_continue: effectiveContinue,
-      }, { onConflict: 'session_id,question_number' })
-      .catch(() => {}); // non-fatal if migration not run
+    try {
+      await supabase
+        .from('career_map_questions')
+        .upsert({
+          session_id:      sessionId,
+          question_number: questionNumber,
+          question_text:   question.questionText,
+          question_type:   question.questionType,
+          question_intent: question.questionIntent,
+          options:         question.options,
+          confidence_after: confidenceAfter,
+          should_continue: effectiveContinue,
+        }, { onConflict: 'session_id,question_number' });
+    } catch (_) {}
 
     return NextResponse.json({
       question,
