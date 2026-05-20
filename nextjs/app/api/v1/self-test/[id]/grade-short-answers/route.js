@@ -82,12 +82,20 @@ Do not use "Score", "SCORE", or any other capitalisation.`;
         });
 
         const text = completion.choices?.[0]?.message?.content;
+        console.log('=== GRADING DEBUG ===');
+        console.log('Question:', questionText);
+        console.log('User answer:', userAnswer);
+        console.log('Raw Groq response:', text);
         if (!text || text.trim() === '') {
+          console.log('=== END GRADING (empty response) ===');
           return { questionIndex, score: 0.5, feedback: 'Unable to grade automatically. Please review manually.' };
         }
         const parsed = JSON.parse(text);
+        console.log('parsed.score:', parsed.score, '| parsed.Score:', parsed.Score);
         const rawScore = parsed.score ?? parsed.Score ?? parsed.grade ?? parsed.Grade ?? parsed.rating ?? parsed.Rating;
         const score = Math.max(0, Math.min(1, parseFloat(rawScore) || 0));
+        console.log('Final score:', score);
+        console.log('=== END GRADING ===');
 
         return {
           questionIndex,
