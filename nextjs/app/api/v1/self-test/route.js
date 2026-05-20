@@ -201,7 +201,10 @@ export async function POST(request) {
     console.log('AI raw question count:', generated?.questions?.length);
     console.log('AI questions sample:', JSON.stringify(generated?.questions?.[0]));
 
-    const valid = (generated?.questions || []).filter(q => {
+    const normalized = (generated?.questions || []).map(normalizeQuestion);
+    console.log('Normalized sample:', JSON.stringify(normalized?.[0]));
+
+    const valid = normalized.filter(q => {
       if (!['mcq', 'true_false', 'short_answer'].includes(q.type)) return false;
       if (!q.question_text?.trim()) return false;
       if (q.type === 'mcq' && (!Array.isArray(q.options) || q.options.length < 2)) return false;
@@ -212,19 +215,8 @@ export async function POST(request) {
     }).slice(0, totalCount);
 
     console.log('Valid question count after filter:', valid.length);
-    if (valid.length < generated?.questions?.length) {
-      const rejected = (generated?.questions || []).filter(q => {
-        if (!['mcq', 'true_false', 'short_answer'].includes(q.type)) return true;
-        if (!q.question_text?.trim()) return true;
-        if (q.type === 'mcq' && (!Array.isArray(q.options) || q.options.length < 2)) return true;
-        if (q.type === 'mcq' && !q.options.some(o => o.is_correct)) return true;
-        if (q.type === 'true_false' && !['true', 'false'].includes(q.correct_answer)) return true;
-        if (q.type === 'short_answer' && !q.model_answer?.trim()) return true;
-        return false;
-      });
-      console.log('Rejected questions (first):', JSON.stringify(rejected[0]));
-    }
     if (!valid.length) {
+      console.error('All questions rejected — first normalized:', JSON.stringify(normalized[0]));
       return Response.json({
         error: 'We were unable to generate questions at this time. Please try again.',
       }, { status: 422 });
@@ -315,6 +307,48 @@ export async function GET(request) {
     if (err instanceof Response) return err;
     return Response.json({ error: err.message }, { status: 500 });
   }
+}
+
+// ── normalizeQuestion — handle AI field name variants ─────────────────────────
+function normalizeQuestion(q) {
+  if (!q || typeof q !== 'object') return q;
+  const out = { ...q };
+
+  // question_text aliases
+  out.question_text = q.question_text || q.question || q.text || q.questionText || '';
+
+  // type aliases + lowercase
+  const rawType = (q.type || q.question_type || q.questionType || 'mcq').toLowerCase();
+  out.type = rawType === 'short answer' || rawType === 'shortanswer' ? 'short_answer'
+    : rawType === 'true/false' || rawType === 'truefalse' ? 'true_false'
+    : rawType;
+
+  // points
+  out.points = q.points || (out.type === 'short_answer' ? 2 : 1);
+
+  // MCQ: normalise options.is_correct
+  if (out.type === 'mcq' && Array.isArray(q.options)) {
+    out.options = q.options.map(opt => ({
+      ...opt,
+      option_text: opt.option_text || opt.text || opt.option || opt.value || '',
+      is_correct:  opt.is_correct ?? opt.correct ?? opt.isCorrect ?? opt.is_right ?? false,
+    }));
+  }
+
+  // True/false: normalise correct_answer
+  if (out.type === 'true_false') {
+    const ca = q.correct_answer ?? q.correctAnswer ?? q.answer ?? q.correct;
+    out.correct_answer = String(ca).toLowerCase() === 'true' ? 'true' : 'false';
+  }
+
+  // Short answer: normalise model_answer
+  if (out.type === 'short_answer') {
+    out.model_answer = q.model_answer || q.modelAnswer || q.answer || q.correct_answer || q.sample_answer || q.ideal_answer || q.solution || '';
+    out.grading_rubric  = q.grading_rubric  || q.gradingRubric  || q.rubric   || '';
+    out.answer_keywords = q.answer_keywords || q.answerKeywords || q.keywords || [];
+  }
+
+  return out;
 }
 
 // ── callAI ────────────────────────────────────────────────────────────────────
