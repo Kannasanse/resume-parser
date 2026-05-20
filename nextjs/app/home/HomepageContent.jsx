@@ -3,138 +3,173 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-// ── Design tokens ──────────────────────────────────────────────────────────────
-const C = {
-  primary:   '#185FA5',
-  dark:      '#0C447C',
-  light:     '#E6F1FB',
-  teal:      '#1D9E75',
-  charcoal:  '#2C2C2A',
-  secondary: '#6B7280',
-  border:    '#D1DCE8',
-  surface:   '#FFFFFF',
-  bg:        '#F4F8FC',
-};
-
-// ── Icons ──────────────────────────────────────────────────────────────────────
-const FEAT_ICON_PATHS = {
-  preview:  ['M4 5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5z', 'M8 21h8', 'M12 17v4'],
-  ai:       ['M12 2L2 7l10 5 10-5-10-5z', 'M2 17l10 5 10-5', 'M2 12l10 5 10-5'],
-  ats:      ['M18 20V10', 'M12 20V4', 'M6 20v-6'],
-  export:   ['M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4', 'M7 10l5 5 5-5', 'M12 15V3'],
-  templates:['M4 5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5z', 'M4 14a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-5z', 'M14 5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V5z'],
-  speed:    ['M13 2L3 14h9l-1 8 10-12h-9l1-8z'],
-  default:  ['M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z'],
-};
-
-const MenuIcon = () => (<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>);
-const CloseIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>);
-const CheckIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>);
-
-const LinkedInIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>);
-const XIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.91-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>);
-const GithubIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>);
-
-// ── Scroll-reveal ──────────────────────────────────────────────────────────────
-function Reveal({ children, delay = 0, className = '' }) {
+// ── Scroll-reveal hook ────────────────────────────────────────────────────────
+function useScrollReveal(threshold = 0.12) {
   const ref = useRef(null);
-  const [visible, setVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   useEffect(() => {
     const el = ref.current; if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold: 0.12 });
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setIsVisible(true); obs.disconnect(); }
+    }, { threshold });
     obs.observe(el);
     return () => obs.disconnect();
-  }, []);
-  return (
-    <div ref={ref} className={className} style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(20px)', transition: `opacity 400ms ease ${delay}ms, transform 400ms ease ${delay}ms` }}>
-      {children}
-    </div>
-  );
+  }, [threshold]);
+  return { ref, isVisible };
 }
 
-function scrollTo(id) {
-  const el = document.getElementById(id);
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
+// ── Icons ─────────────────────────────────────────────────────────────────────
+const ArrowRight = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+  </svg>
+);
+const ChevronDown = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="6 9 12 15 18 9"/>
+  </svg>
+);
+const CheckCircle = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" fill="#D1FAE5" stroke="#1D9E75" strokeWidth="1.5"/>
+    <polyline points="9 12 11 14 15 10" stroke="#1D9E75" strokeWidth="2"/>
+  </svg>
+);
+const LinkedInIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>);
+const XIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.91-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>);
+const GithubIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>);
+const MenuIcon = () => (<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>);
+const CloseIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>);
+const GlobeIcon = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>);
 
-// ── Navbar ─────────────────────────────────────────────────────────────────────
-const ALL_NAV_LINKS = [
-  { label: 'Features',     id: 'features',    sectionKey: 'features' },
-  { label: 'How it works', id: 'how-it-works', sectionKey: 'steps'   },
-  { label: 'Pricing',      id: 'pricing',      sectionKey: 'pricing'  },
-];
-
-function Navbar({ heroCta, activeSection, visibleSectionKeys, userRole }) {
+// ── Section 1: Navbar ─────────────────────────────────────────────────────────
+function HomeNavbar() {
   const [scrolled, setScrolled] = useState(false);
-  const [drawerOpen, setDrawer] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 64);
-    window.addEventListener('scroll', fn, { passive: true });
-    return () => window.removeEventListener('scroll', fn);
+    const onScroll = () => setScrolled(window.scrollY > 80);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const navLinks = ALL_NAV_LINKS.filter(l => visibleSectionKeys.includes(l.sectionKey));
-  const ctaLabel = heroCta || 'Get started free';
-
-  const NavLink = ({ label, id, mobile = false }) => (
-    <button onClick={() => { scrollTo(id); setDrawer(false); }}
-      style={{ fontSize: mobile ? 16 : 14, fontWeight: 500, color: activeSection === id ? C.primary : C.charcoal, background: activeSection === id ? C.light : 'transparent', borderRadius: 8, padding: mobile ? '10px 16px' : '6px 12px', border: 'none', cursor: 'pointer', transition: 'color 200ms, background 200ms', display: 'block', width: mobile ? '100%' : 'auto', textAlign: mobile ? 'left' : 'center' }}
-      onMouseEnter={e => { if (activeSection !== id) { e.currentTarget.style.color = C.primary; e.currentTarget.style.background = C.light; }}}
-      onMouseLeave={e => { if (activeSection !== id) { e.currentTarget.style.color = C.charcoal; e.currentTarget.style.background = 'transparent'; }}}
-    >{label}</button>
-  );
+  const navLinks = [
+    { label: 'Features', href: '#features' },
+    { label: 'Career Map', href: '#career-map' },
+    { label: 'Blog', href: '#' },
+  ];
 
   return (
     <>
-      <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: C.surface, borderBottom: `1px solid ${C.border}`, boxShadow: scrolled ? '0 2px 8px rgba(12,68,124,0.10)' : 'none', transition: 'box-shadow 150ms', height: 64 }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} className="px-4 sm:px-8">
-          <Link href="/home" style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-            <Image src="/logo.png" alt="Proflect" width={120} height={133} style={{ height: 40, width: 'auto' }} priority unoptimized />
+      <nav
+        className="fixed top-0 left-0 right-0 z-50 transition-all"
+        style={{
+          background: scrolled ? 'rgba(255,255,255,0.88)' : 'transparent',
+          backdropFilter: scrolled ? 'blur(20px)' : 'none',
+          WebkitBackdropFilter: scrolled ? 'blur(20px)' : 'none',
+          borderBottom: scrolled ? '1px solid rgba(209,220,232,0.60)' : '1px solid transparent',
+          boxShadow: scrolled ? '0 2px 16px rgba(12,68,124,0.08)' : 'none',
+          transition: 'all 300ms cubic-bezier(0.16,1,0.3,1)',
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <Link href="/home" className="flex items-center">
+            <Image
+              src="/logo.png"
+              alt="Proflect"
+              width={120}
+              height={32}
+              className="h-8 w-auto transition-all"
+              style={{ filter: scrolled ? 'none' : 'brightness(0) invert(1)' }}
+            />
           </Link>
-          <div className="hidden lg:flex items-center gap-1">
-            {navLinks.map(l => <NavLink key={l.id} {...l} />)}
+
+          {/* Desktop nav */}
+          <div className="hidden md:flex items-center gap-8">
+            {navLinks.map(l => (
+              <a
+                key={l.label}
+                href={l.href}
+                className="text-sm font-medium transition-colors"
+                style={{ color: scrolled ? '#2C2C2A' : 'rgba(255,255,255,0.85)' }}
+                onMouseEnter={e => e.currentTarget.style.color = '#185FA5'}
+                onMouseLeave={e => e.currentTarget.style.color = scrolled ? '#2C2C2A' : 'rgba(255,255,255,0.85)'}
+              >
+                {l.label}
+              </a>
+            ))}
           </div>
-          <div className="hidden sm:flex items-center gap-2">
-            {userRole ? (
-              <Link href={userRole === 'admin' ? '/resumes' : '/builder'}
-                style={{ fontSize: 14, fontWeight: 600, color: '#fff', background: C.primary, borderRadius: 8, padding: '7px 18px', textDecoration: 'none', boxShadow: '0 4px 16px rgba(12,68,124,0.20)', transition: 'background 200ms' }}
-                onMouseEnter={e => e.currentTarget.style.background = C.dark}
-                onMouseLeave={e => e.currentTarget.style.background = C.primary}>
-                {userRole === 'admin' ? 'Dashboard' : 'My Resumes'}
-              </Link>
-            ) : (
-              <>
-                <Link href="/login" style={{ fontSize: 14, fontWeight: 500, color: C.primary, border: `1px solid ${C.primary}`, borderRadius: 8, padding: '7px 18px', background: 'transparent', textDecoration: 'none', transition: 'background 200ms' }} onMouseEnter={e => e.currentTarget.style.background = C.light} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>Log in</Link>
-                <Link href="/signup" style={{ fontSize: 14, fontWeight: 600, color: '#fff', background: C.primary, borderRadius: 8, padding: '7px 18px', textDecoration: 'none', boxShadow: '0 4px 16px rgba(12,68,124,0.20)', transition: 'background 200ms' }} onMouseEnter={e => e.currentTarget.style.background = C.dark} onMouseLeave={e => e.currentTarget.style.background = C.primary}>{ctaLabel}</Link>
-              </>
-            )}
+
+          <div className="hidden md:flex items-center gap-3">
+            <Link
+              href="/login"
+              className="px-4 py-2 text-sm font-semibold rounded-lg border transition-all"
+              style={{
+                color: scrolled ? '#185FA5' : 'rgba(255,255,255,0.85)',
+                borderColor: scrolled ? '#185FA5' : 'rgba(255,255,255,0.35)',
+                background: 'transparent',
+              }}
+            >
+              Log in
+            </Link>
+            <Link
+              href="/signup"
+              className="px-4 py-2 text-sm font-semibold rounded-lg transition-all"
+              style={{
+                background: scrolled ? '#185FA5' : 'white',
+                color: scrolled ? 'white' : '#185FA5',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              }}
+            >
+              Get started free
+            </Link>
           </div>
-          <button className="sm:hidden" onClick={() => setDrawer(true)} aria-label="Open menu" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.charcoal, padding: 4 }}><MenuIcon /></button>
+
+          {/* Mobile hamburger */}
+          <button
+            onClick={() => setMenuOpen(true)}
+            className="md:hidden p-2"
+            style={{ color: scrolled ? '#2C2C2A' : 'white' }}
+          >
+            <MenuIcon />
+          </button>
         </div>
       </nav>
-      {drawerOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 200 }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }} onClick={() => setDrawer(false)} />
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, background: C.surface, borderBottom: `1px solid ${C.border}`, padding: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <Image src="/logo.png" alt="Proflect" width={120} height={133} style={{ height: 40, width: 'auto' }} unoptimized />
-              <button onClick={() => setDrawer(false)} aria-label="Close menu" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.charcoal }}><CloseIcon /></button>
+
+      {/* Mobile drawer */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-[100] flex justify-end">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setMenuOpen(false)} />
+          <div
+            className="relative w-72 h-full flex flex-col p-6"
+            style={{
+              background: 'rgba(15,26,46,0.97)',
+              backdropFilter: 'blur(20px)',
+            }}
+          >
+            <div className="flex items-center justify-between mb-8">
+              <Image src="/logo.png" alt="Proflect" width={100} height={28} className="h-7 w-auto" style={{ filter: 'brightness(0) invert(1)' }} />
+              <button onClick={() => setMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.6)' }}><CloseIcon /></button>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {navLinks.map(l => <NavLink key={l.id} {...l} mobile />)}
+            <div className="flex flex-col gap-4 flex-1">
+              {navLinks.map(l => (
+                <a key={l.label} href={l.href} onClick={() => setMenuOpen(false)}
+                  className="text-base font-medium" style={{ color: 'rgba(255,255,255,0.80)' }}>
+                  {l.label}
+                </a>
+              ))}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>
-              {userRole ? (
-                <Link href={userRole === 'admin' ? '/resumes' : '/builder'} style={{ textAlign: 'center', fontSize: 14, fontWeight: 600, color: '#fff', background: C.primary, borderRadius: 8, padding: '10px 0', textDecoration: 'none' }}>
-                  {userRole === 'admin' ? 'Dashboard' : 'My Resumes'}
-                </Link>
-              ) : (
-                <>
-                  <Link href="/login" style={{ textAlign: 'center', fontSize: 14, fontWeight: 500, color: C.primary, border: `1px solid ${C.primary}`, borderRadius: 8, padding: '10px 0', textDecoration: 'none' }}>Log in</Link>
-                  <Link href="/signup" style={{ textAlign: 'center', fontSize: 14, fontWeight: 600, color: '#fff', background: C.primary, borderRadius: 8, padding: '10px 0', textDecoration: 'none' }}>{ctaLabel}</Link>
-                </>
-              )}
+            <div className="flex flex-col gap-3 mt-8">
+              <Link href="/login" onClick={() => setMenuOpen(false)}
+                className="w-full text-center py-2.5 text-sm font-semibold rounded-lg border"
+                style={{ color: 'rgba(255,255,255,0.85)', borderColor: 'rgba(255,255,255,0.25)' }}>
+                Log in
+              </Link>
+              <Link href="/signup" onClick={() => setMenuOpen(false)}
+                className="w-full text-center py-2.5 text-sm font-semibold rounded-lg"
+                style={{ background: 'white', color: '#185FA5' }}>
+                Get started free
+              </Link>
             </div>
           </div>
         </div>
@@ -143,165 +178,693 @@ function Navbar({ heroCta, activeSection, visibleSectionKeys, userRole }) {
   );
 }
 
-// ── Hero visual (static decorative) ───────────────────────────────────────────
-function HeroVisual() {
-  const Bar = ({ w, h = 12, mt = 8 }) => (<div style={{ height: h, width: w, background: C.border, borderRadius: 4, marginTop: mt }} />);
-  const Label = ({ text }) => (<div style={{ fontSize: 9, fontWeight: 600, color: C.primary, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 16, marginBottom: 4 }}>{text}</div>);
+// ── Section 2: Hero ───────────────────────────────────────────────────────────
+const FEATURE_PILLS = [
+  { emoji: '📄', label: 'Resume Builder', href: '#resume-builder' },
+  { emoji: '🗺', label: 'Career Map', href: '#career-map' },
+  { emoji: '💼', label: 'Portfolio', href: '#portfolio' },
+  { emoji: '🎯', label: 'Interview Prep', href: '#interview-prep' },
+  { emoji: '📚', label: 'Study Plans', href: '#study-plans' },
+];
+
+function HeroSection() {
   return (
-    <div style={{ borderRadius: 16, overflow: 'hidden', boxShadow: '0 8px 32px rgba(12,68,124,0.16)', border: `1px solid ${C.border}`, background: C.surface }}>
-      <div style={{ background: C.primary, padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>Proflect</span>
-        <span style={{ fontSize: 10, fontWeight: 600, color: C.primary, background: C.light, borderRadius: 99, padding: '2px 10px' }}>Live Preview</span>
+    <section
+      className="relative min-h-screen flex flex-col items-center justify-center text-center overflow-hidden"
+      style={{
+        background: `
+          radial-gradient(ellipse at 15% 50%, rgba(24,95,165,0.30) 0%, transparent 55%),
+          radial-gradient(ellipse at 85% 20%, rgba(29,158,117,0.20) 0%, transparent 55%),
+          radial-gradient(ellipse at 50% 90%, rgba(12,68,124,0.25) 0%, transparent 55%),
+          linear-gradient(160deg, #0F1A2E 0%, #0A1020 60%, #0F2A1A 100%)
+        `,
+      }}
+    >
+      {/* Floating orbs */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="animate-float absolute" style={{ width: 500, height: 500, borderRadius: '50%', background: 'rgba(24,95,165,0.12)', filter: 'blur(80px)', top: '-10%', left: '-5%', animationDuration: '7s' }} />
+        <div className="animate-float absolute" style={{ width: 350, height: 350, borderRadius: '50%', background: 'rgba(29,158,117,0.10)', filter: 'blur(60px)', bottom: '5%', right: '-5%', animationDuration: '9s', animationDirection: 'reverse' }} />
+        <div className="animate-float absolute" style={{ width: 200, height: 200, borderRadius: '50%', background: 'rgba(245,158,11,0.08)', filter: 'blur(40px)', top: '10%', right: '10%', animationDuration: '5s', animationDelay: '2s' }} />
       </div>
-      <div style={{ background: C.bg, padding: 20, minHeight: 340, position: 'relative' }}>
-        <Bar w="62%" h={20} mt={0} /><Bar w="40%" h={14} mt={8} />
-        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}><Bar w="28%" h={10} mt={0} /><Bar w="22%" h={10} mt={0} /><Bar w="20%" h={10} mt={0} /></div>
-        <div style={{ height: 1, background: C.border, marginTop: 14 }} />
-        <Label text="Summary" /><Bar w="95%" h={10} mt={4} /><Bar w="88%" h={10} mt={5} /><Bar w="72%" h={10} mt={5} />
-        <Label text="Experience" />
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}><Bar w="45%" h={13} mt={4} /><Bar w="22%" h={10} mt={4} /></div>
-        <Bar w="90%" h={9} mt={6} /><Bar w="82%" h={9} mt={4} /><Bar w="75%" h={9} mt={4} />
-        <Label text="Skills" />
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
-          {['React', 'Node.js', 'Python', 'SQL', 'AWS'].map(s => (<span key={s} style={{ fontSize: 10, fontWeight: 500, color: C.primary, background: C.light, borderRadius: 4, padding: '3px 8px' }}>{s}</span>))}
+
+      {/* Content */}
+      <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6" style={{ paddingTop: 160, paddingBottom: 120 }}>
+        {/* Overline badge */}
+        <div className="animate-fade-in-up inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full text-sm font-semibold tracking-wide"
+          style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.90)', letterSpacing: '0.04em', animationDelay: '0ms' }}>
+          <span className="animate-pulse-glow" style={{ color: '#1D9E75' }}>✦</span>
+          Career intelligence platform
         </div>
-        <div style={{ position: 'absolute', bottom: 16, right: 16, width: 52, height: 52, borderRadius: '50%', background: '#fff', border: `2px solid ${C.teal}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(29,158,117,0.20)' }}>
-          <span style={{ fontSize: 14, fontWeight: 700, color: C.teal, lineHeight: 1 }}>87%</span>
-          <span style={{ fontSize: 8, color: C.teal, fontWeight: 500 }}>ATS</span>
+
+        {/* H1 */}
+        <h1
+          className="animate-fade-in-up font-black text-white"
+          style={{
+            fontSize: 'clamp(48px,7vw,80px)', lineHeight: 1.0, letterSpacing: '-0.04em',
+            animationDelay: '100ms',
+          }}
+        >
+          Your career,<br />
+          finally working<br />
+          <span style={{
+            background: 'linear-gradient(135deg, #185FA5, #1D9E75)',
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}>for you.</span>
+        </h1>
+
+        {/* Subheading */}
+        <p
+          className="animate-fade-in-up mt-5"
+          style={{ fontSize: 18, lineHeight: 1.75, color: 'rgba(255,255,255,0.65)', maxWidth: 560, margin: '20px auto 0', animationDelay: '200ms' }}
+        >
+          Build ATS-ready resumes. Showcase your work. Map your career path.<br />
+          Land the role you actually want — not just any role.
+        </p>
+
+        {/* CTA buttons */}
+        <div className="animate-fade-in-up flex items-center justify-center gap-3 flex-wrap mt-10" style={{ animationDelay: '300ms' }}>
+          <Link
+            href="/signup"
+            className="font-bold text-[15px] rounded-xl transition-all"
+            style={{
+              background: 'white', color: '#185FA5', padding: '14px 28px',
+              boxShadow: '0 4px 24px rgba(0,0,0,0.25)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#E6F1FB'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.30)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 24px rgba(0,0,0,0.25)'; }}
+          >
+            Start for free — no card needed
+          </Link>
+          <a
+            href="#how-it-works"
+            className="font-semibold text-[15px] rounded-xl transition-all"
+            style={{
+              background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.20)',
+              color: 'rgba(255,255,255,0.85)', padding: '14px 28px',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+          >
+            See how it works ↓
+          </a>
+        </div>
+
+        {/* Trust line */}
+        <p className="mt-5 text-[13px]" style={{ color: 'rgba(255,255,255,0.40)' }}>
+          ✓ Free forever plan
+          <span className="mx-3" style={{ color: 'rgba(255,255,255,0.20)' }}>·</span>
+          ✓ ATS-friendly exports
+          <span className="mx-3" style={{ color: 'rgba(255,255,255,0.20)' }}>·</span>
+          ✓ AI-powered throughout
+        </p>
+
+        {/* Feature pills */}
+        <div className="flex items-center justify-center gap-2 flex-wrap mt-8">
+          {FEATURE_PILLS.map(p => (
+            <a
+              key={p.label}
+              href={p.href}
+              className="text-[13px] font-medium rounded-full transition-all"
+              style={{
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                color: 'rgba(255,255,255,0.75)', padding: '6px 14px',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+            >
+              <span className="mr-1.5">{p.emoji}</span>{p.label}
+            </a>
+          ))}
         </div>
       </div>
+
+      {/* Scroll indicator */}
+      <div
+        className="absolute bottom-8 left-1/2 -translate-x-1/2"
+        style={{ color: 'rgba(255,255,255,0.35)', animation: 'bounce 2s ease-in-out infinite' }}
+      >
+        <ChevronDown />
+      </div>
+
+      <style>{`@keyframes bounce { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(8px); } }`}</style>
+    </section>
+  );
+}
+
+// ── Section 3: Logo Strip ─────────────────────────────────────────────────────
+const COMPANIES = ['Google', 'Microsoft', 'Amazon', 'Stripe', 'Shopify', 'Atlassian', 'Salesforce', 'Meta', 'Apple', 'Netflix', 'Spotify', 'Airbnb'];
+
+function LogoStrip() {
+  return (
+    <section className="py-8 bg-white overflow-hidden relative">
+      <p className="text-center text-xs font-semibold uppercase tracking-widest mb-5" style={{ color: '#9CA3AF' }}>
+        Trusted by professionals who&apos;ve landed roles at
+      </p>
+      {/* Fade masks */}
+      <div className="absolute inset-y-0 left-0 w-32 z-10 pointer-events-none" style={{ background: 'linear-gradient(to right, white, transparent)' }} />
+      <div className="absolute inset-y-0 right-0 w-32 z-10 pointer-events-none" style={{ background: 'linear-gradient(to left, white, transparent)' }} />
+      <div
+        className="flex gap-10 whitespace-nowrap"
+        style={{ animation: 'marquee 30s linear infinite' }}
+        onMouseEnter={e => e.currentTarget.style.animationPlayState = 'paused'}
+        onMouseLeave={e => e.currentTarget.style.animationPlayState = 'running'}
+      >
+        {[...COMPANIES, ...COMPANIES].map((c, i) => (
+          <span key={i} className="flex items-center gap-10 text-[15px] font-bold transition-colors cursor-default" style={{ color: '#D1DCE8', letterSpacing: '-0.01em' }}
+            onMouseEnter={e => e.currentTarget.style.color = '#6B7280'}
+            onMouseLeave={e => e.currentTarget.style.color = '#D1DCE8'}>
+            {c}
+            {i < COMPANIES.length * 2 - 1 && <span style={{ color: '#E6F1FB' }}>·</span>}
+          </span>
+        ))}
+      </div>
+      <style>{`@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }`}</style>
+    </section>
+  );
+}
+
+// ── Section 4: Feature Showcase ───────────────────────────────────────────────
+const FEATURES = [
+  {
+    icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z',
+    title: 'Resume Builder', body: '20 ATS-optimised templates with a live preview. Export to PDF and Word. Smart page-break engine keeps your resume perfectly formatted.',
+    stat: '20 templates', link: 'Build your resume →', accent: '#185FA5', href: '/builder',
+  },
+  {
+    icon: 'M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10m6 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v14',
+    title: 'ATS Score & Analysis', body: 'Instant ATS scoring with or without a job description. Know exactly which skills are missing and what to fix before you apply.',
+    stat: '20+ checks', link: 'Check your score →', accent: '#1D9E75', href: '/upload',
+  },
+  {
+    icon: 'M19 11H5m14 0a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2m14 0V9a2 2 0 0 0-2-2M5 11V9a2 2 0 0 1 2-2m0 0V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2h2m0-4h10M7 7h10',
+    title: 'Portfolio Builder', body: 'Turn your experience into a stunning public portfolio. Add projects, case studies, and testimonials. One-click publish to your own URL.',
+    stat: '5 templates', link: 'Build your portfolio →', accent: '#185FA5', href: '/portfolios',
+  },
+  {
+    icon: 'M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 0 1 .665 6.479A11.952 11.952 0 0 0 12 20.055a11.952 11.952 0 0 0-6.824-2.998 12.078 12.078 0 0 1 .665-6.479L12 14zm-4 6v-7.5l4-2.222',
+    title: 'Interview Prep', body: 'Self-test by skill, by job description, or by your own content. Timed quizzes with instant feedback and readiness scoring.',
+    stat: '3 assessment modes', link: 'Start a test →', accent: '#F59E0B', href: '/self-test',
+  },
+  {
+    icon: 'M9 20l-5.447-2.724A1 1 0 0 1 3 16.382V5.618a1 1 0 0 1 1.447-.894L9 7m0 13l6-3m-6-3V7m6 10l4.553 2.276A1 1 0 0 0 21 18.382V7.618a1 1 0 0 0-1.447-.894L15 9m0 11V9m0 0L9 7',
+    title: 'AI Career Map', body: 'Upload your resume. Answer 7 questions. Get a visual career path graph showing vertical, horizontal, and diagonal paths to your target role.',
+    stat: '3 path types', link: 'Map your career →', accent: '#1D9E75', href: '/career-map',
+  },
+  {
+    icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
+    title: 'Personalised Study Plans', body: 'Close your skill gaps with AI-generated study plans. Phase-based (Beginner → Advanced), with embedded YouTube videos and on-demand content generation.',
+    stat: 'Phase-based learning', link: 'Start learning →', accent: '#185FA5', href: '/my-courses',
+  },
+];
+
+function FeatureShowcase() {
+  const { ref, isVisible } = useScrollReveal();
+  return (
+    <section id="features" className="relative py-28" style={{
+      background: 'linear-gradient(180deg, white 0%, #F4F8FC 100%)',
+    }}>
+      {/* Dot grid */}
+      <div className="absolute inset-0 pointer-events-none" style={{
+        backgroundImage: 'radial-gradient(rgba(12,68,124,0.04) 1px, transparent 1px)',
+        backgroundSize: '24px 24px',
+      }} />
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-2xl mx-auto mb-16">
+          <p className="text-xs font-bold uppercase tracking-widest mb-3 text-gradient-primary">The Full Platform</p>
+          <h2 className="font-extrabold text-[#2C2C2A]" style={{ fontSize: 'clamp(32px,4vw,48px)', letterSpacing: '-0.03em' }}>
+            Everything your career needs —<br />in one place
+          </h2>
+          <p className="mt-4 text-base text-[#6B7280] leading-relaxed">
+            Proflect combines six powerful tools that work together. Build your resume, showcase your work, understand your career path, and close your skill gaps — all from one platform.
+          </p>
+        </div>
+
+        <div ref={ref} className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 ${isVisible ? 'stagger-children' : 'opacity-0'}`}>
+          {FEATURES.map(f => (
+            <FeatureCard key={f.title} feature={f} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FeatureCard({ feature: f }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      className="relative overflow-hidden rounded-[20px] bg-white p-7 transition-all"
+      style={{
+        border: hovered ? `1px solid ${f.accent}60` : '1px solid #D1DCE8',
+        boxShadow: hovered
+          ? '0 8px 32px rgba(12,68,124,0.10), 0 2px 8px rgba(12,68,124,0.06)'
+          : '0 1px 3px rgba(12,68,124,0.06)',
+        transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
+        transition: 'all 280ms cubic-bezier(0.16,1,0.3,1)',
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* Top accent line */}
+      <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-[20px]"
+        style={{ background: `linear-gradient(90deg, ${f.accent}, transparent)`, opacity: hovered ? 1 : 0.6, transition: 'opacity 280ms' }} />
+
+      {/* Top row: icon + stat */}
+      <div className="flex items-start justify-between mb-4">
+        <div className="w-12 h-12 rounded-[14px] flex items-center justify-center flex-shrink-0"
+          style={{ background: `${f.accent}18`, border: `1px solid ${f.accent}28` }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={f.accent} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <path d={f.icon} />
+          </svg>
+        </div>
+        <span className="text-[11px] font-semibold rounded-full px-2.5 py-1"
+          style={{ background: 'rgba(12,68,124,0.05)', border: '1px solid rgba(12,68,124,0.10)', color: '#6B7280' }}>
+          {f.stat}
+        </span>
+      </div>
+
+      <h3 className="text-[17px] font-bold text-[#2C2C2A]" style={{ letterSpacing: '-0.02em' }}>{f.title}</h3>
+      <p className="text-[14px] text-[#6B7280] leading-relaxed mt-2">{f.body}</p>
+
+      <Link
+        href={f.href}
+        className="inline-flex items-center gap-1 text-[13px] font-semibold mt-4 transition-all group"
+        style={{ color: f.accent }}
+      >
+        {f.link}
+        <span className="transition-transform group-hover:translate-x-1"><ArrowRight size={14} /></span>
+      </Link>
     </div>
   );
 }
 
-// ── Section components (accept data props) ─────────────────────────────────────
+// ── Section 5: Deep Dive — Resume Builder ─────────────────────────────────────
+const RESUME_FEATURES = [
+  '20 professionally designed templates',
+  'Real-time live preview as you type',
+  'Smart page breaks — no more cut-off bullets',
+  'Export to PDF and Word (.docx)',
+  'ATS Score with one click',
+  'Import from an existing resume',
+  'Public share link for your resume',
+];
 
-function Hero({ data }) {
-  const d = data || {};
+function DeepDiveResume() {
+  const { ref, isVisible } = useScrollReveal();
   return (
-    <section style={{ padding: '96px 0 80px', position: 'relative', overflow: 'hidden', background: 'radial-gradient(ellipse at 0% 0%, rgba(24,95,165,0.18) 0%, transparent 55%), radial-gradient(ellipse at 100% 100%, rgba(29,158,117,0.12) 0%, transparent 55%), #F4F8FC' }} className="py-16 sm:py-24">
-      {/* Floating orbs */}
-      <div className="pointer-events-none" style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
-        <div className="w-96 h-96 rounded-full absolute -top-24 -left-32 animate-float opacity-60" style={{ background: 'radial-gradient(circle, rgba(24,95,165,0.12), transparent)' }} />
-        <div className="w-72 h-72 rounded-full absolute -bottom-12 -right-24 opacity-50" style={{ background: 'radial-gradient(circle, rgba(29,158,117,0.10), transparent)', animationDirection: 'reverse', animationDuration: '8s' }} />
-      </div>
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px', position: 'relative', zIndex: 1 }} className="px-4 sm:px-8">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 64 }} className="flex flex-col lg:flex-row gap-12 lg:gap-16">
-          <div style={{ flex: '0 0 55%' }} className="w-full lg:w-auto text-center lg:text-left">
-            <div style={{ fontSize: 11, fontWeight: 500, color: C.primary, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>{d.badge_text}</div>
-            <h1 className="text-[clamp(42px,6vw,68px)] font-extrabold tracking-[-0.03em] leading-[1.05]" style={{ color: C.charcoal, marginBottom: 24 }}>
-              {d.heading ? (
-                <>
-                  {d.heading.split(/(Resume|Career|AI)/g).map((part, i) =>
-                    /^(Resume|Career|AI)$/.test(part)
-                      ? <span key={i} className="text-gradient-primary">{part}</span>
-                      : part
-                  )}
-                </>
-              ) : ''}
-            </h1>
-            <p style={{ fontSize: 18, color: C.secondary, lineHeight: 1.7, maxWidth: 520, marginBottom: 32 }} className="mx-auto lg:mx-0">{d.subheading}</p>
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }} className="justify-center lg:justify-start flex-col sm:flex-row">
-              <Link href={d.primary_cta_href || '/signup'} className="btn-primary" style={{ display: 'inline-block', fontSize: 16, fontWeight: 600, borderRadius: 8, padding: '13px 32px', textDecoration: 'none' }}>{d.primary_cta_label || ''}</Link>
-              <button onClick={() => scrollTo('how-it-works')} className="border-[1.5px] border-[var(--c-border)] bg-white shadow-xs hover:border-[var(--c-primary)] hover:shadow-md transition-all" style={{ fontSize: 16, fontWeight: 600, color: C.primary, borderRadius: 8, padding: '13px 32px', background: 'white', cursor: 'pointer' }}>{d.secondary_cta_label}</button>
-            </div>
-            {d.trust_items?.length > 0 && (
-              <p style={{ fontSize: 13, color: C.secondary, marginTop: 18 }}>
-                {d.trust_items.map((t, i) => <span key={i}>{i > 0 && ' · '}✓ {t}</span>)}
-              </p>
-            )}
+    <section id="resume-builder" className="py-28 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div ref={ref} className={`grid grid-cols-1 lg:grid-cols-2 gap-20 items-center transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          {/* Text */}
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest mb-4 text-gradient-primary">Resume Builder</p>
+            <h2 className="font-extrabold text-[#2C2C2A] leading-tight" style={{ fontSize: 'clamp(28px,3.5vw,40px)', letterSpacing: '-0.03em' }}>
+              A resume that actually<br />gets you interviews
+            </h2>
+            <p className="mt-4 text-base text-[#6B7280] leading-relaxed">
+              Not just a pretty template. Proflect&apos;s resume builder is built around ATS compliance — every template passes machine screening before it ever reaches a recruiter.
+            </p>
+            <ul className="mt-6 space-y-3">
+              {RESUME_FEATURES.map(f => (
+                <li key={f} className="flex items-start gap-2.5">
+                  <span className="flex-shrink-0 mt-0.5"><CheckCircle /></span>
+                  <span className="text-[15px] font-medium text-[#2C2C2A]">{f}</span>
+                </li>
+              ))}
+            </ul>
+            <Link href="/builder" className="btn-primary mt-8 inline-flex items-center gap-2">
+              Build your resume <ArrowRight size={16} />
+            </Link>
           </div>
-          <div style={{ flex: '0 0 45%' }} className="w-full lg:w-auto hidden sm:block"><HeroVisual /></div>
-        </div>
-      </div>
-    </section>
-  );
-}
 
-function SocialProof({ data }) {
-  const items = data?.items || [];
-  return (
-    <section style={{ background: C.light, padding: '32px 0' }}>
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px' }} className="px-4 sm:px-8">
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }} className="flex-col sm:flex-row gap-6 sm:gap-0">
-          {items.map((s, i) => (
-            <div key={s.id || i} style={{ display: 'flex', alignItems: 'center' }}>
-              {i > 0 && <div style={{ width: 1, height: 40, background: C.border, margin: '0 48px' }} className="hidden sm:block" />}
-              <div style={{ textAlign: 'center' }}>
-                <div className="text-gradient-primary font-extrabold tracking-[-0.04em]" style={{ fontSize: 32, lineHeight: 1.1 }}>{s.value}</div>
-                <div style={{ fontSize: 14, color: C.secondary, marginTop: 4 }}>{s.label}</div>
+          {/* Visual mockup */}
+          <div className="relative">
+            <div
+              className="rounded-[20px] overflow-hidden"
+              style={{
+                boxShadow: '0 24px 64px rgba(12,68,124,0.16), 0 8px 24px rgba(12,68,124,0.08)',
+                border: '1px solid rgba(209,220,232,0.5)',
+                transform: 'perspective(1200px) rotateY(-6deg) rotateX(2deg)',
+                transition: 'transform 500ms cubic-bezier(0.16,1,0.3,1)',
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'perspective(1200px) rotateY(-2deg) rotateX(0deg)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'perspective(1200px) rotateY(-6deg) rotateX(2deg)'}
+            >
+              {/* Simplified builder UI mockup */}
+              <div className="flex h-72 bg-white">
+                {/* Editor panel */}
+                <div className="w-2/5 border-r border-gray-100 p-4 bg-[#F9FAFB]">
+                  <div className="h-3 w-20 bg-gray-200 rounded mb-3" />
+                  <div className="space-y-2">
+                    {[1,2,3,4,5].map(i => (
+                      <div key={i} className="h-7 rounded bg-white border border-gray-100 px-2 flex items-center gap-1.5">
+                        <div className="w-3 h-3 rounded bg-blue-100" />
+                        <div className="h-1.5 w-16 bg-gray-200 rounded" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Preview panel */}
+                <div className="flex-1 p-4 bg-white">
+                  <div className="h-2 w-24 bg-[#185FA5] rounded mb-1.5" />
+                  <div className="h-1.5 w-32 bg-gray-200 rounded mb-4" />
+                  <div className="space-y-1.5">
+                    {[18, 28, 22, 30, 20, 26, 16].map((w, i) => (
+                      <div key={i} className="h-1.5 rounded bg-gray-100" style={{ width: `${w * 3}px`, maxWidth: '100%' }} />
+                    ))}
+                  </div>
+                  <div className="mt-4 h-px bg-gray-100" />
+                  <div className="mt-3 space-y-1.5">
+                    {[22, 30, 20, 28].map((w, i) => (
+                      <div key={i} className="h-1.5 rounded bg-gray-100" style={{ width: `${w * 3}px`, maxWidth: '100%' }} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              {/* Toolbar */}
+              <div className="h-8 bg-[#0C447C] flex items-center px-3 gap-2">
+                {['bg-red-400','bg-yellow-400','bg-green-400'].map((c,i) => <div key={i} className={`w-2.5 h-2.5 rounded-full ${c}`} />)}
+                <div className="flex-1 h-3 bg-white/10 rounded mx-2" />
+                <div className="w-12 h-3 bg-white/20 rounded" />
               </div>
             </div>
-          ))}
+
+            {/* Floating badge */}
+            <div
+              className="animate-float absolute -bottom-4 -right-4 flex items-center gap-2 px-4 py-2.5 rounded-[14px] text-white text-[13px] font-bold"
+              style={{ background: '#1D9E75', boxShadow: '0 8px 24px rgba(29,158,117,0.30)', animationDuration: '4s' }}
+            >
+              <CheckCircle />
+              ATS-Friendly ✓
+            </div>
+          </div>
         </div>
       </div>
     </section>
   );
 }
 
-function Features({ data }) {
-  const d = data || {};
-  const items = d.items || [];
-  const [hovered, setHovered] = useState(null);
+// ── Section 6: Deep Dive — Career Map ─────────────────────────────────────────
+const CAREER_MAP_FEATURES = [
+  'AI analyses your resume in seconds',
+  '7-question career questionnaire',
+  'Visual career graph — vertical, horizontal & diagonal paths',
+  'Skill gap analysis per target role',
+  'Phase-based study plans (Beginner → Advanced)',
+  'Embedded YouTube tutorials per topic',
+  'AI-generated content per section, on demand',
+];
+
+function DeepDiveCareerMap() {
+  const { ref, isVisible } = useScrollReveal();
   return (
-    <section id="features" style={{ background: C.surface, padding: '96px 0' }} className="py-16 sm:py-24">
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px' }} className="px-4 sm:px-8">
-        <div style={{ textAlign: 'center', marginBottom: 56 }}>
-          {d.overline && <div style={{ fontSize: 11, fontWeight: 500, color: C.primary, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>{d.overline}</div>}
-          <h2 style={{ fontSize: 28, fontWeight: 700, color: C.charcoal, lineHeight: 1.2 }}>{d.title}</h2>
-          {d.subtitle && <p style={{ fontSize: 16, color: C.secondary, marginTop: 12, maxWidth: 560, margin: '12px auto 0' }}>{d.subtitle}</p>}
+    <section id="career-map" className="py-36 relative overflow-hidden" style={{
+      background: `
+        radial-gradient(ellipse at 0% 50%, rgba(24,95,165,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse at 100% 50%, rgba(29,158,117,0.08) 0%, transparent 60%),
+        #0F1A2E
+      `,
+    }}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div ref={ref} className={`grid grid-cols-1 lg:grid-cols-2 gap-20 items-center transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          {/* Career graph visual */}
+          <div className="relative order-2 lg:order-1">
+            <div className="rounded-[20px] p-6 relative overflow-hidden"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 24px 64px rgba(0,0,0,0.40)' }}>
+              {/* Dot grid bg */}
+              <div className="absolute inset-0 pointer-events-none rounded-[20px]" style={{
+                backgroundImage: 'radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px)',
+                backgroundSize: '20px 20px',
+              }} />
+              {/* Graph nodes */}
+              <div className="relative flex flex-col items-center gap-4 py-4">
+                {/* Current node */}
+                <div className="px-5 py-3 rounded-xl text-sm font-bold text-white text-center relative"
+                  style={{ background: 'linear-gradient(135deg, #185FA5, #0C447C)', boxShadow: '0 0 20px rgba(24,95,165,0.50)', minWidth: 180 }}>
+                  <div className="absolute inset-0 rounded-xl animate-pulse-glow" style={{ border: '2px solid rgba(24,95,165,0.6)' }} />
+                  📍 Frontend Developer
+                </div>
+
+                {/* Three path branches */}
+                <div className="flex items-center gap-6 w-full justify-center">
+                  {[
+                    { label: '↑ Sr. Frontend', color: '#185FA5', type: 'Vertical' },
+                    { label: '→ Full Stack', color: '#1D9E75', type: 'Horizontal' },
+                    { label: '↗ Engineering Lead', color: '#F59E0B', type: 'Diagonal' },
+                  ].map(n => (
+                    <div key={n.type} className="flex flex-col items-center gap-1.5">
+                      <div className="w-px h-6" style={{ background: `${n.color}60` }} />
+                      <div className="px-3 py-2 rounded-lg text-xs font-semibold text-white text-center"
+                        style={{ background: 'rgba(255,255,255,0.06)', border: `1px solid ${n.color}40`, minWidth: 100 }}>
+                        {n.label}
+                        <div className="text-[10px] mt-0.5" style={{ color: n.color }}>{n.type}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Target role */}
+                <div className="px-5 py-3 rounded-xl text-sm font-semibold text-white text-center"
+                  style={{ border: '2px solid #185FA5', background: 'rgba(24,95,165,0.10)', minWidth: 180, backdropFilter: 'blur(8px)' }}>
+                  🎯 Target Role
+                </div>
+              </div>
+            </div>
+
+            {/* Floating badge */}
+            <div className="animate-float absolute -top-4 -right-4 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+              style={{ background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)', animationDuration: '5s' }}>
+              3 career paths mapped
+            </div>
+          </div>
+
+          {/* Text */}
+          <div className="order-1 lg:order-2">
+            <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: 'rgba(29,158,117,0.90)' }}>Career Map &amp; Study Plan</p>
+            <h2 className="font-extrabold text-white leading-tight" style={{ fontSize: 'clamp(28px,3.5vw,40px)', letterSpacing: '-0.03em' }}>
+              Know exactly where you&apos;re going —<br />and how to get there
+            </h2>
+            <p className="mt-4 text-base leading-relaxed" style={{ color: 'rgba(255,255,255,0.60)' }}>
+              Most career tools tell you what you&apos;re missing. Proflect shows you the path, the steps, and hands you the learning plan to close every gap — with real video content and AI-generated material.
+            </p>
+            <ul className="mt-6 space-y-3">
+              {CAREER_MAP_FEATURES.map(f => (
+                <li key={f} className="flex items-start gap-2.5">
+                  <svg className="flex-shrink-0 mt-0.5" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span className="text-[15px] font-medium" style={{ color: 'rgba(255,255,255,0.80)' }}>{f}</span>
+                </li>
+              ))}
+            </ul>
+            <Link href="/career-map" className="mt-8 inline-flex items-center gap-2 px-6 py-3 font-bold text-[15px] rounded-xl transition-all text-white"
+              style={{ background: 'linear-gradient(135deg, #185FA5, #1D9E75)', boxShadow: '0 4px 20px rgba(24,95,165,0.35)' }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(24,95,165,0.45)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(24,95,165,0.35)'; }}>
+              Map your career <ArrowRight size={16} />
+            </Link>
+          </div>
         </div>
-        <div className="stagger-children" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 24 }}>
-          {items.map((f, i) => {
-            const paths = FEAT_ICON_PATHS[f.icon] || FEAT_ICON_PATHS.default;
-            return (
-              <Reveal key={f.id || i} delay={i * 60}>
-                <div className="card card-interactive" onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)} style={{ padding: 24, height: '100%', boxSizing: 'border-box' }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.primary }} className="bg-gradient-to-br from-[#E6F1FB] to-[#D4E8F8] shadow-[0_0_0_1px_rgba(24,95,165,0.15),0_4px_12px_rgba(24,95,165,0.10)] rounded-2xl">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">{paths.map((p, j) => <path key={j} d={p} />)}</svg>
+      </div>
+    </section>
+  );
+}
+
+// ── Section 7: Deep Dive — Portfolio Builder ──────────────────────────────────
+const PORTFOLIO_FEATURES = [
+  '5 professionally designed portfolio templates',
+  'Custom URL at proflect-neo.vercel.app/p/you',
+  'Projects with case studies, outcomes, and media',
+  'AI-generated bio, tagline, and project descriptions',
+  'Contact form built in',
+  'Analytics — see who views your portfolio',
+  'One-click publish',
+];
+
+function DeepDivePortfolio() {
+  const { ref, isVisible } = useScrollReveal();
+  return (
+    <section id="portfolio" className="py-28 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div ref={ref} className={`grid grid-cols-1 lg:grid-cols-2 gap-20 items-center transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          {/* Text */}
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest mb-4 text-gradient-primary">Portfolio Builder</p>
+            <h2 className="font-extrabold text-[#2C2C2A] leading-tight" style={{ fontSize: 'clamp(28px,3.5vw,40px)', letterSpacing: '-0.03em' }}>
+              Your work deserves<br />to be seen
+            </h2>
+            <p className="mt-4 text-base text-[#6B7280] leading-relaxed">
+              A resume tells employers what you&apos;ve done. A portfolio shows them. Proflect&apos;s portfolio builder gives you a shareable URL, beautiful templates, and AI tools to make every project shine.
+            </p>
+            <ul className="mt-6 space-y-3">
+              {PORTFOLIO_FEATURES.map(f => (
+                <li key={f} className="flex items-start gap-2.5">
+                  <span className="flex-shrink-0 mt-0.5"><CheckCircle /></span>
+                  <span className="text-[15px] font-medium text-[#2C2C2A]">{f}</span>
+                </li>
+              ))}
+            </ul>
+            <Link href="/portfolios" className="btn-primary mt-8 inline-flex items-center gap-2">
+              Build your portfolio <ArrowRight size={16} />
+            </Link>
+          </div>
+
+          {/* Visual mockup */}
+          <div className="relative">
+            <div
+              className="rounded-[20px] overflow-hidden"
+              style={{
+                boxShadow: '0 24px 64px rgba(12,68,124,0.16), 0 8px 24px rgba(12,68,124,0.08)',
+                border: '1px solid rgba(209,220,232,0.5)',
+                transform: 'perspective(1200px) rotateY(6deg) rotateX(2deg)',
+                transition: 'transform 500ms cubic-bezier(0.16,1,0.3,1)',
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'perspective(1200px) rotateY(2deg) rotateX(0deg)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'perspective(1200px) rotateY(6deg) rotateX(2deg)'}
+            >
+              {/* Hero header */}
+              <div className="h-20 px-5 py-4 flex items-center gap-3" style={{ background: 'linear-gradient(135deg, #0C447C, #185FA5)' }}>
+                <div className="w-10 h-10 rounded-full bg-white/20 flex-shrink-0" />
+                <div>
+                  <div className="h-2.5 w-24 bg-white/80 rounded mb-1.5" />
+                  <div className="h-2 w-32 bg-white/40 rounded" />
+                </div>
+              </div>
+              {/* Project cards */}
+              <div className="p-4 bg-[#F9FAFB] grid grid-cols-2 gap-3">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className="rounded-lg bg-white border border-gray-100 p-3">
+                    <div className="h-14 rounded-md mb-2" style={{ background: `hsl(${i * 60},60%,90%)` }} />
+                    <div className="h-2 w-16 bg-gray-200 rounded mb-1" />
+                    <div className="h-1.5 w-20 bg-gray-100 rounded" />
                   </div>
-                  <h3 style={{ fontSize: 18, fontWeight: 600, color: C.charcoal, marginTop: 16 }}>{f.title}</h3>
-                  <p style={{ fontSize: 14, color: C.secondary, marginTop: 8, lineHeight: 1.6 }}>{f.description}</p>
-                </div>
-              </Reveal>
-            );
-          })}
+                ))}
+              </div>
+            </div>
+            {/* Floating badge */}
+            <div className="animate-float absolute -bottom-4 -right-4 flex items-center gap-2 px-4 py-2.5 rounded-[14px] text-white text-[13px] font-bold"
+              style={{ background: 'linear-gradient(135deg, #185FA5, #1D9E75)', boxShadow: '0 8px 24px rgba(24,95,165,0.30)', animationDuration: '4s', animationDelay: '500ms' }}>
+              <GlobeIcon />
+              Published ✓
+            </div>
+          </div>
         </div>
       </div>
     </section>
   );
 }
 
-function HowItWorks({ data }) {
-  const d = data || {};
-  const items = d.items || [];
+// ── Section 8: How It Works ───────────────────────────────────────────────────
+const STEPS = [
+  {
+    num: '01',
+    icon: 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM3 20a6 6 0 0 1 12 0v1H3v-1z',
+    title: 'Create your free account',
+    body: 'Sign up in seconds with email or Google. No credit card, no commitment. Your first resume is free — forever.',
+  },
+  {
+    num: '02',
+    icon: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z',
+    title: 'Build with AI at your side',
+    body: 'Choose your tool — resume, portfolio, career map, or interview prep. AI guides you through every step, from content suggestions to ATS optimisation.',
+  },
+  {
+    num: '03',
+    icon: 'M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z',
+    title: 'Apply with confidence',
+    body: 'Export your ATS-ready resume, share your portfolio URL, and walk into interviews knowing exactly what to expect. Your next role is closer than you think.',
+  },
+];
+
+function HowItWorks() {
+  const { ref, isVisible } = useScrollReveal();
+  const lineRef = useRef(null);
+  const [lineVisible, setLineVisible] = useState(false);
+
+  useEffect(() => {
+    const el = lineRef.current; if (!el) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setLineVisible(true); }, { threshold: 0.5 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
   return (
-    <section id="how-it-works" style={{ background: C.bg, padding: '96px 0' }} className="py-16 sm:py-24">
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px' }} className="px-4 sm:px-8">
-        <div style={{ textAlign: 'center', marginBottom: 56 }}>
-          {d.overline && <div style={{ fontSize: 11, fontWeight: 500, color: C.primary, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>{d.overline}</div>}
-          <h2 style={{ fontSize: 28, fontWeight: 700, color: C.charcoal, lineHeight: 1.2 }}>{d.title}</h2>
+    <section id="how-it-works" className="py-28 relative" style={{ background: 'linear-gradient(180deg, #F4F8FC 0%, white 100%)' }}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-xl mx-auto mb-16">
+          <p className="text-xs font-bold uppercase tracking-widest mb-3 text-gradient-primary">Getting Started</p>
+          <h2 className="font-extrabold text-[#2C2C2A]" style={{ fontSize: 'clamp(28px,3.5vw,44px)', letterSpacing: '-0.03em' }}>
+            From zero to hired —<br />in three steps
+          </h2>
+          <p className="mt-3 text-base text-[#6B7280]">No learning curve. No setup. Start building in seconds.</p>
         </div>
-        <div className="hidden md:block" style={{ position: 'relative' }}>
-          <div style={{ position: 'absolute', top: 24, left: '12.5%', right: '12.5%', borderTop: `2px dashed ${C.border}`, zIndex: 0 }} />
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(items.length, 4)}, 1fr)`, gap: 24 }}>
-            {items.map((s, i) => (
-              <Reveal key={s.id || i} delay={i * 80}>
-                <div style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
-                  <div style={{ width: 48, height: 48, borderRadius: '50%', background: C.primary, color: '#fff', fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>{i + 1}</div>
-                  <h4 style={{ fontSize: 18, fontWeight: 600, color: C.charcoal, marginTop: 16 }}>{s.title}</h4>
-                  <p style={{ fontSize: 14, color: C.secondary, marginTop: 8, maxWidth: 220, margin: '8px auto 0', lineHeight: 1.6 }}>{s.description}</p>
+
+        <div className="relative">
+          {/* Animated connector line (desktop) */}
+          <div ref={lineRef} className="hidden lg:block absolute h-0.5" style={{ top: 36, left: 'calc(16.66% + 36px)', right: 'calc(16.66% + 36px)' }}>
+            <div className="h-full rounded-full transition-all" style={{
+              background: 'linear-gradient(90deg, #185FA5, #1D9E75)',
+              width: lineVisible ? '100%' : '0%',
+              transition: 'width 800ms cubic-bezier(0.16,1,0.3,1) 200ms',
+            }} />
+          </div>
+
+          <div ref={ref} className={`grid grid-cols-1 lg:grid-cols-3 gap-8 ${isVisible ? 'stagger-children' : 'opacity-0'}`}>
+            {STEPS.map((s, i) => (
+              <div key={i} className="text-center">
+                <p className="text-[11px] font-extrabold uppercase tracking-widest mb-3" style={{ color: 'rgba(24,95,165,0.30)', letterSpacing: '0.08em' }}>{s.num}</p>
+                <div className="w-[72px] h-[72px] rounded-[20px] flex items-center justify-center mx-auto mb-5 shadow-glow-primary"
+                  style={{ background: 'linear-gradient(135deg, #185FA5, #0C447C)' }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                    <path d={s.icon} />
+                  </svg>
                 </div>
-              </Reveal>
+                <h3 className="text-xl font-bold text-[#2C2C2A]" style={{ letterSpacing: '-0.02em' }}>{s.title}</h3>
+                <p className="text-[15px] text-[#6B7280] leading-relaxed mt-2">{s.body}</p>
+              </div>
             ))}
           </div>
         </div>
-        <div className="md:hidden" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-          {items.map((s, i) => (
-            <div key={s.id || i} style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
-              <div style={{ flexShrink: 0, width: 48, height: 48, borderRadius: '50%', background: C.primary, color: '#fff', fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</div>
-              <div><h4 style={{ fontSize: 18, fontWeight: 600, color: C.charcoal }}>{s.title}</h4><p style={{ fontSize: 14, color: C.secondary, marginTop: 6, lineHeight: 1.6 }}>{s.description}</p></div>
-            </div>
+      </div>
+    </section>
+  );
+}
+
+// ── Section 9: ATS Score + Interview Prep ─────────────────────────────────────
+const DUAL_CARDS = [
+  {
+    icon: 'M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4z',
+    title: 'ATS Resume Checker',
+    body: 'Paste your resume and get an instant ATS score. No job description required. Proflect runs 20+ checks on formatting, keywords, and structure — then tells you exactly what to fix.',
+    stats: ['20+ automated checks', 'Works without a JD', 'Section-by-section feedback'],
+    cta: 'Check your ATS score →',
+    href: '/upload',
+  },
+  {
+    icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
+    title: 'Interview Prep',
+    body: 'Practice with questions generated from your skills, a job description, or your own content. Timed quizzes with instant scoring and a readiness breakdown by skill.',
+    stats: ['3 assessment modes', 'Configurable difficulty', 'Instant readiness score'],
+    cta: 'Start practising →',
+    href: '/self-test',
+  },
+];
+
+function ATSAndInterviewPrep() {
+  const { ref, isVisible } = useScrollReveal();
+  return (
+    <section id="interview-prep" className="py-28 relative" style={{ background: '#0F1A2E' }}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-xl mx-auto mb-14">
+          <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: 'rgba(29,158,117,0.90)' }}>ATS Score · Interview Prep</p>
+          <h2 className="font-extrabold text-white" style={{ fontSize: 'clamp(28px,3.5vw,44px)', letterSpacing: '-0.03em' }}>
+            Know your score before<br />the recruiter does
+          </h2>
+          <p className="mt-4 text-base" style={{ color: 'rgba(255,255,255,0.55)' }}>Two tools that give you a real edge — before you hit send.</p>
+        </div>
+
+        <div ref={ref} className={`grid grid-cols-1 lg:grid-cols-2 gap-6 ${isVisible ? 'stagger-children' : 'opacity-0'}`}>
+          {DUAL_CARDS.map((card, i) => (
+            <DualCard key={i} card={card} />
           ))}
         </div>
       </div>
@@ -309,234 +872,219 @@ function HowItWorks({ data }) {
   );
 }
 
-function Pricing({ data }) {
-  const d = data || {};
-  const items = d.items || [];
-  const [hovered, setHovered] = useState(null);
+function DualCard({ card }) {
+  const [hovered, setHovered] = useState(false);
   return (
-    <section id="pricing" style={{ background: C.surface, padding: '96px 0' }} className="py-16 sm:py-24">
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px' }} className="px-4 sm:px-8">
-        <div style={{ textAlign: 'center', marginBottom: 56 }}>
-          {d.overline && <div style={{ fontSize: 11, fontWeight: 500, color: C.primary, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>{d.overline}</div>}
-          <h2 style={{ fontSize: 28, fontWeight: 700, color: C.charcoal, lineHeight: 1.2 }}>{d.title}</h2>
-          {d.subtext && <p style={{ fontSize: 16, color: C.secondary, marginTop: 12 }}>{d.subtext}</p>}
+    <div
+      className="rounded-3xl p-9 transition-all"
+      style={{
+        background: hovered ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)',
+        border: hovered ? '1px solid rgba(24,95,165,0.40)' : '1px solid rgba(255,255,255,0.10)',
+        backdropFilter: 'blur(12px)',
+        transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
+        transition: 'all 250ms cubic-bezier(0.16,1,0.3,1)',
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div className="w-13 h-13 rounded-[14px] flex items-center justify-center mb-5"
+        style={{ background: 'rgba(24,95,165,0.15)', border: '1px solid rgba(24,95,165,0.25)', width: 52, height: 52 }}>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#185FA5" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+          <path d={card.icon} />
+        </svg>
+      </div>
+      <h3 className="text-[22px] font-bold text-white mt-5" style={{ letterSpacing: '-0.02em' }}>{card.title}</h3>
+      <p className="text-[15px] leading-relaxed mt-2.5" style={{ color: 'rgba(255,255,255,0.60)' }}>{card.body}</p>
+      <ul className="mt-5 space-y-2">
+        {card.stats.map(s => (
+          <li key={s} className="flex items-center gap-2.5">
+            <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#1D9E75' }} />
+            <span className="text-[13px] font-medium" style={{ color: 'rgba(255,255,255,0.70)' }}>{s}</span>
+          </li>
+        ))}
+      </ul>
+      <Link href={card.href}
+        className="inline-flex items-center gap-1.5 text-[14px] font-semibold mt-6 group transition-all"
+        style={{ color: '#E6F1FB' }}>
+        {card.cta}
+        <span className="transition-transform group-hover:translate-x-1"><ArrowRight size={14} /></span>
+      </Link>
+    </div>
+  );
+}
+
+// ── Section 10: Final CTA ─────────────────────────────────────────────────────
+function FinalCTA() {
+  return (
+    <section className="relative py-36 overflow-hidden text-center" style={{
+      background: 'linear-gradient(160deg, #0F1A2E 0%, #0A2818 50%, #0F1A2E 100%)',
+    }}>
+      {/* Orbs */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="animate-float absolute" style={{ width: 400, height: 400, borderRadius: '50%', background: 'rgba(24,95,165,0.20)', filter: 'blur(100px)', top: '-10%', left: '-5%', animationDuration: '8s' }} />
+        <div className="animate-float absolute" style={{ width: 300, height: 300, borderRadius: '50%', background: 'rgba(29,158,117,0.15)', filter: 'blur(80px)', bottom: '-5%', right: '0%', animationDuration: '10s', animationDirection: 'reverse' }} />
+      </div>
+
+      {/* Decorative lines */}
+      <div className="absolute h-px left-0 right-0 pointer-events-none" style={{ top: '20%', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)' }} />
+      <div className="absolute h-px left-0 right-0 pointer-events-none" style={{ bottom: '20%', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)' }} />
+
+      <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6">
+        <h2 className="font-black text-white" style={{ fontSize: 'clamp(40px,6vw,64px)', letterSpacing: '-0.04em' }}>
+          Your next role
+          <br />
+          <span style={{ background: 'linear-gradient(135deg, white, rgba(255,255,255,0.50))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+            starts here.
+          </span>
+        </h2>
+        <p className="text-[18px] mt-4 max-w-[500px] mx-auto" style={{ color: 'rgba(255,255,255,0.55)' }}>
+          Join thousands of professionals using Proflect to build better resumes, plan smarter careers, and get hired faster.
+        </p>
+        <div className="flex items-center justify-center gap-3 flex-wrap mt-10">
+          <Link href="/signup"
+            className="font-bold text-[15px] rounded-xl transition-all"
+            style={{ background: 'white', color: '#185FA5', padding: '14px 28px', boxShadow: '0 4px 24px rgba(0,0,0,0.25)' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#E6F1FB'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.transform = 'translateY(0)'; }}>
+            Create your free account →
+          </Link>
+          <Link href="/career-map"
+            className="font-semibold text-[15px] rounded-xl transition-all"
+            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.20)', color: 'rgba(255,255,255,0.85)', padding: '14px 28px' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}>
+            Explore the Career Map
+          </Link>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 24, alignItems: 'stretch', paddingTop: 16 }}>
-          {items.map((plan, i) => (
-            <Reveal key={plan.id || i} delay={i * 80}>
-              <div onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)}
-                style={{ position: 'relative', background: C.surface, border: plan.is_highlighted ? `2px solid ${C.primary}` : `1px solid ${C.border}`, borderRadius: 16, padding: 32, display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box', boxShadow: plan.is_highlighted ? '0 8px 32px rgba(12,68,124,0.16)' : hovered === i ? '0 4px 16px rgba(12,68,124,0.10)' : 'none', transition: 'box-shadow 200ms', transform: plan.is_highlighted ? 'scale(1.03)' : 'none' }}>
-                {plan.is_highlighted && plan.highlight_label && (
-                  <div style={{ position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: C.primary, color: '#fff', borderRadius: 9999, padding: '4px 16px', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }}>{plan.highlight_label}</div>
-                )}
-                <div>
-                  <h3 style={{ fontSize: 22, fontWeight: 600, color: C.charcoal }}>{plan.plan_name}</h3>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginTop: 16 }}>
-                    <span style={{ fontSize: 40, fontWeight: 700, color: C.charcoal }}>{plan.price}</span>
-                    <span style={{ fontSize: 14, color: C.secondary }}>{plan.period}</span>
-                  </div>
-                  <p style={{ fontSize: 14, color: C.secondary, marginTop: 8 }}>{plan.description}</p>
-                  <div style={{ height: 1, background: C.border, margin: '24px 0' }} />
-                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {(plan.features || []).map((f, j) => (
-                      <li key={j} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <CheckIcon /><span style={{ fontSize: 14, color: C.charcoal }}>{f}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div style={{ marginTop: 'auto', paddingTop: 24 }}>
-                  <Link href={plan.cta_href || '/signup'} style={{ display: 'block', width: '100%', textAlign: 'center', boxSizing: 'border-box', fontSize: 14, fontWeight: 600, borderRadius: 8, padding: '11px 0', textDecoration: 'none', ...(plan.cta_variant === 'contained' ? { background: C.primary, color: '#fff', border: 'none' } : { background: 'transparent', color: C.primary, border: `1px solid ${C.primary}` }), transition: 'background 200ms' }} onMouseEnter={e => { e.currentTarget.style.background = plan.cta_variant === 'contained' ? C.dark : C.light; }} onMouseLeave={e => { e.currentTarget.style.background = plan.cta_variant === 'contained' ? C.primary : 'transparent'; }}>{plan.cta_label}</Link>
-                </div>
-              </div>
-            </Reveal>
-          ))}
-        </div>
+        <p className="text-[13px] mt-5" style={{ color: 'rgba(255,255,255,0.30)' }}>
+          Free forever
+          <span className="mx-3" style={{ color: 'rgba(255,255,255,0.15)' }}>·</span>
+          No card needed
+          <span className="mx-3" style={{ color: 'rgba(255,255,255,0.15)' }}>·</span>
+          5 min setup
+        </p>
       </div>
     </section>
   );
 }
 
-function CTABanner({ data }) {
-  const d = data || {};
-  return (
-    <section className="gradient-dark-hero" style={{ padding: '80px 0', position: 'relative', overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', top: -120, left: -100, width: 400, height: 400, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', bottom: -120, right: -100, width: 400, height: 400, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', pointerEvents: 'none' }} />
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px', textAlign: 'center', position: 'relative', zIndex: 1 }} className="px-4 sm:px-8">
-        <Reveal>
-          <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 700, color: '#fff', lineHeight: 1.15 }}>{d.heading}</h2>
-          <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.85)', marginTop: 16 }}>{d.subtext}</p>
-          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 32, flexWrap: 'wrap' }}>
-            <Link href={d.primary_cta_href || '/signup'} style={{ fontSize: 16, fontWeight: 600, color: C.primary, background: '#fff', borderRadius: 8, padding: '13px 32px', textDecoration: 'none', boxShadow: '0 4px 16px rgba(0,0,0,0.12)', transition: 'background 200ms, transform 200ms' }} onMouseEnter={e => { e.currentTarget.style.background = C.light; e.currentTarget.style.transform = 'scale(1.01)'; }} onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.transform = 'scale(1)'; }}>{d.primary_cta_label}</Link>
-            <button onClick={() => scrollTo('pricing')} style={{ fontSize: 16, fontWeight: 600, color: '#fff', background: 'transparent', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: '13px 16px', transition: 'opacity 200ms' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.8'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>{d.secondary_cta_label}</button>
-          </div>
-        </Reveal>
-      </div>
-    </section>
-  );
-}
+// ── Section 11: Footer ────────────────────────────────────────────────────────
+const FOOTER_LINKS = {
+  Product: [
+    { label: 'Resume Builder', href: '/builder' },
+    { label: 'Portfolio Builder', href: '/portfolios' },
+    { label: 'ATS Score', href: '/upload' },
+    { label: 'Interview Prep', href: '/self-test' },
+    { label: 'Career Map', href: '/career-map' },
+    { label: 'Study Plans', href: '/my-courses' },
+  ],
+  Company: [
+    { label: 'About', href: '#' },
+    { label: 'Blog', href: '#' },
+    { label: 'Careers', href: '#' },
+    { label: 'Press', href: '#' },
+    { label: 'Contact', href: '#' },
+  ],
+  Legal: [
+    { label: 'Privacy Policy', href: '#' },
+    { label: 'Terms of Service', href: '#' },
+    { label: 'Cookie Policy', href: '#' },
+  ],
+};
 
-function Footer({ data }) {
-  const d = data || {};
-  const cols = d.columns || [];
-  const lnk = { fontSize: 14, color: 'rgba(255,255,255,0.65)', textDecoration: 'none', lineHeight: 2.0, display: 'block', transition: 'color 150ms' };
+function HomeFooter() {
   return (
-    <footer style={{ background: C.charcoal, padding: '64px 0 0' }}>
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px' }} className="px-4 sm:px-8">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 40, paddingBottom: 40 }}>
-          <div>
-            <Image src="/logo.png" alt="Proflect" width={120} height={133} style={{ height: 40, width: 'auto', filter: 'brightness(0) invert(1)' }} unoptimized />
-            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', marginTop: 12, maxWidth: 220, lineHeight: 1.6 }}>{d.tagline}</p>
-            <div style={{ display: 'flex', gap: 16, marginTop: 20 }}>
-              {[{ ic: <LinkedInIcon />, label: 'LinkedIn' }, { ic: <XIcon />, label: 'Twitter' }, { ic: <GithubIcon />, label: 'GitHub' }].map(({ ic, label }) => (
-                <a key={label} href="#" aria-label={label} style={{ color: 'rgba(255,255,255,0.5)', transition: 'color 150ms' }} onMouseEnter={e => e.currentTarget.style.color = '#fff'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}>{ic}</a>
+    <footer style={{ background: '#0D1117' }}>
+      {/* Top separator */}
+      <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent)' }} />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-10">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
+          {/* Brand column */}
+          <div className="col-span-2 lg:col-span-1">
+            <Image src="/logo.png" alt="Proflect" width={100} height={28} className="h-7 w-auto mb-3" style={{ filter: 'brightness(0) invert(1)' }} />
+            <p className="text-sm max-w-[200px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              Build the career you deserve.
+            </p>
+            <div className="flex items-center gap-3 mt-4">
+              {[
+                { icon: <LinkedInIcon />, href: '#' },
+                { icon: <XIcon />, href: '#' },
+                { icon: <GithubIcon />, href: '#' },
+              ].map((s, i) => (
+                <a key={i} href={s.href}
+                  className="transition-colors"
+                  style={{ color: 'rgba(255,255,255,0.35)' }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'white'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.35)'}>
+                  {s.icon}
+                </a>
               ))}
             </div>
           </div>
-          {cols.map(col => (
-            <div key={col.id}>
-              <p style={{ fontSize: 11, fontWeight: 500, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14 }}>{col.heading}</p>
-              {(col.links || []).map(link => (
-                <a key={link.id} href={link.href || '#'} style={lnk} onMouseEnter={e => e.currentTarget.style.color = '#fff'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.65)'}>{link.label}</a>
-              ))}
+
+          {/* Link columns */}
+          {Object.entries(FOOTER_LINKS).map(([heading, links]) => (
+            <div key={heading}>
+              <p className="text-[11px] font-bold uppercase tracking-widest mb-4" style={{ color: 'rgba(255,255,255,0.35)', letterSpacing: '0.08em' }}>{heading}</p>
+              <ul className="space-y-0">
+                {links.map(l => (
+                  <li key={l.label} style={{ lineHeight: 2.2 }}>
+                    <Link href={l.href}
+                      className="text-sm transition-colors"
+                      style={{ color: 'rgba(255,255,255,0.55)' }}
+                      onMouseEnter={e => e.currentTarget.style.color = 'white'}
+                      onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.55)'}>
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </div>
           ))}
         </div>
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', padding: '24px 0 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: 0 }}>{d.copyright}</p>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: 0 }}>Made with ♥ for job seekers</p>
+
+        {/* Bottom bar */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-8" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.30)' }}>
+            © {new Date().getFullYear()} Proflect. All rights reserved.
+          </p>
+          <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.30)' }}>
+            Made with <span style={{ color: '#D93025' }}>♥</span> for job seekers everywhere
+          </p>
         </div>
       </div>
     </footer>
   );
 }
 
-// ── New section renderers ──────────────────────────────────────────────────────
-
-function Testimonials({ data }) {
-  const d = data || {};
-  const items = d.items || [];
+// ── Main export ───────────────────────────────────────────────────────────────
+export default function HomepageContent({ sections, isPreview, userRole }) {
   return (
-    <section style={{ background: C.bg, padding: '96px 0' }}>
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px' }}>
-        {(d.overline || d.title || d.subtitle) && (
-          <div style={{ textAlign: 'center', marginBottom: 56 }}>
-            {d.overline && <div style={{ fontSize: 11, fontWeight: 500, color: C.primary, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>{d.overline}</div>}
-            {d.title && <h2 style={{ fontSize: 28, fontWeight: 700, color: C.charcoal, lineHeight: 1.2 }}>{d.title}</h2>}
-            {d.subtitle && <p style={{ fontSize: 16, color: C.secondary, marginTop: 12, maxWidth: 560, margin: '12px auto 0' }}>{d.subtitle}</p>}
-          </div>
-        )}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 24 }}>
-          {items.map((item, i) => (
-            <Reveal key={item.id || i} delay={i * 60}>
-              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 24, height: '100%', boxSizing: 'border-box' }}>
-                <p style={{ fontSize: 15, color: C.charcoal, lineHeight: 1.7, fontStyle: 'italic', margin: '0 0 20px' }}>"{item.quote}"</p>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: C.charcoal }}>{item.author}</div>
-                  {(item.role || item.company) && (
-                    <div style={{ fontSize: 13, color: C.secondary, marginTop: 2 }}>
-                      {item.role}{item.role && item.company ? ' · ' : ''}{item.company}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
+    <div className="overflow-x-hidden">
+      <HomeNavbar />
+      <HeroSection />
+      <LogoStrip />
+      <FeatureShowcase />
+      <DeepDiveResume />
+      <DeepDiveCareerMap />
+      <DeepDivePortfolio />
+      <HowItWorks />
+      <ATSAndInterviewPrep />
+      <FinalCTA />
+      <HomeFooter />
 
-function CustomText({ data }) {
-  const d = data || {};
-  return (
-    <section style={{ background: C.surface, padding: '64px 0' }}>
-      <div style={{ maxWidth: 860, margin: '0 auto', padding: '0 32px' }}>
-        <div dangerouslySetInnerHTML={{ __html: d?.content || '' }} />
-      </div>
-    </section>
-  );
-}
-
-function CustomHtml({ data }) {
-  const d = data || {};
-  if (!d?.html) return null;
-  return (
-    <section style={{ background: C.surface, padding: '64px 0' }}>
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px' }}>
-        <div dangerouslySetInnerHTML={{ __html: d.html }} />
-      </div>
-    </section>
-  );
-}
-
-// ── Preview banner (admin preview mode) ───────────────────────────────────────
-function PreviewBanner() {
-  return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 999, background: '#F59E0B', color: '#fff', textAlign: 'center', padding: '10px', fontSize: 13, fontWeight: 600 }}>
-      You are viewing a preview — not live.{' '}
-      <a href="/admin/homepage" style={{ color: '#fff', textDecoration: 'underline' }}>Back to editor</a>
-    </div>
-  );
-}
-
-// ── Section renderer ───────────────────────────────────────────────────────────
-const renderSection = (section) => {
-  const c = section.content || {};
-  const data = {
-    ...c,
-    overline: section.overline ?? c.overline,
-    title:    section.title    ?? c.title,
-    subtitle: section.subtitle ?? c.subtitle,
-  };
-  switch (section.section_type) {
-    case 'hero':         return <Hero         key={section.section_key} data={data} />;
-    case 'stats':        return <SocialProof  key={section.section_key} data={data} />;
-    case 'features':     return <Features     key={section.section_key} data={data} />;
-    case 'steps':        return <HowItWorks   key={section.section_key} data={data} />;
-    case 'pricing':      return <Pricing      key={section.section_key} data={data} />;
-    case 'cta':          return <CTABanner    key={section.section_key} data={data} />;
-    case 'footer':       return <Footer       key={section.section_key} data={data} />;
-    case 'testimonials': return <Testimonials key={section.section_key} data={data} />;
-    case 'custom_text':  return <CustomText   key={section.section_key} data={data} />;
-    case 'custom_html':  return <CustomHtml   key={section.section_key} data={data} />;
-    default:             return null;
-  }
-};
-
-// ── Main export ────────────────────────────────────────────────────────────────
-export default function HomepageContent({ sections = [], isPreview = false, userRole = null }) {
-  const [activeSection, setActiveSection] = useState('');
-  const visibleKeys = sections.map(s => s.section_key);
-
-  // Find hero content for navbar CTA button label
-  const heroSection = sections.find(s => s.section_type === 'hero');
-  const heroCta = heroSection?.content?.primary_cta_label || 'Get started free';
-
-  useEffect(() => {
-    const ids = ['features', 'how-it-works', 'pricing'];
-    const obs = new IntersectionObserver(
-      entries => entries.forEach(e => { if (e.isIntersecting) setActiveSection(e.target.id); }),
-      { rootMargin: '-40% 0px -55% 0px' }
-    );
-    ids.forEach(id => { const el = document.getElementById(id); if (el) obs.observe(el); });
-    return () => obs.disconnect();
-  }, []);
-
-  // Separate footer (always last)
-  const footerSection = sections.find(s => s.section_type === 'footer');
-  const mainSections = sections.filter(s => s.section_type !== 'footer');
-
-  return (
-    <div style={{ fontFamily: 'Inter, system-ui, sans-serif', overflowX: 'hidden', paddingTop: isPreview ? 44 : 0 }}>
-      {isPreview && <PreviewBanner />}
-      <Navbar heroCta={heroCta} activeSection={activeSection} visibleSectionKeys={visibleKeys} userRole={userRole} />
-      <main>
-        {mainSections.map(s => renderSection(s))}
-      </main>
-      {footerSection && renderSection(footerSection)}
+      {/* Reduced motion */}
+      <style>{`
+        @media (prefers-reduced-motion: reduce) {
+          [class*="animate-"], .animate-float, .animate-fade-in-up, .animate-fade-in-scale, .animate-pulse-glow {
+            animation: none !important;
+            transition: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
