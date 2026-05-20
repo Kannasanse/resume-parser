@@ -141,7 +141,8 @@ Return ONLY the JSON, no preamble.`;
       .from('career_map_sessions')
       .insert({
         user_id: user.id,
-        resume_id: resolvedResumeId,
+        resume_id:         builder_resume_id ? null : (resolvedResumeId || null),
+        builder_resume_id: builder_resume_id || null,
         extracted_profile: profile,
       })
       .select('id')

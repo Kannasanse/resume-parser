@@ -7,7 +7,6 @@ export const dynamic = 'force-dynamic';
 export async function GET(request) {
   try {
     const { user } = await requireUser(request);
-
     // Fetch all builder resumes for this user
     const { data: resumes, error } = await supabase
       .from('builder_resumes')
@@ -65,7 +64,7 @@ export async function GET(request) {
     // Fetch the last career map session to pre-select resume
     const { data: lastSessions } = await supabase
       .from('career_map_sessions')
-      .select('resume_id')
+      .select('builder_resume_id')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1);
@@ -73,7 +72,7 @@ export async function GET(request) {
 
     return NextResponse.json({
       resumes: enriched,
-      lastUsedResumeId: lastSession?.resume_id || null,
+      lastUsedResumeId: lastSession?.builder_resume_id || null,
     });
   } catch (err) {
     if (err instanceof Response) return err;
