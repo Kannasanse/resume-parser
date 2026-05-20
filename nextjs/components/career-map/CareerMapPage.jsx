@@ -58,7 +58,7 @@ export default function CareerMapPage() {
     const res = await fetch('/api/v1/career-map/recommend', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id: sessionId, questionnaire: answers }),
+      body: JSON.stringify({ session_id: sessionId, adaptive_answers: answers }),
     });
     const data = await res.json();
     setRecommendationsLoading(false);
@@ -138,7 +138,7 @@ export default function CareerMapPage() {
         )}
         {step === STEPS.QUESTIONNAIRE && (
           <div className="animate-fade-in-scale">
-            <Questionnaire profile={profile} onSubmit={handleQuestionnaire} loading={!profile} />
+            <Questionnaire profile={profile} sessionId={sessionId} onSubmit={handleQuestionnaire} loading={!profile} />
           </div>
         )}
         {step === STEPS.RECOMMENDATIONS && (

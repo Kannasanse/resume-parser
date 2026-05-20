@@ -17,7 +17,9 @@ async function callGroq(prompt, maxTokens = 400) {
 export async function POST(request) {
   try {
     const { user } = await requireUser(request);
-    const { session_id, questionnaire } = await request.json();
+    const { session_id, questionnaire, adaptive_answers } = await request.json();
+    // adaptive_answers: array of {questionNumber, questionText, questionIntent, answerValue, answerLabel}
+    // questionnaire: legacy flat object (static flow, backward compat)
 
     const { data: session } = await supabase
       .from('career_map_sessions')
@@ -28,11 +30,13 @@ export async function POST(request) {
 
     if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 });
 
-    // Save questionnaire answers
-    await supabase
-      .from('career_map_sessions')
-      .update({ questionnaire, updated_at: new Date().toISOString() })
-      .eq('id', session_id);
+    // Save questionnaire answers (backward compat for static flow)
+    if (questionnaire) {
+      await supabase
+        .from('career_map_sessions')
+        .update({ questionnaire, updated_at: new Date().toISOString() })
+        .eq('id', session_id);
+    }
 
     // Fetch all roles from DB
     const { data: allRoles } = await supabase
@@ -41,13 +45,26 @@ export async function POST(request) {
 
     const profile = session.extracted_profile;
 
+    // Build questionnaire context — adaptive or static
+    let questionnaireContext;
+    if (adaptive_answers && adaptive_answers.length > 0) {
+      questionnaireContext = `Career questionnaire insights (adaptive, ${adaptive_answers.length} questions):\n` +
+        adaptive_answers
+          .filter(q => q.answerValue)
+          .map(q => `${q.questionIntent}: ${q.answerLabel || q.answerValue}`)
+          .join('\n');
+      const conf = session.confidence_score;
+      if (conf) questionnaireContext += `\n\nConfidence when questionnaire ended: ${Math.round(conf * 100)}%`;
+    } else {
+      questionnaireContext = `Career questionnaire answers:\n${JSON.stringify(questionnaire || {}, null, 2)}`;
+    }
+
     const prompt = `You are a career advisor. Based on this professional's profile and career goals, recommend the best-fit job profiles from the candidate list provided.
 
 Professional profile:
 ${JSON.stringify(profile, null, 2)}
 
-Career questionnaire answers:
-${JSON.stringify(questionnaire, null, 2)}
+${questionnaireContext}
 
 Available roles:
 ${(allRoles || []).map(r => `${r.id}: ${r.title} (${r.category}, ${r.seniority})`).join('\n')}
