@@ -3,79 +3,82 @@ import { requireUser } from '@/lib/auth-helpers.js';
 
 export const dynamic = 'force-dynamic';
 
-const SYSTEM_PROMPT = `You are an expert assessment question writer. Generate high-quality, unambiguous questions suitable for professional skill assessments.
+// ── System prompts ────────────────────────────────────────────────────────────
 
-Rules:
+const MCQ_SHAPE = `{
+  "type": "mcq",
+  "question_text": "...",
+  "points": 1,
+  "options": [
+    {"option_text": "...", "is_correct": false},
+    {"option_text": "...", "is_correct": true},
+    {"option_text": "...", "is_correct": false},
+    {"option_text": "...", "is_correct": false}
+  ],
+  "explanation": "2-4 sentences explaining why the correct answer is right and why the common wrong answers are wrong."
+}`;
+
+const TF_SHAPE = `{
+  "type": "true_false",
+  "question_text": "...",
+  "points": 1,
+  "correct_answer": "true",
+  "explanation": "2-4 sentences explaining why this is true/false with context."
+}`;
+
+const SA_SHAPE = `{
+  "type": "short_answer",
+  "question_text": "...",
+  "points": 2,
+  "model_answer": "The ideal 2-6 sentence answer to this question.",
+  "grading_rubric": "Criteria for awarding full/partial marks.",
+  "answer_keywords": ["key", "terms", "expected"],
+  "explanation": "2-4 sentences of useful context about this topic."
+}`;
+
+const BASE_RULES = `Rules:
 - MCQ: exactly 4 answer options, exactly 1 correct, options must be plausible distractors
 - True/False: question must have one definitively correct answer
+- Short Answer: requires a 2-6 sentence written response; test conceptual understanding
 - Questions must be clear, professional, and directly test the provided skill/content
 - Do NOT repeat similar questions
 - Return ONLY valid JSON — no prose, no markdown
+- ALWAYS include the "explanation" field on every question
 
-Difficulty calibration:
-- easy: basic recall and definitions; a junior developer should know this without looking it up
-- medium: applied understanding; requires knowing how things work, not just what they are called
-- hard: advanced concepts, edge cases, architecture decisions, subtle gotchas; senior-level knowledge
+Difficulty:
+- easy: basic recall/definitions; junior-level
+- medium: applied understanding; intermediate-level
+- hard: advanced concepts, edge cases, architecture; senior-level`;
+
+const SYSTEM_PROMPT = `You are an expert assessment question writer. Generate high-quality, unambiguous questions.
+
+${BASE_RULES}
 
 Return this exact JSON structure:
 {
-  "questions": [
-    {
-      "type": "mcq",
-      "question_text": "...",
-      "points": 1,
-      "options": [
-        {"option_text": "...", "is_correct": false},
-        {"option_text": "...", "is_correct": true},
-        {"option_text": "...", "is_correct": false},
-        {"option_text": "...", "is_correct": false}
-      ]
-    },
-    {
-      "type": "true_false",
-      "question_text": "...",
-      "points": 1,
-      "correct_answer": "true"
-    }
-  ]
+  "questions": [${MCQ_SHAPE}, ${TF_SHAPE}, ${SA_SHAPE}]
 }`;
 
-const SYSTEM_PROMPT_JD = `You are an expert assessment question writer. Generate high-quality questions to test a candidate's skills for a specific job role.
+const SYSTEM_PROMPT_JD = `You are an expert assessment question writer for job-role skill assessments.
 
-Rules:
-- MCQ: exactly 4 answer options, exactly 1 correct, options must be plausible distractors
-- True/False: question must have one definitively correct answer
-- Each question MUST include a "skill" field with the exact skill name it tests (from the provided list)
+${BASE_RULES}
+- Each question MUST include a "skill" field with the exact skill name it tests
 - Distribute questions evenly across all skills
-- Do NOT repeat similar questions
-- Return ONLY valid JSON — no prose, no markdown
-
-Difficulty calibration:
-- easy: basic recall and definitions; a junior developer should know this without looking it up
-- medium: applied understanding; requires knowing how things work, not just what they are called
-- hard: advanced concepts, edge cases, architecture decisions, subtle gotchas; senior-level knowledge
 
 Return this exact JSON structure:
 {
   "questions": [
     {
-      "type": "mcq",
-      "skill": "Python",
-      "question_text": "...",
-      "points": 1,
-      "options": [
-        {"option_text": "...", "is_correct": false},
-        {"option_text": "...", "is_correct": true},
-        {"option_text": "...", "is_correct": false},
-        {"option_text": "...", "is_correct": false}
-      ]
+      "type": "mcq", "skill": "Python",
+      "question_text": "...", "points": 1,
+      "options": [...],
+      "explanation": "..."
     },
     {
-      "type": "true_false",
-      "skill": "Agile",
-      "question_text": "...",
-      "points": 1,
-      "correct_answer": "true"
+      "type": "short_answer", "skill": "System Design",
+      "question_text": "...", "points": 2,
+      "model_answer": "...", "grading_rubric": "...", "answer_keywords": [...],
+      "explanation": "..."
     }
   ]
 }`;
@@ -86,11 +89,25 @@ const DIFF_LABELS = {
   hard:   'Hard (advanced concepts and edge cases, senior-level)',
 };
 
+// ── POST — create session ─────────────────────────────────────────────────────
+
 export async function POST(request) {
   try {
     const { user } = await requireUser(request);
-    const { input_type, input_data, jd_skills, difficulty, timer_minutes } = await request.json();
+    const body = await request.json();
+    const {
+      input_type, input_data, jd_skills, difficulty, timer_minutes,
+      question_types = ['mcq'],
+      mcq_count: rawMcq,
+      short_answer_count: rawSa,
+      grading_method = 'per_question',
+    } = body;
 
+    // Derive whether short answer is included
+    const wantsMCQ = question_types.includes('mcq') || question_types.includes('mixed');
+    const wantsSA  = question_types.includes('short_answer') || question_types.includes('mixed');
+
+    // Validation
     if (!['skills', 'content', 'jd'].includes(input_type)) {
       return Response.json({ error: 'Invalid input_type' }, { status: 400 });
     }
@@ -117,55 +134,104 @@ export async function POST(request) {
     }
 
     const diffLabel = DIFF_LABELS[difficulty];
-    const types = 'Multiple Choice (MCQ), True/False';
 
-    let userPrompt, count, systemPrompt;
+    // Calculate question counts
+    let baseMcqCount, baseSaCount;
+    if (input_type === 'skills') {
+      const skills = input_data.split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
+      const total = Math.min(Math.max(skills.length * 5, 5), 20);
+      if (wantsMCQ && wantsSA) {
+        baseMcqCount = rawMcq ?? Math.round(total * 0.7);
+        baseSaCount  = rawSa  ?? (total - baseMcqCount);
+      } else if (wantsSA) {
+        baseMcqCount = 0; baseSaCount = rawSa ?? total;
+      } else {
+        baseMcqCount = rawMcq ?? total; baseSaCount = 0;
+      }
+    } else if (input_type === 'content') {
+      if (wantsMCQ && wantsSA) {
+        baseMcqCount = rawMcq ?? 7; baseSaCount = rawSa ?? 3;
+      } else if (wantsSA) {
+        baseMcqCount = 0; baseSaCount = rawSa ?? 10;
+      } else {
+        baseMcqCount = rawMcq ?? 10; baseSaCount = 0;
+      }
+    } else {
+      // jd
+      const total = Math.min(Math.max(jd_skills.length * 3, 5), 20);
+      if (wantsMCQ && wantsSA) {
+        baseMcqCount = rawMcq ?? Math.round(total * 0.7);
+        baseSaCount  = rawSa  ?? (total - baseMcqCount);
+      } else if (wantsSA) {
+        baseMcqCount = 0; baseSaCount = rawSa ?? total;
+      } else {
+        baseMcqCount = rawMcq ?? total; baseSaCount = 0;
+      }
+    }
+
+    const mcqCount = Math.max(0, Math.min(20, baseMcqCount));
+    const saCount  = Math.max(0, Math.min(10, baseSaCount));
+    const totalCount = mcqCount + saCount;
+
+    if (totalCount < 1) {
+      return Response.json({ error: 'Please configure at least 1 question.' }, { status: 400 });
+    }
+
+    // Build prompt
+    let userPrompt, systemPrompt;
+    const typeDescription = wantsMCQ && wantsSA
+      ? `${mcqCount} MCQ/True-False questions and ${saCount} Short Answer questions`
+      : wantsSA
+        ? `${saCount} Short Answer questions only`
+        : `${mcqCount} MCQ/True-False questions (distribute evenly between MCQ and True/False)`;
 
     if (input_type === 'skills') {
       const skills = input_data.split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
-      count = Math.min(Math.max(skills.length * 5, 5), 20);
       systemPrompt = SYSTEM_PROMPT;
-      userPrompt = `Generate exactly ${count} ${diffLabel} questions about these skills/topics: ${skills.join(', ')}\nQuestion types to use (distribute evenly): ${types}`;
+      userPrompt = `Generate exactly ${totalCount} ${diffLabel} questions about these skills/topics: ${skills.join(', ')}\n\nDistribution: ${typeDescription}\nFor MCQ/TF: distribute evenly between MCQ and True/False.\nFor Short Answer: require 2-6 sentence written responses.`;
     } else if (input_type === 'content') {
-      count = 10;
       systemPrompt = SYSTEM_PROMPT;
-      userPrompt = `Generate exactly ${count} ${diffLabel} questions based on this content:\n\n${input_data.trim()}\n\nQuestion types to use (distribute evenly): ${types}`;
+      userPrompt = `Generate exactly ${totalCount} ${diffLabel} questions based on this content:\n\n${input_data.trim()}\n\nDistribution: ${typeDescription}`;
     } else {
-      // jd
-      count = Math.min(Math.max(jd_skills.length * 3, 5), 20);
       systemPrompt = SYSTEM_PROMPT_JD;
       const skillList = jd_skills.map(s => `- ${s.name} (${s.type})`).join('\n');
-      userPrompt = `Generate exactly ${count} ${diffLabel} questions to assess a candidate against these job requirements.\n\nSkills to assess (distribute evenly, ~3 questions per skill):\n${skillList}\n\nEach question must include the "skill" field matching the exact skill name above.\nQuestion types to use (distribute evenly): ${types}`;
+      userPrompt = `Generate exactly ${totalCount} ${diffLabel} questions for this job role.\n\nSkills (distribute evenly):\n${skillList}\n\nDistribution: ${typeDescription}\nEach question must include the "skill" field.`;
     }
 
     const generated = await callAI(userPrompt, systemPrompt);
 
     const valid = (generated?.questions || []).filter(q => {
-      if (!['mcq', 'true_false'].includes(q.type)) return false;
+      if (!['mcq', 'true_false', 'short_answer'].includes(q.type)) return false;
       if (!q.question_text?.trim()) return false;
       if (q.type === 'mcq' && (!Array.isArray(q.options) || q.options.length < 2)) return false;
       if (q.type === 'mcq' && !q.options.some(o => o.is_correct)) return false;
       if (q.type === 'true_false' && !['true', 'false'].includes(q.correct_answer)) return false;
+      if (q.type === 'short_answer' && !q.model_answer?.trim()) return false;
       return true;
-    }).slice(0, count);
+    }).slice(0, totalCount);
 
     if (!valid.length) {
       return Response.json({
-        error: input_type === 'content' && difficulty === 'hard'
-          ? 'Not enough content to generate Hard questions. Try a lower difficulty or add more content.'
-          : 'We were unable to generate questions at this time. Please try again.',
+        error: 'We were unable to generate questions at this time. Please try again.',
       }, { status: 422 });
     }
 
+    const actualMcq = valid.filter(q => q.type !== 'short_answer').length;
+    const actualSa  = valid.filter(q => q.type === 'short_answer').length;
+
     const insertRow = {
-      user_id:        user.id,
+      user_id:             user.id,
       input_type,
-      input_data:     input_type === 'jd' ? (input_data || '') : input_data.trim(),
+      input_data:          input_type === 'jd' ? (input_data || '') : input_data.trim(),
       difficulty,
-      timer_minutes:  timer,
-      questions:      valid,
-      question_count: valid.length,
-      status:         'ready',
+      timer_minutes:       timer,
+      questions:           valid,
+      question_count:      valid.length,
+      status:              'ready',
+      question_types,
+      mcq_count:           actualMcq,
+      short_answer_count:  actualSa,
+      grading_method:      wantsSA ? grading_method : null,
     };
     if (input_type === 'jd') insertRow.jd_skills = jd_skills;
 
@@ -174,22 +240,33 @@ export async function POST(request) {
       const { data, error: sErr } = await supabase
         .from('self_test_sessions')
         .insert(insertRow)
-        .select('id, input_type, question_count, difficulty, timer_minutes, status, created_at')
+        .select('id, input_type, question_count, difficulty, timer_minutes, status, created_at, question_types, mcq_count, short_answer_count, grading_method')
         .single();
 
-      // Graceful fallback: if jd_skills column not yet migrated, retry without it
       if (sErr && input_type === 'jd' && sErr.message?.includes('jd_skills')) {
         const { jd_skills: _drop, ...rowWithout } = insertRow;
         const { data: d2, error: e2 } = await supabase
           .from('self_test_sessions')
           .insert(rowWithout)
-          .select('id, input_type, question_count, difficulty, timer_minutes, status, created_at')
+          .select('id, input_type, question_count, difficulty, timer_minutes, status, created_at, question_types, mcq_count, short_answer_count, grading_method')
           .single();
         if (e2) throw e2;
         session = d2;
       } else {
-        if (sErr) throw sErr;
-        session = data;
+        // Graceful fallback: new columns may not exist yet
+        if (sErr?.message?.includes('question_types') || sErr?.message?.includes('mcq_count')) {
+          const { question_types: _a, mcq_count: _b, short_answer_count: _c, grading_method: _d, ...rowCompat } = insertRow;
+          const { data: d3, error: e3 } = await supabase
+            .from('self_test_sessions')
+            .insert(rowCompat)
+            .select('id, input_type, question_count, difficulty, timer_minutes, status, created_at')
+            .single();
+          if (e3) throw e3;
+          session = d3;
+        } else {
+          if (sErr) throw sErr;
+          session = data;
+        }
       }
     }
 
@@ -200,6 +277,8 @@ export async function POST(request) {
   }
 }
 
+// ── GET — session history ─────────────────────────────────────────────────────
+
 export async function GET(request) {
   try {
     const { user } = await requireUser(request);
@@ -207,9 +286,9 @@ export async function GET(request) {
       .from('self_test_sessions')
       .select(`
         id, input_type, input_data, difficulty, timer_minutes,
-        question_count, status, created_at,
+        question_count, status, created_at, question_types, mcq_count, short_answer_count,
         self_test_attempts (
-          id, score, max_score, submitted_at, auto_submitted
+          id, score, max_score, submitted_at, auto_submitted, combined_pct
         )
       `)
       .eq('user_id', user.id)
@@ -223,6 +302,8 @@ export async function GET(request) {
     return Response.json({ error: err.message }, { status: 500 });
   }
 }
+
+// ── callAI ────────────────────────────────────────────────────────────────────
 
 async function callAI(userContent, systemPrompt = SYSTEM_PROMPT) {
   const messages = [

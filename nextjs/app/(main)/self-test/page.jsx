@@ -146,6 +146,58 @@ function JdChip({ skill, onRemove }) {
   );
 }
 
+// ─── Question type selector ───────────────────────────────────────────────────
+function QuestionTypeSelector({ questionType, setQuestionType, gradingMethod, setGradingMethod }) {
+  const wantsSA = questionType === 'short_answer' || questionType === 'mixed';
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="block text-sm font-medium text-ds-text mb-1.5">Question Types</label>
+        <div className="grid grid-cols-3 gap-2">
+          {[['mcq', 'MCQ Only'], ['short_answer', 'Short Answer'], ['mixed', 'Mixed']].map(([v, l]) => (
+            <button key={v} type="button" onClick={() => setQuestionType(v)}
+              className={`py-2 text-xs rounded border font-medium transition-colors ${
+                questionType === v
+                  ? 'border-[var(--c-primary)] bg-primary/10 text-[var(--c-primary)]'
+                  : 'border-ds-border text-ds-textMuted hover:bg-ds-bg'
+              }`}>
+              {l}
+            </button>
+          ))}
+        </div>
+        {questionType === 'mixed' && (
+          <p className="text-xs text-ds-textMuted mt-1.5">Default split: ~70% MCQ / ~30% Short Answer</p>
+        )}
+        {questionType === 'short_answer' && (
+          <p className="text-xs text-ds-textMuted mt-1.5">Written responses graded by AI or self-review</p>
+        )}
+      </div>
+      {wantsSA && (
+        <div>
+          <label className="block text-xs font-medium text-ds-textMuted mb-1.5">Grading Method</label>
+          <div className="grid grid-cols-2 gap-2">
+            {[['ai', '🤖 AI Graded'], ['self', '✋ Self Graded']].map(([v, l]) => (
+              <button key={v} type="button" onClick={() => setGradingMethod(v)}
+                className={`py-2 text-xs rounded border font-medium transition-colors ${
+                  gradingMethod === v
+                    ? 'border-[var(--c-primary)] bg-primary/10 text-[var(--c-primary)]'
+                    : 'border-ds-border text-ds-textMuted hover:bg-ds-bg'
+                }`}>
+                {l}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-ds-textMuted mt-1.5">
+            {gradingMethod === 'ai'
+              ? 'Answers graded automatically after submission using AI'
+              : 'You decide after the test whether each answer was correct'}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Difficulty + Timer sub-form (shared by form step and jd-skills step) ────
 function DifficultyTimer({ difficulty, setDifficulty, timer, setTimer, timerError, validateTimer, estimatedCount, mode }) {
   return (
@@ -199,6 +251,10 @@ export default function SelfTestCreate() {
   // Skills/content form state
   const [skills, setSkills]   = useState([]);
   const [content, setContent] = useState('');
+
+  // Question type configuration
+  const [questionType, setQuestionType]   = useState('mcq'); // 'mcq' | 'short_answer' | 'mixed'
+  const [gradingMethod, setGradingMethod] = useState('ai');  // 'ai' | 'self'
 
   // Shared
   const [difficulty, setDifficulty] = useState(null);
@@ -333,13 +389,19 @@ export default function SelfTestCreate() {
     setError('');
     if (!validateTimer(timer)) return;
 
+    const qtypes = questionType === 'mixed' ? ['mcq', 'short_answer'] : [questionType];
+    const qConfig = {
+      question_types: qtypes,
+      grading_method: (questionType === 'mcq') ? null : gradingMethod,
+    };
+
     let body;
     if (mode === 'skills') {
-      body = { input_type: 'skills', input_data: skills.join(', '), difficulty, timer_minutes: timer };
+      body = { input_type: 'skills', input_data: skills.join(', '), difficulty, timer_minutes: timer, ...qConfig };
     } else if (mode === 'content') {
-      body = { input_type: 'content', input_data: content, difficulty, timer_minutes: timer };
+      body = { input_type: 'content', input_data: content, difficulty, timer_minutes: timer, ...qConfig };
     } else {
-      body = { input_type: 'jd', input_data: jdText, jd_skills: jdSkills, difficulty, timer_minutes: timer };
+      body = { input_type: 'jd', input_data: jdText, jd_skills: jdSkills, difficulty, timer_minutes: timer, ...qConfig };
     }
 
     setStep('generating');
@@ -503,6 +565,11 @@ export default function SelfTestCreate() {
               </div>
             </div>
           )}
+
+          <QuestionTypeSelector
+            questionType={questionType} setQuestionType={setQuestionType}
+            gradingMethod={gradingMethod} setGradingMethod={setGradingMethod}
+          />
 
           <DifficultyTimer
             difficulty={difficulty} setDifficulty={setDifficulty}
@@ -689,6 +756,12 @@ export default function SelfTestCreate() {
             )}
           </div>
 
+          {/* Question types */}
+          <QuestionTypeSelector
+            questionType={questionType} setQuestionType={setQuestionType}
+            gradingMethod={gradingMethod} setGradingMethod={setGradingMethod}
+          />
+
           {/* Difficulty + Timer */}
           <DifficultyTimer
             difficulty={difficulty} setDifficulty={setDifficulty}
@@ -736,6 +809,9 @@ export default function SelfTestCreate() {
             <div className="bg-ds-bg border border-ds-border rounded-lg p-3">
               <p className="text-2xl font-bold text-ds-text font-heading">{session.question_count}</p>
               <p className="text-xs text-ds-textMuted mt-0.5">Questions</p>
+              {session.mcq_count > 0 && session.short_answer_count > 0 && (
+                <p className="text-[10px] text-ds-textMuted mt-0.5">{session.mcq_count} MCQ · {session.short_answer_count} SA</p>
+              )}
             </div>
             <div className="bg-ds-bg border border-ds-border rounded-lg p-3">
               <p className={`text-sm font-bold capitalize ${
@@ -750,6 +826,12 @@ export default function SelfTestCreate() {
               <p className="text-xs text-ds-textMuted mt-0.5">Minutes</p>
             </div>
           </div>
+          {session.short_answer_count > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 text-xs text-amber-700">
+              <span className="font-semibold">Short answer questions included</span> — graded by{' '}
+              {session.grading_method === 'self' ? 'you after submission' : 'AI automatically after submission'}.
+            </div>
+          )}
 
           {mode === 'jd' && jdSkills.length > 0 && (
             <div className="bg-ds-bg border border-ds-border rounded-lg p-3">
