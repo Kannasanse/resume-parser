@@ -97,14 +97,14 @@ function LoginContent() {
     `w-full border rounded-lg px-3 py-2.5 text-sm bg-ds-bg text-ds-text placeholder-ds-textMuted focus:outline-none focus:ring-2 focus:ring-primary transition-colors ${hasError ? 'border-ds-danger' : 'border-ds-inputBorder focus:border-primary'}`;
 
   return (
-    <div className="min-h-screen bg-ds-bg flex items-center justify-center px-4 py-8">
+    <div className="gradient-mesh-1 min-h-screen flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-sm">
         <div className="flex justify-center mb-8">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/login-hero.png" alt="Proflect" className="max-w-[220px] object-contain" />
         </div>
 
-        <div className="auth-card space-y-5">
+        <div className="auth-card glass-light animate-fade-in-scale space-y-5">
           <div className="text-center space-y-1">
             <h1 className="text-xl font-bold text-ds-text font-heading">Welcome back</h1>
             <p className="text-sm text-ds-textSecondary">Sign in to your account</p>
@@ -137,7 +137,7 @@ function LoginContent() {
               <label className="block text-xs font-semibold text-ds-textSecondary uppercase tracking-wide mb-1.5">Email</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)}
                 placeholder="you@example.com" autoComplete="email"
-                className={inputCls(!!error && !lockoutMins && !unverified)} />
+                className={`input-enhanced ${inputCls(!!error && !lockoutMins && !unverified)}`} />
             </div>
 
             <div>
@@ -148,7 +148,7 @@ function LoginContent() {
               <div className="relative">
                 <input type={showPwd ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••" autoComplete="current-password"
-                  className={`${inputCls(!!error && !lockoutMins && !unverified)} pr-10`} />
+                  className={`input-enhanced ${inputCls(!!error && !lockoutMins && !unverified)} pr-10`} />
                 <button type="button" onClick={() => setShowPwd(v => !v)}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ds-textMuted hover:text-ds-text text-xs">
                   {showPwd ? 'Hide' : 'Show'}
@@ -161,7 +161,7 @@ function LoginContent() {
             )}
 
             <button type="submit" disabled={loading || googleLoading || lockoutMins > 0}
-              className="w-full bg-primary text-white py-2.5 rounded-btn text-sm font-semibold hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+              className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed">
               {loading
                 ? <span className="flex items-center justify-center gap-2"><span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Signing in…</span>
                 : 'Sign In'}
@@ -175,7 +175,7 @@ function LoginContent() {
           </div>
 
           <button onClick={handleGoogle} disabled={googleLoading || loading}
-            className="w-full flex items-center justify-center gap-3 border border-ds-border rounded-btn py-2.5 text-sm font-medium text-ds-text bg-ds-card hover:bg-ds-bg hover:border-ds-borderStrong disabled:opacity-50 transition-colors">
+            className="w-full flex items-center justify-center gap-3 border border-ds-border rounded-btn py-2.5 text-sm font-medium text-ds-text bg-ds-card hover:bg-ds-bg hover:border-ds-borderStrong hover:shadow-sm disabled:opacity-50 transition-colors">
             {googleLoading
               ? <span className="w-4 h-4 border-2 border-ds-border border-t-primary rounded-full animate-spin" />
               : <GoogleIcon />}

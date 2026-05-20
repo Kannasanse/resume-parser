@@ -40,7 +40,7 @@ function QuestionView({ question, index, total, answer, onAnswer, flagged, onFla
           </button>
         )}
         {isResults && result && (
-          <span className={`flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded border ${result.correct ? 'bg-ds-successLight text-ds-success border-ds-success/30' : 'bg-ds-dangerLight text-ds-danger border-ds-danger/30'}`}>
+          <span className={`flex-shrink-0 ${result.correct ? 'chip-success' : 'chip-error'} text-xs font-semibold px-2 py-0.5 rounded`}>
             {result.correct ? '✓ Correct' : '✗ Wrong'}
           </span>
         )}
@@ -321,11 +321,11 @@ export default function SelfTestPage() {
     };
 
     return (
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="gradient-mesh-1 min-h-screen max-w-2xl mx-auto space-y-6">
         {/* Score card */}
-        <div className="bg-ds-card border border-ds-border rounded-lg p-6 text-center space-y-3">
+        <div className="card shadow-2xl p-6 text-center space-y-3">
           <p className="text-sm text-ds-textMuted font-medium uppercase tracking-wide">Your Score</p>
-          <p className="text-5xl font-bold text-ds-text font-heading">{pct}%</p>
+          <p className="text-5xl font-bold font-heading text-gradient-primary">{pct}%</p>
           <p className="text-sm text-ds-textMuted">{results.score} / {results.max_score} points</p>
           {isJd && (
             <span className={`inline-block text-xs font-semibold px-3 py-1 rounded-full ${band.cls}`}>
@@ -402,7 +402,7 @@ export default function SelfTestPage() {
             <>
               <button
                 onClick={handleRetake}
-                className="flex-1 text-center bg-primary text-white py-2.5 rounded-btn text-sm font-semibold hover:bg-primary-dark transition-colors"
+                className="btn-primary flex-1 text-center py-2.5 rounded-btn text-sm font-semibold"
               >
                 Retake Test
               </button>
@@ -416,7 +416,7 @@ export default function SelfTestPage() {
           ) : (
             <>
               <Link href="/self-test"
-                className="flex-1 text-center bg-primary text-white py-2.5 rounded-btn text-sm font-semibold hover:bg-primary-dark transition-colors">
+                className="btn-primary flex-1 text-center py-2.5 rounded-btn text-sm font-semibold">
                 Practice Again
               </Link>
               <Link href="/builder"
@@ -434,7 +434,7 @@ export default function SelfTestPage() {
   const q = questions[current];
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4">
+    <div className="gradient-mesh-1 min-h-screen max-w-2xl mx-auto space-y-4">
       {/* Connection banner */}
       {connBanner && (
         <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-4 py-2.5 rounded-lg flex items-center justify-between">
@@ -449,7 +449,7 @@ export default function SelfTestPage() {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={isLowTime ? 'text-ds-danger' : 'text-ds-textMuted'}>
             <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
           </svg>
-          <span className={`font-mono font-bold text-lg ${isLowTime ? 'text-ds-danger' : 'text-ds-text'}`}>
+          <span className={`font-mono font-bold text-lg ${isLowTime ? 'text-ds-danger animate-pulse-glow' : 'text-ds-text'}`}>
             {timeLeft !== null ? formatTime(timeLeft) : '--:--'}
           </span>
           {isLowTime && <span className="text-xs text-ds-danger font-semibold animate-pulse">Low time!</span>}
@@ -509,14 +509,14 @@ export default function SelfTestPage() {
                 onClick={() => setCurrent(i)}
                 title={isFlagged ? 'Flagged' : isAnswered ? 'Answered' : 'Unanswered'}
                 className={`w-8 h-8 rounded text-xs font-semibold transition-colors relative ${
-                  isCurrent   ? 'bg-primary text-white'
-                  : isAnswered ? 'bg-ds-successLight text-ds-success border border-ds-success/30'
+                  isCurrent   ? 'bg-[var(--c-primary)] text-white'
+                  : isAnswered ? 'bg-[var(--c-primary)] text-white opacity-70'
                   : 'bg-ds-bg text-ds-textMuted border border-ds-border hover:border-primary hover:text-primary'
                 }`}
               >
                 {i + 1}
                 {isFlagged && (
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-500 rounded-full border border-white" />
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-400 rounded-full border border-white" />
                 )}
               </button>
             );
@@ -535,7 +535,7 @@ export default function SelfTestPage() {
 
           <button
             onClick={() => setConfirmOpen(true)}
-            className="bg-primary text-white px-5 py-2 rounded-btn text-sm font-semibold hover:bg-primary-dark transition-colors"
+            className="btn-primary px-5 py-2 rounded-btn text-sm font-semibold"
           >
             Submit Test
           </button>
@@ -567,7 +567,7 @@ export default function SelfTestPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => { setConfirmOpen(false); doSubmit(false); }}
-                className="flex-1 bg-primary text-white py-2 rounded-btn text-sm font-semibold hover:bg-primary-dark transition-colors"
+                className="btn-primary flex-1 py-2 rounded-btn text-sm font-semibold"
               >
                 Yes, Submit
               </button>

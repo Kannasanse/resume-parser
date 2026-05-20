@@ -109,7 +109,7 @@ export default function SignUpPage() {
 
   const strength = passwordStrength(form.password);
   const inputCls = (field) =>
-    `w-full border rounded-lg px-3 py-2.5 text-sm bg-ds-bg text-ds-text placeholder-ds-textMuted focus:outline-none focus:ring-2 focus:ring-primary transition-colors ${errors[field] ? 'border-ds-danger' : 'border-ds-inputBorder focus:border-primary'}`;
+    `input-enhanced w-full border rounded-lg px-3 py-2.5 text-sm bg-ds-bg text-ds-text placeholder-ds-textMuted focus:outline-none focus:ring-2 focus:ring-primary transition-colors ${errors[field] ? 'border-ds-danger' : 'border-ds-inputBorder focus:border-primary'}`;
 
   if (done) {
     return (
@@ -138,14 +138,14 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-ds-bg flex items-center justify-center px-4 py-8">
+    <div className="gradient-mesh-1 min-h-screen flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center gap-2 mb-8">
           <span className="nav-logo-mark">P</span>
           <span className="text-lg font-bold tracking-tight text-[var(--c-text)]">Proflect</span>
         </div>
 
-        <div className="auth-card space-y-5">
+        <div className="auth-card glass-light animate-fade-in-scale space-y-5">
           <div className="text-center space-y-1">
             <h1 className="text-xl font-bold text-ds-text font-heading">Create your account</h1>
             <p className="text-sm text-ds-textSecondary">Join Proflect today</p>
@@ -210,7 +210,7 @@ export default function SignUpPage() {
             )}
 
             <button type="submit" disabled={loading || googleLoading}
-              className="w-full bg-primary text-white py-2.5 rounded-btn text-sm font-semibold hover:bg-primary-dark disabled:opacity-50 transition-colors">
+              className="btn-primary w-full disabled:opacity-50">
               {loading
                 ? <span className="flex items-center justify-center gap-2"><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Creating account…</span>
                 : 'Create Account'}
@@ -224,7 +224,7 @@ export default function SignUpPage() {
           </div>
 
           <button onClick={handleGoogle} disabled={googleLoading || loading}
-            className="w-full flex items-center justify-center gap-3 border border-ds-border rounded-btn py-2.5 text-sm font-medium text-ds-text bg-ds-card hover:bg-ds-bg hover:border-ds-borderStrong disabled:opacity-50 transition-colors">
+            className="w-full flex items-center justify-center gap-3 border border-ds-border rounded-btn py-2.5 text-sm font-medium text-ds-text bg-ds-card hover:bg-ds-bg hover:border-ds-borderStrong hover:shadow-sm disabled:opacity-50 transition-colors">
             {googleLoading
               ? <span className="w-4 h-4 border-2 border-ds-border border-t-primary rounded-full animate-spin" />
               : <GoogleIcon />}

@@ -45,7 +45,7 @@ function SaveButton({ onClick, saving, saved, error }) {
     </button>
   );
   return (
-    <button onClick={onClick} className="inline-flex items-center gap-1.5 h-8 px-4 rounded-md text-xs font-semibold bg-primary text-white hover:bg-primary/90 transition-colors">
+    <button onClick={onClick} className="btn-primary inline-flex items-center gap-1.5 h-8 px-4 rounded-md text-xs font-semibold">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
       Save
     </button>
@@ -720,10 +720,10 @@ export default function BuilderEditor() {
   const templateName = TEMPLATES?.find(t => t.id === previewData.template_id)?.name || previewData.template_id;
 
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 56px)' }}>
+    <div className="gradient-mesh-1 flex flex-col" style={{ height: 'calc(100vh - 56px)' }}>
 
       {/* ── Top bar ──────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 px-4 h-14 bg-ds-card border-b border-ds-border flex-shrink-0">
+      <div className="glass-light flex items-center gap-3 px-4 h-14 border-b border-ds-border flex-shrink-0">
         {/* Back */}
         <Link href="/builder" className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded text-ds-textMuted hover:text-ds-text hover:bg-ds-bg transition-colors">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -823,7 +823,7 @@ export default function BuilderEditor() {
       <div className="flex flex-1 overflow-hidden relative">
 
         {/* ── Left panel (340px, Content / Customize) ───────────────────────── */}
-        <div className={`${mobileTab === 'preview' ? 'hidden md:flex' : 'flex'} flex-col md:w-[340px] md:flex-none flex-1 border-r border-ds-border bg-ds-card overflow-hidden`}>
+        <div className={`${mobileTab === 'preview' ? 'hidden md:flex' : 'flex'} flex-col md:w-[340px] md:flex-none flex-1 border-r border-[rgba(209,220,232,0.6)] bg-ds-card overflow-hidden`}>
 
           {/* Sticky panel header */}
           <div className="flex-shrink-0 bg-ds-card border-b border-ds-border sticky top-0 z-10">

@@ -217,9 +217,10 @@ export default function AdminCreditsPage() {
   const pendingCount = requests.filter(r => r.status === 'pending').length;
 
   return (
+    <div className="gradient-mesh-1 min-h-screen">
     <div className="max-w-5xl mx-auto px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-ds-text">Credits Management</h1>
+        <h1 className="text-xl font-bold text-gradient-primary">Credits Management</h1>
         <p className="text-sm text-ds-textMuted mt-0.5">Manage user credits and review requests</p>
       </div>
 
@@ -260,7 +261,7 @@ export default function AdminCreditsPage() {
           ) : requests.length === 0 ? (
             <div className="py-16 text-center text-ds-textMuted text-sm">No {reqFilter !== 'all' ? reqFilter : ''} requests</div>
           ) : (
-            <div className="bg-ds-card border border-ds-border rounded-xl overflow-hidden">
+            <div className="card shadow-sm bg-ds-card border border-ds-border rounded-xl overflow-hidden stagger-children">
               {requests.map((r, i) => {
                 const sc = STATUS_CONFIG[r.status] || STATUS_CONFIG.pending;
                 return (
@@ -284,7 +285,7 @@ export default function AdminCreditsPage() {
                     </span>
                     {r.status === 'pending' && (
                       <button onClick={() => setReviewTarget(r)}
-                        className="h-8 px-3 text-xs font-semibold border border-ds-border rounded-lg text-ds-text hover:bg-ds-bg transition-colors flex-shrink-0">
+                        className="btn-primary h-8 px-3 text-xs flex-shrink-0">
                         Review
                       </button>
                     )}
@@ -298,7 +299,7 @@ export default function AdminCreditsPage() {
 
       {/* Users tab */}
       {activeTab === 'users' && (
-        <div className="bg-ds-card border border-ds-border rounded-xl overflow-hidden">
+        <div className="card shadow-sm bg-ds-card border border-ds-border rounded-xl overflow-hidden">
           <table className="ds-table">
             <thead>
               <tr className="border-b border-ds-border bg-ds-bg">
@@ -332,7 +333,7 @@ export default function AdminCreditsPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <button onClick={() => setGrantTarget(u)}
-                          className="h-7 px-3 text-xs font-semibold border border-ds-border rounded-lg text-ds-text hover:bg-ds-bg transition-colors">
+                          className="btn-primary h-7 px-3 text-xs">
                           Grant Credits
                         </button>
                       </td>
@@ -362,7 +363,7 @@ export default function AdminCreditsPage() {
             <span className="text-xs text-ds-textMuted">{txTotal} total transactions</span>
           </div>
 
-          <div className="bg-ds-card border border-ds-border rounded-xl overflow-hidden">
+          <div className="card shadow-sm bg-ds-card border border-ds-border rounded-xl overflow-hidden">
             <table className="ds-table">
               <thead>
                 <tr className="border-b border-ds-border bg-ds-bg">
@@ -424,6 +425,7 @@ export default function AdminCreditsPage() {
 
       {grantTarget  && <GrantModal  user={grantTarget}  onClose={() => setGrantTarget(null)}  onDone={handleDone} />}
       {reviewTarget && <ReviewModal req={reviewTarget}  onClose={() => setReviewTarget(null)} onDone={handleDone} />}
+    </div>
     </div>
   );
 }

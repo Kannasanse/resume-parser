@@ -93,7 +93,7 @@ function SkillTagInput({ skills, onChange, suggestions }) {
         onClick={() => inputRef.current?.focus()}
       >
         {skills.map(s => (
-          <span key={s} className="flex items-center gap-1 text-xs bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full font-medium">
+          <span key={s} className="chip-primary flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium">
             {s}
             <button type="button" onClick={() => removeSkill(s)} className="text-primary/60 hover:text-primary leading-none text-sm">×</button>
           </span>
@@ -394,7 +394,7 @@ export default function SelfTestCreate() {
   const softSkills   = jdSkills.filter(s => s.type === 'Soft');
 
   return (
-    <div className="max-w-xl mx-auto space-y-6">
+    <div className="gradient-mesh-1 min-h-screen max-w-xl mx-auto space-y-6">
       {/* Header */}
       <div>
         {STEP_BACKS[step] && (
@@ -450,7 +450,7 @@ export default function SelfTestCreate() {
               key={card.id}
               type="button"
               onClick={() => selectMode(card.id)}
-              className={`mode-card text-left ${mode === card.id ? '!border-[var(--c-primary)] ring-2 ring-[var(--c-primary-light)]' : ''}`}
+              className={`card card-interactive mode-card text-left ${mode === card.id ? 'ring-2 ring-[var(--c-primary)] shadow-glow-primary' : ''}`}
             >
               <span className={`stat-icon mb-3 ${mode === card.id ? '' : ''}`}>
                 {card.icon}
@@ -465,7 +465,7 @@ export default function SelfTestCreate() {
 
       {/* ── Step: Skills / Content form ──────────────────────────────────────── */}
       {step === 'form' && (
-        <div className="bg-ds-card border border-ds-border rounded-lg p-6 space-y-5">
+        <div className="card shadow-2xl p-6 space-y-5">
           {error && (
             <div className="bg-ds-dangerLight border border-ds-danger/30 text-ds-danger text-sm rounded px-3 py-2.5 flex items-start justify-between gap-3">
               <span>{error}</span>
@@ -514,7 +514,7 @@ export default function SelfTestCreate() {
           <button
             onClick={generate}
             disabled={!canGenerate}
-            className="w-full bg-primary text-white py-2.5 rounded-btn text-sm font-semibold hover:bg-primary-dark disabled:opacity-50 transition-colors"
+            className="btn-primary w-full py-2.5 rounded-btn text-sm font-semibold disabled:opacity-50"
           >
             Generate Test →
           </button>
@@ -526,7 +526,7 @@ export default function SelfTestCreate() {
 
       {/* ── Step: JD input ───────────────────────────────────────────────────── */}
       {step === 'jd-input' && (
-        <div className="bg-ds-card border border-ds-border rounded-lg p-6 space-y-4">
+        <div className="card shadow-2xl p-6 space-y-4">
           {extractError && (
             <div className="bg-ds-dangerLight border border-ds-danger/30 text-ds-danger text-sm rounded px-3 py-2.5">
               {extractError}
@@ -556,7 +556,7 @@ export default function SelfTestCreate() {
           <button
             onClick={extractSkills}
             disabled={jdText.trim().length < 100 || extracting}
-            className="w-full bg-primary text-white py-2.5 rounded-btn text-sm font-semibold hover:bg-primary-dark disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+            className="btn-primary w-full py-2.5 rounded-btn text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {extracting ? (
               <>
@@ -572,7 +572,7 @@ export default function SelfTestCreate() {
 
       {/* ── Step: JD skills review ───────────────────────────────────────────── */}
       {step === 'jd-skills' && (
-        <div className="bg-ds-card border border-ds-border rounded-lg p-6 space-y-5">
+        <div className="card shadow-2xl p-6 space-y-5">
           {/* Undo toast */}
           {undoSkill && (
             <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2 rounded flex items-center justify-between gap-3">
@@ -700,7 +700,7 @@ export default function SelfTestCreate() {
           <button
             onClick={generate}
             disabled={!canGenerate}
-            className="w-full bg-primary text-white py-2.5 rounded-btn text-sm font-semibold hover:bg-primary-dark disabled:opacity-50 transition-colors"
+            className="btn-primary w-full py-2.5 rounded-btn text-sm font-semibold disabled:opacity-50"
           >
             Generate Test →
           </button>
@@ -721,7 +721,7 @@ export default function SelfTestCreate() {
 
       {/* ── Step: Review ─────────────────────────────────────────────────────── */}
       {step === 'review' && session && (
-        <div className="bg-ds-card border border-ds-border rounded-lg p-6 space-y-5">
+        <div className="card shadow-2xl p-6 space-y-5">
           <div className="text-center space-y-2">
             <div className="w-14 h-14 bg-primary/10 border border-primary/20 rounded-full flex items-center justify-center mx-auto">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
@@ -756,7 +756,7 @@ export default function SelfTestCreate() {
               <p className="text-xs font-medium text-ds-textMuted mb-2">Skills being tested</p>
               <div className="flex flex-wrap gap-1.5">
                 {jdSkills.map(s => (
-                  <span key={s.name} className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium">
+                  <span key={s.name} className="chip-primary text-xs px-2 py-0.5 rounded-full font-medium">
                     {s.name}
                   </span>
                 ))}
@@ -770,7 +770,7 @@ export default function SelfTestCreate() {
 
           <div className="flex gap-3">
             <button onClick={startTest}
-              className="flex-1 bg-primary text-white py-2.5 rounded-btn text-sm font-semibold hover:bg-primary-dark transition-colors">
+              className="btn-primary flex-1 py-2.5 rounded-btn text-sm font-semibold">
               Start Test →
             </button>
             <button onClick={reset}

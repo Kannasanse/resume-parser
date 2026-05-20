@@ -68,10 +68,10 @@ export default function AdminUsersPage() {
   const totalPages = Math.ceil(total / limit);
 
   return (
-    <div className="space-y-6">
+    <div className="gradient-mesh-1 min-h-screen p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-ds-text font-heading">Users</h1>
+          <h1 className="text-2xl font-bold font-heading text-gradient-primary">Users</h1>
           <p className="text-sm text-ds-textMuted mt-0.5">{total} total</p>
         </div>
         <Link href="/admin/invite"
@@ -84,7 +84,7 @@ export default function AdminUsersPage() {
       <div className="flex flex-wrap gap-3">
         <input value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Search by name or email…"
-          className="w-full sm:w-64 min-w-0 border border-ds-inputBorder rounded px-3 py-2 text-sm bg-ds-bg text-ds-text placeholder-ds-textMuted focus:outline-none focus:ring-2 focus:ring-primary" />
+          className="input-enhanced w-full sm:w-64 min-w-0 border border-ds-inputBorder rounded px-3 py-2 text-sm bg-ds-bg text-ds-text placeholder-ds-textMuted focus:outline-none focus:ring-2 focus:ring-primary" />
         <select value={role} onChange={e => setRole(e.target.value)}
           className="border border-ds-inputBorder rounded px-3 py-2 text-sm bg-ds-bg text-ds-text focus:outline-none focus:ring-2 focus:ring-primary">
           <option value="">All roles</option>
@@ -101,7 +101,7 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-ds-card border border-ds-border rounded-lg overflow-hidden">
+      <div className="card shadow-xs bg-ds-card border border-ds-border rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="ds-table">
             <thead>

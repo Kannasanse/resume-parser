@@ -87,7 +87,7 @@ function SectionRow({ section, onToggleVisibility, onEdit, dragHandlers }) {
     <div
       draggable
       {...dragHandlers}
-      className="flex items-center gap-3 px-3 py-2.5 ds-paper rounded group cursor-default"
+      className="card flex items-center gap-3 px-3 py-2.5 rounded group cursor-default"
     >
       <span className="text-ds-textMuted cursor-grab active:cursor-grabbing select-none text-lg leading-none">⠿</span>
       <span className="text-base">{typeInfo.icon}</span>
@@ -293,7 +293,7 @@ function DesignTab({ portfolio, onUpdate }) {
             <button
               key={t.id}
               onClick={() => handleTemplate(t.id)}
-              className={`w-full text-left px-3 py-2.5 rounded border transition-all ${template === t.id ? 'border-primary bg-primary/5 ring-1 ring-primary/30' : 'border-ds-border bg-ds-bg hover:border-primary/40'}`}
+              className={`card card-interactive w-full text-left px-3 py-2.5 rounded border transition-all ${template === t.id ? 'border-primary bg-primary/5 ring-2 ring-[var(--c-primary)]' : 'border-ds-border hover:border-primary/40'}`}
             >
               <div className="text-sm font-medium text-ds-text">{t.name}</div>
               <div className="text-xs text-ds-textMuted">{t.desc}</div>
@@ -574,7 +574,7 @@ export default function PortfolioEditPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] -mx-4 -my-4 sm:-my-8">
+    <div className="gradient-mesh-1 flex flex-col h-[calc(100vh-64px)] -mx-4 -my-4 sm:-my-8">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-ds-border bg-ds-card shrink-0">
         <Link href="/portfolios" className="text-ds-textMuted hover:text-ds-text transition-colors">
@@ -611,7 +611,7 @@ export default function PortfolioEditPage() {
           {portfolio.status !== 'published' && (
             <button
               onClick={() => handleUpdate({ status: 'published' })}
-              className="bg-primary text-white rounded px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium hover:bg-primary/90 transition-colors"
+              className="btn-primary rounded px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium"
             >
               Publish
             </button>
@@ -628,7 +628,7 @@ export default function PortfolioEditPage() {
               <button
                 key={t.id}
                 onClick={() => setActiveTab(t.id)}
-                className={`flex-1 py-2.5 text-sm font-medium transition-colors ${activeTab === t.id ? 'text-primary border-b-2 border-primary' : 'text-ds-textMuted hover:text-ds-text'}`}
+                className={`flex-1 py-2.5 text-sm font-medium transition-colors ${activeTab === t.id ? 'text-primary border-b-2 border-[var(--c-primary)]' : 'text-ds-textMuted hover:text-ds-text'}`}
               >
                 {t.label}
               </button>
