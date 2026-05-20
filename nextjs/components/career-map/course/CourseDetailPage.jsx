@@ -55,7 +55,11 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
       .then(r => r.json())
       .then(data => {
         if (data.videos) {
-          setTopic(prev => prev ? { ...prev, youtube_videos: data.videos } : prev);
+          setTopic(prev => prev ? {
+            ...prev,
+            youtube_videos: data.videos,
+            sections: data.sections || prev.sections,
+          } : prev);
         }
       })
       .catch(() => {});

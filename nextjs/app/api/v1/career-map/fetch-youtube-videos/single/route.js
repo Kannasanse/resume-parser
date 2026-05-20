@@ -117,7 +117,7 @@ export async function POST(request) {
       .update({ youtube_videos: rankedVideos, sections: updatedSections, updated_at: new Date().toISOString() })
       .eq('id', topicId);
 
-    return NextResponse.json({ topicId, videos: rankedVideos });
+    return NextResponse.json({ topicId, videos: rankedVideos, sections: updatedSections });
   } catch (err) {
     if (err instanceof Response) return err;
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

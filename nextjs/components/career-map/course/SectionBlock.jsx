@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PlaceholderState from './PlaceholderState';
 import GeneratingState from './GeneratingState';
 import GeneratedContent from './GeneratedContent';
@@ -8,6 +8,13 @@ import YouTubeEmbed from './YouTubeEmbed';
 export default function SectionBlock({ section, index, topicId, topicTitle, skill, isCompleted, onToggleComplete, onGenerated, precedingSections, topicVideos }) {
   const [localSection, setLocalSection] = useState(section);
   const sectionType = localSection.type || 'text';
+
+  // Sync youtube_video_id when parent assigns it after lazy fetch
+  useEffect(() => {
+    if (section.youtube_video_id && !localSection.youtube_video_id) {
+      setLocalSection(s => ({ ...s, youtube_video_id: section.youtube_video_id }));
+    }
+  }, [section.youtube_video_id]);
   const isVideoOnly = sectionType === 'video-only';
 
   // Find video data for this section
