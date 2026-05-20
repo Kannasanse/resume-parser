@@ -5,22 +5,110 @@ import GeneratingState from './GeneratingState';
 import GeneratedContent from './GeneratedContent';
 import YouTubeEmbed from './YouTubeEmbed';
 
-export default function SectionBlock({ section, index, topicId, topicTitle, skill, isCompleted, onToggleComplete, onGenerated, precedingSections, topicVideos }) {
-  const [localSection, setLocalSection] = useState(section);
-  const sectionType = localSection.type || 'text';
+function PlayVideoButton({ onClick, loading }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={loading}
+      className="flex items-center gap-3 w-full rounded-2xl border transition-all duration-200 px-5 py-4 group"
+      style={{
+        borderColor: loading ? '#D1DCE8' : '#185FA5',
+        background: loading ? '#F9FAFB' : 'linear-gradient(135deg, #E6F1FB, #F4F8FC)',
+      }}
+    >
+      <div className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+        style={{ background: loading ? '#E5E7EB' : '#185FA5' }}>
+        {loading ? (
+          <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+          </svg>
+        ) : (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+            <polygon points="5 3 19 12 5 21"/>
+          </svg>
+        )}
+      </div>
+      <div className="text-left">
+        <p className="text-sm font-semibold" style={{ color: loading ? '#9CA3AF' : '#185FA5' }}>
+          {loading ? 'Finding best video…' : 'Play video'}
+        </p>
+        <p className="text-xs mt-0.5" style={{ color: '#9CA3AF' }}>
+          {loading ? 'Searching YouTube for the most relevant tutorial' : 'Watch a curated tutorial for this topic'}
+        </p>
+      </div>
+      {!loading && (
+        <svg className="ml-auto group-hover:translate-x-1 transition-transform" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#185FA5" strokeWidth="2">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      )}
+    </button>
+  );
+}
 
-  // Sync youtube_video_id when parent assigns it after lazy fetch
+export default function SectionBlock({
+  section, index, topicId, topicTitle, skill,
+  isCompleted, onToggleComplete, onGenerated, onVideoFetched,
+  precedingSections, topicVideos, topicYoutubeQueries,
+}) {
+  const [localSection, setLocalSection] = useState(section);
+  const [videoFetchState, setVideoFetchState] = useState('idle'); // idle | loading | done | error
+  const [fetchedVideo, setFetchedVideo] = useState(null);
+
+  const sectionType = localSection.type || 'text';
+  const isVideoOnly = sectionType === 'video-only';
+  const hasVideoSlot = isVideoOnly || sectionType === 'text-with-video';
+
+  // Sync youtube_video_id if parent assigns it later
   useEffect(() => {
     if (section.youtube_video_id && !localSection.youtube_video_id) {
       setLocalSection(s => ({ ...s, youtube_video_id: section.youtube_video_id }));
     }
   }, [section.youtube_video_id]);
-  const isVideoOnly = sectionType === 'video-only';
 
-  // Find video data for this section
-  const videoData = localSection.youtube_video_id
-    ? (topicVideos || []).find(v => v.videoId === localSection.youtube_video_id) || { videoId: localSection.youtube_video_id }
-    : null;
+  // Resolve video data: prefer fetchedVideo (just fetched), then topicVideos match
+  const videoData = fetchedVideo
+    || (localSection.youtube_video_id
+      ? (topicVideos || []).find(v => v.videoId === localSection.youtube_video_id)
+        || { videoId: localSection.youtube_video_id }
+      : null);
+
+  async function handlePlayVideo() {
+    setVideoFetchState('loading');
+    try {
+      const res = await fetch('/api/v1/career-map/fetch-youtube-videos/single', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topicId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      const videos = data.videos || [];
+      const sections = data.sections || [];
+
+      // Find the video assigned to this specific section
+      const updatedSection = sections.find(s => s.id === section.id);
+      const assignedVideoId = updatedSection?.youtube_video_id;
+      const video = assignedVideoId
+        ? videos.find(v => v.videoId === assignedVideoId) || { videoId: assignedVideoId }
+        : videos.find(v => !v.isFallback) || videos[0] || null;
+
+      if (video && !video.isFallback) {
+        setFetchedVideo(video);
+        setLocalSection(s => ({ ...s, youtube_video_id: video.videoId }));
+      } else if (video?.isFallback) {
+        setFetchedVideo(video);
+      }
+
+      // Propagate to parent so other sections can use the fetched data
+      if (onVideoFetched) onVideoFetched(videos, sections);
+
+      setVideoFetchState('done');
+    } catch {
+      setVideoFetchState('error');
+    }
+  }
 
   async function handleGenerate() {
     setLocalSection(s => ({ ...s, generation_status: 'generating' }));
@@ -49,6 +137,10 @@ export default function SectionBlock({ section, index, topicId, topicTitle, skil
 
   const checkLabel = isVideoOnly ? 'Mark as watched' : 'Mark as read';
 
+  // Determine if we should show the play button for this section
+  const needsVideoFetch = hasVideoSlot && !videoData && videoFetchState === 'idle';
+  const videoLoading = videoFetchState === 'loading';
+
   return (
     <div className="space-y-4">
       {/* Section header */}
@@ -67,13 +159,19 @@ export default function SectionBlock({ section, index, topicId, topicTitle, skil
       </h2>
       <div className="w-10 h-0.5 mt-1 bg-gradient-to-r from-[#185FA5] to-[#1D9E75] rounded-full" />
 
-      {/* Video-only: just show embed, no written content */}
+      {/* Video-only section */}
       {isVideoOnly ? (
         <div className="py-2">
           {videoData ? (
             <YouTubeEmbed {...videoData} />
           ) : (
-            <div className="ds-skel rounded-xl" style={{ aspectRatio: '16/9' }} />
+            <PlayVideoButton onClick={handlePlayVideo} loading={videoLoading} />
+          )}
+          {videoFetchState === 'error' && (
+            <p className="text-xs text-red-500 mt-2 text-center">
+              Couldn't load video.{' '}
+              <button onClick={() => setVideoFetchState('idle')} className="underline">Try again</button>
+            </p>
           )}
         </div>
       ) : (
@@ -95,20 +193,32 @@ export default function SectionBlock({ section, index, topicId, topicTitle, skil
             <PlaceholderState estimatedMinutes={section.estimatedReadMinutes} onGenerate={handleGenerate} />
           )}
 
-          {/* Video below text for text-with-video sections */}
+          {/* Video slot for text-with-video sections */}
           {sectionType === 'text-with-video' && (
             <div className="mt-6 space-y-2">
               <p className="text-xs uppercase tracking-widest text-[var(--c-text-muted)] font-medium flex items-center gap-1.5">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2"/><polygon points="10 10 15 13.5 10 17"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="2" y="7" width="20" height="14" rx="2"/><polygon points="10 10 15 13.5 10 17"/>
+                </svg>
                 Recommended video
               </p>
               {videoData ? (
                 <YouTubeEmbed {...videoData} />
-              ) : null}
+              ) : (
+                <>
+                  <PlayVideoButton onClick={handlePlayVideo} loading={videoLoading} />
+                  {videoFetchState === 'error' && (
+                    <p className="text-xs text-red-500 mt-1 text-center">
+                      Couldn't load video.{' '}
+                      <button onClick={() => setVideoFetchState('idle')} className="underline">Try again</button>
+                    </p>
+                  )}
+                </>
+              )}
             </div>
           )}
 
-          {/* Legacy: plain youtube_video_id on text sections */}
+          {/* Legacy text section with assigned video */}
           {sectionType === 'text' && localSection.youtube_video_id && videoData && (
             <div className="mt-6 space-y-2">
               <p className="text-xs uppercase tracking-widest text-[var(--c-text-muted)] font-medium">🎬 Recommended video</p>
