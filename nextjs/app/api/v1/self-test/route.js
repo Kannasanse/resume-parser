@@ -100,7 +100,6 @@ export async function POST(request) {
       question_types = ['mcq'],
       mcq_count: rawMcq,
       short_answer_count: rawSa,
-      grading_method = 'per_question',
     } = body;
 
     // Derive whether short answer is included
@@ -231,7 +230,7 @@ export async function POST(request) {
       question_types,
       mcq_count:           actualMcq,
       short_answer_count:  actualSa,
-      grading_method:      wantsSA ? grading_method : null,
+      grading_method:      wantsSA ? 'ai' : null,
     };
     if (input_type === 'jd') insertRow.jd_skills = jd_skills;
 

@@ -29,7 +29,6 @@ function QuestionView({
   question, index, answer, onAnswer, flagged, onFlag,
   isResults, result,
   shortAnswerText, onShortAnswerChange,
-  selfGradeLoading, onSelfGrade,
 }) {
   const isSA = question.type === 'short_answer';
 
@@ -53,7 +52,7 @@ function QuestionView({
           </span>
         )}
         {isResults && result && isSA && (() => {
-          if (result.pending_grade && result.grading_method === 'ai') {
+          if (result.pending_grade) {
             return (
               <span className="flex-shrink-0 flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-200">
                 <span className="w-2.5 h-2.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
@@ -61,15 +60,6 @@ function QuestionView({
               </span>
             );
           }
-          if (result.pending_grade && result.grading_method === 'self') {
-            return (
-              <span className="flex-shrink-0 flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-200">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                Rate your answer
-              </span>
-            );
-          }
-          // Graded — three-tier badge
           const score = result.ai_score;
           if (score != null) {
             if (score >= 0.7) return <span className="flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded chip-success">✓ Correct</span>;
@@ -203,40 +193,6 @@ function QuestionView({
             </div>
           )}
 
-          {/* Self-grade buttons (pending) */}
-          {result?.grading_method === 'self' && result?.pending_grade && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-3">
-              <p className="text-xs font-semibold text-amber-700 mb-2">Did you get this right?</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => onSelfGrade(index, true)}
-                  disabled={selfGradeLoading}
-                  className="flex-1 py-2 text-xs font-semibold rounded border border-green-300 bg-green-50 text-green-700 hover:bg-green-100 disabled:opacity-50 transition-colors"
-                >
-                  {selfGradeLoading ? '…' : '✓ Yes, I got it'}
-                </button>
-                <button
-                  onClick={() => onSelfGrade(index, false)}
-                  disabled={selfGradeLoading}
-                  className="flex-1 py-2 text-xs font-semibold rounded border border-red-300 bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-50 transition-colors"
-                >
-                  {selfGradeLoading ? '…' : '✗ No, I missed it'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Self-graded result */}
-          {result?.grading_method === 'self' && !result?.pending_grade && (
-            <div className={`rounded-lg px-3 py-2 text-xs font-semibold border ${
-              result.correct
-                ? 'bg-green-50 border-green-200 text-green-700'
-                : 'bg-red-50 border-red-200 text-red-700'
-            }`}>
-              {result.correct ? '✓ You marked this correct' : '✗ You marked this incorrect'}
-            </div>
-          )}
-
           {/* Model answer */}
           {question.model_answer && (
             <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2.5">
@@ -280,7 +236,6 @@ export default function SelfTestPage() {
   const [results, setResults]         = useState(null);
   const [localResults, setLocalResults] = useState([]);
   const [combinedPct, setCombinedPct] = useState(null);
-  const [selfGradeLoading, setSGLoading] = useState(new Set());
   const [connBanner, setConnBanner]   = useState(false);
 
   const timerRef  = useRef(null);
@@ -499,40 +454,6 @@ export default function SelfTestPage() {
 
   submitRef.current = doSubmit;
 
-  // Self-grade handler
-  const handleSelfGrade = useCallback(async (questionIndex, correct) => {
-    setSGLoading(prev => new Set([...prev, questionIndex]));
-
-    // Optimistic update
-    setLocalResults(prev => {
-      const updated = [...prev];
-      if (updated[questionIndex]) {
-        updated[questionIndex] = {
-          ...updated[questionIndex],
-          correct,
-          self_grade:     correct,
-          grading_method: 'self',
-          pending_grade:  false,
-        };
-      }
-      return updated;
-    });
-
-    try {
-      const r = await fetch(`/api/v1/self-test/${id}/self-grade`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question_index: questionIndex, correct }),
-      });
-      if (r.ok) {
-        const d = await r.json();
-        if (d.combined_pct != null) setCombinedPct(d.combined_pct);
-      }
-    } catch {}
-
-    setSGLoading(prev => { const s = new Set(prev); s.delete(questionIndex); return s; });
-  }, [id]);
-
   // Timer
   useEffect(() => {
     if (state !== 'taking' || timeLeft === null) return;
@@ -614,8 +535,7 @@ export default function SelfTestPage() {
         .sort((a, b) => b.pct - a.pct);
     })() : null;
 
-    const pendingSelfGrade = localResults.some(r => r?.pending_grade && r?.grading_method === 'self');
-    const pendingAIGrade   = localResults.some(r => r?.pending_grade && r?.grading_method === 'ai');
+    const pendingAIGrade = localResults.some(r => r?.pending_grade && r?.grading_method === 'ai');
 
     const handleRetake = () => {
       if (session?.jd_skills) {
@@ -668,12 +588,6 @@ export default function SelfTestPage() {
             <p className="text-sm text-blue-700">AI is grading your short answers — scores will update automatically.</p>
           </div>
         )}
-        {pendingSelfGrade && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
-            <p className="text-sm text-amber-700 font-medium">Self-grade required</p>
-            <p className="text-xs text-amber-600 mt-0.5">Review each short answer below and mark whether you got it right.</p>
-          </div>
-        )}
 
         {/* Per-skill breakdown (JD mode) */}
         {isJd && perSkill && perSkill.length > 0 && (
@@ -722,8 +636,6 @@ export default function SelfTestPage() {
                 result={localResults[i]}
                 shortAnswerText={null}
                 onShortAnswerChange={() => {}}
-                selfGradeLoading={selfGradeLoading.has(i)}
-                onSelfGrade={handleSelfGrade}
               />
             </div>
           ))}

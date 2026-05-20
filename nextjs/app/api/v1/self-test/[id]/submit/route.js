@@ -33,7 +33,7 @@ export async function POST(request, { params }) {
       mergedAnswers[String(sa.questionIndex)] = sa.answerText || '';
       shortAnswerMap[String(sa.questionIndex)] = {
         answerText:    sa.answerText || '',
-        gradingMethod: sa.gradingMethod || session.grading_method || 'per_question',
+        gradingMethod: 'ai',
       };
     }
 

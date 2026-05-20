@@ -147,52 +147,27 @@ function JdChip({ skill, onRemove }) {
 }
 
 // ─── Question type selector ───────────────────────────────────────────────────
-function QuestionTypeSelector({ questionType, setQuestionType, gradingMethod, setGradingMethod }) {
-  const wantsSA = questionType === 'short_answer' || questionType === 'mixed';
+function QuestionTypeSelector({ questionType, setQuestionType }) {
   return (
-    <div className="space-y-3">
-      <div>
-        <label className="block text-sm font-medium text-ds-text mb-1.5">Question Types</label>
-        <div className="grid grid-cols-3 gap-2">
-          {[['mcq', 'MCQ Only'], ['short_answer', 'Short Answer'], ['mixed', 'Mixed']].map(([v, l]) => (
-            <button key={v} type="button" onClick={() => setQuestionType(v)}
-              className={`py-2 text-xs rounded border font-medium transition-colors ${
-                questionType === v
-                  ? 'border-[var(--c-primary)] bg-primary/10 text-[var(--c-primary)]'
-                  : 'border-ds-border text-ds-textMuted hover:bg-ds-bg'
-              }`}>
-              {l}
-            </button>
-          ))}
-        </div>
-        {questionType === 'mixed' && (
-          <p className="text-xs text-ds-textMuted mt-1.5">Default split: ~70% MCQ / ~30% Short Answer</p>
-        )}
-        {questionType === 'short_answer' && (
-          <p className="text-xs text-ds-textMuted mt-1.5">Written responses graded by AI or self-review</p>
-        )}
+    <div>
+      <label className="block text-sm font-medium text-ds-text mb-1.5">Question Types</label>
+      <div className="grid grid-cols-3 gap-2">
+        {[['mcq', 'MCQ Only'], ['short_answer', 'Short Answer'], ['mixed', 'Mixed']].map(([v, l]) => (
+          <button key={v} type="button" onClick={() => setQuestionType(v)}
+            className={`py-2 text-xs rounded border font-medium transition-colors ${
+              questionType === v
+                ? 'border-[var(--c-primary)] bg-primary/10 text-[var(--c-primary)]'
+                : 'border-ds-border text-ds-textMuted hover:bg-ds-bg'
+            }`}>
+            {l}
+          </button>
+        ))}
       </div>
-      {wantsSA && (
-        <div>
-          <label className="block text-xs font-medium text-ds-textMuted mb-1.5">Grading Method</label>
-          <div className="grid grid-cols-2 gap-2">
-            {[['ai', '🤖 AI Graded'], ['self', '✋ Self Graded']].map(([v, l]) => (
-              <button key={v} type="button" onClick={() => setGradingMethod(v)}
-                className={`py-2 text-xs rounded border font-medium transition-colors ${
-                  gradingMethod === v
-                    ? 'border-[var(--c-primary)] bg-primary/10 text-[var(--c-primary)]'
-                    : 'border-ds-border text-ds-textMuted hover:bg-ds-bg'
-                }`}>
-                {l}
-              </button>
-            ))}
-          </div>
-          <p className="text-xs text-ds-textMuted mt-1.5">
-            {gradingMethod === 'ai'
-              ? 'Answers graded automatically after submission using AI'
-              : 'You decide after the test whether each answer was correct'}
-          </p>
-        </div>
+      {questionType === 'mixed' && (
+        <p className="text-xs text-ds-textMuted mt-1.5">~70% MCQ / ~30% Short Answer · AI graded</p>
+      )}
+      {questionType === 'short_answer' && (
+        <p className="text-xs text-ds-textMuted mt-1.5">Written responses — graded automatically by AI</p>
       )}
     </div>
   );
@@ -253,8 +228,7 @@ export default function SelfTestCreate() {
   const [content, setContent] = useState('');
 
   // Question type configuration
-  const [questionType, setQuestionType]   = useState('mcq'); // 'mcq' | 'short_answer' | 'mixed'
-  const [gradingMethod, setGradingMethod] = useState('ai');  // 'ai' | 'self'
+  const [questionType, setQuestionType] = useState('mcq'); // 'mcq' | 'short_answer' | 'mixed'
 
   // Shared
   const [difficulty, setDifficulty] = useState(null);
@@ -390,10 +364,7 @@ export default function SelfTestCreate() {
     if (!validateTimer(timer)) return;
 
     const qtypes = questionType === 'mixed' ? ['mcq', 'short_answer'] : [questionType];
-    const qConfig = {
-      question_types: qtypes,
-      grading_method: (questionType === 'mcq') ? null : gradingMethod,
-    };
+    const qConfig = { question_types: qtypes };
 
     let body;
     if (mode === 'skills') {
@@ -568,7 +539,6 @@ export default function SelfTestCreate() {
 
           <QuestionTypeSelector
             questionType={questionType} setQuestionType={setQuestionType}
-            gradingMethod={gradingMethod} setGradingMethod={setGradingMethod}
           />
 
           <DifficultyTimer
@@ -759,7 +729,6 @@ export default function SelfTestCreate() {
           {/* Question types */}
           <QuestionTypeSelector
             questionType={questionType} setQuestionType={setQuestionType}
-            gradingMethod={gradingMethod} setGradingMethod={setGradingMethod}
           />
 
           {/* Difficulty + Timer */}
@@ -827,9 +796,8 @@ export default function SelfTestCreate() {
             </div>
           </div>
           {session.short_answer_count > 0 && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 text-xs text-amber-700">
-              <span className="font-semibold">Short answer questions included</span> — graded by{' '}
-              {session.grading_method === 'self' ? 'you after submission' : 'AI automatically after submission'}.
+            <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5 text-xs text-blue-700">
+              <span className="font-semibold">Short answer questions included</span> — graded automatically by AI after submission.
             </div>
           )}
 
