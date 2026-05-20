@@ -198,6 +198,8 @@ export async function POST(request) {
     }
 
     const generated = await callAI(userPrompt, systemPrompt);
+    console.log('AI raw question count:', generated?.questions?.length);
+    console.log('AI questions sample:', JSON.stringify(generated?.questions?.[0]));
 
     const valid = (generated?.questions || []).filter(q => {
       if (!['mcq', 'true_false', 'short_answer'].includes(q.type)) return false;
@@ -209,6 +211,19 @@ export async function POST(request) {
       return true;
     }).slice(0, totalCount);
 
+    console.log('Valid question count after filter:', valid.length);
+    if (valid.length < generated?.questions?.length) {
+      const rejected = (generated?.questions || []).filter(q => {
+        if (!['mcq', 'true_false', 'short_answer'].includes(q.type)) return true;
+        if (!q.question_text?.trim()) return true;
+        if (q.type === 'mcq' && (!Array.isArray(q.options) || q.options.length < 2)) return true;
+        if (q.type === 'mcq' && !q.options.some(o => o.is_correct)) return true;
+        if (q.type === 'true_false' && !['true', 'false'].includes(q.correct_answer)) return true;
+        if (q.type === 'short_answer' && !q.model_answer?.trim()) return true;
+        return false;
+      });
+      console.log('Rejected questions (first):', JSON.stringify(rejected[0]));
+    }
     if (!valid.length) {
       return Response.json({
         error: 'We were unable to generate questions at this time. Please try again.',
@@ -328,9 +343,12 @@ async function callAI(userContent, systemPrompt = SYSTEM_PROMPT) {
       const data = await resp.json();
       const text = data.choices?.[0]?.message?.content;
       if (text) return JSON.parse(text);
+    } else {
+      console.error('OpenRouter failed:', resp.status, await resp.text().catch(() => ''));
     }
-  } catch (_) {}
+  } catch (e) { console.error('OpenRouter error:', e.message); }
 
+  console.log('Falling back to Groq...');
   const { Groq } = await import('groq-sdk');
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
   const completion = await groq.chat.completions.create({
