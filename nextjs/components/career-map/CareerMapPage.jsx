@@ -85,7 +85,7 @@ export default function CareerMapPage() {
     <div className="gradient-mesh-1 min-h-screen">
       {/* Header */}
       <div className="bg-white border-b border-[var(--c-border)] px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold text-[var(--c-text)]">Career Map</h1>
             <p className="text-sm text-[var(--c-text-muted)] mt-0.5">Visualise your career path and skill gaps</p>
@@ -103,7 +103,7 @@ export default function CareerMapPage() {
 
       {/* Step indicator */}
       <div className="bg-white border-b border-[var(--c-border)] px-6 py-3">
-        <div className="max-w-7xl mx-auto flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-2 text-sm">
           {[
             { key: STEPS.RESUME, label: 'Resume' },
             { key: STEPS.QUESTIONNAIRE, label: 'Preferences' },
@@ -127,7 +127,7 @@ export default function CareerMapPage() {
       </div>
 
       {error && (
-        <div className="max-w-7xl mx-auto px-6 pt-4">
+        <div className="px-6 pt-4">
           <div className="ds-alert ds-alert-error">{error}</div>
         </div>
       )}

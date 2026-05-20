@@ -393,7 +393,7 @@ export default function PortfoliosPage() {
   useEffect(() => { load(); }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="font-heading font-bold text-2xl text-ds-text">My Portfolios</h1>
         <button

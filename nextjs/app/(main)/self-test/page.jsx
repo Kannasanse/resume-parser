@@ -394,7 +394,7 @@ export default function SelfTestCreate() {
   const softSkills   = jdSkills.filter(s => s.type === 'Soft');
 
   return (
-    <div className="gradient-mesh-1 min-h-screen max-w-xl mx-auto space-y-6">
+    <div className="gradient-mesh-1 min-h-screen px-4 py-6 max-w-xl mx-auto space-y-6">
       {/* Header */}
       <div>
         {STEP_BACKS[step] && (

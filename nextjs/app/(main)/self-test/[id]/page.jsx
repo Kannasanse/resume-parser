@@ -321,7 +321,7 @@ export default function SelfTestPage() {
     };
 
     return (
-      <div className="gradient-mesh-1 min-h-screen max-w-2xl mx-auto space-y-6">
+      <div className="gradient-mesh-1 min-h-screen px-4 py-6 max-w-2xl mx-auto space-y-6">
         {/* Score card */}
         <div className="card shadow-2xl p-6 text-center space-y-3">
           <p className="text-sm text-ds-textMuted font-medium uppercase tracking-wide">Your Score</p>
@@ -434,7 +434,7 @@ export default function SelfTestPage() {
   const q = questions[current];
 
   return (
-    <div className="gradient-mesh-1 min-h-screen max-w-2xl mx-auto space-y-4">
+    <div className="gradient-mesh-1 min-h-screen px-4 py-6 max-w-2xl mx-auto space-y-4">
       {/* Connection banner */}
       {connBanner && (
         <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-4 py-2.5 rounded-lg flex items-center justify-between">

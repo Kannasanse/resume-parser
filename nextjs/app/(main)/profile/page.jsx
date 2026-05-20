@@ -151,8 +151,8 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-ds-bg py-10 px-4">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <div className="min-h-screen bg-ds-bg py-10 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl space-y-6">
 
         <div>
           <h1 className="text-2xl font-bold text-ds-text font-heading">My Profile</h1>

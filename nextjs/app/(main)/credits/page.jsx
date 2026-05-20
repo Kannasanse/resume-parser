@@ -64,7 +64,7 @@ export default function CreditsPage() {
   const pendingRequest = requests.find(r => r.status === 'pending');
 
   if (loading) return (
-    <div className="max-w-3xl mx-auto px-4 py-10">
+    <div className="px-4 sm:px-6 lg:px-8 py-10">
       <div className="h-6 w-40 bg-ds-border rounded animate-pulse mb-8" />
       <div className="grid grid-cols-3 gap-4 mb-8">
         {[1,2,3].map(i => <div key={i} className="h-24 bg-ds-border rounded-xl animate-pulse" />)}
@@ -78,7 +78,7 @@ export default function CreditsPage() {
   const totalGranted = transactions.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
+    <div className="px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold text-ds-text">Credits</h1>

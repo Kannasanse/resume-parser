@@ -218,7 +218,7 @@ export default function AdminCreditsPage() {
 
   return (
     <div className="gradient-mesh-1 min-h-screen">
-    <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-6">
         <h1 className="text-xl font-bold text-gradient-primary">Credits Management</h1>
         <p className="text-sm text-ds-textMuted mt-0.5">Manage user credits and review requests</p>
