@@ -68,7 +68,10 @@ Score scale:
   0.0 = Incorrect — wrong, irrelevant, blank, or shows no understanding
 
 Return ONLY valid JSON, no preamble:
-{"score": 0.0, "feedback": "2-3 sentences: what was correct, what was missing or wrong, and one specific improvement tip if score < 1.0"}`;
+{"score": 0.0, "feedback": "2-3 sentences: what was correct, what was missing or wrong, and one specific improvement tip if score < 1.0"}
+
+Important: Return the JSON with lowercase keys exactly as shown: {"score": 0.0, "feedback": "..."}
+Do not use "Score", "SCORE", or any other capitalisation.`;
 
         const completion = await groq.chat.completions.create({
           model:           'llama-3.3-70b-versatile',
@@ -79,8 +82,12 @@ Return ONLY valid JSON, no preamble:
         });
 
         const text = completion.choices?.[0]?.message?.content;
-        const parsed = JSON.parse(text || '{}');
-        const score = Math.max(0, Math.min(1, parseFloat(parsed.score) || 0));
+        if (!text || text.trim() === '') {
+          return { questionIndex, score: 0.5, feedback: 'Unable to grade automatically. Please review manually.' };
+        }
+        const parsed = JSON.parse(text);
+        const rawScore = parsed.score ?? parsed.Score ?? parsed.grade ?? parsed.Grade ?? parsed.rating ?? parsed.Rating;
+        const score = Math.max(0, Math.min(1, parseFloat(rawScore) || 0));
 
         return {
           questionIndex,
