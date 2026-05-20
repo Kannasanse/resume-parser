@@ -82,7 +82,7 @@ export default function CareerMapPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--c-bg)]">
+    <div className="gradient-mesh-1 min-h-screen">
       {/* Header */}
       <div className="bg-white border-b border-[var(--c-border)] px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -137,7 +137,9 @@ export default function CareerMapPage() {
           <ResumeAnalysisLoader resumes={resumes} onAnalyse={handleAnalyse} />
         )}
         {step === STEPS.QUESTIONNAIRE && (
-          <Questionnaire profile={profile} onSubmit={handleQuestionnaire} loading={!profile} />
+          <div className="animate-fade-in-scale">
+            <Questionnaire profile={profile} onSubmit={handleQuestionnaire} loading={!profile} />
+          </div>
         )}
         {step === STEPS.RECOMMENDATIONS && (
           <Recommendations roles={recommendations} loading={recommendationsLoading} onSelect={handleSelectRole} />

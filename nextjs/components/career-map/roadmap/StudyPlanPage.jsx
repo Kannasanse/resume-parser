@@ -64,9 +64,9 @@ export default function StudyPlanPage({ studyPlanId }) {
 
   return (
     <>
-    <div className="flex flex-col h-screen bg-[var(--c-bg)]">
+    <div className="gradient-mesh-1 flex flex-col h-screen">
       {/* Top bar */}
-      <div className="bg-white border-b border-[var(--c-border)] px-6 py-3 flex-shrink-0">
+      <div className="glass-light border-b border-[rgba(209,220,232,0.6)] px-6 py-3 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2 text-sm text-[var(--c-text-muted)]">
@@ -83,7 +83,7 @@ export default function StudyPlanPage({ studyPlanId }) {
               <p className="text-sm font-semibold text-[var(--c-primary)]">{plan?.overall_pct || 0}% complete</p>
             </div>
             <div className="w-32 h-2 bg-[var(--c-primary-light)] rounded-full overflow-hidden">
-              <div className="h-full bg-[var(--c-primary)] rounded-full transition-all" style={{ width: `${plan?.overall_pct || 0}%` }} />
+              <div className="h-full bg-gradient-to-r from-[#185FA5] to-[#1D9E75] rounded-full transition-all" style={{ width: `${plan?.overall_pct || 0}%` }} />
             </div>
             <button
               onClick={() => setShowPrefs(true)}
@@ -121,7 +121,7 @@ export default function StudyPlanPage({ studyPlanId }) {
               {weekTopics.length} topics · ~{weekTopics.reduce((sum, t) => sum + Number(t.estimated_hours), 0).toFixed(1)} hours this week
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="stagger-children grid grid-cols-1 md:grid-cols-2 gap-5">
               {weekTopics.map(topic => (
                 <TopicCard key={topic.id} topic={topic} studyPlanId={studyPlanId} />
               ))}

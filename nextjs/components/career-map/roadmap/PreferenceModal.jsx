@@ -172,7 +172,7 @@ export default function PreferenceModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+      <div className="bg-white shadow-2xl rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
 
         {view === 'form' && (
           <>
@@ -196,12 +196,14 @@ export default function PreferenceModal({
                   How many hours can you study per day?
                   <span className="ml-2 font-semibold text-[var(--c-primary)]">{hoursPerDay} hrs/day</span>
                 </label>
+                <div className="relative">
                 <input
                   type="range" min={0.5} max={8} step={0.5}
                   value={hoursPerDay}
                   onChange={e => setHoursPerDay(parseFloat(e.target.value))}
                   className="w-full accent-[var(--c-primary)]"
                 />
+              </div>
                 <div className="relative h-4">
                   {[0.5, 1, 2, 3, 4, 5, 6, 7, 8].map(v => (
                     <span key={v} className="absolute text-xs text-[var(--c-text-muted)] -translate-x-1/2"
@@ -263,7 +265,7 @@ export default function PreferenceModal({
               </div>
 
               {/* Summary */}
-              <div className="bg-[var(--c-primary-light)] rounded-xl p-4 space-y-1.5">
+              <div className="bg-[var(--c-primary-light)] rounded-xl p-4 space-y-1.5 shadow-sm">
                 <p className="text-sm text-[var(--c-primary)]">
                   📅 Estimated completion:{' '}
                   {weeksChanged ? (
@@ -288,7 +290,7 @@ export default function PreferenceModal({
                 Cancel
               </button>
               <button onClick={handlePrimaryAction} disabled={generating}
-                className="flex-1 bg-[var(--c-primary)] text-white text-sm font-medium py-2.5 rounded-lg hover:bg-[var(--c-primary-dark)] transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                className="btn-primary flex-1 text-sm font-medium py-2.5 rounded-lg disabled:opacity-50 flex items-center justify-center gap-2">
                 {generating ? (
                   <>
                     <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>

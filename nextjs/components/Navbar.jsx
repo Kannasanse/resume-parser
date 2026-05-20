@@ -69,9 +69,16 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const menuRef = useRef(null);
   const moreRef = useRef(null);
   const creditBalance = useCreditBalance(!!user);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   useEffect(() => {
     const handler = (e) => {
@@ -136,7 +143,7 @@ export default function Navbar() {
   return (
     <>
       {/* ── Main navbar ───────────────────────────────────────────────────────── */}
-      <nav className="bg-ds-card border-b border-ds-border sticky top-0 z-40">
+      <nav className={`sticky top-0 z-40 transition-all duration-200 ${scrolled ? 'glass-light shadow-md border-b border-[rgba(209,220,232,0.6)]' : 'bg-ds-card border-b border-ds-border'} dark:glass-dark`}>
         <div className="h-16 flex items-center gap-6 px-6">
 
           {/* Hamburger (mobile) */}

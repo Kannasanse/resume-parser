@@ -42,7 +42,7 @@ export default function YouTubeEmbed({ videoId, title, channelName, thumbnail, d
 
   return (
     <div className="space-y-2.5">
-      <div className="rounded-xl overflow-hidden border border-[var(--c-border)] bg-black" style={{ aspectRatio: '16/9' }}>
+      <div className="shadow-xl rounded-2xl overflow-hidden border border-[var(--c-border)] bg-black" style={{ aspectRatio: '16/9' }}>
         {playing ? (
           <iframe
             width="100%" height="100%"
@@ -57,12 +57,12 @@ export default function YouTubeEmbed({ videoId, title, channelName, thumbnail, d
           <div onClick={() => setPlaying(true)} className="relative cursor-pointer w-full h-full">
             <img src={thumb} alt={title} className="w-full h-full object-cover" />
             <div className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/20 transition-colors">
-              <div className="w-16 h-11 bg-[#FF0000] rounded-xl flex items-center justify-center hover:scale-105 transition-transform">
+              <div className="w-16 h-11 bg-[#FF0000] rounded-xl flex items-center justify-center hover:scale-110 transition-transform shadow-xl">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21"/></svg>
               </div>
             </div>
             {duration > 0 && (
-              <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs font-semibold px-1.5 py-0.5 rounded">
+              <div className="absolute bottom-2 right-2 bg-[rgba(0,0,0,0.85)] text-white text-xs font-semibold font-mono px-1.5 py-0.5 rounded">
                 {formatDuration(duration)}
               </div>
             )}

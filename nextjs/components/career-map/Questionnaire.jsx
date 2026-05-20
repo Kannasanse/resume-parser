@@ -155,18 +155,18 @@ export default function Questionnaire({ profile, onSubmit, loading }) {
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-xs text-[var(--c-text-muted)]">Question {current + 1} of {total}</span>
-          <span className="text-xs text-[var(--c-text-muted)]">{Math.round(((current + 1) / total) * 100)}%</span>
+          <span className="text-gradient-primary font-semibold text-sm">{Math.round(((current + 1) / total) * 100)}%</span>
         </div>
-        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+        <div className="bg-[rgba(24,95,165,0.12)] h-1.5 rounded-full overflow-hidden">
           <div
-            className="h-full bg-[var(--c-primary)] rounded-full transition-all duration-300"
+            className="bg-gradient-to-r from-[#185FA5] to-[#1D9E75] h-full rounded-full transition-all duration-500"
             style={{ width: `${((current + 1) / total) * 100}%` }}
           />
         </div>
       </div>
 
       {/* Question card */}
-      <div className="bg-white border border-[var(--c-border)] rounded-2xl p-8 shadow-[0_4px_16px_rgba(12,68,124,0.10)]">
+      <div className="card shadow-2xl animate-fade-in-scale p-8">
         <h3 className="text-xl font-semibold text-[var(--c-text)] mb-2">{q.question}</h3>
         <p className="text-sm text-[var(--c-text-muted)] mb-7">{q.context}</p>
 
@@ -177,10 +177,10 @@ export default function Questionnaire({ profile, onSubmit, loading }) {
               <button
                 key={opt.value}
                 onClick={() => selectOption(opt.value)}
-                className={`relative text-left p-4 rounded-xl border transition-all duration-150 ${
+                className={`relative text-left transition-all duration-200 ${
                   isSelected
-                    ? 'border-2 border-[var(--c-primary)] bg-[var(--c-primary-light)]'
-                    : 'border border-[var(--c-border)] bg-white hover:border-[var(--c-primary)] hover:bg-[#F4F8FC]'
+                    ? 'border-2 border-[var(--c-primary)] bg-gradient-to-br from-[#E6F1FB] to-[#F4F8FC] shadow-glow-primary scale-[1.01] rounded-2xl p-[18px_20px]'
+                    : 'border-[1.5px] border-[var(--c-border)] rounded-2xl p-[18px_20px] hover:border-[rgba(24,95,165,0.4)] hover:shadow-sm hover:translate-x-1'
                 }`}
               >
                 {isSelected && (

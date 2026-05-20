@@ -119,19 +119,19 @@ export default function MyCoursesPage() {
       </div>
 
       {/* Stats bar */}
-      {stats && <CourseStatsBar stats={stats} />}
+      {stats && <div className="stagger-children"><CourseStatsBar stats={stats} /></div>}
 
       {/* Filter tabs + sort */}
-      <div className="flex items-center justify-between border-b border-[var(--c-border)] gap-4">
-        <div className="flex gap-0 overflow-x-auto">
+      <div className="flex items-center justify-between gap-4">
+        <div className="glass-light rounded-2xl p-1 shadow-sm inline-flex overflow-x-auto">
           {TABS.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+              className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors rounded-xl ${
                 activeTab === tab.id
-                  ? 'border-[var(--c-primary)] text-[var(--c-primary)]'
-                  : 'border-transparent text-[var(--c-text-muted)] hover:text-[var(--c-text)]'
+                  ? 'bg-white shadow-sm text-[var(--c-primary)] font-semibold'
+                  : 'text-[var(--c-text-muted)] hover:text-[var(--c-text)]'
               }`}
             >
               {tab.label}
@@ -178,7 +178,7 @@ export default function MyCoursesPage() {
       {filtered.length === 0 ? (
         <EmptyState tab={activeTab} hasAnyCourses={courses.length > 0} />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="stagger-children grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map(course => (
             <CourseCard
               key={course.id}

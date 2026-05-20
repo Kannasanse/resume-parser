@@ -53,7 +53,7 @@ export default function CourseCard({ course, onStatusChange, onDelete, onResetPr
   const phasesCompleted = course.phases?.filter(p => p.status === 'completed').length ?? 0;
 
   return (
-    <div className="bg-[var(--c-card)] border border-[var(--c-border)] rounded-2xl overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-shadow">
+    <div className="card card-interactive overflow-hidden flex flex-col">
       {/* Header */}
       <div className="relative h-[100px] flex flex-col justify-end px-4 pb-3" style={{ background: gradient }}>
         {/* Menu */}
@@ -89,7 +89,12 @@ export default function CourseCard({ course, onStatusChange, onDelete, onResetPr
           <h3 className="text-sm font-semibold text-[var(--c-text)] leading-snug line-clamp-2 flex-1">
             {course.targetRoleTitle}
           </h3>
-          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0 ${chip.bg}`}>
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0 ${
+            variant === 'active_progress' ? 'chip-primary' :
+            variant === 'completed' ? 'chip-success' :
+            variant === 'paused' ? 'chip-warning' :
+            chip.bg
+          }`}>
             {chip.label}
           </span>
         </div>
@@ -140,12 +145,13 @@ export default function CourseCard({ course, onStatusChange, onDelete, onResetPr
         </div>
 
         {/* Action row */}
-        <div className="flex items-center justify-between pt-1 mt-auto">
+        <div className="flex items-center justify-between pt-1 mt-auto group">
           <Link
             href={resumeHref(course)}
             className="text-sm font-medium text-[var(--c-primary)] hover:underline"
           >
-            {variant === 'active_empty' ? 'Start learning →' : variant === 'completed' ? 'Review →' : 'Continue learning →'}
+            {variant === 'active_empty' ? 'Start learning ' : variant === 'completed' ? 'Review ' : 'Continue learning '}
+            <span className="group-hover:translate-x-1 transition-transform inline-block">→</span>
           </Link>
           <Link
             href={`/career-map/study-plan/${course.id}`}

@@ -2,7 +2,7 @@
 
 export default function SectionNavSidebar({ sections, completedSectionIds, activeIndex, onSelectSection, pct, completedCount, totalSections }) {
   return (
-    <div className="w-60 flex-shrink-0 bg-white border-r border-[var(--c-border)] overflow-y-auto flex flex-col hidden md:flex">
+    <div className="w-60 flex-shrink-0 glass-light border-r border-[var(--c-border)] overflow-y-auto flex flex-col hidden md:flex">
       <div className="px-4 pt-5 pb-3">
         <p className="text-xs font-semibold text-[var(--c-text-muted)] uppercase tracking-wider">Contents</p>
       </div>
@@ -28,7 +28,7 @@ export default function SectionNavSidebar({ sections, completedSectionIds, activ
               key={section.id}
               onClick={() => onSelectSection(idx)}
               className={`w-full flex items-start gap-2 px-3 py-2.5 rounded-lg text-left transition-colors ${
-                isActive ? 'bg-[var(--c-primary-light)] text-[var(--c-primary)]' :
+                isActive ? 'bg-[rgba(24,95,165,0.08)] border-l-[3px] border-[var(--c-primary)] text-[var(--c-primary)]' :
                 isCompleted ? 'text-[var(--c-success)]' : 'text-[var(--c-text-muted)] hover:bg-gray-50'
               }`}
             >
@@ -52,7 +52,7 @@ export default function SectionNavSidebar({ sections, completedSectionIds, activ
       {/* Progress */}
       <div className="px-4 py-4 border-t border-[var(--c-border)]">
         <div className="h-1.5 bg-[var(--c-primary-light)] rounded-full overflow-hidden mb-1.5">
-          <div className="h-full bg-[var(--c-primary)] rounded-full transition-all" style={{ width: `${pct}%` }} />
+          <div className="h-full bg-gradient-to-r from-[#185FA5] to-[#1D9E75] rounded-full transition-all" style={{ width: `${pct}%` }} />
         </div>
         <p className="text-xs text-[var(--c-text-muted)]">{completedCount} of {totalSections} sections completed</p>
       </div>

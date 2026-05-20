@@ -130,7 +130,7 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
   return (
     <div className="flex flex-col h-screen bg-[var(--c-bg)]">
       {/* Top bar */}
-      <div className="bg-white border-b border-[var(--c-border)] px-6 py-3 flex-shrink-0">
+      <div className="glass-light border-b border-[rgba(209,220,232,0.6)] px-6 py-3 flex-shrink-0">
         <div className="flex items-center justify-between">
           <Link href={`/career-map/study-plan/${studyPlanId}`}
             className="flex items-center gap-1.5 text-sm text-[var(--c-primary)] hover:underline">
@@ -156,6 +156,7 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
 
       <div className="flex flex-1 overflow-hidden pb-16">
         {/* Sidebar */}
+        {/* sidebar glass wrapper applied inside SectionNavSidebar */}
         <SectionNavSidebar
           sections={sections}
           completedSectionIds={completedSectionIds}

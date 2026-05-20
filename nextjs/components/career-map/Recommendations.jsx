@@ -53,12 +53,13 @@ export default function Recommendations({ roles, loading, onSelect }) {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-[var(--c-text)]">Recommended roles for you</h2>
+        <h2 className="text-gradient-primary font-extrabold tracking-[-0.03em] text-lg">Recommended roles for you</h2>
         <p className="text-sm text-[var(--c-text-muted)] mt-1">Select a role to build your career path map.</p>
       </div>
 
+      <div className="stagger-children space-y-4">
       {roles.map((role, i) => (
-        <div key={role.id} className="ds-card p-5 space-y-3 hover:border-[var(--c-primary)] transition-colors">
+        <div key={role.id} className={`card card-interactive p-5 space-y-3 ${i === 0 ? 'ring-2 ring-[#185FA5] ring-offset-2' : ''}`}>
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="stat-icon flex-shrink-0" style={{ width: 36, height: 36, borderRadius: 8, fontSize: 14, fontWeight: 700 }}>
@@ -87,13 +88,14 @@ export default function Recommendations({ roles, loading, onSelect }) {
             <button
               onClick={() => handleSelect(role.id)}
               disabled={!!selecting}
-              className="bg-[var(--c-primary)] text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:bg-[var(--c-primary-dark)] transition-colors disabled:opacity-50"
+              className="group bg-[var(--c-primary)] text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:bg-[var(--c-primary-dark)] transition-colors disabled:opacity-50"
             >
-              {selecting === role.id ? 'Building map…' : 'Build Career Map →'}
+              {selecting === role.id ? 'Building map…' : <>Build Career Map <span className="group-hover:translate-x-1 transition-transform inline-block">→</span></>}
             </button>
           </div>
         </div>
       ))}
+      </div>
     </div>
   );
 }

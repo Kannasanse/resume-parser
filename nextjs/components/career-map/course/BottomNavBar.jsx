@@ -5,7 +5,7 @@ export default function BottomNavBar({ currentIndex, total, onPrev, onNext, onCo
   const isLast = currentIndex === total - 1;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[var(--c-border)] h-16 flex items-center justify-between px-6 z-20">
+    <div className="fixed bottom-0 left-0 right-0 glass-light border-t border-[rgba(209,220,232,0.6)] shadow-[0_-4px_16px_rgba(12,68,124,0.06)] h-16 flex items-center justify-between px-6 z-20">
       <button
         onClick={onPrev}
         disabled={isFirst}
@@ -20,7 +20,7 @@ export default function BottomNavBar({ currentIndex, total, onPrev, onNext, onCo
       {isLast ? (
         <button
           onClick={onComplete}
-          className="bg-[var(--c-success)] text-white text-sm font-medium px-5 py-2 rounded-lg hover:opacity-90 transition-opacity flex items-center gap-1.5"
+          className="btn-primary animate-pulse-glow text-sm font-medium px-5 py-2 rounded-lg flex items-center gap-1.5"
         >
           Mark topic complete ✓
         </button>

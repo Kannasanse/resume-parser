@@ -3,8 +3,8 @@ import Link from 'next/link';
 
 const STATUS_STYLES = {
   not_started: 'bg-gray-100 text-gray-500',
-  in_progress: 'bg-yellow-50 text-yellow-700',
-  completed: 'bg-[var(--c-success-bg)] text-[var(--c-success)]',
+  in_progress: 'chip-primary',
+  completed: 'chip-success',
 };
 const STATUS_LABELS = { not_started: 'Not started', in_progress: 'In progress', completed: 'Completed' };
 
@@ -18,8 +18,8 @@ export default function TopicCard({ topic, studyPlanId }) {
   const ctaLabel = isCompleted ? 'Review →' : pct > 0 ? 'Continue →' : 'Start learning →';
 
   return (
-    <div className={`rounded-xl border p-5 transition-all duration-200 hover:shadow-md cursor-pointer group ${
-      isCompleted ? 'border-[var(--c-success)] bg-green-50/50' : 'border-[var(--c-border)] bg-white hover:border-[var(--c-primary)]'
+    <div className={`card card-interactive p-5 cursor-pointer group ${
+      isCompleted ? 'border-[#1D9E75] bg-gradient-to-b from-white to-[#F0FDF4]' : ''
     }`}>
       {/* Top row */}
       <div className="flex items-start justify-between gap-2 mb-2">
@@ -47,7 +47,7 @@ export default function TopicCard({ topic, studyPlanId }) {
       {pct > 0 && (
         <div className="mt-3">
           <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
-            <div className="h-full bg-[var(--c-primary)] rounded-full" style={{ width: `${pct}%` }} />
+            <div className="h-full bg-gradient-to-r from-[#185FA5] to-[#1D9E75] rounded-full" style={{ width: `${pct}%` }} />
           </div>
           <p className="text-xs text-[var(--c-text-muted)] mt-1 text-right">{pct}% read</p>
         </div>
@@ -57,7 +57,7 @@ export default function TopicCard({ topic, studyPlanId }) {
         href={`/career-map/study-plan/${studyPlanId}/topic/${topic.id}`}
         className="mt-3 block text-xs font-medium text-[var(--c-primary)] group-hover:underline"
       >
-        {ctaLabel}
+        {ctaLabel.replace('→', '')} <span className="group-hover:translate-x-1 transition-transform inline-block">→</span>
       </Link>
     </div>
   );

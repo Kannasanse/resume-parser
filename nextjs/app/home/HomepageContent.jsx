@@ -179,16 +179,31 @@ function HeroVisual() {
 function Hero({ data }) {
   const d = data || {};
   return (
-    <section style={{ background: C.surface, padding: '96px 0 80px' }} className="py-16 sm:py-24">
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px' }} className="px-4 sm:px-8">
+    <section style={{ padding: '96px 0 80px', position: 'relative', overflow: 'hidden', background: 'radial-gradient(ellipse at 0% 0%, rgba(24,95,165,0.18) 0%, transparent 55%), radial-gradient(ellipse at 100% 100%, rgba(29,158,117,0.12) 0%, transparent 55%), #F4F8FC' }} className="py-16 sm:py-24">
+      {/* Floating orbs */}
+      <div className="pointer-events-none" style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+        <div className="w-96 h-96 rounded-full absolute -top-24 -left-32 animate-float opacity-60" style={{ background: 'radial-gradient(circle, rgba(24,95,165,0.12), transparent)' }} />
+        <div className="w-72 h-72 rounded-full absolute -bottom-12 -right-24 opacity-50" style={{ background: 'radial-gradient(circle, rgba(29,158,117,0.10), transparent)', animationDirection: 'reverse', animationDuration: '8s' }} />
+      </div>
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px', position: 'relative', zIndex: 1 }} className="px-4 sm:px-8">
         <div style={{ display: 'flex', alignItems: 'center', gap: 64 }} className="flex flex-col lg:flex-row gap-12 lg:gap-16">
           <div style={{ flex: '0 0 55%' }} className="w-full lg:w-auto text-center lg:text-left">
             <div style={{ fontSize: 11, fontWeight: 500, color: C.primary, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>{d.badge_text}</div>
-            <h1 style={{ fontSize: 'clamp(32px, 5vw, 52px)', fontWeight: 700, color: C.charcoal, lineHeight: 1.1, marginBottom: 24 }}>{d.heading}</h1>
+            <h1 className="text-[clamp(42px,6vw,68px)] font-extrabold tracking-[-0.03em] leading-[1.05]" style={{ color: C.charcoal, marginBottom: 24 }}>
+              {d.heading ? (
+                <>
+                  {d.heading.split(/(Resume|Career|AI)/g).map((part, i) =>
+                    /^(Resume|Career|AI)$/.test(part)
+                      ? <span key={i} className="text-gradient-primary">{part}</span>
+                      : part
+                  )}
+                </>
+              ) : ''}
+            </h1>
             <p style={{ fontSize: 18, color: C.secondary, lineHeight: 1.7, maxWidth: 520, marginBottom: 32 }} className="mx-auto lg:mx-0">{d.subheading}</p>
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }} className="justify-center lg:justify-start flex-col sm:flex-row">
-              <Link href={d.primary_cta_href || '/signup'} style={{ display: 'inline-block', fontSize: 16, fontWeight: 600, color: '#fff', background: C.primary, borderRadius: 8, padding: '13px 32px', boxShadow: '0 4px 16px rgba(12,68,124,0.20)', textDecoration: 'none', transition: 'background 200ms, transform 200ms' }} onMouseEnter={e => { e.currentTarget.style.background = C.dark; e.currentTarget.style.transform = 'scale(1.01)'; }} onMouseLeave={e => { e.currentTarget.style.background = C.primary; e.currentTarget.style.transform = 'scale(1)'; }}>{d.primary_cta_label || ''}</Link>
-              <button onClick={() => scrollTo('how-it-works')} style={{ fontSize: 16, fontWeight: 600, color: C.primary, border: `1px solid ${C.primary}`, borderRadius: 8, padding: '13px 32px', background: 'transparent', cursor: 'pointer', transition: 'background 200ms' }} onMouseEnter={e => e.currentTarget.style.background = C.light} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>{d.secondary_cta_label}</button>
+              <Link href={d.primary_cta_href || '/signup'} className="btn-primary" style={{ display: 'inline-block', fontSize: 16, fontWeight: 600, borderRadius: 8, padding: '13px 32px', textDecoration: 'none' }}>{d.primary_cta_label || ''}</Link>
+              <button onClick={() => scrollTo('how-it-works')} className="border-[1.5px] border-[var(--c-border)] bg-white shadow-xs hover:border-[var(--c-primary)] hover:shadow-md transition-all" style={{ fontSize: 16, fontWeight: 600, color: C.primary, borderRadius: 8, padding: '13px 32px', background: 'white', cursor: 'pointer' }}>{d.secondary_cta_label}</button>
             </div>
             {d.trust_items?.length > 0 && (
               <p style={{ fontSize: 13, color: C.secondary, marginTop: 18 }}>
@@ -213,7 +228,7 @@ function SocialProof({ data }) {
             <div key={s.id || i} style={{ display: 'flex', alignItems: 'center' }}>
               {i > 0 && <div style={{ width: 1, height: 40, background: C.border, margin: '0 48px' }} className="hidden sm:block" />}
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 32, fontWeight: 700, color: C.primary, lineHeight: 1.1 }}>{s.value}</div>
+                <div className="text-gradient-primary font-extrabold tracking-[-0.04em]" style={{ fontSize: 32, lineHeight: 1.1 }}>{s.value}</div>
                 <div style={{ fontSize: 14, color: C.secondary, marginTop: 4 }}>{s.label}</div>
               </div>
             </div>
@@ -236,13 +251,13 @@ function Features({ data }) {
           <h2 style={{ fontSize: 28, fontWeight: 700, color: C.charcoal, lineHeight: 1.2 }}>{d.title}</h2>
           {d.subtitle && <p style={{ fontSize: 16, color: C.secondary, marginTop: 12, maxWidth: 560, margin: '12px auto 0' }}>{d.subtitle}</p>}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 24 }}>
+        <div className="stagger-children" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 24 }}>
           {items.map((f, i) => {
             const paths = FEAT_ICON_PATHS[f.icon] || FEAT_ICON_PATHS.default;
             return (
               <Reveal key={f.id || i} delay={i * 60}>
-                <div onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)} style={{ background: C.surface, border: `1px solid ${hovered === i ? C.primary : C.border}`, borderRadius: 12, padding: 24, height: '100%', boxSizing: 'border-box', boxShadow: hovered === i ? '0 4px 16px rgba(12,68,124,0.12)' : 'none', transition: 'border-color 200ms, box-shadow 200ms' }}>
-                  <div style={{ width: 48, height: 48, background: C.light, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.primary }}>
+                <div className="card card-interactive" onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)} style={{ padding: 24, height: '100%', boxSizing: 'border-box' }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.primary }} className="bg-gradient-to-br from-[#E6F1FB] to-[#D4E8F8] shadow-[0_0_0_1px_rgba(24,95,165,0.15),0_4px_12px_rgba(24,95,165,0.10)] rounded-2xl">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">{paths.map((p, j) => <path key={j} d={p} />)}</svg>
                   </div>
                   <h3 style={{ fontSize: 18, fontWeight: 600, color: C.charcoal, marginTop: 16 }}>{f.title}</h3>
@@ -345,7 +360,7 @@ function Pricing({ data }) {
 function CTABanner({ data }) {
   const d = data || {};
   return (
-    <section style={{ background: `linear-gradient(135deg, ${C.primary} 0%, ${C.dark} 100%)`, padding: '80px 0', position: 'relative', overflow: 'hidden' }}>
+    <section className="gradient-dark-hero" style={{ padding: '80px 0', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', top: -120, left: -100, width: 400, height: 400, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', bottom: -120, right: -100, width: 400, height: 400, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', pointerEvents: 'none' }} />
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px', textAlign: 'center', position: 'relative', zIndex: 1 }} className="px-4 sm:px-8">

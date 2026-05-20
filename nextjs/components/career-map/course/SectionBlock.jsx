@@ -55,9 +55,10 @@ export default function SectionBlock({ section, index, topicId, topicTitle, skil
       </div>
 
       {/* Heading */}
-      <h2 className="text-xl font-semibold text-[var(--c-text)] pb-2 border-b-2 border-[var(--c-primary-light)]">
+      <h2 className="text-xl font-bold tracking-[-0.02em] text-[var(--c-text)] pb-2 border-b-2 border-[var(--c-primary-light)]">
         {section.heading}
       </h2>
+      <div className="w-10 h-0.5 mt-1 bg-gradient-to-r from-[#185FA5] to-[#1D9E75] rounded-full" />
 
       {/* Video-only: just show embed, no written content */}
       {isVideoOnly ? (
