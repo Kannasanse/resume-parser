@@ -63,13 +63,13 @@ export async function GET(request) {
     });
 
     // Fetch the last career map session to pre-select resume
-    const { data: lastSession } = await supabase
+    const { data: lastSessions } = await supabase
       .from('career_map_sessions')
       .select('resume_id')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+      .limit(1);
+    const lastSession = lastSessions?.[0] ?? null;
 
     return NextResponse.json({
       resumes: enriched,
