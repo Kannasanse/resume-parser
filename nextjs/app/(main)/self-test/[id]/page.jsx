@@ -52,13 +52,32 @@ function QuestionView({
             {result.correct ? '✓ Correct' : '✗ Wrong'}
           </span>
         )}
-        {isResults && result && isSA && (
-          result.pending_grade
-            ? <span className="flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200">Pending</span>
-            : <span className={`flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded ${result.correct ? 'chip-success' : 'chip-error'}`}>
-                {result.correct ? '✓ Correct' : '✗ Incorrect'}
+        {isResults && result && isSA && (() => {
+          if (result.pending_grade && result.grading_method === 'ai') {
+            return (
+              <span className="flex-shrink-0 flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-200">
+                <span className="w-2.5 h-2.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                Grading…
               </span>
-        )}
+            );
+          }
+          if (result.pending_grade && result.grading_method === 'self') {
+            return (
+              <span className="flex-shrink-0 flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                Rate your answer
+              </span>
+            );
+          }
+          // Graded — three-tier badge
+          const score = result.ai_score;
+          if (score != null) {
+            if (score >= 0.7) return <span className="flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded chip-success">✓ Correct</span>;
+            if (score >= 0.4) return <span className="flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200">◑ Partial</span>;
+            return <span className="flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded chip-error">✗ Incorrect</span>;
+          }
+          return <span className={`flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded ${result.correct ? 'chip-success' : 'chip-error'}`}>{result.correct ? '✓ Correct' : '✗ Incorrect'}</span>;
+        })()}
       </div>
 
       {/* MCQ options */}
@@ -170,8 +189,11 @@ function QuestionView({
                 <span className="text-xs font-semibold text-blue-700">AI Feedback</span>
                 {result.ai_score != null && (
                   <div className="flex items-center gap-2">
-                    <div className="w-16 h-1.5 bg-blue-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.round(result.ai_score * 100)}%` }} />
+                    <div className="w-20 h-1.5 bg-blue-100 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${result.ai_score >= 0.7 ? 'bg-ds-success' : result.ai_score >= 0.4 ? 'bg-amber-400' : 'bg-ds-danger'}`}
+                        style={{ width: `${Math.round(result.ai_score * 100)}%` }}
+                      />
                     </div>
                     <span className="text-xs text-blue-600 font-medium">{Math.round(result.ai_score * 100)}%</span>
                   </div>
@@ -276,17 +298,53 @@ export default function SelfTestPage() {
         setQuestions(d.questions || []);
 
         if (d.attempt?.submitted_at) {
+          const attemptResults = d.attempt.results || [];
           setResults({
             score:      d.attempt.score,
             max_score:  d.attempt.max_score,
-            results:    d.attempt.results,
+            results:    attemptResults,
             questions:  d.questions,
             answers:    d.attempt.answers,
             auto_submitted: d.attempt.auto_submitted,
+            has_short_answers: attemptResults.some(r => r?.question_type === 'short_answer'),
           });
-          setLocalResults([...(d.attempt.results || [])]);
+          setLocalResults([...attemptResults]);
           if (d.attempt.combined_pct != null) setCombinedPct(d.attempt.combined_pct);
           setState('results');
+
+          // Re-trigger AI grading if any answers are still pending (e.g. previous grading failed)
+          const pendingAI = (d.questions || []).map((q, i) => {
+            if (q.type !== 'short_answer') return null;
+            const res = attemptResults[i];
+            if (!res || !res.pending_grade || res.grading_method !== 'ai') return null;
+            return {
+              questionIndex:  i,
+              questionText:   q.question_text,
+              modelAnswer:    q.model_answer    || '',
+              gradingRubric:  q.grading_rubric  || '',
+              answerKeywords: q.answer_keywords || [],
+              userAnswer:     res.short_answer_text || '',
+            };
+          }).filter(Boolean);
+
+          if (pendingAI.length > 0) {
+            fetch(`/api/v1/self-test/${id}/grade-short-answers`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ answers: pendingAI }),
+            }).then(r => r.ok ? r.json() : null).then(gd => {
+              if (!gd?.grades) return;
+              setLocalResults(prev => {
+                const updated = [...prev];
+                for (const { questionIndex: qi, score, feedback } of gd.grades) {
+                  if (updated[qi]) {
+                    updated[qi] = { ...updated[qi], ai_score: score, ai_feedback: feedback, grading_method: 'ai', correct: score >= 0.7, pending_grade: false };
+                  }
+                }
+                return updated;
+              });
+            }).catch(() => {});
+          }
           return;
         }
 
@@ -320,6 +378,32 @@ export default function SelfTestPage() {
       localStorage.setItem(LS_KEY, JSON.stringify({ answers, shortAnswerTexts, timeLeft, flagged: [...flagged] }));
     }
   }, [answers, shortAnswerTexts, timeLeft, flagged, state]);
+
+  // Poll for AI grading completion (fallback if grading is still running after page load)
+  useEffect(() => {
+    if (state !== 'results') return;
+    const hasPendingAI = localResults.some(r => r?.pending_grade && r?.grading_method === 'ai');
+    if (!hasPendingAI) return;
+
+    let attempts = 0;
+    const pollId = setInterval(async () => {
+      attempts++;
+      if (attempts >= 20) { clearInterval(pollId); return; } // stop after 60s
+      try {
+        const r = await fetch(`/api/v1/self-test/${id}`);
+        if (!r.ok) return;
+        const d = await r.json();
+        if (!d.attempt?.results) return;
+        const updated = d.attempt.results;
+        const stillPending = updated.some(r => r?.pending_grade && r?.grading_method === 'ai');
+        setLocalResults(updated);
+        if (d.attempt.combined_pct != null) setCombinedPct(d.attempt.combined_pct);
+        if (!stillPending) clearInterval(pollId);
+      } catch {}
+    }, 3000);
+
+    return () => clearInterval(pollId);
+  }, [state, id]); // intentionally excludes localResults to avoid restart loop
 
   // Submit
   const doSubmit = useCallback(async (auto = false) => {

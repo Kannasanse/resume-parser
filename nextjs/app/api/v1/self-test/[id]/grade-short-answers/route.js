@@ -41,29 +41,40 @@ export async function POST(request, { params }) {
       }
 
       try {
-        const prompt = `You are grading a short answer question for a professional skills assessment.
+        const prompt = `You are an expert technical assessor grading a short answer question.
+Your job is to evaluate whether the answer demonstrates correct understanding — NOT whether it uses the same words as the model answer.
 
 Question: ${questionText}
-Model answer: ${modelAnswer}
-${gradingRubric ? `Grading rubric: ${gradingRubric}` : ''}
-${answerKeywords.length > 0 ? `Key terms expected: ${answerKeywords.join(', ')}` : ''}
+
+Model answer (for reference only — other correct phrasings are equally valid):
+${modelAnswer}
+${gradingRubric ? `\nGrading rubric: ${gradingRubric}` : ''}
+${answerKeywords.length > 0 ? `\nKey concepts expected (ideas, not exact words): ${answerKeywords.join(', ')}` : ''}
 
 User's answer: ${userAnswer}
 
-Grade this answer on a scale of 0.0 to 1.0:
-  1.0 = Complete, accurate, demonstrates full understanding
-  0.75 = Mostly correct with minor gaps
-  0.5 = Partially correct, shows some understanding
-  0.25 = Minimal understanding, major gaps
-  0.0 = Incorrect, irrelevant, or blank
+Grading instructions:
+1. Evaluate MEANING, not word choice — a correct answer in different words is still correct
+2. A longer, more detailed answer that covers the concept deserves FULL marks
+3. Only reduce marks if core concepts are MISSING, WRONG, or show misunderstanding
+4. Do NOT penalise for: different phrasing, additional correct details, bullet vs prose, formality level, minor grammar
+5. DO penalise for: missing the core concept, factually incorrect statements, vague filler ("fast development", "nothing much"), off-topic responses, blank or "I don't know"
 
-Return ONLY a JSON object:
-{"score": 0.0-1.0, "feedback": "2-3 sentences: what was good, what was missing or incorrect"}`;
+Score scale:
+  1.0 = Fully correct — demonstrates complete understanding
+  0.75 = Mostly correct — covers the main idea with minor gaps
+  0.5 = Partially correct — shows some understanding but missing key aspects
+  0.25 = Minimal — barely touches the concept, mostly vague or off-topic
+  0.0 = Incorrect — wrong, irrelevant, blank, or shows no understanding
+
+Return ONLY valid JSON, no preamble:
+{"score": 0.0, "feedback": "2-3 sentences: what was correct, what was missing or wrong, and one specific improvement tip if score < 1.0"}`;
 
         const completion = await groq.chat.completions.create({
           model:           'llama-3.3-70b-versatile',
           messages:        [{ role: 'user', content: prompt }],
-          temperature:     0.2,
+          temperature:     0.1,
+          max_tokens:      300,
           response_format: { type: 'json_object' },
         });
 
