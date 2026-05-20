@@ -1,7 +1,7 @@
 # Proflect — Requirements Document
 
-**Version:** 2.0  
-**Last Updated:** 2026-05-15  
+**Version:** 3.0  
+**Last Updated:** 2026-05-20  
 **Platform:** https://proflect-neo.vercel.app
 
 ---
@@ -20,10 +20,13 @@
 10. [Resume Builder (User)](#10-resume-builder-user)
 11. [Portfolio Builder (User)](#11-portfolio-builder-user)
 12. [Interview Prep (User)](#12-interview-prep-user)
-13. [Database Schema](#13-database-schema)
-14. [API Endpoints](#14-api-endpoints)
-15. [Non-Functional Requirements](#15-non-functional-requirements)
-16. [Known Limitations](#16-known-limitations)
+13. [Career Map (User)](#13-career-map-user)
+14. [Study Plan & Course Detail (User)](#14-study-plan--course-detail-user)
+15. [My Courses Dashboard (User)](#15-my-courses-dashboard-user)
+16. [Database Schema](#16-database-schema)
+17. [API Endpoints](#17-api-endpoints)
+18. [Non-Functional Requirements](#18-non-functional-requirements)
+19. [Known Limitations](#19-known-limitations)
 
 ---
 
@@ -35,6 +38,8 @@ Proflect is a career platform built with Next.js 15 providing:
 - **Resume builder** with 20 templates and live preview
 - **Portfolio builder** with AI-assisted content and public pages
 - **Interview prep** (self-test) with multiple assessment modes
+- **Career Map** — AI-driven career path graph, skill gap analysis, and personalised study plan generation
+- **My Courses** — dashboard to manage, track, and resume all active study plans
 
 ---
 
@@ -48,6 +53,8 @@ Proflect is a career platform built with Next.js 15 providing:
 | Auth | Supabase Auth (`@supabase/ssr`) — email/password + Google OAuth |
 | AI — Resume parsing | OpenRouter (`meta-llama/llama-3.3-70b-instruct:free`) → Groq (`meta-llama/llama-4-scout-17b-16e-instruct`) → regex fallback |
 | AI — Portfolio features | Anthropic Claude (`claude-sonnet-4-6`) — bio, tagline, project description, skills gap, SEO suggestions |
+| AI — Career Map | Groq (`meta-llama/llama-4-scout-17b-16e-instruct`) — resume analysis, role recommendations; Groq (`llama-3.3-70b-versatile`) — study plan generation and section content |
+| Video — Career Map | YouTube Data API v3 — two-pass quality-scored video fetch (search + statistics) |
 | Email | Resend (transactional) |
 | Scoring | Custom 7-factor engine (Skills, Experience, Education, Title, Certifications, Projects, Quality) + TF-IDF cosine similarity |
 | Export | SheetJS (XLSX, client-side), Puppeteer (PDF — portfolio, planned) |
@@ -74,6 +81,8 @@ Proflect is a career platform built with Next.js 15 providing:
 | `RESEND_API_KEY` | Resend transactional email |
 | `RESEND_FROM_EMAIL` | Sender address for transactional email |
 | `NEXT_PUBLIC_APP_URL` | Public app base URL |
+| `GROQ_API_KEY` | Groq AI — career map analysis, study plan generation, section content |
+| `YOUTUBE_API_KEY` | YouTube Data API v3 — video fetch for course sections (optional; falls back to search link) |
 
 ---
 
@@ -82,7 +91,7 @@ Proflect is a career platform built with Next.js 15 providing:
 | Role | Access |
 |------|--------|
 | Admin | Profiles, Job Profiles, Resume Builder, Tests, Question Library, Templates, Admin Dashboard, Admin CMS, Admin Credits |
-| User | Resume Builder, Portfolio Builder, Interview Prep |
+| User | Resume Builder, Portfolio Builder, Interview Prep, Career Map, My Courses |
 
 ---
 
@@ -545,9 +554,218 @@ All AI features are powered by Anthropic Claude (`claude-sonnet-4-6`), auth-gate
 
 ---
 
-## 13. Database Schema
+## 13. Career Map (User)
 
-### 13.1 Core (Admin / Parsing)
+**Route:** `/career-map`
+
+### 13.1 Overview
+
+The Career Map is a multi-step AI workflow that analyses the user's resume, presents personalised role recommendations, renders an interactive career path graph, and generates a week-by-week study plan for closing skill gaps.
+
+### 13.2 Steps
+
+| Step | Description |
+|------|-------------|
+| 1 — Resume analysis | Upload or reuse existing resume. Groq extracts `currentTitle`, `currentSeniority`, `currentDomain`, `totalYearsExp`, `skills`, `industries`, `educationLevel`, `topTechStack`, `hasManagement`, `hasLeadership`, `certifications`. Stored in `career_map_sessions`. |
+| 2 — Questionnaire | 7 questions (one at a time with progress bar) covering target seniority, remote preference, relocation, salary range, timeline, work style, and top learning interest. Answers sent with profile to recommendation API. |
+| 3 — Recommendations | Groq ranks roles from `career_role_database` based on profile + questionnaire. Returns 5 role cards with title, match %, key skills, and estimated timeline. |
+| 4 — Career Graph | React Flow graph (Dagre LR layout) showing current role → intermediate paths → target role. Node types: Current, Target, Path, Locked (< 40% match). Edge colours by path type. |
+
+### 13.3 Career Graph Interactions
+
+| Interaction | Behaviour |
+|-------------|-----------|
+| Click a node | Opens NodeDetailPanel (Overview / Skills / Actions tabs) |
+| Click skill gap | Opens SkillGapDrawer — match meter and missing skill chips |
+| "Generate Study Plan" | Opens PreferenceModal |
+
+### 13.4 Questionnaire Questions
+
+| # | Question | Type |
+|---|----------|------|
+| 1 | Target seniority level | Single select |
+| 2 | Open to remote / hybrid / on-site | Single select |
+| 3 | Open to relocation | Yes / No |
+| 4 | Target salary range | Single select |
+| 5 | Timeline to transition | Single select |
+| 6 | Preferred work style | Single select |
+| 7 | Top area of learning interest | Single select |
+
+### 13.5 Components
+
+| Component | Description |
+|-----------|-------------|
+| `CareerMapPage.jsx` | 4-step state machine (RESUME → QUESTIONNAIRE → RECOMMENDATIONS → GRAPH) |
+| `Questionnaire.jsx` | One-question-at-a-time with animated progress bar |
+| `Recommendations.jsx` | Loading skeletons → role cards → empty state |
+| `CareerGraph.jsx` | React Flow + Dagre layout |
+| `nodes/` | `CurrentRoleNode`, `TargetRoleNode`, `PathNode`, `LockedNode` |
+| `SkillGapDrawer.jsx` | Right panel — match meter, skill chips |
+| `NodeDetailPanel.jsx` | Overview / Skills / Actions tabs |
+
+---
+
+## 14. Study Plan & Course Detail (User)
+
+### 14.1 Study Plan Generation
+
+Triggered from CareerGraph via **PreferenceModal**. User sets:
+- Hours per day (0.5–8, slider)
+- Days per week (2–7, toggle buttons)
+- Learning style: Video-first / Reading-first / Project-based / Mixed (multi-select)
+- Current level: Beginner / Some exposure / Intermediate / Advanced
+
+Live summary shows estimated weeks and total hours. Calls `POST /api/v1/career-map/generate-study-plan`.
+
+**Learning style drives section types:**
+
+| Style | Section structure |
+|-------|-----------------|
+| Video-first | First section of every topic is `video-only` ("Watch: …"), remaining are `text` |
+| Mixed | Every 2nd section is `video-only`, others are `text` |
+| Reading-first / Project-based | All sections are `text`, no video-only sections |
+
+### 14.2 Study Plan Page
+
+**Route:** `/career-map/study-plan/[studyPlanId]`
+
+| Panel | Description |
+|-------|-------------|
+| Left — WeekNavigation | Collapsible week accordion with topic checkboxes and completion state |
+| Right — Topic grid | Cards showing status chip, progress mini-bar, estimated hours, "Start / Continue" CTA |
+| Top bar | Breadcrumb, overall progress bar, **gear icon → Adjust Preferences modal** |
+
+### 14.3 Course Detail Page
+
+**Route:** `/career-map/study-plan/[studyPlanId]/topic/[topicId]`
+
+| Area | Description |
+|------|-------------|
+| Top bar | Back link, topic title, skill chip, circular progress % |
+| Left sidebar | Section list with type icons (red play = video-only, doc = text), completion checkboxes, overall progress bar |
+| Main content | Scrollable section blocks |
+| Bottom nav bar | Previous / Next section, Mark topic complete |
+
+**Section block rendering by type:**
+
+| Type | Renders |
+|------|---------|
+| `video-only` | YouTube embed only — no written content, "Mark as watched" checkbox |
+| `text` | Placeholder → Generate → Generated markdown content |
+| `text-with-video` | Written content + "Recommended video" block below |
+
+**Content generation:** Each text section has a "Generate content" button that calls `POST /api/v1/career-map/generate-section-content` (Groq, 300–600 word markdown). Generated content is persisted to `study_plan_topics.sections` JSONB.
+
+**Deep-link resume:** `?section=<sectionId>` query param scrolls to the exact section on load (used by My Courses "Continue learning" links).
+
+**Lazy video fetch:** On mount, if the topic has `youtube_queries` but no `youtube_videos`, calls `POST /api/v1/career-map/fetch-youtube-videos/single` automatically.
+
+### 14.4 YouTube Video System
+
+**Two-pass quality fetch:**
+
+1. `search.list` — 10 candidates per topic query (`videoDuration=medium`, `order=relevance`)
+2. `videos.list` — fetch statistics + contentDetails for all candidates in one batched call
+
+**Quality score** (0–1 composite):
+
+| Signal | Weight |
+|--------|--------|
+| View count (log scale) | 25% |
+| Like count (log scale) | 25% |
+| Engagement rate (like/view ratio) | 20% |
+| Recency (decays over 5 years) | 15% |
+| Duration fit (8–20 min preferred) | 15% |
+
+Top 3 ranked videos stored in `study_plan_topics.youtube_videos`. Assigned to sections by type: best video → first `video-only` section, remaining → `text-with-video` sections.
+
+**Fallback:** If API key is missing or quota exceeded, a "Search on YouTube" button is shown linking to `youtube.com/results?search_query=…`.
+
+**Quota management:** `search.list` runs per topic (~100 units each); `videos.list` runs once per plan with all candidate IDs batched (~1 unit). Total ~1,515 units for a 15-topic plan against a 10,000 unit daily quota.
+
+### 14.5 Update Preferences (Existing Plan)
+
+Users can update preferences on any existing plan from two entry points:
+
+| Entry point | Location |
+|-------------|----------|
+| "Adjust preferences" | `...` context menu on My Courses course card |
+| Gear icon button | Top bar of the Study Plan page |
+
+**Flow:**
+1. PreferenceModal opens pre-filled with current plan preferences
+2. User changes any field — summary box shows live estimated weeks diff
+3. "Update my plan →" → Confirmation screen showing what changes and what is preserved
+4. On confirm: Groq regenerates plan structure, heading-similarity matching preserves completed section content, old topics deleted, new topics inserted, `preferences_history` updated (last 5 versions kept)
+
+**What is preserved on regeneration:**
+- Completed section content matched by heading similarity
+- `study_plan_progress` rows are deleted (IDs change on regeneration)
+
+---
+
+## 15. My Courses Dashboard (User)
+
+**Route:** `/my-courses`
+
+### 15.1 Overview
+
+Dashboard showing all non-archived study plans as cards with filter tabs, sort, search, and a stats bar.
+
+### 15.2 Stats Bar
+
+| Stat | Description |
+|------|-------------|
+| Total courses | All non-archived plans |
+| In progress | Plans with `status = active` and `overallPercent > 0` |
+| Completed | Plans with `status = completed` |
+| Hours studied | Estimated from completed sections |
+
+### 15.3 Filter Tabs
+
+| Tab | Filter |
+|-----|--------|
+| All | All non-archived |
+| In Progress | `status = active` AND `overallPercent > 0` |
+| Not Started | `status = active` AND `overallPercent = 0` |
+| Completed | `status = completed` |
+| Paused | `status = paused` |
+
+### 15.4 Sort Options
+
+Last updated / Most progress / Least progress / Newest first / Oldest first
+
+### 15.5 Course Card
+
+| Element | Description |
+|---------|-------------|
+| Header (100px) | Gradient based on status: blue (in progress), green (completed), grey (not started / paused) |
+| Progress bar | White bar in gradient header showing `overallPercent` |
+| Status chip | In Progress / Not Started / Completed / Paused |
+| Stats row | Sections done, last studied (relative time) |
+| Action links | "Start / Continue / Review learning →" + "View plan" |
+| `...` menu | Mark as Active, Pause, **Adjust preferences**, Reset progress, Remove course |
+
+### 15.6 Course Card Menu Actions
+
+| Action | Behaviour |
+|--------|-----------|
+| Mark as Active / Pause | PATCH `status` via API, optimistic UI update |
+| Adjust preferences | Opens PreferenceModal pre-filled — regenerates plan on confirm |
+| Reset progress | Confirmation dialog → clears all `study_plan_progress` rows and resets topic completion |
+| Remove course | Soft delete — sets `status = archived` |
+
+### 15.7 Deep-Link Resume
+
+"Continue learning →" link on each card constructs the resume URL:
+- If `resumeTopicId` and `resumeSectionId` exist: `/career-map/study-plan/[id]/topic/[topicId]?section=[sectionId]`
+- Otherwise: `/career-map/study-plan/[id]`
+
+---
+
+## 16. Database Schema
+
+### 16.1 Core (Admin / Parsing)
 
 ```sql
 organizations
@@ -578,7 +796,7 @@ resume_scores
   UNIQUE(resume_id, job_profile_id)
 ```
 
-### 13.2 Resume Builder
+### 16.2 Resume Builder
 
 ```sql
 builder_resumes
@@ -590,7 +808,7 @@ builder_sections
   id, resume_id, type, title, position, enabled, content, display_settings
 ```
 
-### 13.3 RBAC
+### 16.3 RBAC
 
 ```sql
 profiles
@@ -607,7 +825,7 @@ email_resend_limits
   email, resend_count, window_start, updated_at
 ```
 
-### 13.4 Portfolio
+### 16.4 Portfolio
 
 ```sql
 portfolios
@@ -640,7 +858,7 @@ ai_usage
   id, user_id, feature, used_at
 ```
 
-### 13.5 Interview Prep (Self-Test)
+### 16.5 Interview Prep (Self-Test)
 
 ```sql
 self_test_sessions
@@ -653,11 +871,52 @@ self_test_answers
   id, attempt_id, question_id, selected_option, is_correct
 ```
 
+### 16.6 Career Map
+
+```sql
+career_map_sessions
+  id, user_id, resume_text, extracted_profile (jsonb), questionnaire_answers (jsonb),
+  recommended_role_ids (text[]), selected_role_id, created_at, updated_at
+
+career_role_database
+  id, title, seniority, domain, required_skills (text[]), preferred_skills (text[]),
+  typical_years_exp, description, avg_salary_range, created_at
+
+career_map_paths
+  id, from_role_id, to_role_id, path_type, skill_overlap_pct, created_at
+```
+
+### 16.7 Study Plans
+
+```sql
+study_plans
+  id, user_id, session_id, target_role_id, target_role_title,
+  missing_skills (text[]), preferences (jsonb), preferences_history (jsonb),
+  plan_structure (jsonb), total_weeks, total_hours, status,
+  created_at, updated_at
+  -- preferences shape: { hoursPerDay, daysPerWeek, learningStyle[], currentLevel }
+  -- preferences_history: last 5 { preferences, updatedAt } snapshots
+
+study_plan_topics
+  id, study_plan_id, week_number, topic_order, skill, title, description,
+  estimated_hours, sections (jsonb[]), youtube_queries (text[]),
+  youtube_videos (jsonb[]), is_completed, completed_at, created_at, updated_at
+  -- section shape: { id, order, heading, type, estimatedReadMinutes,
+  --                  content, is_generated, generation_status, youtube_video_id }
+  -- type: "video-only" | "text" | "text-with-video"
+  -- youtube_videos shape: { videoId, title, channelName, thumbnail, duration,
+  --                          viewCount, likeCount, publishedAt, qualityScore }
+
+study_plan_progress
+  id, user_id, topic_id, section_id, is_completed, completed_at
+  UNIQUE(user_id, topic_id, section_id)
+```
+
 ---
 
-## 14. API Endpoints
+## 17. API Endpoints
 
-### 14.1 Auth (public)
+### 17.1 Auth (public)
 
 | Method | Path |
 |--------|------|
@@ -668,7 +927,7 @@ self_test_answers
 | GET, POST | `/api/v1/auth/accept-invite` |
 | GET | `/auth/callback` |
 
-### 14.2 Admin — User Management
+### 17.2 Admin — User Management
 
 | Method | Path |
 |--------|------|
@@ -677,7 +936,7 @@ self_test_answers
 | POST, GET, DELETE | `/api/v1/admin/invite` |
 | GET, POST | `/api/v1/admin/import` |
 
-### 14.3 Admin — Tests & Questions
+### 17.3 Admin — Tests & Questions
 
 | Method | Path |
 |--------|------|
@@ -685,7 +944,7 @@ self_test_answers
 | GET, PATCH, DELETE | `/api/v1/admin/tests/:id` |
 | GET, POST, PATCH, DELETE | `/api/v1/admin/question-library` |
 
-### 14.4 Admin — CMS & Credits
+### 17.4 Admin — CMS & Credits
 
 | Method | Path |
 |--------|------|
@@ -693,7 +952,7 @@ self_test_answers
 | POST | `/api/v1/admin/homepage/publish` |
 | GET, POST, PATCH | `/api/v1/admin/credits` |
 
-### 14.5 Resume (Admin)
+### 17.5 Resume (Admin)
 
 | Method | Path |
 |--------|------|
@@ -704,7 +963,7 @@ self_test_answers
 | POST | `/api/v1/resumes/:id/reparse` |
 | POST | `/api/v1/resumes/:id/score` |
 
-### 14.6 Jobs (Admin)
+### 17.6 Jobs (Admin)
 
 | Method | Path |
 |--------|------|
@@ -714,7 +973,7 @@ self_test_answers
 | GET | `/api/v1/jobs/:id/candidates` |
 | POST | `/api/v1/jobs/:id/score/:resumeId` |
 
-### 14.7 Resume Builder (User)
+### 17.7 Resume Builder (User)
 
 | Method | Path |
 |--------|------|
@@ -726,7 +985,7 @@ self_test_answers
 | POST | `/api/v1/builder/:id/import` |
 | GET, POST | `/api/v1/builder/:id/share` |
 
-### 14.8 Portfolio (User)
+### 17.8 Portfolio (User)
 
 | Method | Path | Notes |
 |--------|------|-------|
@@ -749,7 +1008,7 @@ self_test_answers
 | POST | `/api/v1/portfolios/ai/seo` | Claude — SEO suggestions |
 | POST | `/api/v1/portfolios/export-pdf` | Puppeteer PDF — planned |
 
-### 14.9 Interview Prep (User)
+### 17.9 Interview Prep (User)
 
 | Method | Path |
 |--------|------|
@@ -759,9 +1018,35 @@ self_test_answers
 | GET | `/api/v1/admin/users/:id/self-tests` |
 | GET | `/api/v1/admin/users/:id/self-tests/:sessionId` |
 
+### 17.10 Career Map (User)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/career-map/analyse-resume` | Extract profile from resume text; create session |
+| POST | `/api/v1/career-map/recommend` | Rank roles for profile + questionnaire answers |
+| POST | `/api/v1/career-map/compute-graph` | BFS graph from selected role; compute skill gaps |
+| POST | `/api/v1/career-map/generate-study-plan` | Groq plan generation; persist topics with section types |
+| POST | `/api/v1/career-map/update-study-plan` | Regenerate plan for existing study plan; preserve content by heading match |
+| GET | `/api/v1/career-map/study-plan/:id` | Fetch plan + enriched topics + progress |
+| POST | `/api/v1/career-map/generate-section-content` | Groq markdown content for one section |
+| POST | `/api/v1/career-map/complete-section` | Upsert / delete progress row |
+| POST | `/api/v1/career-map/complete-topic` | Mark all sections complete, check plan done |
+| POST | `/api/v1/career-map/fetch-youtube-videos` | Two-pass quality-scored fetch for all topics in a plan |
+| POST | `/api/v1/career-map/fetch-youtube-videos/single` | Lazy fetch for a single topic |
+
+### 17.11 My Courses (User)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/v1/my-courses` | List non-archived plans with computed progress fields |
+| GET | `/api/v1/my-courses/stats` | Summary stats (total, in-progress, completed, hours studied) |
+| PATCH | `/api/v1/my-courses/:id/status` | Update plan status (active / paused) |
+| DELETE | `/api/v1/my-courses/:id` | Soft delete — set status to archived |
+| POST | `/api/v1/my-courses/:id/reset-progress` | Clear all progress rows, reset topic completion |
+
 ---
 
-## 15. Non-Functional Requirements
+## 18. Non-Functional Requirements
 
 | Requirement | Target |
 |-------------|--------|
@@ -775,10 +1060,12 @@ self_test_answers
 | AI usage limit | 5 AI generations per month (free plan) |
 | Portfolio public pages | SSG/ISR, revalidate every 60 seconds for SEO performance |
 | PDF export | ATS-compliant: tagged PDF, selectable text, embedded fonts |
+| Career Map AI | Study plan generation < 20 seconds; section content < 8 seconds |
+| YouTube quota | ~1,515 API units per plan (10,000 daily default); lazy per-topic fetch minimises usage |
 
 ---
 
-## 16. Known Limitations
+## 19. Known Limitations
 
 | Area | Limitation |
 |------|-----------|
@@ -790,3 +1077,8 @@ self_test_answers
 | Portfolio analytics | Page view count only; referrer and geographic breakdown planned |
 | Skills gap AI feature | UI component exists; not yet wired into the portfolio editor |
 | SEO suggestions AI feature | UI component exists; not yet wired into the portfolio editor |
+| Career Map graph | Locked nodes (< 40% skill match) are visible but not interactive |
+| YouTube API key | Optional — falls back to "Search on YouTube" link if key is absent or quota exceeded |
+| Career Map role database | Seeded with ~30 roles; not user-editable |
+| Study plan content | Section content is generated on-demand per section, not pre-generated |
+| Preferences history rollback | History stored (last 5 versions) but rollback UI not yet implemented |
