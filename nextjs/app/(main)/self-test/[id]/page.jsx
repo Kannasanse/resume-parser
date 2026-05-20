@@ -545,8 +545,9 @@ export default function SelfTestPage() {
     };
 
     return (
-      <div className="gradient-mesh-1 min-h-screen px-4 py-6 max-w-2xl mx-auto space-y-6">
-        {/* Score card */}
+      <div className="gradient-mesh-1 min-h-screen px-4 sm:px-6 lg:px-8 py-6 w-full space-y-6">
+        {/* Score card — centred, readable width */}
+        <div className="max-w-2xl mx-auto mb-8 space-y-4">
         <div className="card shadow-2xl p-6 text-center space-y-3">
           <p className="text-sm text-ds-textMuted font-medium uppercase tracking-wide">
             {hasSA && combinedPct != null ? 'Combined Score' : 'Your Score'}
@@ -588,6 +589,7 @@ export default function SelfTestPage() {
             <p className="text-sm text-blue-700">AI is grading your short answers — scores will update automatically.</p>
           </div>
         )}
+        </div>{/* end max-w-2xl score section */}
 
         {/* Per-skill breakdown (JD mode) */}
         {isJd && perSkill && perSkill.length > 0 && (
@@ -674,7 +676,8 @@ export default function SelfTestPage() {
   const q = questions[current];
 
   return (
-    <div className="gradient-mesh-1 min-h-screen px-4 py-6 max-w-2xl mx-auto space-y-4">
+    <div className="gradient-mesh-1 min-h-screen px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-3xl mx-auto space-y-4">
       {connBanner && (
         <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-4 py-2.5 rounded-lg flex items-center justify-between">
           <span>Connection issue detected. Your progress is being saved locally.</span>
@@ -838,6 +841,7 @@ export default function SelfTestPage() {
           </div>
         </div>
       )}
+      </div>{/* end max-w-3xl */}
     </div>
   );
 }

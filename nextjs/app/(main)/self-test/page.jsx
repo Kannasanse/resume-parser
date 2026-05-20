@@ -427,7 +427,7 @@ export default function SelfTestCreate() {
   const softSkills   = jdSkills.filter(s => s.type === 'Soft');
 
   return (
-    <div className="gradient-mesh-1 min-h-screen px-4 py-6 max-w-xl mx-auto space-y-6">
+    <div className="gradient-mesh-1 min-h-screen px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* Header */}
       <div>
         {STEP_BACKS[step] && (
@@ -458,7 +458,7 @@ export default function SelfTestCreate() {
 
       {/* ── Step: Mode selection ─────────────────────────────────────────────── */}
       {step === 'mode-select' && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
           {[
             {
               id: 'skills',
@@ -498,6 +498,7 @@ export default function SelfTestCreate() {
 
       {/* ── Step: Skills / Content form ──────────────────────────────────────── */}
       {step === 'form' && (
+        <div className="w-full max-w-4xl mx-auto">
         <div className="card shadow-2xl p-6 space-y-5">
           {error && (
             <div className="bg-ds-dangerLight border border-ds-danger/30 text-ds-danger text-sm rounded px-3 py-2.5 flex items-start justify-between gap-3">
@@ -559,10 +560,12 @@ export default function SelfTestCreate() {
             <p className="text-xs text-ds-textMuted text-center -mt-3">Select a difficulty to enable generation</p>
           )}
         </div>
+        </div>
       )}
 
       {/* ── Step: JD input ───────────────────────────────────────────────────── */}
       {step === 'jd-input' && (
+        <div className="w-full max-w-4xl mx-auto">
         <div className="card shadow-2xl p-6 space-y-4">
           {extractError && (
             <div className="bg-ds-dangerLight border border-ds-danger/30 text-ds-danger text-sm rounded px-3 py-2.5">
@@ -605,10 +608,12 @@ export default function SelfTestCreate() {
             )}
           </button>
         </div>
+        </div>
       )}
 
       {/* ── Step: JD skills review ───────────────────────────────────────────── */}
       {step === 'jd-skills' && (
+        <div className="w-full max-w-4xl mx-auto">
         <div className="card shadow-2xl p-6 space-y-5">
           {/* Undo toast */}
           {undoSkill && (
@@ -750,19 +755,23 @@ export default function SelfTestCreate() {
             <p className="text-xs text-ds-textMuted text-center -mt-3">Select a difficulty to enable generation</p>
           )}
         </div>
+        </div>
       )}
 
       {/* ── Step: Generating ─────────────────────────────────────────────────── */}
       {step === 'generating' && (
+        <div className="w-full max-w-4xl mx-auto">
         <div className="bg-ds-card border border-ds-border rounded-lg p-12 flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           <p className="text-sm font-medium text-ds-text">Generating your test questions…</p>
           <p className="text-xs text-ds-textMuted">This usually takes 10–20 seconds</p>
         </div>
+        </div>
       )}
 
       {/* ── Step: Review ─────────────────────────────────────────────────────── */}
       {step === 'review' && session && (
+        <div className="w-full max-w-4xl mx-auto">
         <div className="card shadow-2xl p-6 space-y-5">
           <div className="text-center space-y-2">
             <div className="w-14 h-14 bg-primary/10 border border-primary/20 rounded-full flex items-center justify-center mx-auto">
@@ -828,6 +837,7 @@ export default function SelfTestCreate() {
               ← Start Over
             </button>
           </div>
+        </div>
         </div>
       )}
     </div>
