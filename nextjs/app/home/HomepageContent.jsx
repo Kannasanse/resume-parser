@@ -77,10 +77,11 @@ function HomeNavbar() {
             <Image
               src="/logo.png"
               alt="Proflect"
-              width={120}
-              height={32}
-              className="h-8 w-auto transition-all"
+              width={140}
+              height={36}
+              className="h-9 w-auto object-contain transition-all"
               style={{ filter: scrolled ? 'none' : 'brightness(0) invert(1)' }}
+              priority
             />
           </Link>
 
