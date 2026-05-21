@@ -74,14 +74,11 @@ function HomeNavbar() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/home" className="flex items-center">
-            <Image
-              src="/logo.png"
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={scrolled ? '/logo.png' : '/logo-white.png'}
               alt="Proflect"
-              width={140}
-              height={36}
-              className="h-9 w-auto object-contain transition-all"
-              style={{ filter: scrolled ? 'none' : 'brightness(0) invert(1)' }}
-              priority
+              className="h-9 w-auto object-contain"
             />
           </Link>
 
