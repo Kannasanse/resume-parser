@@ -158,7 +158,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link href="/home" className="flex items-center flex-shrink-0 no-underline hover:no-underline">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="Proflect" className="h-8 w-auto object-contain" />
+            <img src="/logo.png" alt="Proflect" className="h-10 w-auto object-contain" />
           </Link>
 
           {/* Desktop nav links */}
@@ -334,7 +334,7 @@ export default function Navbar() {
         <div className="h-16 flex items-center justify-between px-4 border-b border-ds-border flex-shrink-0">
           <Link href="/home" onClick={() => setDrawerOpen(false)} className="flex items-center no-underline">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="Proflect" className="h-8 w-auto object-contain" />
+            <img src="/logo.png" alt="Proflect" className="h-10 w-auto object-contain" />
           </Link>
           <button onClick={() => setDrawerOpen(false)} aria-label="Close menu" className="w-8 h-8 flex items-center justify-center rounded-lg text-ds-textMuted hover:bg-ds-bg">
             <CloseIcon />
