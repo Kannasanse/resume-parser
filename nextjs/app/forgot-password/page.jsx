@@ -62,12 +62,20 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-ds-bg flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col items-center gap-2 mb-8">
-          <span className="nav-logo-mark">P</span>
-          <span className="text-lg font-bold tracking-tight text-[var(--c-text)]">Proflect</span>
+    <div className="min-h-screen flex">
+      <div className="hidden md:flex md:w-[42%] flex-col justify-between bg-gradient-to-br from-[#185FA5] to-[#0C447C] p-12 relative overflow-hidden flex-shrink-0">
+        <div className="absolute inset-0 opacity-[0.08]" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
+        <div className="relative">
+          <p className="text-white font-extrabold text-2xl font-heading tracking-tight">Proflect</p>
         </div>
+        <div className="relative space-y-3">
+          <h2 className="text-white text-[32px] font-extrabold leading-tight font-heading">Your career map starts here.</h2>
+          <p className="text-white/70 text-sm">Resume builder · Career map · Interview prep · Portfolio</p>
+        </div>
+      </div>
+
+      <div className="flex-1 flex items-center justify-center px-4 py-8 bg-ds-bg">
+      <div className="w-full max-w-sm">
 
         <div className="auth-card space-y-5">
           <Link href="/login" className="flex items-center gap-1.5 text-xs text-ds-textMuted hover:text-ds-text -mb-1">
@@ -97,13 +105,14 @@ export default function ForgotPasswordPage() {
             </div>
 
             <button type="submit" disabled={loading}
-              className="w-full bg-primary text-white py-2.5 rounded-btn text-sm font-semibold hover:bg-primary-dark disabled:opacity-50 transition-colors">
+              className="btn-primary w-full py-2.5 text-sm font-semibold disabled:opacity-50">
               {loading
                 ? <span className="flex items-center justify-center gap-2"><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Sending…</span>
                 : 'Send Reset Link'}
             </button>
           </form>
         </div>
+      </div>
       </div>
     </div>
   );

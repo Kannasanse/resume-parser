@@ -29,6 +29,8 @@ export default function QuestionCard({
     ? (answerValue || '').trim().length >= 1
     : !!answerValue;
 
+  const progressPct = estTotal ? Math.round((questionNumber / estTotal) * 100) : null;
+
   return (
     <div className="card shadow-2xl p-8 space-y-6 animate-fade-in-scale">
       {/* Header row */}
@@ -48,8 +50,15 @@ export default function QuestionCard({
         <p className="text-xs text-[#9CA3AF] font-medium">{progressLabel}</p>
       </div>
 
+      {/* Progress bar */}
+      {progressPct !== null && (
+        <div className="h-1 bg-[#E6F1FB] rounded-full overflow-hidden -mt-3">
+          <div className="progress-fill-gradient h-full rounded-full transition-all duration-500" style={{ width: `${progressPct}%` }} />
+        </div>
+      )}
+
       {/* Question text */}
-      <h3 className="text-[20px] font-semibold text-[#2C2C2A] leading-[1.4]">
+      <h3 className="text-[20px] font-bold text-[#2C2C2A] leading-[1.4]">
         {questionText}
       </h3>
 
@@ -78,8 +87,7 @@ export default function QuestionCard({
         type="button"
         onClick={onNext}
         disabled={!canProceed}
-        className="w-full py-3 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-40"
-        style={{ background: '#185FA5' }}
+        className="w-full py-3 rounded-lg text-sm font-semibold text-white disabled:opacity-40 btn-primary"
       >
         {isLast ? 'See my career paths →' : 'Next →'}
       </button>

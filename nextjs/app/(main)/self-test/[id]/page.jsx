@@ -548,7 +548,7 @@ export default function SelfTestPage() {
       <div className="gradient-mesh-1 min-h-screen px-4 sm:px-6 lg:px-8 py-6 w-full space-y-6">
         {/* Score card — centred, readable width */}
         <div className="max-w-2xl mx-auto mb-8 space-y-4">
-        <div className="card shadow-2xl p-6 text-center space-y-3">
+        <div className="card card-featured shadow-2xl p-6 text-center space-y-3">
           <p className="text-sm text-ds-textMuted font-medium uppercase tracking-wide">
             {hasSA && combinedPct != null ? 'Combined Score' : 'Your Score'}
           </p>
@@ -608,7 +608,7 @@ export default function SelfTestPage() {
                       <span className="text-xs text-ds-textMuted">{s.correct}/{s.total} correct — {s.pct}%</span>
                     </div>
                     <div className="h-1.5 bg-black/10 rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full ${skillBand.bar}`} style={{ width: `${s.pct}%` }} />
+                      <div className={`h-full rounded-full ${s.pct >= 80 ? 'progress-fill-gradient' : skillBand.bar}`} style={{ width: `${s.pct}%` }} />
                     </div>
                   </div>
                 );
@@ -706,7 +706,7 @@ export default function SelfTestPage() {
       {session && timeLeft !== null && (
         <div className="h-1 bg-ds-bg rounded-full overflow-hidden -mt-2">
           <div
-            className={`h-full rounded-full transition-all duration-1000 ${isLowTime ? 'bg-ds-danger' : 'bg-primary'}`}
+            className={`h-full rounded-full transition-all duration-1000 ${isLowTime ? 'bg-ds-danger' : 'progress-fill-gradient'}`}
             style={{ width: `${(timeLeft / (session.timer_minutes * 60)) * 100}%` }}
           />
         </div>

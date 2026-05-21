@@ -912,7 +912,7 @@ export default function BuilderEditor() {
         </div>
 
         {/* Preview pane */}
-        <div className={`${mobileTab === 'edit' ? 'hidden md:flex' : 'flex'} flex-col md:flex-1 flex-1 overflow-hidden bg-[#E6ECF2]`}>
+        <div className={`${mobileTab === 'edit' ? 'hidden md:flex' : 'flex'} flex-col md:flex-1 flex-1 overflow-hidden preview-dot-grid`}>
           {/* Preview toolbar */}
           <div className="flex items-center gap-1 px-2 py-1.5 bg-ds-card border-b border-ds-border text-xs flex-shrink-0 justify-center">
             <button

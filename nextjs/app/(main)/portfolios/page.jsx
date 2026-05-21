@@ -302,7 +302,7 @@ function PortfolioCard({ portfolio, onRefresh }) {
 
   return (
     <>
-      <div className="ds-card flex flex-col overflow-hidden">
+      <div className={`card card-interactive flex flex-col overflow-hidden ${portfolio.status === 'published' ? 'card-featured' : ''}`}>
         {/* Gradient header */}
         <div className="h-20 bg-gradient-to-br from-[var(--c-primary)] to-[var(--c-primary-dark)] relative flex-shrink-0">
           <div className="absolute bottom-2 right-2">
@@ -345,7 +345,7 @@ function PortfolioCard({ portfolio, onRefresh }) {
         <div className="flex items-center gap-2 px-4 py-3 border-t border-ds-border">
           <Link
             href={`/portfolios/${portfolio.id}/edit`}
-            className="flex-1 text-center bg-primary text-white rounded px-3 py-1.5 text-sm font-medium hover:bg-primary/90 transition-colors"
+            className="flex-1 text-center btn-primary rounded px-3 py-1.5 text-sm"
           >
             Edit
           </Link>

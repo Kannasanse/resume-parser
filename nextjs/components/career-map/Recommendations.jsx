@@ -94,7 +94,7 @@ export default function Recommendations({ roles, loading, onSelect }) {
           const neededSkills = role.key_skills_needed || [];
 
           return (
-            <div key={role.id} className={`card card-interactive p-5 space-y-3 ${i === 0 ? 'ring-2 ring-[#185FA5] ring-offset-2' : ''}`}>
+            <div key={role.id} className={`card card-interactive p-5 space-y-3 ${i === 0 ? 'card-featured' : ''}`}>
               {/* Header row */}
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
@@ -169,7 +169,7 @@ export default function Recommendations({ roles, loading, onSelect }) {
                 <button
                   onClick={() => handleSelect(role.id)}
                   disabled={!!selecting}
-                  className="group bg-[var(--c-primary)] text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:bg-[var(--c-primary-dark)] transition-colors disabled:opacity-50"
+                  className="group btn-primary text-sm px-4 py-1.5 disabled:opacity-50"
                 >
                   {selecting === role.id
                     ? 'Building map…'

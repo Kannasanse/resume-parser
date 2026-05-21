@@ -440,7 +440,7 @@ export default function SelfTestCreate() {
         )}
         {STEP_TITLES[step] && (
           <>
-            <h1 className="text-xl font-bold text-ds-text font-heading">{STEP_TITLES[step]}</h1>
+            <h1 className="text-[26px] font-extrabold tracking-tight font-heading text-gradient-primary">{STEP_TITLES[step]}</h1>
             {step === 'mode-select' && (
               <p className="text-sm text-ds-textMuted mt-0.5">Choose a source and we'll generate a personalised practice test.</p>
             )}
@@ -483,7 +483,7 @@ export default function SelfTestCreate() {
               key={card.id}
               type="button"
               onClick={() => selectMode(card.id)}
-              className={`card card-interactive mode-card text-left ${mode === card.id ? 'ring-2 ring-[var(--c-primary)] shadow-glow-primary' : ''}`}
+              className={`card card-interactive mode-card text-left ${mode === card.id ? 'card-featured' : ''}`}
             >
               <span className={`stat-icon mb-3 ${mode === card.id ? '' : ''}`}>
                 {card.icon}

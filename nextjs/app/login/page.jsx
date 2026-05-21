@@ -97,12 +97,22 @@ function LoginContent() {
     `w-full border rounded-lg px-3 py-2.5 text-sm bg-ds-bg text-ds-text placeholder-ds-textMuted focus:outline-none focus:ring-2 focus:ring-primary transition-colors ${hasError ? 'border-ds-danger' : 'border-ds-inputBorder focus:border-primary'}`;
 
   return (
-    <div className="gradient-mesh-1 min-h-screen flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-sm">
-        <div className="flex justify-center mb-8">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/login-hero.png" alt="Proflect" className="max-w-[220px] object-contain" />
+    <div className="min-h-screen flex">
+      {/* Left panel — brand */}
+      <div className="hidden md:flex md:w-[42%] flex-col justify-between bg-gradient-to-br from-[#185FA5] to-[#0C447C] p-12 relative overflow-hidden flex-shrink-0">
+        <div className="absolute inset-0 opacity-[0.08]" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
+        <div className="relative">
+          <p className="text-white font-extrabold text-2xl font-heading tracking-tight">Proflect</p>
         </div>
+        <div className="relative space-y-3">
+          <h2 className="text-white text-[32px] font-extrabold leading-tight font-heading">Your career map starts here.</h2>
+          <p className="text-white/70 text-sm">Resume builder · Career map · Interview prep · Portfolio</p>
+        </div>
+      </div>
+
+      {/* Right panel — form */}
+      <div className="flex-1 flex items-center justify-center px-4 py-8 bg-ds-bg">
+      <div className="w-full max-w-sm">
 
         <div className="auth-card glass-light animate-fade-in-scale space-y-5">
           <div className="text-center space-y-1">
@@ -187,6 +197,7 @@ function LoginContent() {
             <Link href="/signup" className="text-primary hover:underline font-medium">Sign up</Link>
           </p>
         </div>
+      </div>
       </div>
     </div>
   );

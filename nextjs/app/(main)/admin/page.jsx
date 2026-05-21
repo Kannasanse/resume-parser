@@ -23,7 +23,7 @@ const STAT_ICONS = {
 
 function StatCard({ label, value, href, loading }) {
   const inner = (
-    <div className="card shadow-sm p-5 hover:border-[var(--ds-borderStrong)] transition-colors">
+    <div className="card card-interactive p-5">
       <div className="stat-icon">{STAT_ICONS[label]}</div>
       <p className="text-xs font-semibold text-[var(--c-text-2)] uppercase tracking-wide mb-1">{label}</p>
       {loading
@@ -55,7 +55,7 @@ export default function AdminDashboard() {
   return (
     <div className="gradient-mesh-1 min-h-screen p-8 space-y-8">
       <div>
-        <h1 className="text-2xl font-bold font-heading text-gradient-primary">Dashboard</h1>
+        <h1 className="text-[28px] font-extrabold tracking-tight font-heading text-gradient-primary">Dashboard</h1>
         <p className="text-sm text-ds-textMuted mt-1">Platform overview and management</p>
       </div>
 
@@ -71,13 +71,13 @@ export default function AdminDashboard() {
 
           <Link href="/admin/users"
             className="card card-interactive p-4 group">
-            <p className="text-sm font-semibold text-ds-text group-hover:text-primary transition-colors">Manage Users</p>
+            <p className="text-sm font-bold text-ds-text group-hover:text-primary transition-colors">Manage Users</p>
             <p className="text-xs text-ds-textMuted mt-0.5">View, edit, deactivate, and delete users.</p>
           </Link>
 
           <div className="card p-4 space-y-3">
             <div>
-              <p className="text-sm font-semibold text-ds-text">Invite Users</p>
+              <p className="text-sm font-bold text-ds-text">Invite Users</p>
               <p className="text-xs text-ds-textMuted mt-0.5">Send email invitations to new team members.</p>
             </div>
             <div className="flex gap-2">
@@ -94,19 +94,19 @@ export default function AdminDashboard() {
 
           <Link href="/admin/tests"
             className="card card-interactive p-4 group">
-            <p className="text-sm font-semibold text-ds-text group-hover:text-primary transition-colors">Manage Tests</p>
+            <p className="text-sm font-bold text-ds-text group-hover:text-primary transition-colors">Manage Tests</p>
             <p className="text-xs text-ds-textMuted mt-0.5">Create and manage assessments for candidates.</p>
           </Link>
 
           <Link href="/admin/templates"
             className="card card-interactive p-4 group">
-            <p className="text-sm font-semibold text-ds-text group-hover:text-primary transition-colors">Template Settings</p>
+            <p className="text-sm font-bold text-ds-text group-hover:text-primary transition-colors">Template Settings</p>
             <p className="text-xs text-ds-textMuted mt-0.5">Mark resume builder templates as Featured.</p>
           </Link>
 
           <Link href="/admin/homepage"
             className="card card-interactive p-4 group">
-            <p className="text-sm font-semibold text-ds-text group-hover:text-primary transition-colors">Homepage CMS</p>
+            <p className="text-sm font-bold text-ds-text group-hover:text-primary transition-colors">Homepage CMS</p>
             <p className="text-xs text-ds-textMuted mt-0.5">Edit homepage sections, toggle visibility, and publish changes.</p>
           </Link>
 

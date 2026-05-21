@@ -16,7 +16,8 @@ export default function OptionsQuestion({ options = [], selected, onSelect }) {
               background: isSelected
                 ? 'linear-gradient(135deg, #E6F1FB, #F4F8FC)'
                 : 'white',
-              transform: isSelected ? 'none' : undefined,
+              boxShadow: isSelected ? '0 0 0 4px rgba(24,95,165,0.12)' : undefined,
+              transform: isSelected ? 'translateY(-1px)' : undefined,
             }}
             onMouseEnter={e => { if (!isSelected) { e.currentTarget.style.borderColor = 'rgba(24,95,165,0.4)'; e.currentTarget.style.background = '#F4F8FC'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
             onMouseLeave={e => { if (!isSelected) { e.currentTarget.style.borderColor = '#D1DCE8'; e.currentTarget.style.background = 'white'; e.currentTarget.style.transform = 'none'; } }}
