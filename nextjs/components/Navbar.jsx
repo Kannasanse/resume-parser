@@ -43,6 +43,7 @@ function PortfolioIcon() { return <svg width="14" height="14" viewBox="0 0 24 24
 function SelfTestIcon()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 12 2 2 4-4"/></svg>; }
 function CareerMapIcon()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 7l3.5 3.5M14.5 10.5L17 7M14.5 13.5L17 17"/></svg>; }
 function MyCoursesIcon() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>; }
+function HomeIcon()      { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z"/><path d="M9 21V12h6v9"/></svg>; }
 
 // Dropdown menu items
 function MenuItem({ href, icon, label, onClick, danger }) {
@@ -201,6 +202,7 @@ export default function Navbar() {
               </>
             ) : (
               <>
+                {navLink('/home', 'Home', <HomeIcon />, true)}
                 {navLink('/builder', 'Resume Builder', <PenIcon />)}
                 {navLink('/portfolios', 'Portfolios', <PortfolioIcon />)}
                 {navLink('/self-test', 'Interview Prep', <SelfTestIcon />)}
@@ -355,6 +357,7 @@ export default function Navbar() {
             </>
           ) : (
             <>
+              {drawerLink('/home', 'Home', <HomeIcon />, true)}
               {drawerLink('/builder', 'Resume Builder', <PenIcon />)}
               {drawerLink('/portfolios', 'Portfolios', <PortfolioIcon />)}
               {drawerLink('/self-test', 'Interview Prep', <SelfTestIcon />)}
