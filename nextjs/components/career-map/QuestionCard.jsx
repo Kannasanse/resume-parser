@@ -39,7 +39,7 @@ export default function QuestionCard({
           <button
             type="button"
             onClick={onBack}
-            className="flex items-center gap-1 text-sm text-[#6B7280] hover:text-[#2C2C2A] transition-colors"
+            className="flex items-center gap-1 text-sm text-[#6B7280] dark:text-[#8BA3C1] hover:text-[#2C2C2A] dark:hover:text-[#E8EFF7] transition-colors"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6"/>
@@ -47,18 +47,18 @@ export default function QuestionCard({
             Previous
           </button>
         ) : <span />}
-        <p className="text-xs text-[#9CA3AF] font-medium">{progressLabel}</p>
+        <p className="text-xs text-[#9CA3AF] dark:text-[#4A6380] font-medium">{progressLabel}</p>
       </div>
 
       {/* Progress bar */}
       {progressPct !== null && (
-        <div className="h-1 bg-[#E6F1FB] rounded-full overflow-hidden -mt-3">
+        <div className="h-1 bg-[#E6F1FB] dark:bg-[rgba(24,95,165,0.15)] rounded-full overflow-hidden -mt-3">
           <div className="progress-fill-gradient h-full rounded-full transition-all duration-500" style={{ width: `${progressPct}%` }} />
         </div>
       )}
 
       {/* Question text */}
-      <h3 className="text-[20px] font-bold text-[#2C2C2A] leading-[1.4]">
+      <h3 className="text-[20px] font-bold text-[#2C2C2A] dark:text-[#E8EFF7] leading-[1.4]">
         {questionText}
       </h3>
 

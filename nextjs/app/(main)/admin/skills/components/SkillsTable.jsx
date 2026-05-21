@@ -176,12 +176,12 @@ export default function SkillsTable({
                                 Active
                               </span>
                             ) : (
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200 font-medium">
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-[#8BA3C1] border border-gray-200 dark:border-white/10 font-medium">
                                 Inactive
                               </span>
                             )}
                             {skill.is_trending && (
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-medium">
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700/50 font-medium">
                                 Trending
                               </span>
                             )}
@@ -220,8 +220,8 @@ export default function SkillsTable({
                               title={skill.is_active ? 'Deactivate' : 'Activate'}
                               className={`p-1.5 rounded transition-colors ${
                                 skill.is_active
-                                  ? 'text-[var(--c-text-muted)] hover:text-amber-600 hover:bg-amber-50'
-                                  : 'text-[var(--c-text-muted)] hover:text-green-600 hover:bg-green-50'
+                                  ? 'text-[var(--c-text-muted)] hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30'
+                                  : 'text-[var(--c-text-muted)] hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30'
                               }`}
                             >
                               {skill.is_active ? <IconEyeOff /> : <IconEye />}
@@ -231,7 +231,7 @@ export default function SkillsTable({
                             <button
                               onClick={() => onDelete(skill)}
                               title="Delete skill"
-                              className="p-1.5 rounded text-[var(--c-text-muted)] hover:text-red-600 hover:bg-red-50 transition-colors"
+                              className="p-1.5 rounded text-[var(--c-text-muted)] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
                             >
                               <IconTrash />
                             </button>
@@ -257,7 +257,7 @@ export default function SkillsTable({
             <button
               disabled={page <= 1}
               onClick={() => onPageChange(page - 1)}
-              className="px-3 py-1.5 border border-[var(--c-border)] rounded-lg text-[var(--c-text)] disabled:opacity-40 hover:bg-[var(--ds-bg,#f3f4f6)] transition-colors disabled:cursor-not-allowed"
+              className="px-3 py-1.5 border border-[var(--c-border)] rounded-lg text-[var(--c-text)] disabled:opacity-40 hover:bg-[var(--ds-bg,#f3f4f6)] dark:hover:bg-[#0D1830] transition-colors disabled:cursor-not-allowed"
             >
               ← Prev
             </button>
@@ -265,7 +265,7 @@ export default function SkillsTable({
             <button
               disabled={page >= totalPages}
               onClick={() => onPageChange(page + 1)}
-              className="px-3 py-1.5 border border-[var(--c-border)] rounded-lg text-[var(--c-text)] disabled:opacity-40 hover:bg-[var(--ds-bg,#f3f4f6)] transition-colors disabled:cursor-not-allowed"
+              className="px-3 py-1.5 border border-[var(--c-border)] rounded-lg text-[var(--c-text)] disabled:opacity-40 hover:bg-[var(--ds-bg,#f3f4f6)] dark:hover:bg-[#0D1830] transition-colors disabled:cursor-not-allowed"
             >
               Next →
             </button>

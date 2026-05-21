@@ -13,7 +13,7 @@ export default function NodeDetailPanel({ node, sessionId, onClose, onViewRoadma
   const d = node.data || {};
 
   return (
-    <div className="absolute bottom-4 left-4 w-80 bg-white border border-[var(--c-border)] rounded-xl shadow-xl z-10 overflow-hidden">
+    <div className="absolute bottom-4 left-4 w-80 bg-white dark:bg-[#111F35] border border-[var(--c-border)] rounded-xl shadow-xl z-10 overflow-hidden">
       {/* Header */}
       <div className="bg-[var(--c-primary)] px-4 py-3 flex items-start justify-between">
         <div>
@@ -82,7 +82,7 @@ export default function NodeDetailPanel({ node, sessionId, onClose, onViewRoadma
             </button>
             <button
               onClick={onClose}
-              className="w-full text-sm border border-[var(--c-border)] text-[var(--c-text)] font-medium py-2 rounded-lg hover:bg-gray-50 transition-colors"
+              className="w-full text-sm border border-[var(--c-border)] text-[var(--c-text)] font-medium py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-[rgba(255,255,255,0.06)] transition-colors"
             >
               Close
             </button>

@@ -14,16 +14,16 @@ const OUTLOOK_COLOR = {
 };
 
 const PATH_BADGE = {
-  vertical:   { label: '↑ Vertical',   bg: '#E6F1FB', color: '#185FA5' },
-  horizontal: { label: '→ Horizontal', bg: '#F0FDF4', color: '#15803D' },
-  diagonal:   { label: '↗ Diagonal',   bg: '#FFF7ED', color: '#C2410C' },
+  vertical:   { label: '↑ Vertical',   className: 'bg-[#E6F1FB] dark:bg-[rgba(24,95,165,0.20)] text-[#185FA5] dark:text-[#5B9FD4]' },
+  horizontal: { label: '→ Horizontal', className: 'bg-[#F0FDF4] dark:bg-[rgba(21,128,61,0.15)] text-[#15803D] dark:text-[#4ade80]' },
+  diagonal:   { label: '↗ Diagonal',   className: 'bg-[#FFF7ED] dark:bg-[rgba(194,65,12,0.15)] text-[#C2410C] dark:text-[#fb923c]' },
 };
 
 function ReasonText({ reason }) {
   if (!reason) return null;
   return (
-    <p className="text-[13px] italic leading-snug" style={{ color: '#6B7280' }}>
-      <span style={{ fontFamily: 'Georgia, serif', fontSize: 16, lineHeight: 0, verticalAlign: '-3px', marginRight: 2, color: '#185FA5' }}>"</span>
+    <p className="text-[13px] italic leading-snug text-[#6B7280] dark:text-[#8BA3C1]">
+      <span className="text-[#185FA5] dark:text-[#5B9FD4]" style={{ fontFamily: 'Georgia, serif', fontSize: 16, lineHeight: 0, verticalAlign: '-3px', marginRight: 2 }}>"</span>
       {reason}
     </p>
   );
@@ -34,7 +34,7 @@ function ReadinessBar({ score }) {
   const color = pct >= 70 ? '#1D9E75' : pct >= 40 ? '#F59E0B' : '#EF4444';
   return (
     <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: '#E5E7EB' }}>
+      <div className="flex-1 h-1.5 rounded-full overflow-hidden bg-[#E5E7EB] dark:bg-[rgba(255,255,255,0.10)]">
         <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
       </div>
       <span className="text-[12px] font-medium flex-shrink-0" style={{ color }}>{pct}% ready</span>
@@ -106,8 +106,7 @@ export default function Recommendations({ roles, loading, onSelect }) {
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <p className="text-xs text-[var(--c-text-muted)]">{role.category} · {role.seniority}</p>
                       {role.pathType && (
-                        <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-full"
-                          style={{ background: pathBadge.bg, color: pathBadge.color }}>
+                        <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full ${pathBadge.className}`}>
                           {pathBadge.label}
                         </span>
                       )}
@@ -142,8 +141,7 @@ export default function Recommendations({ roles, loading, onSelect }) {
               {neededSkills.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {neededSkills.slice(0, 3).map(s => (
-                    <span key={s} className="text-xs px-2 py-0.5 rounded-full"
-                      style={{ background: '#FFF7ED', color: '#C2410C', border: '1px solid #FED7AA' }}>
+                    <span key={s} className="text-xs px-2 py-0.5 rounded-full bg-[#FFF7ED] dark:bg-[rgba(194,65,12,0.15)] text-[#C2410C] dark:text-[#fb923c] border border-[#FED7AA] dark:border-[rgba(194,65,12,0.30)]">
                       + {s}
                     </span>
                   ))}

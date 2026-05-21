@@ -4,7 +4,7 @@ export default function SkillGapDrawer({ data, onClose, onViewRoadmap }) {
   const { target_role_title, required_skills, matched_skills, missing_skills, match_percent } = data;
 
   return (
-    <div className="absolute top-0 right-0 h-full w-80 bg-white border-l border-[var(--c-border)] shadow-xl flex flex-col z-10">
+    <div className="absolute top-0 right-0 h-full w-80 bg-white dark:bg-[#111F35] border-l border-[var(--c-border)] shadow-xl flex flex-col z-10">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--c-border)]">
         <div>
@@ -24,7 +24,7 @@ export default function SkillGapDrawer({ data, onClose, onViewRoadmap }) {
           <span className="text-sm font-medium text-[var(--c-text)]">Overall match</span>
           <span className="text-lg font-bold text-[var(--c-primary)]">{match_percent}%</span>
         </div>
-        <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+        <div className="h-2.5 bg-gray-100 dark:bg-[rgba(255,255,255,0.10)] rounded-full overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{

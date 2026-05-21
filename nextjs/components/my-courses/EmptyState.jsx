@@ -11,7 +11,7 @@ export default function EmptyState({ tab, hasAnyCourses, onNewCourse }) {
   if (!hasAnyCourses) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#D1DCE8" strokeWidth="1.5">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--ds-border, #D1DCE8)" strokeWidth="1.5">
           <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
         </svg>
         <h3 className="text-xl font-semibold text-[var(--c-text)]">No courses yet</h3>
@@ -40,7 +40,7 @@ export default function EmptyState({ tab, hasAnyCourses, onNewCourse }) {
 
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#D1DCE8" strokeWidth="1.5">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--ds-border, #D1DCE8)" strokeWidth="1.5">
         <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
       </svg>
       <p className="text-sm font-semibold text-[var(--c-text-muted)]">No {tab.replace('_', ' ')} courses</p>

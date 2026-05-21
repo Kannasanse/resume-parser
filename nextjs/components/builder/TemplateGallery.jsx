@@ -152,7 +152,7 @@ export default function TemplateGallery({ currentTemplateId, onSelect, onClose }
             </div>
 
             {/* Large thumbnail */}
-            <div className="flex-1 overflow-hidden bg-gray-100 flex items-start justify-center p-6">
+            <div className="flex-1 overflow-hidden bg-gray-100 dark:bg-[#0D1830] flex items-start justify-center p-6">
               <div style={{ width: 320 }}>
                 <TemplateThumbnail
                   templateId={previewTpl.id}

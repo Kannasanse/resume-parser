@@ -1,9 +1,9 @@
 export default function CourseStatsBar({ stats }) {
   const items = [
-    { icon: '📚', value: stats.total, label: 'Total courses', iconBg: 'bg-gradient-to-br from-[#E6F1FB] to-[#D4E8F8]' },
-    { icon: '⚡', value: stats.inProgress, label: 'In progress', iconBg: 'bg-gradient-to-br from-[#FEF3C7] to-[#FDE68A]' },
-    { icon: '✅', value: stats.completed, label: 'Completed', iconBg: 'bg-gradient-to-br from-[#D1FAE5] to-[#BBF7D0]' },
-    { icon: '⏱', value: `${stats.hoursStudied}h`, label: 'Hours studied', iconBg: 'bg-gradient-to-br from-[#E6F1FB] to-[#D4E8F8]' },
+    { icon: '📚', value: stats.total, label: 'Total courses', iconBg: 'bg-gradient-to-br from-[#E6F1FB] to-[#D4E8F8] dark:from-[rgba(24,95,165,0.25)] dark:to-[rgba(24,95,165,0.15)]' },
+    { icon: '⚡', value: stats.inProgress, label: 'In progress', iconBg: 'bg-gradient-to-br from-[#FEF3C7] to-[#FDE68A] dark:from-[rgba(245,158,11,0.20)] dark:to-[rgba(245,158,11,0.10)]' },
+    { icon: '✅', value: stats.completed, label: 'Completed', iconBg: 'bg-gradient-to-br from-[#D1FAE5] to-[#BBF7D0] dark:from-[rgba(29,158,117,0.25)] dark:to-[rgba(29,158,117,0.15)]' },
+    { icon: '⏱', value: `${stats.hoursStudied}h`, label: 'Hours studied', iconBg: 'bg-gradient-to-br from-[#E6F1FB] to-[#D4E8F8] dark:from-[rgba(24,95,165,0.25)] dark:to-[rgba(24,95,165,0.15)]' },
   ];
 
   return (

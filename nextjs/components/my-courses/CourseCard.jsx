@@ -91,7 +91,7 @@ export default function CourseCard({ course, onStatusChange, onDelete, onResetPr
               {course.targetRoleTitle}
             </h3>
             {course.creationMode === 'skills' && (
-              <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-medium text-[#7C3AED] bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
+              <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-medium text-[#7C3AED] dark:text-[#A78BFA] bg-purple-50 dark:bg-[rgba(124,58,237,0.15)] px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-800/50">
                 <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                 Skills Course
               </span>
@@ -118,14 +118,14 @@ export default function CourseCard({ course, onStatusChange, onDelete, onResetPr
                     ? 'chip-success'
                     : phase.status === 'in_progress'
                     ? 'chip-primary'
-                    : 'bg-gray-50 border-gray-200 text-gray-500'
+                    : 'bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-500 dark:text-[#8BA3C1]'
                 }`}
               >
                 {phase.label}
               </span>
             ))}
             {phasesTotal > 4 && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full border bg-gray-50 border-gray-200 text-gray-500">
+              <span className="text-[10px] px-2 py-0.5 rounded-full border bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-500 dark:text-[#8BA3C1]">
                 +{phasesTotal - 4} more
               </span>
             )}
@@ -171,7 +171,7 @@ export default function CourseCard({ course, onStatusChange, onDelete, onResetPr
       </div>
 
       {successMsg && (
-        <div className="px-4 py-2 bg-green-50 border-t border-green-200 text-xs text-green-700 font-medium">
+        <div className="px-4 py-2 bg-green-50 dark:bg-[rgba(29,158,117,0.12)] border-t border-green-200 dark:border-[rgba(29,158,117,0.20)] text-xs text-green-700 dark:text-[#34C68A] font-medium">
           {successMsg}
         </div>
       )}

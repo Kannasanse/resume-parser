@@ -11,14 +11,15 @@ function PlayVideoButton({ onClick, loading }) {
       type="button"
       onClick={onClick}
       disabled={loading}
-      className="flex items-center gap-3 w-full rounded-2xl border transition-all duration-200 px-5 py-4 group"
-      style={{
-        borderColor: loading ? '#D1DCE8' : '#185FA5',
-        background: loading ? '#F9FAFB' : 'linear-gradient(135deg, #E6F1FB, #F4F8FC)',
-      }}
+      className={`flex items-center gap-3 w-full rounded-2xl border transition-all duration-200 px-5 py-4 group ${
+        loading
+          ? 'border-[#D1DCE8] dark:border-white/10 bg-[#F9FAFB] dark:bg-[#0D1830]'
+          : 'border-[#185FA5] bg-gradient-to-br from-[#E6F1FB] to-[#F4F8FC] dark:from-[rgba(24,95,165,0.20)] dark:to-[rgba(24,95,165,0.10)]'
+      }`}
     >
-      <div className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
-        style={{ background: loading ? '#E5E7EB' : '#185FA5' }}>
+      <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${
+        loading ? 'bg-[#E5E7EB] dark:bg-[rgba(255,255,255,0.10)]' : 'bg-[#185FA5]'
+      }`}>
         {loading ? (
           <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
             <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
@@ -30,15 +31,15 @@ function PlayVideoButton({ onClick, loading }) {
         )}
       </div>
       <div className="text-left">
-        <p className="text-sm font-semibold" style={{ color: loading ? '#9CA3AF' : '#185FA5' }}>
+        <p className={`text-sm font-semibold ${loading ? 'text-[#9CA3AF] dark:text-[#4A6380]' : 'text-[#185FA5] dark:text-[#5B9FD4]'}`}>
           {loading ? 'Finding best video…' : 'Play video'}
         </p>
-        <p className="text-xs mt-0.5" style={{ color: '#9CA3AF' }}>
+        <p className="text-xs mt-0.5 text-[#9CA3AF] dark:text-[#4A6380]">
           {loading ? 'Searching YouTube for the most relevant tutorial' : 'Watch a curated tutorial for this topic'}
         </p>
       </div>
       {!loading && (
-        <svg className="ml-auto group-hover:translate-x-1 transition-transform" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#185FA5" strokeWidth="2">
+        <svg className="ml-auto group-hover:translate-x-1 transition-transform text-[#185FA5] dark:text-[#5B9FD4]" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <polyline points="9 18 15 12 9 6"/>
         </svg>
       )}

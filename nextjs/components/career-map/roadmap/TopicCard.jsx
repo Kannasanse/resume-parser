@@ -2,7 +2,7 @@
 import Link from 'next/link';
 
 const STATUS_STYLES = {
-  not_started: 'bg-gray-100 text-gray-500',
+  not_started: 'bg-gray-100 dark:bg-[rgba(255,255,255,0.08)] text-gray-500 dark:text-[#8BA3C1]',
   in_progress: 'chip-primary',
   completed: 'chip-success',
 };
@@ -19,7 +19,7 @@ export default function TopicCard({ topic, studyPlanId }) {
 
   return (
     <div className={`card card-interactive p-5 cursor-pointer group ${
-      isCompleted ? 'border-[#1D9E75] bg-gradient-to-b from-white to-[#F0FDF4]' : ''
+      isCompleted ? 'border-[#1D9E75] bg-gradient-to-b from-white to-[#F0FDF4] dark:from-[#111F35] dark:to-[rgba(29,158,117,0.10)]' : ''
     }`}>
       {/* Top row */}
       <div className="flex items-start justify-between gap-2 mb-2">
@@ -46,7 +46,7 @@ export default function TopicCard({ topic, studyPlanId }) {
 
       {pct > 0 && (
         <div className="mt-3">
-          <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-1 bg-gray-100 dark:bg-[rgba(255,255,255,0.10)] rounded-full overflow-hidden">
             <div className="h-full bg-gradient-to-r from-[#185FA5] to-[#1D9E75] rounded-full" style={{ width: `${pct}%` }} />
           </div>
           <p className="text-xs text-[var(--c-text-muted)] mt-1 text-right">{pct}% read</p>

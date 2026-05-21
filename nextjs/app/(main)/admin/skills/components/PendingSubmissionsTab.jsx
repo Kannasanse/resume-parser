@@ -79,7 +79,7 @@ function SubmissionRow({ submission, onRemove }) {
 
       {/* Error */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded px-3 py-2">
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700/50 text-red-700 dark:text-red-400 text-xs rounded px-3 py-2">
           {error}
         </div>
       )}
@@ -95,7 +95,7 @@ function SubmissionRow({ submission, onRemove }) {
             value={rejectNote}
             onChange={e => setRejectNote(e.target.value)}
             placeholder="Optional note for the submitter…"
-            className="w-full px-3 py-2 text-sm border border-[var(--c-border)] rounded-lg bg-white text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)] placeholder:text-[var(--c-text-muted)] resize-none"
+            className="w-full px-3 py-2 text-sm border border-[var(--c-border)] dark:border-white/10 rounded-lg bg-white dark:bg-[#0F1A2E] text-[var(--c-text)] dark:text-[#E8EFF7] focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)] placeholder:text-[var(--c-text-muted)] resize-none"
           />
         </div>
       )}
@@ -111,7 +111,7 @@ function SubmissionRow({ submission, onRemove }) {
             value={mergeNote}
             onChange={e => setMergeNote(e.target.value)}
             placeholder="Existing skill name…"
-            className="w-full px-3 py-2 text-sm border border-[var(--c-border)] rounded-lg bg-white text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)] placeholder:text-[var(--c-text-muted)]"
+            className="w-full px-3 py-2 text-sm border border-[var(--c-border)] dark:border-white/10 rounded-lg bg-white dark:bg-[#0F1A2E] text-[var(--c-text)] dark:text-[#E8EFF7] focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)] placeholder:text-[var(--c-text-muted)]"
           />
         </div>
       )}
@@ -122,7 +122,7 @@ function SubmissionRow({ submission, onRemove }) {
         <button
           onClick={handleApprove}
           disabled={loading}
-          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-green-50 border border-green-200 text-green-700 font-medium hover:bg-green-100 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700/50 text-green-700 dark:text-green-400 font-medium hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors disabled:opacity-50"
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <polyline points="20 6 9 17 4 12"/>
@@ -137,7 +137,7 @@ function SubmissionRow({ submission, onRemove }) {
           className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors disabled:opacity-50 ${
             rejectOpen
               ? 'bg-red-600 border-red-600 text-white hover:bg-red-700'
-              : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'
+              : 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700/50 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50'
           }`}
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -153,7 +153,7 @@ function SubmissionRow({ submission, onRemove }) {
           className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors disabled:opacity-50 ${
             mergeOpen
               ? 'bg-[var(--c-primary)] border-[var(--c-primary)] text-white hover:opacity-90'
-              : 'bg-white border-[var(--c-border)] text-[var(--c-text-muted)] hover:text-[var(--c-text)] hover:border-[var(--c-text-muted)]'
+              : 'bg-white dark:bg-white/5 border-[var(--c-border)] dark:border-white/10 text-[var(--c-text-muted)] hover:text-[var(--c-text)] hover:border-[var(--c-text-muted)]'
           }`}
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -241,7 +241,7 @@ export default function PendingSubmissionsTab({ onCountChange }) {
   if (error) {
     return (
       <div className="card p-6 text-center space-y-3">
-        <p className="text-sm text-red-600">{error}</p>
+        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
         <button
           onClick={() => window.location.reload()}
           className="text-sm text-[var(--c-primary)] hover:underline"
@@ -257,7 +257,7 @@ export default function PendingSubmissionsTab({ onCountChange }) {
   if (submissions.length === 0) {
     return (
       <div className="card py-16 text-center">
-        <div className="mx-auto mb-3 w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
+        <div className="mx-auto mb-3 w-10 h-10 rounded-full bg-green-50 dark:bg-green-900/30 flex items-center justify-center">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-green-500">
             <polyline points="20 6 9 17 4 12"/>
           </svg>

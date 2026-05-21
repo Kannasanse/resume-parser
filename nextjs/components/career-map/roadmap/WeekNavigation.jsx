@@ -13,7 +13,7 @@ export default function WeekNavigation({ weeks, weekThemes, topics, activeWeek, 
   }
 
   return (
-    <div className="w-72 flex-shrink-0 bg-white border-r border-[var(--c-border)] overflow-y-auto">
+    <div className="w-72 flex-shrink-0 bg-white dark:bg-[#111F35] border-r border-[var(--c-border)] overflow-y-auto">
       <div className="px-4 pt-5 pb-2">
         <p className="text-xs font-semibold text-[var(--c-text-muted)] uppercase tracking-wider">Your Plan</p>
       </div>

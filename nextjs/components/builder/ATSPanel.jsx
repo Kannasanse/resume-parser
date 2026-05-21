@@ -53,7 +53,7 @@ function ScoreRing({ score, size = 96 }) {
   const color = scoreColor(score);
   return (
     <svg width={size} height={size} style={{ transform: 'rotate(-90deg)', flexShrink: 0 }}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#E5E7EB" strokeWidth={8} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--ats-ring-track, #E5E7EB)" strokeWidth={8} />
       <circle
         cx={size / 2} cy={size / 2} r={r}
         fill="none" stroke={color} strokeWidth={8}
@@ -76,7 +76,7 @@ function MiniBar({ score }) {
   const color = scoreColor(score);
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <div style={{ flex: 1, height: 5, background: '#F3F4F6', borderRadius: 3, overflow: 'hidden' }}>
+      <div className="dark:bg-[#1A2D45]" style={{ flex: 1, height: 5, background: '#F3F4F6', borderRadius: 3, overflow: 'hidden' }}>
         <div style={{ width: `${score}%`, height: '100%', background: color, borderRadius: 3, transition: 'width 0.5s ease' }} />
       </div>
       <span style={{ fontSize: 11, fontWeight: 600, color, minWidth: 26, textAlign: 'right' }}>{score}%</span>
@@ -139,7 +139,7 @@ export default function ATSPanel({ resumeId, onClose, atsState, atsData, atsErro
   const detectedRole = roleOverride || data?.detectedRole || '';
 
   return (
-    <div style={{
+    <div className="dark:bg-[#111F35] dark:text-[#E8EFF7]" style={{
       position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 200,
       width: 440, background: '#fff',
       boxShadow: '-4px 0 32px rgba(0,0,0,0.12)',
@@ -147,20 +147,21 @@ export default function ATSPanel({ resumeId, onClose, atsState, atsData, atsErro
       fontFamily: 'Inter, system-ui, sans-serif',
     }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #E5E7EB', flexShrink: 0 }}>
+      <div className="dark:border-white/10" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #E5E7EB', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="dark:bg-[rgba(79,70,229,0.20)]" style={{ width: 32, height: 32, borderRadius: 8, background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
             </svg>
           </div>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 14, color: '#111827' }}>ATS Score</div>
-            <div style={{ fontSize: 11, color: '#6B7280' }}>AI-powered resume analysis</div>
+            <div className="dark:text-[#E8EFF7]" style={{ fontWeight: 700, fontSize: 14, color: '#111827' }}>ATS Score</div>
+            <div className="dark:text-[#8BA3C1]" style={{ fontSize: 11, color: '#6B7280' }}>AI-powered resume analysis</div>
           </div>
         </div>
         <button
           onClick={onClose}
+          className="dark:bg-[#111F35] dark:border-white/10 dark:text-[#8BA3C1]"
           style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #E5E7EB', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280' }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -170,7 +171,7 @@ export default function ATSPanel({ resumeId, onClose, atsState, atsData, atsErro
       </div>
 
       {/* JD Input section */}
-      <div style={{ borderBottom: '1px solid #E5E7EB', padding: '12px 20px', flexShrink: 0, background: '#FAFAFA' }}>
+      <div className="dark:bg-[#0D1830] dark:border-white/10" style={{ borderBottom: '1px solid #E5E7EB', padding: '12px 20px', flexShrink: 0, background: '#FAFAFA' }}>
         <button
           onClick={() => setJdExpanded(p => !p)}
           style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', padding: 0, width: '100%' }}
@@ -178,7 +179,7 @@ export default function ATSPanel({ resumeId, onClose, atsState, atsData, atsErro
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#4F46E5', flex: 1, textAlign: 'left' }}>
+          <span className="dark:text-[#818CF8]" style={{ fontSize: 12, fontWeight: 600, color: '#4F46E5', flex: 1, textAlign: 'left' }}>
             {jdText.trim() ? 'Targeted mode: JD provided' : 'Add job description for targeted scoring (optional)'}
           </span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
@@ -195,6 +196,7 @@ export default function ATSPanel({ resumeId, onClose, atsState, atsData, atsErro
               onChange={handleJdChange}
               placeholder="Paste the job description here to get a targeted ATS score matched against the role's specific requirements…"
               rows={5}
+              className="dark:bg-[#0F1A2E] dark:text-[#E8EFF7] dark:placeholder:text-[#4A6380]"
               style={{
                 width: '100%', boxSizing: 'border-box', resize: 'vertical', fontSize: 12, lineHeight: 1.6,
                 padding: '8px 10px', border: `1px solid ${jdValidationError ? '#D93025' : '#D1D5DB'}`, borderRadius: 6,
@@ -206,7 +208,7 @@ export default function ATSPanel({ resumeId, onClose, atsState, atsData, atsErro
             )}
             {jdText.trim() && (
               <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-                <span style={{ fontSize: 11, color: '#6B7280' }}>
+                <span className="dark:text-[#8BA3C1]" style={{ fontSize: 11, color: '#6B7280' }}>
                   {jdText.trim().split(/\s+/).filter(Boolean).length} words
                 </span>
                 <button onClick={handleClearJd} style={{ fontSize: 11, color: '#D93025', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginLeft: 'auto' }}>
@@ -223,12 +225,12 @@ export default function ATSPanel({ resumeId, onClose, atsState, atsData, atsErro
 
         {/* Stale score banner */}
         {isStale && state === 'done' && data && (
-          <div style={{ background: '#FFFBEB', borderBottom: '1px solid #FDE68A', padding: '8px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="dark:bg-[rgba(217,119,6,0.10)] dark:border-[rgba(217,119,6,0.25)]" style={{ background: '#FFFBEB', borderBottom: '1px solid #FDE68A', padding: '8px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
               <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
             </svg>
-            <span style={{ fontSize: 12, color: '#92400E', flex: 1 }}>Score is outdated — your resume has changed.</span>
+            <span className="dark:text-[#FCD34D]" style={{ fontSize: 12, color: '#92400E', flex: 1 }}>Score is outdated — your resume has changed.</span>
             <button onClick={handleAnalyzeClick} style={{ fontSize: 11, fontWeight: 600, color: '#D97706', background: 'none', border: '1px solid #FCD34D', borderRadius: 4, padding: '2px 8px', cursor: 'pointer' }}>
               Refresh
             </button>
@@ -238,14 +240,14 @@ export default function ATSPanel({ resumeId, onClose, atsState, atsData, atsErro
         {/* Idle state */}
         {state === 'idle' && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 40, textAlign: 'center', gap: 20 }}>
-            <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="dark:bg-[rgba(79,70,229,0.15)]" style={{ width: 72, height: 72, borderRadius: '50%', background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
               </svg>
             </div>
             <div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: '#111827', marginBottom: 8 }}>Check your ATS score</div>
-              <div style={{ fontSize: 13, color: '#6B7280', lineHeight: 1.6 }}>
+              <div className="dark:text-[#E8EFF7]" style={{ fontSize: 16, fontWeight: 700, color: '#111827', marginBottom: 8 }}>Check your ATS score</div>
+              <div className="dark:text-[#8BA3C1]" style={{ fontSize: 13, color: '#6B7280', lineHeight: 1.6 }}>
                 We'll score your resume across 5 dimensions — section completeness, keyword match, content quality, formatting, and measurable impact. Optionally paste a job description above for a targeted score.
               </div>
             </div>
@@ -260,8 +262,8 @@ export default function ATSPanel({ resumeId, onClose, atsState, atsData, atsErro
 
         {/* Loading */}
         {state === 'loading' && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16, color: '#6B7280' }}>
-            <div style={{ width: 48, height: 48, border: '4px solid #E5E7EB', borderTopColor: '#4F46E5', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          <div className="dark:text-[#8BA3C1]" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16, color: '#6B7280' }}>
+            <div className="dark:border-white/10" style={{ width: 48, height: 48, border: '4px solid #E5E7EB', borderTopColor: '#4F46E5', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
             <div style={{ fontSize: 14, fontWeight: 500 }}>Analyzing your resume…</div>
             <div style={{ fontSize: 12 }}>This takes about 10–15 seconds</div>
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -282,13 +284,13 @@ export default function ATSPanel({ resumeId, onClose, atsState, atsData, atsErro
         {state === 'done' && data && (
           <div>
             {/* Score hero */}
-            <div style={{ padding: '20px 20px 14px', background: 'linear-gradient(135deg, #F0F4FF 0%, #FAF5FF 100%)', borderBottom: '1px solid #E5E7EB' }}>
+            <div className="dark:border-white/10 dark:[background:linear-gradient(135deg,rgba(79,70,229,0.12)_0%,rgba(139,92,246,0.10)_100%)]" style={{ padding: '20px 20px 14px', background: 'linear-gradient(135deg, #F0F4FF 0%, #FAF5FF 100%)', borderBottom: '1px solid #E5E7EB' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
                 <ScoreRing score={data.score} size={84} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 2 }}>Overall ATS Score</div>
+                  <div className="dark:text-[#8BA3C1]" style={{ fontSize: 11, color: '#6B7280', marginBottom: 2 }}>Overall ATS Score</div>
                   <div style={{ fontSize: 20, fontWeight: 800, color: bandColor, lineHeight: 1 }}>{data.band}</div>
-                  <div style={{ fontSize: 11, color: '#6B7280', marginTop: 6, lineHeight: 1.5 }}>{data.summary}</div>
+                  <div className="dark:text-[#8BA3C1]" style={{ fontSize: 11, color: '#6B7280', marginTop: 6, lineHeight: 1.5 }}>{data.summary}</div>
                 </div>
               </div>
 
@@ -304,16 +306,16 @@ export default function ATSPanel({ resumeId, onClose, atsState, atsData, atsErro
                   }}>
                     {data.mode === 'targeted' ? '◎ Targeted Mode' : '◉ Default Mode'}
                   </span>
-                  <span style={{ fontSize: 11, color: '#6B7280' }}>
-                    Scoring against: <strong style={{ color: '#374151' }}>{data.scoringAgainst}</strong>
+                  <span className="dark:text-[#8BA3C1]" style={{ fontSize: 11, color: '#6B7280' }}>
+                    Scoring against: <strong className="dark:text-[#E8EFF7]" style={{ color: '#374151' }}>{data.scoringAgainst}</strong>
                   </span>
                 </div>
 
                 {/* Detected role (default mode) */}
                 {data.mode === 'default' && detectedRole && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 11, color: '#6B7280' }}>
-                      Detected role: <strong style={{ color: '#374151' }}>{detectedRole}</strong>
+                    <span className="dark:text-[#8BA3C1]" style={{ fontSize: 11, color: '#6B7280' }}>
+                      Detected role: <strong className="dark:text-[#E8EFF7]" style={{ color: '#374151' }}>{detectedRole}</strong>
                     </span>
                     <button
                       onClick={() => setJdExpanded(p => !p)}
@@ -329,7 +331,8 @@ export default function ATSPanel({ resumeId, onClose, atsState, atsData, atsErro
                   <select
                     value={roleOverride}
                     onChange={e => { setRoleOverride(e.target.value); handleAnalyzeClick(); }}
-                    style={{ fontSize: 12, padding: '4px 8px', border: '1px solid #D1D5DB', borderRadius: 6, background: '#fff', color: '#374151', cursor: 'pointer' }}
+                    className="dark:bg-[#0F1A2E] dark:border-white/10 dark:text-[#E8EFF7]"
+                  style={{ fontSize: 12, padding: '4px 8px', border: '1px solid #D1D5DB', borderRadius: 6, background: '#fff', color: '#374151', cursor: 'pointer' }}
                   >
                     <option value="">Auto-detect role</option>
                     {ROLE_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
@@ -339,11 +342,12 @@ export default function ATSPanel({ resumeId, onClose, atsState, atsData, atsErro
             </div>
 
             {/* Tabs */}
-            <div style={{ display: 'flex', borderBottom: '1px solid #E5E7EB', flexShrink: 0 }}>
+            <div className="dark:border-white/10" style={{ display: 'flex', borderBottom: '1px solid #E5E7EB', flexShrink: 0 }}>
               {['overview', 'improvements', 'keywords'].map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
+                  className={activeTab === tab ? 'dark:text-[#818CF8]' : 'dark:text-[#8BA3C1]'}
                   style={{
                     flex: 1, padding: '10px 4px', fontSize: 12, fontWeight: 600, border: 'none', background: 'none', cursor: 'pointer',
                     borderBottom: activeTab === tab ? '2px solid #4F46E5' : '2px solid transparent',
@@ -359,25 +363,25 @@ export default function ATSPanel({ resumeId, onClose, atsState, atsData, atsErro
             {/* Overview tab */}
             {activeTab === 'overview' && (
               <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>
+                <div className="dark:text-[#E8EFF7]" style={{ fontSize: 11, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>
                   Scoring Dimensions
                 </div>
                 {(data.dimensions || []).map((dim, i) => (
                   <div key={i} style={{ background: scoreBg(dim.score), borderRadius: 10, padding: '11px 13px', border: `1px solid ${scoreColor(dim.score)}22` }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}>
                       <span style={{ color: scoreColor(dim.score) }}>{DIMENSION_ICONS[dim.name] || DIMENSION_ICONS['Section Completeness']}</span>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: '#111827', flex: 1 }}>{dim.name}</span>
+                      <span className="dark:text-[#E8EFF7]" style={{ fontSize: 12, fontWeight: 600, color: '#111827', flex: 1 }}>{dim.name}</span>
                       <span style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 500 }}>{dim.weight}% weight</span>
                     </div>
                     <MiniBar score={dim.score} />
-                    {dim.gap && <div style={{ fontSize: 11, color: '#6B7280', marginTop: 5, lineHeight: 1.5 }}>{dim.gap}</div>}
+                    {dim.gap && <div className="dark:text-[#8BA3C1]" style={{ fontSize: 11, color: '#6B7280', marginTop: 5, lineHeight: 1.5 }}>{dim.gap}</div>}
                   </div>
                 ))}
 
                 {/* Strengths */}
                 {(data.strengths || []).length > 0 && (
                   <>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 4 }}>Strengths</div>
+                    <div className="dark:text-[#E8EFF7]" style={{ fontSize: 11, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 4 }}>Strengths</div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                       {data.strengths.map((s, i) => (
                         <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', background: '#F0FDF4', borderRadius: 7, padding: '7px 10px' }}>
@@ -396,23 +400,23 @@ export default function ATSPanel({ resumeId, onClose, atsState, atsData, atsErro
             {/* Improvements tab */}
             {activeTab === 'improvements' && (
               <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 4 }}>Ordered by impact — highest score gain first.</div>
+                <div className="dark:text-[#8BA3C1]" style={{ fontSize: 11, color: '#6B7280', marginBottom: 4 }}>Ordered by impact — highest score gain first.</div>
                 {(data.improvements || []).map((item, i) => {
                   const cfg = PRIORITY_CONFIG[item.priority] || PRIORITY_CONFIG.low;
                   return (
-                    <div key={i} style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 10, padding: '11px 13px' }}>
+                    <div key={i} className="dark:bg-[#0D1830] dark:border-white/10" style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 10, padding: '11px 13px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5, flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: cfg.bg, color: cfg.color }}>
                           {cfg.label}
                         </span>
                         {item.section && (
-                          <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 999, background: '#F3F4F6', color: '#6B7280', border: '1px solid #E5E7EB' }}>
+                          <span className="dark:bg-[#1A2D45] dark:text-[#8BA3C1] dark:border-white/10" style={{ fontSize: 10, padding: '2px 7px', borderRadius: 999, background: '#F3F4F6', color: '#6B7280', border: '1px solid #E5E7EB' }}>
                             {item.section}
                           </span>
                         )}
-                        <span style={{ fontSize: 12, fontWeight: 600, color: '#111827' }}>{item.title}</span>
+                        <span className="dark:text-[#E8EFF7]" style={{ fontSize: 12, fontWeight: 600, color: '#111827' }}>{item.title}</span>
                       </div>
-                      <div style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.6 }}>{item.detail}</div>
+                      <div className="dark:text-[#8BA3C1]" style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.6 }}>{item.detail}</div>
                       {item.fix && (
                         <div style={{ fontSize: 11, color: '#059669', marginTop: 5, background: '#F0FDF4', padding: '4px 8px', borderRadius: 5, lineHeight: 1.5 }}>
                           Fix: {item.fix}
@@ -434,7 +438,7 @@ export default function ATSPanel({ resumeId, onClose, atsState, atsData, atsErro
                 )}
                 {(data.keywords?.found || []).length > 0 && (
                   <div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                    <div className="dark:text-[#E8EFF7]" style={{ fontSize: 11, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
                       ✓ Matched Keywords
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
@@ -446,7 +450,7 @@ export default function ATSPanel({ resumeId, onClose, atsState, atsData, atsErro
                 )}
                 {(data.keywords?.missing || []).length > 0 && (
                   <div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                    <div className="dark:text-[#E8EFF7]" style={{ fontSize: 11, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
                       + Missing Keywords
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
@@ -460,7 +464,7 @@ export default function ATSPanel({ resumeId, onClose, atsState, atsData, atsErro
             )}
 
             {/* Re-analyze */}
-            <div style={{ padding: '12px 20px 24px', borderTop: '1px solid #E5E7EB', marginTop: 4 }}>
+            <div className="dark:border-white/10" style={{ padding: '12px 20px 24px', borderTop: '1px solid #E5E7EB', marginTop: 4 }}>
               <button
                 onClick={handleAnalyzeClick}
                 style={{

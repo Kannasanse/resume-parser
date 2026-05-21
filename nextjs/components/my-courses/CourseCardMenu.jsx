@@ -44,14 +44,14 @@ export default function CourseCardMenu({ course, onStatusChange, onDelete, onRes
       </button>
 
       {open && (
-        <div className="absolute right-0 top-[calc(100%+4px)] min-w-[200px] bg-white border border-gray-200 rounded-xl shadow-xl py-1.5 z-50">
+        <div className="absolute right-0 top-[calc(100%+4px)] min-w-[200px] bg-white dark:bg-[#111F35] border border-gray-200 dark:border-white/10 rounded-xl shadow-xl py-1.5 z-50">
           {!confirmDelete && !confirmReset && (
             <>
               {statusToShow.map(o => (
                 <button
                   key={o.value}
                   onClick={e => { e.stopPropagation(); onStatusChange(course.id, o.value); setOpen(false); }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-[#E8EFF7] hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                   {o.label}
@@ -59,22 +59,22 @@ export default function CourseCardMenu({ course, onStatusChange, onDelete, onRes
               ))}
               <button
                 onClick={e => { e.stopPropagation(); onAdjustPreferences(); setOpen(false); }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[#185FA5] hover:bg-blue-50 transition-colors"
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[#185FA5] dark:text-[#5B9FD4] hover:bg-blue-50 dark:hover:bg-[rgba(24,95,165,0.15)] transition-colors"
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41"/></svg>
                 Adjust preferences
               </button>
               <button
                 onClick={e => { e.stopPropagation(); setConfirmReset(true); }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-[#E8EFF7] hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                 Reset progress
               </button>
-              <div className="border-t border-gray-100 my-1" />
+              <div className="border-t border-gray-100 dark:border-white/10 my-1" />
               <button
                 onClick={e => { e.stopPropagation(); setConfirmDelete(true); }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 dark:text-[#F87171] hover:bg-red-50 dark:hover:bg-[rgba(248,113,113,0.10)] transition-colors"
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6l-1 14H6L5 6"/><path d="M8 6V4h8v2"/></svg>
                 Remove course
@@ -84,12 +84,12 @@ export default function CourseCardMenu({ course, onStatusChange, onDelete, onRes
 
           {confirmReset && (
             <div className="px-3 py-2">
-              <p className="text-xs text-gray-600 mb-2">Reset all progress for this course?</p>
+              <p className="text-xs text-gray-600 dark:text-[#8BA3C1] mb-2">Reset all progress for this course?</p>
               <div className="flex gap-2">
-                <button onClick={e => { e.stopPropagation(); handleReset(); }} disabled={resetting} className="flex-1 text-xs font-medium bg-gray-800 text-white py-1.5 rounded-lg hover:bg-gray-900 disabled:opacity-50">
+                <button onClick={e => { e.stopPropagation(); handleReset(); }} disabled={resetting} className="flex-1 text-xs font-medium bg-gray-800 dark:bg-[#E8EFF7] dark:text-[#111F35] text-white py-1.5 rounded-lg hover:bg-gray-900 dark:hover:bg-white disabled:opacity-50">
                   {resetting ? 'Resetting…' : 'Reset'}
                 </button>
-                <button onClick={e => { e.stopPropagation(); setConfirmReset(false); }} className="flex-1 text-xs font-medium border border-gray-200 text-gray-600 py-1.5 rounded-lg hover:bg-gray-50">
+                <button onClick={e => { e.stopPropagation(); setConfirmReset(false); }} className="flex-1 text-xs font-medium border border-gray-200 dark:border-white/10 text-gray-600 dark:text-[#8BA3C1] py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5">
                   Cancel
                 </button>
               </div>
@@ -98,12 +98,12 @@ export default function CourseCardMenu({ course, onStatusChange, onDelete, onRes
 
           {confirmDelete && (
             <div className="px-3 py-2">
-              <p className="text-xs text-gray-600 mb-2">Remove this course from your list?</p>
+              <p className="text-xs text-gray-600 dark:text-[#8BA3C1] mb-2">Remove this course from your list?</p>
               <div className="flex gap-2">
                 <button onClick={e => { e.stopPropagation(); onDelete(course.id); setOpen(false); }} className="flex-1 text-xs font-medium bg-red-600 text-white py-1.5 rounded-lg hover:bg-red-700">
                   Remove
                 </button>
-                <button onClick={e => { e.stopPropagation(); setConfirmDelete(false); }} className="flex-1 text-xs font-medium border border-gray-200 text-gray-600 py-1.5 rounded-lg hover:bg-gray-50">
+                <button onClick={e => { e.stopPropagation(); setConfirmDelete(false); }} className="flex-1 text-xs font-medium border border-gray-200 dark:border-white/10 text-gray-600 dark:text-[#8BA3C1] py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5">
                   Cancel
                 </button>
               </div>

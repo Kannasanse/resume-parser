@@ -293,7 +293,7 @@ function ExportShareButton({ resumeId, onShare, onError }) {
             onClick={() => { onShare(); setOpen(false); }}
             className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-ds-text hover:bg-ds-bg transition-colors"
           >
-            <span className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+            <span className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-[rgba(59,130,246,0.15)] flex items-center justify-center flex-shrink-0">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
                 <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
@@ -313,7 +313,7 @@ function ExportShareButton({ resumeId, onShare, onError }) {
             disabled={pdfLoading}
             className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-ds-text hover:bg-ds-bg transition-colors disabled:opacity-60"
           >
-            <span className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
+            <span className="w-7 h-7 rounded-lg bg-red-50 dark:bg-[rgba(239,68,68,0.15)] flex items-center justify-center flex-shrink-0">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
               </svg>
@@ -330,7 +330,7 @@ function ExportShareButton({ resumeId, onShare, onError }) {
             disabled={wordLoading}
             className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-ds-text hover:bg-ds-bg transition-colors disabled:opacity-50"
           >
-            <span className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+            <span className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-[rgba(37,99,235,0.15)] flex items-center justify-center flex-shrink-0">
               {wordLoading
                 ? <span className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
                 : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1029,7 +1029,7 @@ export default function BuilderEditor() {
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40" onClick={() => setInsufficientCredits(null)} />
           <div className="relative bg-ds-card border border-ds-border rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center">
-            <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-4">
+            <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-[rgba(217,119,6,0.15)] flex items-center justify-center mx-auto mb-4">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>
               </svg>

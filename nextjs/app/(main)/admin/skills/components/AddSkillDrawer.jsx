@@ -12,7 +12,7 @@ function Toggle({ checked, onChange, id }) {
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)] focus:ring-offset-1 ${
-        checked ? 'bg-[var(--c-primary)]' : 'bg-gray-200'
+        checked ? 'bg-[var(--c-primary)]' : 'bg-gray-200 dark:bg-white/20'
       }`}
     >
       <span
@@ -175,9 +175,9 @@ export default function AddSkillDrawer({ open, onClose, skill, categories, onSav
       />
 
       {/* Panel */}
-      <div className="fixed right-0 top-0 h-full w-full max-w-lg bg-white shadow-2xl overflow-y-auto flex flex-col">
+      <div className="fixed right-0 top-0 h-full w-full max-w-lg bg-white dark:bg-[#111F35] shadow-2xl overflow-y-auto flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--c-border)] flex-shrink-0 sticky top-0 bg-white z-10">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--c-border)] dark:border-white/10 flex-shrink-0 sticky top-0 bg-white dark:bg-[#111F35] z-10">
           <h2 className="font-bold text-base text-[var(--c-text)] font-heading">
             {isEditing ? 'Edit Skill' : 'Add Skill'}
           </h2>
@@ -193,7 +193,7 @@ export default function AddSkillDrawer({ open, onClose, skill, categories, onSav
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700/50 text-red-700 dark:text-red-400 text-sm rounded-lg px-4 py-3">
               {error}
             </div>
           )}
@@ -209,7 +209,7 @@ export default function AddSkillDrawer({ open, onClose, skill, categories, onSav
               onChange={e => setName(e.target.value)}
               placeholder="e.g. React"
               required
-              className="w-full px-3 py-2 text-sm border border-[var(--c-border)] rounded-lg bg-white text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)] placeholder:text-[var(--c-text-muted)]"
+              className="w-full px-3 py-2 text-sm border border-[var(--c-border)] dark:border-white/10 rounded-lg bg-white dark:bg-[#0F1A2E] text-[var(--c-text)] dark:text-[#E8EFF7] focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)] placeholder:text-[var(--c-text-muted)]"
             />
           </div>
 
@@ -221,7 +221,7 @@ export default function AddSkillDrawer({ open, onClose, skill, categories, onSav
               value={slug}
               onChange={e => { setSlug(e.target.value); setSlugManuallyEdited(true); }}
               placeholder="e.g. react"
-              className="w-full px-3 py-2 text-sm border border-[var(--c-border)] rounded-lg bg-white text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)] placeholder:text-[var(--c-text-muted)]"
+              className="w-full px-3 py-2 text-sm border border-[var(--c-border)] dark:border-white/10 rounded-lg bg-white dark:bg-[#0F1A2E] text-[var(--c-text)] dark:text-[#E8EFF7] focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)] placeholder:text-[var(--c-text-muted)]"
             />
             <p className="text-xs text-[var(--c-text-muted)] mt-1">auto-generated from name</p>
           </div>
@@ -232,7 +232,7 @@ export default function AddSkillDrawer({ open, onClose, skill, categories, onSav
             <select
               value={category}
               onChange={e => setCategory(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-[var(--c-border)] rounded-lg bg-white text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)]"
+              className="w-full px-3 py-2 text-sm border border-[var(--c-border)] dark:border-white/10 rounded-lg bg-white dark:bg-[#0F1A2E] text-[var(--c-text)] dark:text-[#E8EFF7] focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)]"
             >
               <option value="">— Select category —</option>
               {categories.map(c => (
@@ -253,7 +253,7 @@ export default function AddSkillDrawer({ open, onClose, skill, categories, onSav
               value={subcategory}
               onChange={e => setSubcategory(e.target.value)}
               placeholder="e.g. Frameworks"
-              className="w-full px-3 py-2 text-sm border border-[var(--c-border)] rounded-lg bg-white text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)] placeholder:text-[var(--c-text-muted)]"
+              className="w-full px-3 py-2 text-sm border border-[var(--c-border)] dark:border-white/10 rounded-lg bg-white dark:bg-[#0F1A2E] text-[var(--c-text)] dark:text-[#E8EFF7] focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)] placeholder:text-[var(--c-text-muted)]"
             />
           </div>
 
@@ -261,7 +261,7 @@ export default function AddSkillDrawer({ open, onClose, skill, categories, onSav
           <div>
             <label className="block text-sm font-medium text-[var(--c-text)] mb-1.5">Aliases</label>
             <div
-              className="flex flex-wrap gap-1.5 p-2 border border-[var(--c-border)] rounded-lg bg-white min-h-[2.5rem] cursor-text focus-within:ring-2 focus-within:ring-[var(--c-primary)]"
+              className="flex flex-wrap gap-1.5 p-2 border border-[var(--c-border)] dark:border-white/10 rounded-lg bg-white dark:bg-[#0F1A2E] min-h-[2.5rem] cursor-text focus-within:ring-2 focus-within:ring-[var(--c-primary)]"
               onClick={() => document.getElementById('alias-input')?.focus()}
             >
               {aliases.map(tag => (
@@ -304,7 +304,7 @@ export default function AddSkillDrawer({ open, onClose, skill, categories, onSav
               onChange={e => setDescription(e.target.value)}
               rows={3}
               placeholder="Brief description of this skill…"
-              className="w-full px-3 py-2 text-sm border border-[var(--c-border)] rounded-lg bg-white text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)] placeholder:text-[var(--c-text-muted)] resize-none"
+              className="w-full px-3 py-2 text-sm border border-[var(--c-border)] dark:border-white/10 rounded-lg bg-white dark:bg-[#0F1A2E] text-[var(--c-text)] dark:text-[#E8EFF7] focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)] placeholder:text-[var(--c-text-muted)] resize-none"
             />
           </div>
 
@@ -318,7 +318,7 @@ export default function AddSkillDrawer({ open, onClose, skill, categories, onSav
               value={iconUrl}
               onChange={e => setIconUrl(e.target.value)}
               placeholder="https://…"
-              className="w-full px-3 py-2 text-sm border border-[var(--c-border)] rounded-lg bg-white text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)] placeholder:text-[var(--c-text-muted)]"
+              className="w-full px-3 py-2 text-sm border border-[var(--c-border)] dark:border-white/10 rounded-lg bg-white dark:bg-[#0F1A2E] text-[var(--c-text)] dark:text-[#E8EFF7] focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)] placeholder:text-[var(--c-text-muted)]"
             />
           </div>
 
@@ -342,11 +342,11 @@ export default function AddSkillDrawer({ open, onClose, skill, categories, onSav
         </form>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[var(--c-border)] flex-shrink-0 bg-white sticky bottom-0">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[var(--c-border)] dark:border-white/10 flex-shrink-0 bg-white dark:bg-[#111F35] sticky bottom-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-[var(--c-text-muted)] border border-[var(--c-border)] rounded-xl hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-[var(--c-text-muted)] border border-[var(--c-border)] dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
           >
             Cancel
           </button>

@@ -185,14 +185,14 @@ export default function AdminSkillsPage() {
         <div className="flex items-center gap-3">
           {/* Stats chips */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-xs px-2.5 py-1 rounded-full bg-white/70 border border-[var(--c-border)] text-[var(--c-text-muted)] font-medium">
+            <span className="text-xs px-2.5 py-1 rounded-full bg-white/70 dark:bg-white/10 border border-[var(--c-border)] text-[var(--c-text-muted)] font-medium">
               {loading ? '…' : total} total
             </span>
-            <span className="text-xs px-2.5 py-1 rounded-full bg-white/70 border border-[var(--c-border)] text-[var(--c-text-muted)] font-medium">
+            <span className="text-xs px-2.5 py-1 rounded-full bg-white/70 dark:bg-white/10 border border-[var(--c-border)] text-[var(--c-text-muted)] font-medium">
               {loading ? '…' : activeCount} active
             </span>
             {pendingCount > 0 && (
-              <span className="text-xs px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 font-medium">
+              <span className="text-xs px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/50 text-amber-700 dark:text-amber-400 font-medium">
                 {pendingCount} pending review
               </span>
             )}
@@ -228,7 +228,7 @@ export default function AdminSkillsPage() {
         >
           Pending
           {pendingCount > 0 && (
-            <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold min-w-[1.2rem] text-center">
+            <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-semibold min-w-[1.2rem] text-center">
               {pendingCount}
             </span>
           )}
@@ -248,13 +248,13 @@ export default function AdminSkillsPage() {
                 value={search}
                 onChange={e => { setSearch(e.target.value); setPage(1); }}
                 placeholder="Search skills…"
-                className="w-full pl-9 pr-3 py-2 text-sm border border-[var(--c-border)] rounded-lg bg-white text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)] placeholder:text-[var(--c-text-muted)]"
+                className="w-full pl-9 pr-3 py-2 text-sm border border-[var(--c-border)] rounded-lg bg-white dark:bg-[#0D1830] text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)] placeholder:text-[var(--c-text-muted)]"
               />
             </div>
             <select
               value={filterCategory}
               onChange={handleFilterChange(setFilterCategory)}
-              className="px-3 py-2 text-sm border border-[var(--c-border)] rounded-lg bg-white text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)]"
+              className="px-3 py-2 text-sm border border-[var(--c-border)] rounded-lg bg-white dark:bg-[#0D1830] text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)]"
             >
               <option value="">All categories</option>
               {categories.map(c => (
@@ -266,7 +266,7 @@ export default function AdminSkillsPage() {
             <select
               value={filterStatus}
               onChange={handleFilterChange(setFilterStatus)}
-              className="px-3 py-2 text-sm border border-[var(--c-border)] rounded-lg bg-white text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)]"
+              className="px-3 py-2 text-sm border border-[var(--c-border)] rounded-lg bg-white dark:bg-[#0D1830] text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)]"
             >
               <option value="">All statuses</option>
               <option value="active">Active</option>
@@ -275,7 +275,7 @@ export default function AdminSkillsPage() {
             <select
               value={filterSource}
               onChange={handleFilterChange(setFilterSource)}
-              className="px-3 py-2 text-sm border border-[var(--c-border)] rounded-lg bg-white text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)]"
+              className="px-3 py-2 text-sm border border-[var(--c-border)] rounded-lg bg-white dark:bg-[#0D1830] text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-primary)]"
             >
               <option value="">All sources</option>
               <option value="manual">Manual</option>

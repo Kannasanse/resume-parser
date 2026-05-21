@@ -29,7 +29,7 @@ export default function SectionNavSidebar({ sections, completedSectionIds, activ
               onClick={() => onSelectSection(idx)}
               className={`w-full flex items-start gap-2 px-3 py-2.5 rounded-lg text-left transition-colors ${
                 isActive ? 'bg-[rgba(24,95,165,0.08)] border-l-[3px] border-[var(--c-primary)] text-[var(--c-primary)]' :
-                isCompleted ? 'text-[var(--c-success)]' : 'text-[var(--c-text-muted)] hover:bg-gray-50'
+                isCompleted ? 'text-[var(--c-success)]' : 'text-[var(--c-text-muted)] hover:bg-gray-50 dark:hover:bg-[rgba(255,255,255,0.06)]'
               }`}
             >
               <div className="w-4 h-4 mt-0.5 flex-shrink-0 flex items-center justify-center">

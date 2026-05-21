@@ -140,7 +140,7 @@ export default function CareerMapPage() {
   return (
     <div className="gradient-mesh-1 min-h-screen">
       {/* Header */}
-      <div className="bg-white border-b border-[var(--c-border)] px-6 py-4">
+      <div className="bg-white dark:bg-[#111F35] border-b border-[var(--c-border)] px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold text-[var(--c-text)]">Career Map</h1>
@@ -167,7 +167,7 @@ export default function CareerMapPage() {
 
       {/* Step indicator */}
       {step !== STEPS.LOADING && (
-        <div className="bg-white border-b border-[var(--c-border)] px-6 py-3">
+        <div className="bg-white dark:bg-[#111F35] border-b border-[var(--c-border)] px-6 py-3">
           <div className="flex items-center gap-2 text-sm">
             {STEP_LABELS.map((s, i) => {
               const idx = STEP_ORDER.indexOf(s.key);
@@ -197,7 +197,7 @@ export default function CareerMapPage() {
         {step === STEPS.LOADING && (
           <div className="max-w-2xl mx-auto">
             <div className="card p-10 text-center space-y-4">
-              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-1.5 bg-gray-100 dark:bg-[rgba(255,255,255,0.10)] rounded-full overflow-hidden">
                 <div className="h-full bg-[var(--c-primary)] rounded-full animate-pulse w-1/2" />
               </div>
               <p className="text-sm text-[var(--c-text-muted)]">Loading your resumes…</p>
@@ -253,7 +253,7 @@ export default function CareerMapPage() {
             {!skillGapOpen && (
               <button
                 onClick={() => setSkillGapOpen(true)}
-                className="absolute top-4 right-4 bg-white border border-[var(--c-border)] shadow-sm rounded-lg px-3 py-2 text-sm font-medium text-[var(--c-primary)] hover:bg-[var(--c-primary-light)] transition-colors"
+                className="absolute top-4 right-4 bg-white dark:bg-[#111F35] border border-[var(--c-border)] shadow-sm rounded-lg px-3 py-2 text-sm font-medium text-[var(--c-primary)] hover:bg-[var(--c-primary-light)] transition-colors"
               >
                 Skill Gap →
               </button>

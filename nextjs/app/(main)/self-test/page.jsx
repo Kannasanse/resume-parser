@@ -3,15 +3,15 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 const DIFF_COLORS = {
-  easy:   'border-green-400 bg-green-50 text-green-700',
-  medium: 'border-amber-400 bg-amber-50 text-amber-700',
-  hard:   'border-red-400 bg-red-50 text-red-700',
+  easy:   'border-green-400 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400',
+  medium: 'border-amber-400 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
+  hard:   'border-red-400 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400',
 };
 
 const CONF_STYLES = {
-  High:   'bg-green-100 text-green-700 border-green-300',
-  Medium: 'bg-amber-50 text-amber-700 border-amber-200',
-  Low:    'bg-gray-100 text-gray-500 border-gray-300',
+  High:   'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-300 dark:border-green-700/50',
+  Medium: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-700/50',
+  Low:    'bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-[#8BA3C1] border-gray-300 dark:border-white/10',
 };
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -617,7 +617,7 @@ export default function SelfTestCreate() {
         <div className="card shadow-2xl p-6 space-y-5">
           {/* Undo toast */}
           {undoSkill && (
-            <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2 rounded flex items-center justify-between gap-3">
+            <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/50 text-amber-800 dark:text-amber-300 text-xs px-3 py-2 rounded flex items-center justify-between gap-3">
               <span><span className="font-semibold">{undoSkill.name}</span> removed.</span>
               <button onClick={undoRemove} className="text-xs font-semibold underline flex-shrink-0">Undo</button>
             </div>
@@ -633,7 +633,7 @@ export default function SelfTestCreate() {
 
           {/* Low confidence warning */}
           {lowConfCount > 0 && (
-            <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+            <div className="flex items-start gap-2 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/50 rounded px-3 py-2">
               <span className="flex-shrink-0">⚠️</span>
               <span>
                 {lowConfCount} skill{lowConfCount !== 1 ? 's are' : ' is'} low-confidence — these may not reflect core requirements for this role.
@@ -805,7 +805,7 @@ export default function SelfTestCreate() {
             </div>
           </div>
           {session.short_answer_count > 0 && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5 text-xs text-blue-700">
+            <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700/50 rounded-lg px-3 py-2.5 text-xs text-blue-700 dark:text-blue-300">
               <span className="font-semibold">Short answer questions included</span> — graded automatically by AI after submission.
             </div>
           )}

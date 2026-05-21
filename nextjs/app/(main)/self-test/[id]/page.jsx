@@ -4,9 +4,9 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 const DIFF_COLORS = {
-  easy:   'bg-green-50  text-green-700  border-green-200',
-  medium: 'bg-amber-50  text-amber-700  border-amber-200',
-  hard:   'bg-red-50    text-red-700    border-red-200',
+  easy:   'bg-green-50  dark:bg-green-900/30  text-green-700  dark:text-green-400  border-green-200  dark:border-green-700/50',
+  medium: 'bg-amber-50  dark:bg-amber-900/30  text-amber-700  dark:text-amber-400  border-amber-200  dark:border-amber-700/50',
+  hard:   'bg-red-50    dark:bg-red-900/30    text-red-700    dark:text-red-400    border-red-200    dark:border-red-700/50',
 };
 
 function formatTime(seconds) {
@@ -42,7 +42,7 @@ function QuestionView({
         </p>
         {!isResults && (
           <button onClick={onFlag} title={flagged ? 'Remove flag' : 'Flag for review'}
-            className={`flex-shrink-0 mt-0.5 p-1.5 rounded transition-colors ${flagged ? 'text-amber-600 bg-amber-50 border border-amber-200' : 'text-ds-textMuted hover:text-amber-600 hover:bg-amber-50'}`}>
+            className={`flex-shrink-0 mt-0.5 p-1.5 rounded transition-colors ${flagged ? 'text-amber-600 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/50' : 'text-ds-textMuted hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30'}`}>
             <FlagIcon filled={flagged} />
           </button>
         )}
@@ -54,7 +54,7 @@ function QuestionView({
         {isResults && result && isSA && (() => {
           if (result.pending_grade) {
             return (
-              <span className="flex-shrink-0 flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-200">
+              <span className="flex-shrink-0 flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-700/50">
                 <span className="w-2.5 h-2.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
                 Grading…
               </span>
@@ -63,7 +63,7 @@ function QuestionView({
           const score = result.ai_score;
           if (score != null) {
             if (score >= 0.7) return <span className="flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded chip-success">✓ Correct</span>;
-            if (score >= 0.4) return <span className="flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200">◑ Partial</span>;
+            if (score >= 0.4) return <span className="flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700/50">◑ Partial</span>;
             return <span className="flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded chip-error">✗ Incorrect</span>;
           }
           return <span className={`flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded ${result.correct ? 'chip-success' : 'chip-error'}`}>{result.correct ? '✓ Correct' : '✗ Incorrect'}</span>;
@@ -166,38 +166,38 @@ function QuestionView({
 
           {/* AI grading pending */}
           {result?.grading_method === 'ai' && result?.pending_grade && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5 flex items-center gap-2">
+            <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700/50 rounded-lg px-3 py-2.5 flex items-center gap-2">
               <div className="w-3.5 h-3.5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-              <p className="text-xs text-blue-700">AI is grading this answer…</p>
+              <p className="text-xs text-blue-700 dark:text-blue-300">AI is grading this answer…</p>
             </div>
           )}
 
           {/* AI feedback */}
           {result?.grading_method === 'ai' && result?.ai_feedback && !result?.pending_grade && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5">
+            <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700/50 rounded-lg px-3 py-2.5">
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-semibold text-blue-700">AI Feedback</span>
+                <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">AI Feedback</span>
                 {result.ai_score != null && (
                   <div className="flex items-center gap-2">
-                    <div className="w-20 h-1.5 bg-blue-100 rounded-full overflow-hidden">
+                    <div className="w-20 h-1.5 bg-blue-100 dark:bg-blue-900/50 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full ${result.ai_score >= 0.7 ? 'bg-ds-success' : result.ai_score >= 0.4 ? 'bg-amber-400' : 'bg-ds-danger'}`}
                         style={{ width: `${Math.round(result.ai_score * 100)}%` }}
                       />
                     </div>
-                    <span className="text-xs text-blue-600 font-medium">{Math.round(result.ai_score * 100)}%</span>
+                    <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">{Math.round(result.ai_score * 100)}%</span>
                   </div>
                 )}
               </div>
-              <p className="text-sm text-blue-800 leading-relaxed">{result.ai_feedback}</p>
+              <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">{result.ai_feedback}</p>
             </div>
           )}
 
           {/* Model answer */}
           {question.model_answer && (
-            <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2.5">
-              <p className="text-[10px] font-semibold text-green-700 uppercase tracking-wide mb-1.5">Model Answer</p>
-              <p className="text-sm text-green-800 leading-relaxed">{question.model_answer}</p>
+            <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700/50 rounded-lg px-3 py-2.5">
+              <p className="text-[10px] font-semibold text-green-700 dark:text-green-400 uppercase tracking-wide mb-1.5">Model Answer</p>
+              <p className="text-sm text-green-800 dark:text-green-200 leading-relaxed">{question.model_answer}</p>
             </div>
           )}
         </div>
@@ -205,12 +205,12 @@ function QuestionView({
 
       {/* Explanation — all questions, results only */}
       {isResults && question.explanation && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
+        <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/50 rounded-lg px-3 py-2.5">
           <div className="flex items-center gap-1.5 mb-1.5">
             <span className="text-sm leading-none">💡</span>
-            <span className="text-xs font-semibold text-amber-700">Explanation</span>
+            <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">Explanation</span>
           </div>
-          <p className="text-sm text-amber-800 leading-relaxed">{question.explanation}</p>
+          <p className="text-sm text-amber-800 dark:text-amber-200 leading-relaxed">{question.explanation}</p>
         </div>
       )}
     </div>
@@ -517,7 +517,7 @@ export default function SelfTestPage() {
 
     const band = isJd
       ? (displayPct >= 80 ? { label: 'Strong Match',     cls: 'text-ds-success bg-ds-successLight border border-ds-success/30' }
-       : displayPct >= 50 ? { label: 'Partial Match',     cls: 'text-amber-700 bg-amber-50 border border-amber-200' }
+       : displayPct >= 50 ? { label: 'Partial Match',     cls: 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/50' }
                           : { label: 'Needs Improvement', cls: 'text-ds-danger bg-ds-dangerLight border border-ds-danger/30' })
       : { label: displayPct >= 80 ? 'Great work!' : displayPct >= 60 ? 'Good effort!' : 'Keep practising!', cls: '' };
 
@@ -568,7 +568,7 @@ export default function SelfTestPage() {
             <p className="text-sm text-ds-textMuted">{band.label}</p>
           )}
           {results.auto_submitted && (
-            <span className="inline-block text-xs bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded">
+            <span className="inline-block text-xs bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700/50 px-2.5 py-1 rounded">
               Auto-submitted when timer expired
             </span>
           )}
@@ -584,9 +584,9 @@ export default function SelfTestPage() {
 
         {/* SA grading notice */}
         {pendingAIGrade && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex items-center gap-3">
+          <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700/50 rounded-lg px-4 py-3 flex items-center gap-3">
             <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-            <p className="text-sm text-blue-700">AI is grading your short answers — scores will update automatically.</p>
+            <p className="text-sm text-blue-700 dark:text-blue-300">AI is grading your short answers — scores will update automatically.</p>
           </div>
         )}
         </div>{/* end max-w-2xl score section */}
@@ -599,7 +599,7 @@ export default function SelfTestPage() {
               {perSkill.map(s => {
                 const skillBand = s.pct >= 80
                   ? { cls: 'bg-ds-successLight', bar: 'bg-ds-success' }
-                  : s.pct >= 50 ? { cls: 'bg-amber-50', bar: 'bg-amber-400' }
+                  : s.pct >= 50 ? { cls: 'bg-amber-50 dark:bg-amber-900/30', bar: 'bg-amber-400' }
                   : { cls: 'bg-ds-dangerLight', bar: 'bg-ds-danger' };
                 return (
                   <div key={s.name} className={`rounded-lg px-3 py-2.5 ${skillBand.cls}`}>
@@ -625,7 +625,7 @@ export default function SelfTestPage() {
                 <p className="text-[10px] font-semibold text-ds-textMuted uppercase tracking-wide mb-2">{q.skill}</p>
               )}
               {q.type === 'short_answer' && (
-                <span className="inline-block text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded mb-2">Short Answer</span>
+                <span className="inline-block text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/50 px-1.5 py-0.5 rounded mb-2">Short Answer</span>
               )}
               <QuestionView
                 question={q}
@@ -679,9 +679,9 @@ export default function SelfTestPage() {
     <div className="gradient-mesh-1 min-h-screen px-4 sm:px-6 lg:px-8 py-6">
       <div className="max-w-3xl mx-auto space-y-4">
       {connBanner && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-4 py-2.5 rounded-lg flex items-center justify-between">
+        <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/50 text-amber-800 dark:text-amber-300 text-xs px-4 py-2.5 rounded-lg flex items-center justify-between">
           <span>Connection issue detected. Your progress is being saved locally.</span>
-          <button onClick={() => setConnBanner(false)} className="text-amber-600 hover:text-amber-800 ml-3">×</button>
+          <button onClick={() => setConnBanner(false)} className="text-amber-600 dark:text-amber-400 hover:text-amber-800 ml-3">×</button>
         </div>
       )}
 
@@ -724,7 +724,7 @@ export default function SelfTestPage() {
         {q && (
           <>
             {q.type === 'short_answer' && (
-              <span className="inline-block text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded mb-3">Short Answer · 2 pts</span>
+              <span className="inline-block text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/50 px-1.5 py-0.5 rounded mb-3">Short Answer · 2 pts</span>
             )}
             <QuestionView
               question={q}

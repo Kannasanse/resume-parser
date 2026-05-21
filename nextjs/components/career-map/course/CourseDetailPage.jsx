@@ -132,7 +132,7 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
             <div className="flex items-center gap-1.5">
               <div className="relative w-9 h-9">
                 <svg viewBox="0 0 36 36" className="w-9 h-9 -rotate-90">
-                  <circle cx="18" cy="18" r="15" fill="none" stroke="#E6F1FB" strokeWidth="3"/>
+                  <circle cx="18" cy="18" r="15" fill="none" stroke="#E6F1FB" className="dark:[stroke:rgba(24,95,165,0.20)]" strokeWidth="3"/>
                   <circle cx="18" cy="18" r="15" fill="none" stroke="var(--c-primary)" strokeWidth="3"
                     strokeDasharray={`${pct * 0.942} 94.2`}/>
                 </svg>

@@ -142,7 +142,7 @@ export default function MyCoursesPage() {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors rounded-xl ${
                 activeTab === tab.id
-                  ? 'bg-white shadow-sm text-[var(--c-primary)] font-semibold'
+                  ? 'bg-white dark:bg-[#111F35] shadow-sm text-[var(--c-primary)] font-semibold'
                   : 'text-[var(--c-text-muted)] hover:text-[var(--c-text)]'
               }`}
             >
@@ -165,7 +165,7 @@ export default function MyCoursesPage() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search courses..."
-                className="px-3 py-1.5 text-sm outline-none w-44"
+                className="px-3 py-1.5 text-sm outline-none w-44 bg-transparent text-[var(--c-text)]"
               />
               <button onClick={() => { setSearch(''); setSearchOpen(false); }} className="px-2 text-[var(--c-text-muted)]">✕</button>
             </div>
@@ -179,7 +179,7 @@ export default function MyCoursesPage() {
           <select
             value={sort}
             onChange={e => setSort(e.target.value)}
-            className="text-sm border border-[var(--c-border)] rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-[var(--c-primary-light)]"
+            className="text-sm border border-[var(--c-border)] rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-[var(--c-primary-light)] bg-[var(--c-surface)] text-[var(--c-text)]"
           >
             {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>

@@ -19,7 +19,7 @@ function StepDots({ current }) {
         return (
           <div key={s.n} className="flex flex-col items-center gap-1.5">
             <div className={`w-2.5 h-2.5 rounded-full flex items-center justify-center transition-colors ${
-              done ? 'bg-[#1D9E75]' : active ? 'bg-[#185FA5]' : 'border-2 border-[#D1DCE8] bg-white'
+              done ? 'bg-[#1D9E75]' : active ? 'bg-[#185FA5]' : 'border-2 border-[#D1DCE8] dark:border-white/20 bg-white dark:bg-[#111F35]'
             }`}>
               {done && (
                 <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
@@ -27,7 +27,7 @@ function StepDots({ current }) {
                 </svg>
               )}
             </div>
-            <span className="text-[10px] uppercase tracking-widest text-[#9CA3AF]">{s.label}</span>
+            <span className="text-[10px] uppercase tracking-widest text-[#9CA3AF] dark:text-[#4A6380]">{s.label}</span>
           </div>
         );
       })}
@@ -42,18 +42,18 @@ function PreferencesForm({ onSubmit, loading }) {
   const [learningStyle, setLearningStyle] = useState('mixed');
   const [currentLevel, setCurrentLevel] = useState('beginner');
 
-  const selectCls = "w-full border border-[#D1DCE8] rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#185FA5] focus:border-[#185FA5] transition-all bg-white";
+  const selectCls = "w-full border border-[#D1DCE8] dark:border-white/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#185FA5] focus:border-[#185FA5] transition-all bg-white dark:bg-[#0F1A2E] dark:text-[#E8EFF7]";
 
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="text-lg font-bold text-[#2C2C2A]">How do you want to learn?</h3>
-        <p className="text-sm text-[#6B7280] mt-1">We'll build your course around your schedule and style.</p>
+        <h3 className="text-lg font-bold text-[#2C2C2A] dark:text-[#E8EFF7]">How do you want to learn?</h3>
+        <p className="text-sm text-[#6B7280] dark:text-[#8BA3C1] mt-1">We'll build your course around your schedule and style.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wider text-[#6B7280]">Hours per day</label>
+          <label className="text-xs font-semibold uppercase tracking-wider text-[#6B7280] dark:text-[#8BA3C1]">Hours per day</label>
           <select value={hoursPerDay} onChange={e => setHoursPerDay(e.target.value)} className={selectCls}>
             <option value="0.5">30 minutes</option>
             <option value="1">1 hour</option>
@@ -64,7 +64,7 @@ function PreferencesForm({ onSubmit, loading }) {
           </select>
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wider text-[#6B7280]">Days per week</label>
+          <label className="text-xs font-semibold uppercase tracking-wider text-[#6B7280] dark:text-[#8BA3C1]">Days per week</label>
           <select value={daysPerWeek} onChange={e => setDaysPerWeek(e.target.value)} className={selectCls}>
             {[2,3,4,5,6,7].map(d => <option key={d} value={d}>{d} days</option>)}
           </select>
@@ -72,7 +72,7 @@ function PreferencesForm({ onSubmit, loading }) {
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold uppercase tracking-wider text-[#6B7280]">Your current level</label>
+        <label className="text-xs font-semibold uppercase tracking-wider text-[#6B7280] dark:text-[#8BA3C1]">Your current level</label>
         <select value={currentLevel} onChange={e => setCurrentLevel(e.target.value)} className={selectCls}>
           <option value="beginner">Beginner — starting from scratch</option>
           <option value="some-exposure">Some exposure — tried it briefly</option>
@@ -82,7 +82,7 @@ function PreferencesForm({ onSubmit, loading }) {
       </div>
 
       <div className="space-y-2">
-        <label className="text-xs font-semibold uppercase tracking-wider text-[#6B7280]">Learning style</label>
+        <label className="text-xs font-semibold uppercase tracking-wider text-[#6B7280] dark:text-[#8BA3C1]">Learning style</label>
         <div className="grid grid-cols-2 gap-2">
           {[
             { value: 'video-first', label: '▶ Video-first', desc: 'Watch then practise' },
@@ -95,12 +95,12 @@ function PreferencesForm({ onSubmit, loading }) {
               onClick={() => setLearningStyle(opt.value)}
               className={`p-3 rounded-xl border text-left transition-all ${
                 learningStyle === opt.value
-                  ? 'border-[#185FA5] bg-[#E6F1FB]'
-                  : 'border-[#D1DCE8] bg-white hover:border-[#185FA5] hover:bg-[#F4F8FC]'
+                  ? 'border-[#185FA5] bg-[#E6F1FB] dark:bg-[rgba(24,95,165,0.20)]'
+                  : 'border-[#D1DCE8] dark:border-white/10 bg-white dark:bg-[#111F35] hover:border-[#185FA5] hover:bg-[#F4F8FC] dark:hover:bg-[#0D1830]'
               }`}
             >
-              <div className="text-xs font-semibold text-[#2C2C2A]">{opt.label}</div>
-              <div className="text-[11px] text-[#6B7280] mt-0.5">{opt.desc}</div>
+              <div className="text-xs font-semibold text-[#2C2C2A] dark:text-[#E8EFF7]">{opt.label}</div>
+              <div className="text-[11px] text-[#6B7280] dark:text-[#8BA3C1] mt-0.5">{opt.desc}</div>
             </button>
           ))}
         </div>
@@ -140,14 +140,14 @@ function GeneratingView({ done, planId, onView }) {
   if (done) {
     return (
       <div className="text-center py-8 space-y-4">
-        <div className="w-16 h-16 rounded-full bg-[#D1FAE5] flex items-center justify-center mx-auto">
+        <div className="w-16 h-16 rounded-full bg-[#D1FAE5] dark:bg-[rgba(29,158,117,0.20)] flex items-center justify-center mx-auto">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20 6 9 17 4 12"/>
           </svg>
         </div>
         <div>
-          <h3 className="text-lg font-bold text-[#2C2C2A]">Your course is ready!</h3>
-          <p className="text-sm text-[#6B7280] mt-1">Your personalised study plan has been created.</p>
+          <h3 className="text-lg font-bold text-[#2C2C2A] dark:text-[#E8EFF7]">Your course is ready!</h3>
+          <p className="text-sm text-[#6B7280] dark:text-[#8BA3C1] mt-1">Your personalised study plan has been created.</p>
         </div>
         <button
           onClick={onView}
@@ -163,20 +163,20 @@ function GeneratingView({ done, planId, onView }) {
   return (
     <div className="py-8 space-y-6">
       <div className="text-center space-y-2">
-        <div className="w-12 h-12 rounded-full border-4 border-[#E6F1FB] border-t-[#185FA5] animate-spin mx-auto" />
-        <h3 className="text-base font-semibold text-[#2C2C2A]">Building your course</h3>
+        <div className="w-12 h-12 rounded-full border-4 border-[#E6F1FB] dark:border-[rgba(24,95,165,0.20)] border-t-[#185FA5] animate-spin mx-auto" />
+        <h3 className="text-base font-semibold text-[#2C2C2A] dark:text-[#E8EFF7]">Building your course</h3>
       </div>
       <div className="space-y-2.5">
         {steps.map((s, i) => (
           <div key={i} className={`flex items-center gap-3 transition-opacity duration-500 ${i <= visibleStep ? 'opacity-100' : 'opacity-20'}`}>
             <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
-              i < visibleStep ? 'bg-[#1D9E75]' : i === visibleStep ? 'bg-[#185FA5] animate-pulse' : 'bg-[#F4F8FC] border border-[#D1DCE8]'
+              i < visibleStep ? 'bg-[#1D9E75]' : i === visibleStep ? 'bg-[#185FA5] animate-pulse' : 'bg-[#F4F8FC] dark:bg-[#0D1830] border border-[#D1DCE8] dark:border-white/10'
             }`}>
               {i < visibleStep && (
                 <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
               )}
             </div>
-            <span className={`text-sm ${i === visibleStep ? 'text-[#185FA5] font-medium' : i < visibleStep ? 'text-[#1D9E75]' : 'text-[#9CA3AF]'}`}>{s}</span>
+            <span className={`text-sm ${i === visibleStep ? 'text-[#185FA5] dark:text-[#5B9FD4] font-medium' : i < visibleStep ? 'text-[#1D9E75] dark:text-[#34C68A]' : 'text-[#9CA3AF] dark:text-[#4A6380]'}`}>{s}</span>
           </div>
         ))}
       </div>
@@ -304,14 +304,14 @@ export default function CourseCreationModal({ open, onClose, onCreated }) {
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClose} />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg bg-white rounded-[20px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-lg bg-white dark:bg-[#111F35] rounded-[20px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="px-6 pt-6 pb-2 flex-shrink-0">
           <StepDots current={dotStep} />
           {internalStep !== 'generating' && internalStep !== 'done' && (
             <button
               onClick={handleClose}
-              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-[#9CA3AF] hover:text-[#2C2C2A] hover:bg-[#F4F8FC] transition-colors"
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-[#9CA3AF] dark:text-[#4A6380] hover:text-[#2C2C2A] dark:hover:text-[#E8EFF7] hover:bg-[#F4F8FC] dark:hover:bg-[#0D1830] transition-colors"
               aria-label="Close"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -329,8 +329,8 @@ export default function CourseCreationModal({ open, onClose, onCreated }) {
           {internalStep === 'skills' && (
             <div className="space-y-5">
               <div>
-                <h2 className="text-xl font-bold text-[#2C2C2A]">What do you want to learn?</h2>
-                <p className="text-[14px] text-[#6B7280] mt-1">Choose skills to master. We'll build a personalised course around them.</p>
+                <h2 className="text-xl font-bold text-[#2C2C2A] dark:text-[#E8EFF7]">What do you want to learn?</h2>
+                <p className="text-[14px] text-[#6B7280] dark:text-[#8BA3C1] mt-1">Choose skills to master. We'll build a personalised course around them.</p>
               </div>
 
               <SkillSelector
@@ -355,8 +355,8 @@ export default function CourseCreationModal({ open, onClose, onCreated }) {
           {internalStep === 'questionnaire' && sessionId && (
             <div>
               <div className="mb-4">
-                <h2 className="text-xl font-bold text-[#2C2C2A]">A few quick questions</h2>
-                <p className="text-[14px] text-[#6B7280] mt-1">Help us personalise your {selectedSkills.slice(0,2).join(' & ')} course.</p>
+                <h2 className="text-xl font-bold text-[#2C2C2A] dark:text-[#E8EFF7]">A few quick questions</h2>
+                <p className="text-[14px] text-[#6B7280] dark:text-[#8BA3C1] mt-1">Help us personalise your {selectedSkills.slice(0,2).join(' & ')} course.</p>
               </div>
               <Questionnaire
                 mode="skills"

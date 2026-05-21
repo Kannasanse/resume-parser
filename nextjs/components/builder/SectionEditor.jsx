@@ -67,7 +67,7 @@ function EntryCard({ title, sub, onDelete, children, defaultOpen = false }) {
   return (
     <div className="border border-ds-border rounded-[9px] overflow-hidden bg-ds-card">
       <div
-        className="flex items-center gap-2 px-3 py-[10px] cursor-pointer bg-[#FAFBFC] hover:bg-ds-bg transition-colors"
+        className="flex items-center gap-2 px-3 py-[10px] cursor-pointer bg-[#FAFBFC] dark:bg-[#0D1830] hover:bg-ds-bg transition-colors"
         onClick={() => setOpen(o => !o)}
       >
         <span className="text-ds-textMuted flex-shrink-0 cursor-grab"><GripIcon /></span>
@@ -156,7 +156,7 @@ function SkillsEditor({ content, onChange }) {
                   onClick={() => update(i, { level: s.level === lv ? 0 : lv })}
                   className={`w-6 h-[22px] rounded border flex items-center justify-center transition-colors ${(s.level || 0) >= lv ? 'border-primary bg-primary/10' : 'border-ds-border bg-ds-card'}`}
                 >
-                  <span style={{ width: 4 + lv * 2, height: 4 + lv * 2, borderRadius: '50%', background: (s.level || 0) >= lv ? '#185FA5' : '#D1DCE8', display: 'block' }} />
+                  <span className={(s.level || 0) >= lv ? '' : 'dark:!bg-[#2A3F5A]'} style={{ width: 4 + lv * 2, height: 4 + lv * 2, borderRadius: '50%', background: (s.level || 0) >= lv ? '#185FA5' : '#D1DCE8', display: 'block' }} />
                 </button>
               ))}
             </div>
