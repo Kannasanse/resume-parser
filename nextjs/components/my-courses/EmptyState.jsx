@@ -7,7 +7,7 @@ const FILTER_MESSAGES = {
   not_started: 'All your plans have been started. Great work!',
 };
 
-export default function EmptyState({ tab, hasAnyCourses }) {
+export default function EmptyState({ tab, hasAnyCourses, onNewCourse }) {
   if (!hasAnyCourses) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
@@ -16,14 +16,24 @@ export default function EmptyState({ tab, hasAnyCourses }) {
         </svg>
         <h3 className="text-xl font-semibold text-[var(--c-text)]">No courses yet</h3>
         <p className="text-sm text-[var(--c-text-muted)] max-w-sm">
-          Generate a personalised study plan from your Career Map to start learning.
+          Create a course from skills you want to learn, or generate one from your Career Map.
         </p>
-        <Link
-          href="/career-map"
-          className="mt-2 bg-[var(--c-primary)] text-white text-sm font-medium px-5 py-2.5 rounded-lg hover:bg-[var(--c-primary-dark)] transition-colors"
-        >
-          Go to Career Map
-        </Link>
+        <div className="flex items-center gap-3 mt-2">
+          {onNewCourse && (
+            <button
+              onClick={onNewCourse}
+              className="bg-[var(--c-primary)] text-white text-sm font-medium px-5 py-2.5 rounded-lg hover:opacity-90 transition-opacity"
+            >
+              Create a course
+            </button>
+          )}
+          <Link
+            href="/career-map"
+            className="border border-[var(--c-border)] text-sm font-medium px-5 py-2.5 rounded-lg text-[var(--c-text-muted)] hover:text-[var(--c-text)] transition-colors"
+          >
+            Go to Career Map
+          </Link>
+        </div>
       </div>
     );
   }

@@ -86,9 +86,17 @@ export default function CourseCard({ course, onStatusChange, onDelete, onResetPr
       <div className="flex flex-col flex-1 px-4 pt-3 pb-4 space-y-3">
         {/* Title + chip */}
         <div className="flex items-start justify-between gap-2">
-          <h3 className="text-sm font-semibold text-[var(--c-text)] leading-snug line-clamp-2 flex-1">
-            {course.targetRoleTitle}
-          </h3>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-semibold text-[var(--c-text)] leading-snug line-clamp-2">
+              {course.targetRoleTitle}
+            </h3>
+            {course.creationMode === 'skills' && (
+              <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-medium text-[#7C3AED] bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                Skills Course
+              </span>
+            )}
+          </div>
           <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0 ${
             variant === 'active_progress' ? 'chip-primary' :
             variant === 'completed' ? 'chip-success' :

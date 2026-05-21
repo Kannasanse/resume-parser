@@ -10,7 +10,7 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 export async function POST(request) {
   try {
     const { user } = await requireUser(request);
-    const { sessionId, extractedProfile, previousQuestions = [], questionNumber } = await request.json();
+    const { sessionId, extractedProfile, previousQuestions = [], questionNumber, mode = 'resume', selectedSkills = [] } = await request.json();
 
     // Verify session ownership
     const { data: session } = await supabase
@@ -21,7 +21,9 @@ export async function POST(request) {
       .single();
     if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 });
 
-    const prompt = buildPrompt(extractedProfile, previousQuestions, questionNumber);
+    const prompt = mode === 'skills'
+      ? buildSkillsPrompt(selectedSkills, previousQuestions, questionNumber)
+      : buildPrompt(extractedProfile, previousQuestions, questionNumber);
 
     const completion = await groq.chat.completions.create({
       model:           'llama-3.3-70b-versatile',
@@ -47,9 +49,10 @@ export async function POST(request) {
       );
       if (isDuplicate) {
         console.warn('[Career Map] Duplicate question intent detected, regenerating:', newIntent);
-        const retryPrompt = buildPrompt(extractedProfile, previousQuestions, questionNumber,
-          `CRITICAL: You already asked about "${newIntent}". You MUST choose a completely different topic from the remaining intents list.`
-        );
+        const extraNote = `CRITICAL: You already asked about "${newIntent}". You MUST choose a completely different topic from the remaining intents list.`;
+        const retryPrompt = mode === 'skills'
+          ? buildSkillsPrompt(selectedSkills, previousQuestions, questionNumber, extraNote)
+          : buildPrompt(extractedProfile, previousQuestions, questionNumber, extraNote);
         const retry = await groq.chat.completions.create({
           model:           'llama-3.3-70b-versatile',
           temperature:     0.9,
@@ -77,8 +80,9 @@ export async function POST(request) {
     const shouldContinue  = raw.shouldContinue ?? raw.should_continue ?? true;
     const stopReason      = raw.stopReason || raw.stop_reason || null;
 
-    // Enforce: must ask at least 5 before stopping
-    const effectiveContinue = questionNumber < 5 ? true : shouldContinue;
+    // Enforce minimums: skills mode requires 3 questions, resume mode requires 5
+    const minQuestions = mode === 'skills' ? 3 : 5;
+    const effectiveContinue = questionNumber < minQuestions ? true : shouldContinue;
 
     // Save question row to DB (unanswered — answer saved by submit-answer)
     try {
@@ -194,5 +198,84 @@ Return ONLY valid JSON with lowercase keys exactly as shown:
 For free_text questions: set questionType to "free_text", options to null, provide a placeholder string, set maxLength to 300.
 For options questions: set placeholder and maxLength to null, provide exactly 4 options.
 shouldContinue must be false only if confidenceAfter >= 0.85 AND questionNumber >= 5, OR questionNumber = 10.
+stopReason: "confident" if stopping due to confidence, "max_questions" if at limit, null otherwise.`;
+}
+
+function buildSkillsPrompt(selectedSkills, previousQuestions, questionNumber, extraInstruction = '') {
+  const prevText = previousQuestions.length === 0
+    ? 'None yet — this is the first question.'
+    : previousQuestions.map(q =>
+        `Q${q.questionNumber} [${q.questionIntent}]: "${q.questionText}"\nAnswer: "${q.answerLabel || q.answerValue}"`
+      ).join('\n\n');
+
+  const coveredIntents = previousQuestions.length > 0
+    ? previousQuestions.map(q => q.questionIntent).filter(Boolean).join(', ')
+    : 'none';
+
+  const minRemaining = Math.max(0, 3 - questionNumber + 1);
+  const maxRemaining = 7 - questionNumber + 1;
+
+  return `You are a friendly course advisor personalising a study plan for someone who wants to learn specific skills.
+
+Skills they want to learn: ${selectedSkills.join(', ')}
+
+Questions asked so far and their answers:
+${prevText}
+
+Topics already covered — DO NOT ask about any of these again:
+${coveredIntents}
+
+${extraInstruction ? `⚠️  ${extraInstruction}\n` : ''}You need to generate question number ${questionNumber}.
+
+Rules for question generation:
+1. Each question must reveal something NEW about their learning context
+2. STRICTLY DO NOT repeat any intent from the "Topics already covered" list above
+3. Your questionIntent field MUST NOT match or overlap with any intent already listed above
+4. Make questions specific to their chosen skills (${selectedSkills.join(', ')})
+5. Alternate between preference questions (options) and exploratory questions (free text)
+6. Options questions: provide exactly 4 meaningfully different options
+7. Questions must be conversational and encouraging, not corporate jargon
+
+Question intents to cover (pick the most relevant ones based on what's missing):
+- Prior experience level (how much they already know about these skills)
+- Learning goal (get a job, build a project, freelance, personal growth, certification)
+- Timeline and urgency (how soon they want to be proficient)
+- Biggest challenge or blocker they anticipate
+- Specific area of focus within the skill set (if multiple skills)
+- Preferred way to practise (build projects, follow exercises, work on existing codebase)
+
+Current confidence assessment:
+- Low (< 0.5): Ask more to understand their context
+- Medium (0.5–0.84): Getting clearer, 1–2 more questions useful
+- High (>= 0.85): Enough to personalise the course — consider stopping
+
+${questionNumber >= 3
+  ? `You have asked ${questionNumber - 1} questions. Evaluate your confidence honestly.
+If you have strong signal on experience level, goals, and timeline → set shouldContinue: false.
+If major gaps remain → continue (max ${maxRemaining} more question${maxRemaining !== 1 ? 's' : ''}).`
+  : `You must ask at least ${minRemaining} more question${minRemaining !== 1 ? 's' : ''} before stopping. Set shouldContinue: true.`
+}
+
+Return ONLY valid JSON with lowercase keys exactly as shown:
+{
+  "questionText": "The question to ask",
+  "questionType": "options",
+  "questionIntent": "one phrase describing what this reveals",
+  "options": [
+    { "id": "a", "label": "Display label", "value": "semantic_value" },
+    { "id": "b", "label": "Display label", "value": "semantic_value" },
+    { "id": "c", "label": "Display label", "value": "semantic_value" },
+    { "id": "d", "label": "Display label", "value": "semantic_value" }
+  ],
+  "placeholder": null,
+  "maxLength": null,
+  "confidenceAfter": 0.0,
+  "shouldContinue": true,
+  "stopReason": null
+}
+
+For free_text questions: set questionType to "free_text", options to null, provide a placeholder string, set maxLength to 300.
+For options questions: set placeholder and maxLength to null, provide exactly 4 options.
+shouldContinue must be false only if confidenceAfter >= 0.85 AND questionNumber >= 3, OR questionNumber = 7.
 stopReason: "confident" if stopping due to confidence, "max_questions" if at limit, null otherwise.`;
 }

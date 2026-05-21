@@ -5,7 +5,7 @@ import QuestionLoadingState from './QuestionLoadingState';
 import QuestionnaireComplete from './QuestionnaireComplete';
 
 // State machine: loading | question | complete | error
-export default function Questionnaire({ profile, sessionId, onSubmit, loading: profileLoading }) {
+export default function Questionnaire({ profile, sessionId, onSubmit, loading: profileLoading, mode = 'resume', selectedSkills = [] }) {
   const [uiState, setUiState]         = useState('idle'); // idle | loading | question | complete | error
   const [questions, setQuestions]     = useState([]);     // [{question, confidenceAfter, shouldContinue}]
   const [answers, setAnswers]         = useState([]);     // [{questionNumber, answerValue, answerLabel}]
@@ -24,7 +24,7 @@ export default function Questionnaire({ profile, sessionId, onSubmit, loading: p
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId,
-          extractedProfile: profile,
+          extractedProfile: mode === 'skills' ? null : profile,
           previousQuestions: prevAnswers.map(a => ({
             questionNumber: a.questionNumber,
             questionText:   a.questionText,
@@ -33,6 +33,8 @@ export default function Questionnaire({ profile, sessionId, onSubmit, loading: p
             answerLabel:    a.answerLabel,
           })),
           questionNumber,
+          mode,
+          selectedSkills: mode === 'skills' ? selectedSkills : [],
         }),
       });
       const d = await r.json();
@@ -50,17 +52,19 @@ export default function Questionnaire({ profile, sessionId, onSubmit, loading: p
       setErrorMsg(err.message);
       setUiState('error');
     }
-  }, [sessionId, profile]);
+  }, [sessionId, profile, mode, selectedSkills]);
 
   // Start: fetch Q1 when profile is ready
   const start = useCallback(() => {
-    if (uiState === 'idle' && profile && sessionId) {
+    if (uiState === 'idle' && sessionId) {
       fetchQuestion(1, []);
     }
-  }, [uiState, profile, sessionId, fetchQuestion]);
+  }, [uiState, sessionId, fetchQuestion]);
 
-  // Kick off when profile arrives (first render after profileLoading ends)
-  if (!profileLoading && profile && sessionId && uiState === 'idle') {
+  // Kick off when ready — different trigger for skills vs resume mode
+  if (mode === 'skills' && sessionId && uiState === 'idle') {
+    start();
+  } else if (mode === 'resume' && !profileLoading && profile && sessionId && uiState === 'idle') {
     start();
   }
 
@@ -141,7 +145,7 @@ export default function Questionnaire({ profile, sessionId, onSubmit, loading: p
   }
 
   // ── Profile loading state ──────────────────────────────────────────────────
-  if (profileLoading || uiState === 'idle') {
+  if ((mode === 'resume' && (profileLoading || uiState === 'idle')) || (mode === 'skills' && uiState === 'idle' && !sessionId)) {
     return (
       <div className="max-w-2xl mx-auto">
         <div className="card p-10 text-center space-y-5">
@@ -151,7 +155,9 @@ export default function Questionnaire({ profile, sessionId, onSubmit, loading: p
             </svg>
           </div>
           <div>
-            <p className="text-base font-semibold text-[var(--c-text)]">Analysing your resume…</p>
+            <p className="text-base font-semibold text-[var(--c-text)]">
+              {mode === 'skills' ? 'Getting ready…' : 'Analysing your resume…'}
+            </p>
             <p className="text-sm text-[var(--c-text-muted)] mt-1">This takes a few seconds</p>
           </div>
           <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">

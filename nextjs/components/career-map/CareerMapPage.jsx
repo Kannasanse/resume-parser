@@ -8,6 +8,7 @@ import CareerGraph from './CareerGraph';
 import SkillGapDrawer from './SkillGapDrawer';
 import NodeDetailPanel from './NodeDetailPanel';
 import PreferenceModal from './roadmap/PreferenceModal';
+import CourseCreationModal from '@/components/my-courses/CourseCreationModal';
 
 const STEPS = {
   LOADING:          'LOADING',
@@ -41,6 +42,7 @@ export default function CareerMapPage() {
   const [selectedNode, setSelectedNode]       = useState(null);
   const [skillGapOpen, setSkillGapOpen]       = useState(false);
   const [roadmapRoleId, setRoadmapRoleId]     = useState(null);
+  const [courseModalOpen, setCourseModalOpen] = useState(false);
   const [error, setError]                     = useState('');
 
   useEffect(() => {
@@ -144,11 +146,22 @@ export default function CareerMapPage() {
             <h1 className="text-xl font-semibold text-[var(--c-text)]">Career Map</h1>
             <p className="text-sm text-[var(--c-text-muted)] mt-0.5">Visualise your career path and skill gaps</p>
           </div>
-          {step !== STEPS.RESUME_PICKER && step !== STEPS.LOADING && (
-            <button onClick={handleStartOver} className="text-sm text-[var(--c-primary)] hover:underline">
-              ← Start over
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {(step === STEPS.RESUME_PICKER || step === STEPS.LOADING) && (
+              <button
+                onClick={() => setCourseModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-[var(--c-border)] text-[var(--c-text-muted)] hover:text-[var(--c-primary)] hover:border-[var(--c-primary)] transition-colors"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                Create course directly
+              </button>
+            )}
+            {step !== STEPS.RESUME_PICKER && step !== STEPS.LOADING && (
+              <button onClick={handleStartOver} className="text-sm text-[var(--c-primary)] hover:underline">
+                ← Start over
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -268,6 +281,11 @@ export default function CareerMapPage() {
           readinessScore={skillGapData?.match_percent || 0}
         />
       )}
+
+      <CourseCreationModal
+        open={courseModalOpen}
+        onClose={() => setCourseModalOpen(false)}
+      />
     </div>
   );
 }

@@ -113,6 +113,8 @@ export async function GET(request) {
         preferences: plan.preferences,
         resumeTopicId,
         resumeSectionId,
+        creationMode: plan.creation_mode || 'career_map',
+        selectedSkills: plan.selected_skills || [],
       };
     });
 

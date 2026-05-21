@@ -9,7 +9,7 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 export async function POST(request) {
   try {
     const { user } = await requireUser(request);
-    const { sessionId, targetRoleId, targetRoleTitle, missingSkills, preferences } = await request.json();
+    const { sessionId, targetRoleId, targetRoleTitle, missingSkills, preferences, creation_mode = 'career_map', selectedSkills = [] } = await request.json();
 
     const { hoursPerDay, daysPerWeek, learningStyle, currentLevel } = preferences;
     const styles = Array.isArray(learningStyle) ? learningStyle : [learningStyle];
@@ -101,13 +101,15 @@ Return ONLY a JSON object:
       .insert({
         user_id: user.id,
         session_id: sessionId || null,
-        target_role_id: targetRoleId,
-        target_role_title: targetRoleTitle,
+        target_role_id: targetRoleId || null,
+        target_role_title: targetRoleTitle || null,
         missing_skills: missingSkills,
         preferences,
         plan_structure: plan,
         total_weeks: plan.totalWeeks,
         total_hours: plan.totalHours,
+        creation_mode,
+        selected_skills: selectedSkills,
       })
       .select('id')
       .single();

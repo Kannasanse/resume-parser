@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import CourseCard from './CourseCard';
 import CourseStatsBar from './CourseStatsBar';
 import EmptyState from './EmptyState';
+import CourseCreationModal from './CourseCreationModal';
 
 const TABS = [
   { id: 'all', label: 'All' },
@@ -47,6 +48,7 @@ export default function MyCoursesPage() {
   const [sort, setSort] = useState('updated');
   const [search, setSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
+  const [courseModalOpen, setCourseModalOpen] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -113,9 +115,19 @@ export default function MyCoursesPage() {
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-[var(--c-text)]">My Courses</h2>
-        <p className="text-sm text-[var(--c-text-muted)] mt-1">Track your learning progress and pick up where you left off.</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-[var(--c-text)]">My Courses</h2>
+          <p className="text-sm text-[var(--c-text-muted)] mt-1">Track your learning progress and pick up where you left off.</p>
+        </div>
+        <button
+          onClick={() => setCourseModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white flex-shrink-0 transition-opacity hover:opacity-90"
+          style={{ background: 'linear-gradient(135deg, #185FA5, #0C447C)' }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Course
+        </button>
       </div>
 
       {/* Stats bar */}
@@ -176,7 +188,7 @@ export default function MyCoursesPage() {
 
       {/* Cards */}
       {filtered.length === 0 ? (
-        <EmptyState tab={activeTab} hasAnyCourses={courses.length > 0} />
+        <EmptyState tab={activeTab} hasAnyCourses={courses.length > 0} onNewCourse={() => setCourseModalOpen(true)} />
       ) : (
         <div className="stagger-children grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map(course => (
@@ -190,6 +202,12 @@ export default function MyCoursesPage() {
           ))}
         </div>
       )}
+
+      <CourseCreationModal
+        open={courseModalOpen}
+        onClose={() => setCourseModalOpen(false)}
+        onCreated={() => { setCourseModalOpen(false); load(); }}
+      />
     </div>
   );
 }
