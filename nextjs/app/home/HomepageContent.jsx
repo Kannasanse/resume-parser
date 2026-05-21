@@ -308,36 +308,6 @@ function HeroSection() {
 }
 
 // ── Section 3: Logo Strip ─────────────────────────────────────────────────────
-const COMPANIES = ['Google', 'Microsoft', 'Amazon', 'Stripe', 'Shopify', 'Atlassian', 'Salesforce', 'Meta', 'Apple', 'Netflix', 'Spotify', 'Airbnb'];
-
-function LogoStrip() {
-  return (
-    <section className="py-8 bg-white overflow-hidden relative">
-      <p className="text-center text-xs font-semibold uppercase tracking-widest mb-5" style={{ color: '#9CA3AF' }}>
-        Trusted by professionals who&apos;ve landed roles at
-      </p>
-      {/* Fade masks */}
-      <div className="absolute inset-y-0 left-0 w-32 z-10 pointer-events-none" style={{ background: 'linear-gradient(to right, white, transparent)' }} />
-      <div className="absolute inset-y-0 right-0 w-32 z-10 pointer-events-none" style={{ background: 'linear-gradient(to left, white, transparent)' }} />
-      <div
-        className="flex gap-10 whitespace-nowrap"
-        style={{ animation: 'marquee 30s linear infinite' }}
-        onMouseEnter={e => e.currentTarget.style.animationPlayState = 'paused'}
-        onMouseLeave={e => e.currentTarget.style.animationPlayState = 'running'}
-      >
-        {[...COMPANIES, ...COMPANIES].map((c, i) => (
-          <span key={i} className="flex items-center gap-10 text-[15px] font-bold transition-colors cursor-default" style={{ color: '#D1DCE8', letterSpacing: '-0.01em' }}
-            onMouseEnter={e => e.currentTarget.style.color = '#6B7280'}
-            onMouseLeave={e => e.currentTarget.style.color = '#D1DCE8'}>
-            {c}
-            {i < COMPANIES.length * 2 - 1 && <span style={{ color: '#E6F1FB' }}>·</span>}
-          </span>
-        ))}
-      </div>
-      <style>{`@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }`}</style>
-    </section>
-  );
-}
 
 // ── Section 4: Feature Showcase ───────────────────────────────────────────────
 const FEATURES = [
@@ -563,12 +533,14 @@ function DeepDiveResume() {
 // ── Section 6: Deep Dive — Career Map ─────────────────────────────────────────
 const CAREER_MAP_FEATURES = [
   'AI analyses your resume in seconds',
-  '7-question career questionnaire',
-  'Visual career graph — vertical, horizontal & diagonal paths',
-  'Skill gap analysis per target role',
-  'Phase-based study plans (Beginner → Advanced)',
+  'Adaptive questionnaire — 5 to 10 questions, personalised to you',
+  'Questions change based on your answers — no two users see the same flow',
+  'Visual career graph — vertical, horizontal and diagonal paths',
+  'Skill gap analysis per target role with readiness score',
+  'Phase-based study plans — Beginner → Intermediate → Advanced',
   'Embedded YouTube tutorials per topic',
-  'AI-generated content per section, on demand',
+  'AI-generated written content per section, on demand',
+  'Track progress section by section with an overall completion bar',
 ];
 
 function DeepDiveCareerMap() {
@@ -641,7 +613,7 @@ function DeepDiveCareerMap() {
               Know exactly where you&apos;re going —<br />and how to get there
             </h2>
             <p className="mt-4 text-base leading-relaxed" style={{ color: 'rgba(255,255,255,0.60)' }}>
-              Most career tools tell you what you&apos;re missing. Proflect shows you the path, the steps, and hands you the learning plan to close every gap — with real video content and AI-generated material.
+              Answer a few adaptive questions and Proflect maps your personalised career graph — showing vertical, horizontal, and diagonal paths from where you are to where you want to be. Then closes every skill gap with a phase-based study plan built around your schedule.
             </p>
             <ul className="mt-6 space-y-3">
               {CAREER_MAP_FEATURES.map(f => (
@@ -1060,7 +1032,7 @@ export default function HomepageContent({ sections, isPreview, userRole }) {
     <div className="overflow-x-hidden">
       <HomeNavbar />
       <HeroSection />
-      <LogoStrip />
+
       <FeatureShowcase />
       <DeepDiveResume />
       <DeepDiveCareerMap />
