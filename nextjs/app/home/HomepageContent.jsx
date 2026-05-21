@@ -78,7 +78,7 @@ function HomeNavbar() {
             <img
               src={scrolled ? '/logo.png' : '/logo-white.png'}
               alt="Proflect"
-              className="h-9 w-auto object-contain"
+              style={{ height: '36px', width: 'auto', display: 'block' }}
             />
           </Link>
 
