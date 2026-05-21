@@ -133,13 +133,33 @@ export async function POST(request) {
       .select('id, youtube_queries, sections, youtube_videos')
       .eq('study_plan_id', study_plan_id);
 
+    const usedVideoIds = new Set();
     const updates = [];
+
     for (const topic of topics || []) {
       const query = topic.youtube_queries?.[0];
       if (!query) continue;
-      if (topic.youtube_videos?.length > 0) continue; // already fetched
+      if (topic.youtube_videos?.length > 0) {
+        // Already fetched — register existing IDs to prevent reuse
+        (topic.youtube_videos).forEach(v => v.videoId && usedVideoIds.add(v.videoId));
+        continue;
+      }
 
-      const rankedVideos = await fetchVideosForQuery(query);
+      let rankedVideos = await fetchVideosForQuery(query);
+
+      // Deduplicate against videos already assigned to other topics in this plan
+      const deduplicated = rankedVideos.filter(v => !v.isFallback && !usedVideoIds.has(v.videoId));
+      if (deduplicated.length === 0 && rankedVideos.some(v => !v.isFallback)) {
+        // All top results are duplicates — retry with a modified query
+        const fallback = await fetchVideosForQuery(query + ' full course');
+        const fallbackDeduped = fallback.filter(v => !v.isFallback && !usedVideoIds.has(v.videoId));
+        rankedVideos = fallbackDeduped.length > 0 ? fallbackDeduped : rankedVideos;
+      } else if (deduplicated.length > 0) {
+        rankedVideos = deduplicated;
+      }
+
+      rankedVideos.slice(0, 3).forEach(v => v.videoId && usedVideoIds.add(v.videoId));
+
       const updatedSections = assignVideosToSections(topic.sections || [], rankedVideos);
 
       updates.push(

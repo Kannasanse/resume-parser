@@ -46,6 +46,7 @@ Rules:
 - Each topic must have 4-8 sections with specific headings
 - Section headings should be specific and educational
 - Assign a YouTube search query per topic that would find a good tutorial
+- YouTube query rules: must be 4-8 words, include the specific sub-topic (not just the skill name), include one of "tutorial", "explained", "guide", "how to", "for beginners", "advanced". Each query must be unique — no two topics may have the same or similar query. Bad: "Python", "Docker", "React tutorial". Good: "Python list comprehensions tutorial beginners", "Docker containers vs images explained", "React useEffect hook complete guide"
 - Distribute topics across weeks based on ${hoursPerDay * daysPerWeek} hours per week
 
 Return ONLY a JSON object:

@@ -34,7 +34,33 @@ export async function POST(request) {
     const text = completion.choices?.[0]?.message?.content;
     if (!text) throw new Error('Empty response from AI');
 
-    const raw = JSON.parse(text);
+    let raw = JSON.parse(text);
+
+    // Server-side duplicate intent detection — regenerate once if duplicate found
+    if (previousQuestions.length > 0) {
+      const previousIntents = previousQuestions.map(q => q.questionIntent?.toLowerCase() || '');
+      const newIntent = (raw.questionIntent || raw.question_intent || '').toLowerCase();
+      const firstWord = newIntent.split(' ')[0];
+      const isDuplicate = previousIntents.some(intent =>
+        intent === newIntent ||
+        (firstWord.length > 3 && (intent.includes(firstWord) || newIntent.includes(intent.split(' ')[0])))
+      );
+      if (isDuplicate) {
+        console.warn('[Career Map] Duplicate question intent detected, regenerating:', newIntent);
+        const retryPrompt = buildPrompt(extractedProfile, previousQuestions, questionNumber,
+          `CRITICAL: You already asked about "${newIntent}". You MUST choose a completely different topic from the remaining intents list.`
+        );
+        const retry = await groq.chat.completions.create({
+          model:           'llama-3.3-70b-versatile',
+          temperature:     0.9,
+          max_tokens:      600,
+          response_format: { type: 'json_object' },
+          messages:        [{ role: 'user', content: retryPrompt }],
+        });
+        const retryText = retry.choices?.[0]?.message?.content;
+        if (retryText) raw = JSON.parse(retryText);
+      }
+    }
 
     // Normalise field names
     const question = {
@@ -83,12 +109,16 @@ export async function POST(request) {
   }
 }
 
-function buildPrompt(profile, previousQuestions, questionNumber) {
+function buildPrompt(profile, previousQuestions, questionNumber, extraInstruction = '') {
   const prevText = previousQuestions.length === 0
     ? 'None yet — this is the first question.'
     : previousQuestions.map(q =>
-        `Q${q.questionNumber}: ${q.questionText}\nAnswer: ${q.answerLabel || q.answerValue}`
+        `Q${q.questionNumber} [${q.questionIntent}]: "${q.questionText}"\nAnswer: "${q.answerLabel || q.answerValue}"`
       ).join('\n\n');
+
+  const coveredIntents = previousQuestions.length > 0
+    ? previousQuestions.map(q => q.questionIntent).filter(Boolean).join(', ')
+    : 'none';
 
   const minRemaining = Math.max(0, 5 - questionNumber + 1);
   const maxRemaining = 10 - questionNumber + 1;
@@ -103,17 +133,21 @@ ${JSON.stringify(profile, null, 2)}
 Questions asked so far and their answers:
 ${prevText}
 
-You need to generate question number ${questionNumber}.
+Topics already covered — DO NOT ask about any of these again:
+${coveredIntents}
+
+${extraInstruction ? `⚠️  ${extraInstruction}\n` : ''}You need to generate question number ${questionNumber}.
 
 Rules for question generation:
 1. Each question must reveal something NEW that you don't already know from the resume or previous answers
-2. Do NOT repeat themes already covered — check previous questions carefully
-3. Make questions specific to this person — reference their actual job titles, skills, or industries
-4. Alternate between preference questions (options) and exploratory questions (free text)
-5. Options questions: provide exactly 4 options that are meaningfully different, not just variations
-6. Free text questions: ask open-ended questions about aspirations, values, or context
-7. Questions must be conversational, not bureaucratic — avoid corporate jargon
-8. After question 5, evaluate if you have enough signal to make confident recommendations
+2. STRICTLY DO NOT repeat any intent from the "Topics already covered" list above — if you find yourself writing a similar question, choose a completely different topic instead
+3. Your questionIntent field MUST NOT match or overlap with any intent already listed above
+4. Make questions specific to this person — reference their actual job titles, skills, or industries
+5. Alternate between preference questions (options) and exploratory questions (free text)
+6. Options questions: provide exactly 4 options that are meaningfully different, not just variations
+7. Free text questions: ask open-ended questions about aspirations, values, or context
+8. Questions must be conversational, not bureaucratic — avoid corporate jargon
+9. After question 5, evaluate if you have enough signal to make confident recommendations
 
 Question intents to cover (pick the most relevant ones based on what's missing):
 - Career direction (growth vs transition vs leadership vs exploration)

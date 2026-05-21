@@ -45,7 +45,8 @@ function assignVideosToSections(sections, rankedVideos) {
 export async function POST(request) {
   try {
     const { user } = await requireUser(request);
-    const { topicId } = await request.json();
+    const { topicId, usedVideoIds: usedVideoIdsArray = [] } = await request.json();
+    const usedVideoIds = new Set(usedVideoIdsArray.filter(Boolean));
 
     const { data: topic, error } = await supabase
       .from('study_plan_topics')
@@ -94,9 +95,11 @@ export async function POST(request) {
         const res = await fetch(url.toString());
         if (res.ok) {
           const data = await res.json();
-          const scored = (data.items || []).map(v => ({ ...v, qualityScore: scoreVideo(v) })).sort((a, b) => b.qualityScore - a.qualityScore).slice(0, 3);
-          if (scored.length > 0) {
-            rankedVideos = scored.map(v => ({
+          const scored = (data.items || []).map(v => ({ ...v, qualityScore: scoreVideo(v) })).sort((a, b) => b.qualityScore - a.qualityScore);
+          const deduped = usedVideoIds.size > 0 ? scored.filter(v => !usedVideoIds.has(v.id)) : scored;
+          const final = (deduped.length > 0 ? deduped : scored).slice(0, 3);
+          if (final.length > 0) {
+            rankedVideos = final.map(v => ({
               videoId: v.id,
               title: v.snippet?.title || '',
               channelName: v.snippet?.channelTitle || '',
