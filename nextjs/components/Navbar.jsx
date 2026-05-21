@@ -135,6 +135,7 @@ export default function Navbar() {
     { to: '/admin/invite', label: 'Invite Users' },
     { to: '/admin/import', label: 'Bulk Import' },
     { to: '/admin/templates', label: 'Templates' },
+    { to: '/admin/skills', label: 'Skill Library' },
     { to: '/admin/homepage', label: 'Homepage CMS' },
     { to: '/admin/credits', label: 'Credits' },
     { to: '/admin/api-docs', label: 'API Docs' },

@@ -1,8 +1,8 @@
 'use client';
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { PREDEFINED_SKILLS, ALL_SKILLS } from '@/data/predefined-skills';
 import Questionnaire from '@/components/career-map/Questionnaire';
+import SkillSelector from '@/components/skills/SkillSelector';
 
 // ── Step indicator ──────────────────────────────────────────────────────────
 function StepDots({ current }) {
@@ -32,38 +32,6 @@ function StepDots({ current }) {
         );
       })}
     </div>
-  );
-}
-
-// ── Skill chip (selected) ───────────────────────────────────────────────────
-function SelectedChip({ label, onRemove }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 h-7 pl-3 pr-2 rounded-full text-[13px] font-medium"
-      style={{ background: '#E6F1FB', color: '#185FA5', border: '1px solid rgba(24,95,165,0.25)' }}>
-      {label}
-      <button onClick={onRemove} className="flex items-center justify-center w-4 h-4 rounded-full hover:bg-[#185FA5] hover:text-white transition-colors text-[#185FA5]" aria-label={`Remove ${label}`}>
-        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </span>
-  );
-}
-
-// ── Skill suggestion chip ───────────────────────────────────────────────────
-function SuggestionChip({ label, selected, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-[13px] transition-all"
-      style={selected
-        ? { background: '#E6F1FB', border: '1px solid #185FA5', color: '#185FA5' }
-        : { background: '#F4F8FC', border: '1px solid #D1DCE8', color: '#2C2C2A' }
-      }
-    >
-      {selected && (
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#185FA5" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-      )}
-      {label}
-    </button>
   );
 }
 
@@ -219,9 +187,8 @@ function GeneratingView({ done, planId, onView }) {
 // ── Main Modal ──────────────────────────────────────────────────────────────
 export default function CourseCreationModal({ open, onClose, onCreated }) {
   const router = useRouter();
-  const [internalStep, setInternalStep] = useState('skills'); // skills | starting | questionnaire | preferences | generating | done
+  const [internalStep, setInternalStep] = useState('skills');
   const [selectedSkills, setSelectedSkills] = useState([]);
-  const [searchText, setSearchText] = useState('');
   const [sessionId, setSessionId] = useState(null);
   const [qAnswers, setQAnswers] = useState([]);
   const [starting, setStarting] = useState(false);
@@ -239,7 +206,6 @@ export default function CourseCreationModal({ open, onClose, onCreated }) {
     if (open) {
       setInternalStep('skills');
       setSelectedSkills([]);
-      setSearchText('');
       setSessionId(null);
       setQAnswers([]);
       setStarting(false);
@@ -249,28 +215,6 @@ export default function CourseCreationModal({ open, onClose, onCreated }) {
       setError('');
     }
   }, [open]);
-
-  // ── Skill selection logic ─────────────────────────────────────────────────
-  const toggleSkill = useCallback((skill) => {
-    setSelectedSkills(prev => {
-      if (prev.includes(skill)) return prev.filter(s => s !== skill);
-      if (prev.length >= 8) return prev; // max 8
-      return [...prev, skill];
-    });
-  }, []);
-
-  const addCustomSkill = useCallback((text) => {
-    const trimmed = text.trim();
-    if (!trimmed || selectedSkills.includes(trimmed) || selectedSkills.length >= 8) return;
-    setSelectedSkills(prev => [...prev, trimmed]);
-    setSearchText('');
-  }, [selectedSkills]);
-
-  const filteredSuggestions = searchText.trim()
-    ? ALL_SKILLS.filter(s => s.toLowerCase().includes(searchText.toLowerCase()))
-    : null;
-
-  const hasExactMatch = filteredSuggestions?.some(s => s.toLowerCase() === searchText.trim().toLowerCase());
 
   // ── Start questionnaire ───────────────────────────────────────────────────
   async function handleSkillsContinue() {
@@ -389,81 +333,13 @@ export default function CourseCreationModal({ open, onClose, onCreated }) {
                 <p className="text-[14px] text-[#6B7280] mt-1">Choose skills to master. We'll build a personalised course around them.</p>
               </div>
 
-              {/* Search */}
-              <div className="relative">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                </div>
-                <input
-                  value={searchText}
-                  onChange={e => setSearchText(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && searchText.trim() && !hasExactMatch) addCustomSkill(searchText); }}
-                  placeholder="Search skills e.g. Python, Docker, React..."
-                  className="w-full pl-10 pr-4 py-2.5 border border-[#D1DCE8] rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#185FA5] focus:border-[#185FA5] transition-all"
-                />
-              </div>
+              <SkillSelector
+                value={selectedSkills}
+                onChange={setSelectedSkills}
+                maxSkills={8}
+                context="course_creation"
+              />
 
-              {/* Selected chips */}
-              {selectedSkills.length > 0 && (
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-[#6B7280]">Selected ({selectedSkills.length}/8)</span>
-                    {selectedSkills.length >= 2 && (
-                      <button onClick={() => setSelectedSkills([])} className="text-xs text-[#D93025] hover:underline">Clear all</button>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedSkills.map(s => (
-                      <SelectedChip key={s} label={s} onRemove={() => toggleSkill(s)} />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Suggestions */}
-              <div className="space-y-4 max-h-72 overflow-y-auto pr-1">
-                {filteredSuggestions ? (
-                  <div>
-                    <div className="flex flex-wrap gap-2">
-                      {filteredSuggestions.map(s => (
-                        <SuggestionChip
-                          key={s}
-                          label={s}
-                          selected={selectedSkills.includes(s)}
-                          onClick={() => toggleSkill(s)}
-                        />
-                      ))}
-                      {!hasExactMatch && searchText.trim() && (
-                        <button
-                          onClick={() => addCustomSkill(searchText)}
-                          className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-[13px] transition-all"
-                          style={{ background: '#FEF3C7', border: '1px dashed #F59E0B', color: '#B45309' }}
-                        >
-                          + Add "{searchText.trim()}" as custom skill
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  Object.entries(PREDEFINED_SKILLS).map(([category, skills]) => (
-                    <div key={category}>
-                      <p className="text-[11px] uppercase tracking-widest text-[#9CA3AF] mb-2">{category}</p>
-                      <div className="flex flex-wrap gap-2">
-                        {skills.map(s => (
-                          <SuggestionChip
-                            key={s}
-                            label={s}
-                            selected={selectedSkills.includes(s)}
-                            onClick={() => toggleSkill(s)}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Continue button */}
               <button
                 onClick={handleSkillsContinue}
                 disabled={!selectedSkills.length || starting}
