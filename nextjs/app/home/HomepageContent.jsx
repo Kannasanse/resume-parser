@@ -75,11 +75,7 @@ function HomeNavbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/home" className="flex items-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={scrolled ? '/logo.png' : '/logo-white.png'}
-              alt="Proflect"
-              style={{ height: '36px', width: 'auto', display: 'block' }}
-            />
+            <img src={scrolled ? '/logo.png' : '/logo-white.png'} alt="Proflect" height={40} width={118} style={{ height: '40px', width: '118px', minHeight: '40px', minWidth: '118px', maxHeight: '40px', objectFit: 'contain', display: 'block', flexShrink: 0 }} />
           </Link>
 
           {/* Desktop nav */}
@@ -146,7 +142,8 @@ function HomeNavbar() {
             }}
           >
             <div className="flex items-center justify-between mb-8">
-              <Image src="/logo.png" alt="Proflect" width={100} height={28} className="h-7 w-auto" style={{ filter: 'brightness(0) invert(1)' }} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-white.png" alt="Proflect" height={40} width={118} style={{ height: '40px', width: '118px', minHeight: '40px', minWidth: '118px', maxHeight: '40px', objectFit: 'contain', display: 'block', flexShrink: 0 }} />
               <button onClick={() => setMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.6)' }}><CloseIcon /></button>
             </div>
             <div className="flex flex-col gap-4 flex-1">
@@ -1000,7 +997,8 @@ function HomeFooter() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
           {/* Brand column */}
           <div className="col-span-2 lg:col-span-1">
-            <Image src="/logo.png" alt="Proflect" width={100} height={28} className="h-7 w-auto mb-3" style={{ filter: 'brightness(0) invert(1)' }} />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-white.png" alt="Proflect" height={40} width={118} style={{ height: '40px', width: '118px', minHeight: '40px', minWidth: '118px', maxHeight: '40px', objectFit: 'contain', display: 'block', flexShrink: 0, marginBottom: '12px' }} />
             <p className="text-sm max-w-[200px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.45)' }}>
               Build the career you deserve.
             </p>

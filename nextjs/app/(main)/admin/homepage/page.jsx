@@ -519,7 +519,8 @@ export default function HomepageCMS() {
       {/* Page header */}
       <div style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, padding: '0 24px', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Image src="/logo.png" alt="Proflect" width={90} height={28} style={{ height: 28, width: 'auto' }} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Proflect" height={40} width={118} style={{ height: '40px', width: '118px', minHeight: '40px', minWidth: '118px', maxHeight: '40px', objectFit: 'contain', display: 'block', flexShrink: 0 }} />
           <span style={{ color: C.border }}>›</span>
           <span style={{ fontSize: 13, color: C.secondary }}>Admin</span>
           <span style={{ color: C.border }}>›</span>

@@ -159,7 +159,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link href="/home" className="flex items-center flex-shrink-0 no-underline hover:no-underline">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="Proflect" style={{ height: '36px', width: 'auto', display: 'block' }} />
+            <img src="/logo.png" alt="Proflect" height={40} width={118} style={{ height: '40px', width: '118px', minHeight: '40px', minWidth: '118px', maxHeight: '40px', objectFit: 'contain', display: 'block', flexShrink: 0 }} />
           </Link>
 
           {/* Desktop nav links */}
@@ -336,7 +336,7 @@ export default function Navbar() {
         <div className="h-16 flex items-center justify-between px-4 border-b border-ds-border flex-shrink-0">
           <Link href="/home" onClick={() => setDrawerOpen(false)} className="flex items-center no-underline">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="Proflect" style={{ height: '36px', width: 'auto', display: 'block' }} />
+            <img src="/logo.png" alt="Proflect" height={40} width={118} style={{ height: '40px', width: '118px', minHeight: '40px', minWidth: '118px', maxHeight: '40px', objectFit: 'contain', display: 'block', flexShrink: 0 }} />
           </Link>
           <button onClick={() => setDrawerOpen(false)} aria-label="Close menu" className="w-8 h-8 flex items-center justify-center rounded-lg text-ds-textMuted hover:bg-ds-bg">
             <CloseIcon />
