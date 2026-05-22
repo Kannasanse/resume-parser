@@ -53,7 +53,7 @@ export async function POST(request) {
       .insert({
         user_id: user.id,
         title: title || 'Untitled',
-        content: content || null,
+        content: content || { type: 'doc', content: [] },
         icon: icon || null,
         context_type: context_type || null,
         context_id: context_id || null,
