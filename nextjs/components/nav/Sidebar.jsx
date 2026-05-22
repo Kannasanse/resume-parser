@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -65,10 +66,6 @@ const USER_NAV_GROUPS = [
   },
 ];
 
-const USER_MORE = [
-  { id: 'settings', icon: 'settings', label: 'Settings',         href: '/profile' },
-  { id: 'billing',  icon: 'receipt',  label: 'Billing & Credits', href: '/credits' },
-];
 
 const ADMIN_NAV_GROUPS = [
   {
@@ -89,19 +86,9 @@ const ADMIN_NAV_GROUPS = [
   },
 ];
 
-const ADMIN_MORE = [
-  { id: 'users',     icon: 'users',    label: 'Users',         href: '/admin/users' },
-  { id: 'invite',    icon: 'user',     label: 'Invite Users',  href: '/admin/invite' },
-  { id: 'import',    icon: 'receipt',  label: 'Bulk Import',   href: '/admin/import' },
-  { id: 'templates', icon: 'fileText', label: 'Templates',     href: '/admin/templates' },
-  { id: 'skills',    icon: 'library',  label: 'Skill Library', href: '/admin/skills' },
-  { id: 'homepage',  icon: 'home',     label: 'Homepage CMS',  href: '/admin/homepage' },
-  { id: 'credits',   icon: 'receipt',  label: 'Credits',       href: '/admin/credits' },
-  { id: 'api-docs',  icon: 'code',     label: 'API Docs',      href: '/admin/api-docs' },
-];
 
-// ── User dropdown popover ─────────────────────────────────────────────────────
-function UserDropdown({ user, displayName, initials, avatarUrl, onSignOut, onClose }) {
+// ── User dropdown popover (rendered via portal to escape overflow-hidden) ─────
+function UserDropdown({ user, displayName, initials, avatarUrl, onSignOut, onClose, anchorRect }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -118,12 +105,17 @@ function UserDropdown({ user, displayName, initials, avatarUrl, onSignOut, onClo
     return () => document.removeEventListener('keydown', handler);
   }, [onClose]);
 
-  const row = 'flex items-center gap-2.5 h-9 px-2.5 rounded-lg text-sm cursor-pointer transition-colors';
+  const row = 'flex items-center gap-2.5 h-9 px-2.5 rounded-lg text-[14px] cursor-pointer transition-colors';
 
-  return (
+  const style = anchorRect
+    ? { position: 'fixed', left: anchorRect.left, bottom: window.innerHeight - anchorRect.top + 6, zIndex: 200, width: 240 }
+    : { position: 'fixed', left: 8, bottom: 80, zIndex: 200, width: 240 };
+
+  const dropdown = (
     <div
       ref={ref}
-      className="absolute left-[calc(100%+8px)] bottom-2 z-50 w-60 bg-white dark:bg-[#111F35] border border-[#D1DCE8] dark:border-white/10 rounded-2xl shadow-[0_16px_40px_rgba(12,68,124,0.18)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.4)] p-2"
+      style={style}
+      className="bg-white dark:bg-[#111F35] border border-[#D1DCE8] dark:border-white/10 rounded-2xl shadow-[0_16px_40px_rgba(12,68,124,0.18)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.4)] p-2"
     >
       {/* Profile header */}
       <div className="flex items-center gap-2.5 p-2.5 bg-[#F4F8FC] dark:bg-[#0D1830] rounded-xl mb-1">
@@ -136,19 +128,16 @@ function UserDropdown({ user, displayName, initials, avatarUrl, onSignOut, onClo
         </div>
       </div>
 
+      <div className="h-px bg-[#D1DCE8] dark:bg-white/10 my-1 mx-1" />
+
       <Link href="/profile" onClick={onClose} className={`${row} text-[#2C2C2A] dark:text-[#E8EFF7] hover:bg-[rgba(24,95,165,0.06)] dark:hover:bg-[rgba(24,95,165,0.12)]`}>
-        <NavIc name="user" size={15} /> Profile settings
+        <NavIc name="settings" size={15} /> Settings
       </Link>
       <Link href="/credits" onClick={onClose} className={`${row} text-[#2C2C2A] dark:text-[#E8EFF7] hover:bg-[rgba(24,95,165,0.06)] dark:hover:bg-[rgba(24,95,165,0.12)]`}>
-        <NavIc name="receipt" size={15} /> Billing & credits
+        <NavIc name="receipt" size={15} /> Billing & Credits
       </Link>
-      <div className={`${row} text-[#2C2C2A] dark:text-[#E8EFF7] hover:bg-[rgba(24,95,165,0.06)] dark:hover:bg-[rgba(24,95,165,0.12)]`}>
-        <NavIc name="keyboard" size={15} />
-        <span className="flex-1">Keyboard shortcuts</span>
-        <kbd className="text-[10px] font-mono text-[#9CA3AF] bg-[#F4F8FC] dark:bg-[#0D1830] px-1.5 py-0.5 rounded border border-[#D1DCE8] dark:border-white/10">⌘?</kbd>
-      </div>
 
-      <div className="h-px bg-[#D1DCE8] dark:bg-white/10 my-1.5 mx-1" />
+      <div className="h-px bg-[#D1DCE8] dark:bg-white/10 my-1 mx-1" />
 
       <button
         onClick={() => { onClose(); onSignOut(); }}
@@ -158,6 +147,9 @@ function UserDropdown({ user, displayName, initials, avatarUrl, onSignOut, onClo
       </button>
     </div>
   );
+
+  if (typeof document === 'undefined') return null;
+  return createPortal(dropdown, document.body);
 }
 
 // ── Tooltip (shown on hover in collapsed mode) ────────────────────────────────
@@ -208,23 +200,27 @@ export default function Sidebar() {
     if (typeof window === 'undefined') return false;
     try { return JSON.parse(localStorage.getItem('sb_collapsed')) ?? false; } catch { return false; }
   });
-  const [moreOpen, setMoreOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [anchorRect, setAnchorRect] = useState(null);
+  const userRowRef = useRef(null);
 
   useEffect(() => {
     try { localStorage.setItem('sb_collapsed', JSON.stringify(collapsed)); } catch {}
   }, [collapsed]);
-
-  // Close More when collapsing
-  useEffect(() => { if (collapsed) setMoreOpen(false); }, [collapsed]);
 
   // Close dropdown on navigation
   useEffect(() => { setDropdownOpen(false); }, [pathname]);
 
   const toggle = useCallback(() => setCollapsed(v => !v), []);
 
+  const handleUserRowClick = useCallback(() => {
+    if (!dropdownOpen && userRowRef.current) {
+      setAnchorRect(userRowRef.current.getBoundingClientRect());
+    }
+    setDropdownOpen(v => !v);
+  }, [dropdownOpen]);
+
   const navGroups = isAdmin ? ADMIN_NAV_GROUPS : USER_NAV_GROUPS;
-  const moreItems = isAdmin ? ADMIN_MORE : USER_MORE;
 
   function isActive(href, exact = false) {
     return exact ? pathname === href : pathname === href || pathname.startsWith(href + '/');
@@ -292,49 +288,6 @@ export default function Sidebar() {
           </div>
         ))}
 
-        {/* More section */}
-        {divider}
-        <div className={collapsed ? 'flex flex-col items-center gap-0.5 py-1' : 'flex flex-col gap-0.5'}>
-          <button
-            onClick={() => !collapsed && setMoreOpen(v => !v)}
-            className={`relative flex items-center gap-2.5 cursor-pointer transition-colors duration-150 text-[#2C2C2A] dark:text-[#E8EFF7] hover:bg-[rgba(24,95,165,0.06)] dark:hover:bg-[rgba(24,95,165,0.12)] hover:text-[#185FA5] dark:hover:text-[#5B9FD4]
-              ${collapsed ? 'h-11 w-11 mx-auto rounded-xl justify-center' : 'h-10 px-3 mx-2 rounded-[10px] text-[14px] font-medium w-[calc(100%-16px)]'}`}
-          >
-            <span className="text-[#6B7280] dark:text-[#8BA3C1]">
-              <NavIc name="moreH" size={collapsed ? 20 : 18} />
-            </span>
-            {!collapsed && (
-              <>
-                <span className="flex-1 text-left">More</span>
-                <span className={`transition-transform duration-200 text-[#9CA3AF] ${moreOpen ? 'rotate-90' : ''}`}>
-                  <NavIc name="chevronRight" size={14} />
-                </span>
-              </>
-            )}
-          </button>
-
-          {/* More sub-items */}
-          {moreOpen && !collapsed && (
-            <div className="ml-4 flex flex-col gap-0.5 border-l border-[#D1DCE8] dark:border-white/10 pl-2 mb-1">
-              {moreItems.map(item => (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  className={`flex items-center gap-2.5 h-9 px-3 rounded-lg text-[13px] font-medium transition-colors
-                    ${isActive(item.href)
-                      ? 'bg-[#E6F1FB] dark:bg-[rgba(24,95,165,0.18)] text-[#185FA5] dark:text-[#5B9FD4]'
-                      : 'text-[#2C2C2A] dark:text-[#E8EFF7] hover:bg-[rgba(24,95,165,0.06)] dark:hover:bg-[rgba(24,95,165,0.12)] hover:text-[#185FA5] dark:hover:text-[#5B9FD4]'
-                    }`}
-                >
-                  <span className="text-[#6B7280] dark:text-[#8BA3C1]">
-                    <NavIc name={item.icon} size={15} />
-                  </span>
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
 
       {/* ── Footer ── */}
@@ -349,10 +302,11 @@ export default function Sidebar() {
           {!collapsed && <span className="text-[12px] font-medium">Collapse</span>}
         </button>
 
-        {/* User row → dropdown */}
-        <div className="relative">
+        {/* User row → dropdown (portal) */}
+        <div>
           <button
-            onClick={() => setDropdownOpen(v => !v)}
+            ref={userRowRef}
+            onClick={handleUserRowClick}
             className={`flex items-center gap-2.5 cursor-pointer transition-colors rounded-[10px] hover:bg-[rgba(24,95,165,0.06)] dark:hover:bg-[rgba(24,95,165,0.12)] w-full
               ${collapsed ? 'h-11 w-11 mx-auto justify-center p-0' : 'px-2 py-2'}`}
           >
@@ -365,7 +319,7 @@ export default function Sidebar() {
                   <p className="text-[13px] font-medium text-[#2C2C2A] dark:text-[#E8EFF7] truncate leading-snug">{displayName}</p>
                   <p className="text-[11px] text-[#6B7280] dark:text-[#8BA3C1] truncate">{user?.email}</p>
                 </div>
-                <span className="text-[#6B7280] dark:text-[#8BA3C1]">
+                <span className={`text-[#6B7280] dark:text-[#8BA3C1] transition-transform duration-150 ${dropdownOpen ? '-rotate-90' : ''}`}>
                   <NavIc name="chevronDown" size={14} />
                 </span>
               </>
@@ -380,6 +334,7 @@ export default function Sidebar() {
               avatarUrl={avatarUrl}
               onSignOut={signOut}
               onClose={() => setDropdownOpen(false)}
+              anchorRect={anchorRect}
             />
           )}
         </div>
