@@ -6,6 +6,16 @@ import SectionNavSidebar from './SectionNavSidebar';
 import SectionBlock from './SectionBlock';
 import BottomNavBar from './BottomNavBar';
 import CompletionCelebration from '../roadmap/CompletionCelebration';
+import TopicNotesPanel from './TopicNotesPanel';
+
+function NotebookIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/>
+      <rect x="6" y="4" width="16" height="16" rx="2"/>
+    </svg>
+  );
+}
 
 export default function CourseDetailPage({ studyPlanId, topicId }) {
   const searchParams = useSearchParams();
@@ -16,6 +26,7 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
   const [error, setError] = useState('');
   const [showCelebration, setShowCelebration] = useState(false);
   const [nextTopic, setNextTopic] = useState(null);
+  const [notesOpen, setNotesOpen] = useState(false);
   const sectionRefs = useRef({});
 
   async function load() {
@@ -129,6 +140,16 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
           <h4 className="text-sm font-semibold text-[var(--c-text)] hidden sm:block line-clamp-1 max-w-md">{topic.title}</h4>
           <div className="flex items-center gap-3">
             <span className="text-xs bg-[var(--c-primary-light)] text-[var(--c-primary)] px-2 py-1 rounded-full font-medium">{topic.skill}</span>
+            <button
+              onClick={() => setNotesOpen(v => !v)}
+              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
+                notesOpen
+                  ? 'bg-[var(--c-primary-light)] text-[var(--c-primary)] border-[var(--c-primary)]'
+                  : 'border-[#D1DCE8] dark:border-white/10 text-[#6B7280] dark:text-[#8BA3C1] hover:bg-[var(--c-primary-light)] hover:text-[var(--c-primary)]'
+              }`}
+            >
+              <NotebookIcon /> Notes
+            </button>
             <div className="flex items-center gap-1.5">
               <div className="relative w-9 h-9">
                 <svg viewBox="0 0 36 36" className="w-9 h-9 -rotate-90">
@@ -155,6 +176,15 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
           completedCount={completedCount}
           totalSections={totalSections}
         />
+
+        {/* Notes panel */}
+        {notesOpen && (
+          <TopicNotesPanel
+            topicId={topicId}
+            topicTitle={topic.title}
+            onClose={() => setNotesOpen(false)}
+          />
+        )}
 
         {/* Main content */}
         <div className="flex-1 overflow-y-auto px-6 py-6">
