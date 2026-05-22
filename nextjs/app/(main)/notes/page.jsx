@@ -228,7 +228,7 @@ export default function NotesPage() {
   const showHomeView = !selectedNoteId && !loading;
 
   return (
-    <div className="flex h-screen bg-white dark:bg-[#0A1628] overflow-hidden">
+    <div className="flex h-full bg-white dark:bg-[#0A1628] overflow-hidden">
       {/* Sidebar — collapses to 0 width */}
       <div
         className="flex-shrink-0 transition-all duration-300 overflow-hidden"
