@@ -1,8 +1,10 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import BlockEditor from '@/components/editor/BlockEditor';
-import EditorTitle from '@/components/editor/EditorTitle';
+import dynamic from 'next/dynamic';
 import EditorFooter from '@/components/editor/EditorFooter';
+
+const BlockEditor = dynamic(() => import('@/components/editor/BlockEditor'), { ssr: false });
+const EditorTitle = dynamic(() => import('@/components/editor/EditorTitle'), { ssr: false });
 
 export default function NoteEditorPanel({ noteId, onNoteUpdated }) {
   const [note, setNote] = useState(null);
