@@ -23,7 +23,6 @@ const Ic = ({ size = 18, sw = 1.75, children }) => (
     {children}
   </svg>
 );
-const SearchIcon   = () => <Ic><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></Ic>;
 const SunIcon      = () => <Ic size={16}><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="4.2" y1="4.2" x2="6.3" y2="6.3"/><line x1="17.7" y1="17.7" x2="19.8" y2="19.8"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.2" y1="19.8" x2="6.3" y2="17.7"/><line x1="17.7" y1="6.3" x2="19.8" y2="4.2"/></Ic>;
 const MoonIcon     = () => <Ic size={16}><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></Ic>;
 const SparklesIcon = () => <Ic size={13} sw={2.25}><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7z"/><path d="M19 17l.7 2.3L22 20l-2.3.7L19 23l-.7-2.3L16 20l2.3-.7z"/></Ic>;
@@ -59,15 +58,9 @@ function resolvePage(pathname) {
 // ── Context-specific center slot ──────────────────────────────────────────────
 function ContextCenter({ ctx }) {
   if (ctx === 'builder') return (
-    <div className="flex items-center gap-3">
-      <div className="flex items-center gap-1.5 bg-[#F4F8FC] dark:bg-[#0D1830] border border-[#D1DCE8] dark:border-white/10 rounded-lg px-2.5 py-1 text-[13px] font-medium text-[#2C2C2A] dark:text-[#E8EFF7]">
-        <Ic size={14}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></Ic>
-        Modern Two-Column
-      </div>
-      <div className="flex items-center gap-1.5 text-[12px] font-medium text-[#1D9E75]">
-        <div className="w-1.5 h-1.5 rounded-full bg-[#1D9E75]" />
-        Saved
-      </div>
+    <div className="flex items-center gap-1.5 text-[12px] font-medium text-[#1D9E75]">
+      <div className="w-1.5 h-1.5 rounded-full bg-[#1D9E75]" />
+      Saved
     </div>
   );
 
@@ -148,7 +141,7 @@ function IconBtn({ children, onClick, title, className = '' }) {
 export default function TopBar({ onMobileMenu }) {
   const pathname = usePathname();
   const [dark, toggleTheme] = useTheme();
-  const { user, initials, avatarUrl } = useAuth();
+  const { user } = useAuth();
   const creditBalance = useCreditBalance(!!user);
   const [scrolled, setScrolled] = useState(false);
 
@@ -192,10 +185,6 @@ export default function TopBar({ onMobileMenu }) {
 
       {/* Right: utilities */}
       <div className="flex items-center gap-1 flex-shrink-0">
-        <IconBtn title="Search · ⌘K">
-          <SearchIcon />
-        </IconBtn>
-
         <IconBtn onClick={toggleTheme} title={dark ? 'Switch to light mode' : 'Switch to dark mode'}>
           {dark ? <SunIcon /> : <MoonIcon />}
         </IconBtn>
@@ -214,16 +203,6 @@ export default function TopBar({ onMobileMenu }) {
             <SparklesIcon />
             +{creditBalance}
           </Link>
-        )}
-
-        {/* Avatar — opens user dropdown from topbar (alternative anchor) */}
-        {user && (
-          <div
-            title={initials}
-            className="ml-2 w-7 h-7 rounded-full bg-gradient-to-br from-[#185FA5] to-[#0C447C] text-white flex items-center justify-center text-[12px] font-bold cursor-pointer hover:ring-2 hover:ring-[#185FA5] transition-shadow overflow-hidden flex-shrink-0"
-          >
-            {avatarUrl ? <img src={avatarUrl} alt={initials} className="w-full h-full object-cover" /> : initials}
-          </div>
         )}
       </div>
     </header>

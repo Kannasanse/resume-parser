@@ -66,10 +66,8 @@ const USER_NAV_GROUPS = [
 ];
 
 const USER_MORE = [
-  { id: 'settings', icon: 'settings',  label: 'Settings',         href: '/settings' },
-  { id: 'billing',  icon: 'receipt',   label: 'Billing & Credits', href: '/credits' },
-  { id: 'help',     icon: 'help',      label: 'Help & Support',    href: '#' },
-  { id: 'new',      icon: 'megaphone', label: "What's New",        href: '#' },
+  { id: 'settings', icon: 'settings', label: 'Settings',         href: '/settings' },
+  { id: 'billing',  icon: 'receipt',  label: 'Billing & Credits', href: '/credits' },
 ];
 
 const ADMIN_NAV_GROUPS = [

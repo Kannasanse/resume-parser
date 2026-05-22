@@ -39,9 +39,9 @@ export default function MainLayout({ children }) {
       <Sidebar />
 
       {/* Right: topbar + page content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0">
         <TopBar />
-        <main id="layout-main" className="flex-1 overflow-hidden">
+        <main id="layout-main" className="flex-1 overflow-auto">
           {children}
         </main>
       </div>
