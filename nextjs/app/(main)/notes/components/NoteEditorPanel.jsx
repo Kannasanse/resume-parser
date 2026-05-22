@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback, Component } from 'react';
 import dynamic from 'next/dynamic';
 import EditorFooter from '@/components/editor/EditorFooter';
+import NotesBreadcrumb from './NotesBreadcrumb';
 
 const BlockEditor = dynamic(() => import('@/components/editor/BlockEditor'), {
   ssr: false,
@@ -25,23 +26,18 @@ class EditorErrorBoundary extends Component {
   }
 }
 
-export default function NoteEditorPanel({ noteId, onNoteUpdated }) {
+export default function NoteEditorPanel({ noteId, onNoteUpdated, notes = [], onCreateSubpage }) {
   const [note, setNote] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saveState, setSaveState] = useState('idle');
   const [wordCount, setWordCount] = useState(0);
 
-  // Refs for debounced save timers
   const titleTimerRef = useRef(null);
   const contentTimerRef = useRef(null);
-
-  // Store the latest note data to use in retry
   const pendingPatchRef = useRef(null);
 
-  // Fetch note whenever noteId changes
   useEffect(() => {
     if (!noteId) return;
-
     let cancelled = false;
 
     async function loadNote() {
@@ -67,7 +63,6 @@ export default function NoteEditorPanel({ noteId, onNoteUpdated }) {
     return () => { cancelled = true; };
   }, [noteId]);
 
-  // Core PATCH helper
   const patchNote = useCallback(async (payload) => {
     setSaveState('saving');
     pendingPatchRef.current = payload;
@@ -83,7 +78,6 @@ export default function NoteEditorPanel({ noteId, onNoteUpdated }) {
       setNote(prev => prev ? { ...prev, ...updated } : updated);
       onNoteUpdated?.(updated);
       setSaveState('saved');
-      // Reset to idle after 2s
       setTimeout(() => setSaveState(s => (s === 'saved' ? 'idle' : s)), 2000);
     } catch (err) {
       console.error('patchNote error:', err);
@@ -92,27 +86,20 @@ export default function NoteEditorPanel({ noteId, onNoteUpdated }) {
   }, [noteId, onNoteUpdated]);
 
   const retrySave = useCallback(() => {
-    if (pendingPatchRef.current) {
-      patchNote(pendingPatchRef.current);
-    }
+    if (pendingPatchRef.current) patchNote(pendingPatchRef.current);
   }, [patchNote]);
 
-  // Title change — debounced 1000ms
   const handleTitleChange = useCallback((title) => {
     setNote(prev => prev ? { ...prev, title } : prev);
     clearTimeout(titleTimerRef.current);
-    titleTimerRef.current = setTimeout(() => {
-      patchNote({ title });
-    }, 1000);
+    titleTimerRef.current = setTimeout(() => patchNote({ title }), 1000);
   }, [patchNote]);
 
-  // Icon change — immediate save
   const handleIconChange = useCallback((icon) => {
     setNote(prev => prev ? { ...prev, icon } : prev);
     patchNote({ icon });
   }, [patchNote]);
 
-  // Content change — debounced 1500ms
   const handleContentChange = useCallback((content, wc) => {
     setWordCount(wc ?? 0);
     clearTimeout(contentTimerRef.current);
@@ -121,7 +108,6 @@ export default function NoteEditorPanel({ noteId, onNoteUpdated }) {
     }, 1500);
   }, [patchNote]);
 
-  // Cleanup debounce timers on unmount / noteId change
   useEffect(() => {
     return () => {
       clearTimeout(titleTimerRef.current);
@@ -152,24 +138,25 @@ export default function NoteEditorPanel({ noteId, onNoteUpdated }) {
     );
   }
 
-  // Only pass content to BlockEditor when it is a valid Tiptap JSON doc
-  const editorContent =
-    note.content && note.content.type ? note.content : null;
+  const editorContent = note.content && note.content.type ? note.content : null;
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-[#111F35]">
-      {/* Cover image */}
       {note.cover_url && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={note.cover_url}
-          alt=""
-          className="w-full h-48 object-cover flex-shrink-0"
-        />
+        <img src={note.cover_url} alt="" className="w-full h-48 object-cover flex-shrink-0" />
       )}
 
-      {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto">
+        {/* Breadcrumb — only if note has a parent */}
+        {note.parent_id && notes.length > 0 && (
+          <NotesBreadcrumb
+            note={note}
+            notes={notes}
+            onSelectNote={(id) => onNoteUpdated?.({ _selectNote: id })}
+          />
+        )}
+
         <div className="max-w-[720px] mx-auto px-8 py-8">
           <EditorTitle
             value={note.title || ''}
@@ -181,12 +168,13 @@ export default function NoteEditorPanel({ noteId, onNoteUpdated }) {
             onEnterPress={() => {}}
           />
           <EditorErrorBoundary>
-          <BlockEditor
-            content={editorContent}
-            onChange={handleContentChange}
-            placeholder="Start writing, or press '/' for commands..."
-            autoFocus={false}
-          />
+            <BlockEditor
+              content={editorContent}
+              onChange={handleContentChange}
+              placeholder="Start writing, or press '/' for commands…"
+              autoFocus={false}
+              onCreateSubpage={onCreateSubpage ? () => onCreateSubpage(noteId) : undefined}
+            />
           </EditorErrorBoundary>
         </div>
       </div>

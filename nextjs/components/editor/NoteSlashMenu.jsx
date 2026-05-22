@@ -126,11 +126,21 @@ const BLOCKS = [
       if (url) e.chain().focus().setImage({ src: url }).run();
     },
   },
+  {
+    id: 'subpage',
+    label: 'Sub-page',
+    desc: 'Create a nested note inside this one',
+    icon: '📄',
+    group: 'PAGES',
+    action: (_e, { onCreateSubpage }) => {
+      onCreateSubpage?.();
+    },
+  },
 ];
 
-const GROUPS = ['BASIC', 'ADVANCED', 'MEDIA'];
+const GROUPS = ['BASIC', 'ADVANCED', 'MEDIA', 'PAGES'];
 
-export default function NoteSlashMenu({ editor }) {
+export default function NoteSlashMenu({ editor, onCreateSubpage }) {
   const [slashState, setSlashState] = useState({ open: false, query: '', from: 0 });
   const [coords, setCoords] = useState({ top: 0, left: 0 });
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -245,11 +255,9 @@ export default function NoteSlashMenu({ editor }) {
 
     const { from, query } = slashState;
 
-    // Close menu first
     setSlashState({ open: false, query: '', from: 0 });
 
-    // Delete the /query text then run the block action
-    const deleteFrom = from - 1; // one position before the slash character
+    const deleteFrom = from - 1;
     const deleteTo = from + query.length;
 
     editor
@@ -258,8 +266,7 @@ export default function NoteSlashMenu({ editor }) {
       .deleteRange({ from: deleteFrom, to: deleteTo })
       .run();
 
-    // Run the block action after deletion
-    block.action(editor);
+    block.action(editor, { onCreateSubpage });
   }
 
   if (!slashState.open) return null;

@@ -13,6 +13,7 @@ export async function GET(request) {
     const search = searchParams.get('search');
     const sort = searchParams.get('sort') || 'updated_at';
     const archived = searchParams.get('archived') === 'true';
+    const parent_id = searchParams.get('parent_id'); // 'root' = null parent, UUID = specific parent
 
     const validSorts = ['updated_at', 'title', 'created_at', 'word_count'];
     const sortColumn = validSorts.includes(sort) ? sort : 'updated_at';
@@ -26,6 +27,8 @@ export async function GET(request) {
 
     if (context_type) query = query.eq('context_type', context_type);
     if (context_id) query = query.eq('context_id', context_id);
+    if (parent_id === 'root') query = query.is('parent_id', null);
+    else if (parent_id) query = query.eq('parent_id', parent_id);
 
     if (search) {
       query = query.ilike('title', `%${search}%`);
@@ -34,7 +37,22 @@ export async function GET(request) {
     const { data: notes, error } = await query;
     if (error) throw error;
 
-    return Response.json({ notes });
+    // Compute child_count for each note efficiently
+    const { data: childRows } = await supabase
+      .from('notes')
+      .select('parent_id')
+      .eq('user_id', user.id)
+      .eq('is_archived', false)
+      .not('parent_id', 'is', null);
+
+    const countMap = {};
+    childRows?.forEach(r => {
+      countMap[r.parent_id] = (countMap[r.parent_id] || 0) + 1;
+    });
+
+    const notesWithCounts = notes.map(n => ({ ...n, child_count: countMap[n.id] || 0 }));
+
+    return Response.json({ notes: notesWithCounts });
   } catch (err) {
     if (err instanceof Response) return err;
     return Response.json({ error: err.message }, { status: 500 });

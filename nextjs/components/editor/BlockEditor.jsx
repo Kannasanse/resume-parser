@@ -44,6 +44,7 @@ export default function BlockEditor({
   autoFocus = false,
   readOnly = false,
   className,
+  onCreateSubpage,
 }) {
   const debounceTimer = useRef(null);
   const onChangeRef = useRef(onChange);
@@ -137,7 +138,7 @@ export default function BlockEditor({
       <div className={`note-editor ${className || ''}`}>
         <EditorContent editor={editor} />
         {editor && !readOnly && <NoteBubbleMenu editor={editor} />}
-        {editor && !readOnly && <NoteSlashMenu editor={editor} />}
+        {editor && !readOnly && <NoteSlashMenu editor={editor} onCreateSubpage={onCreateSubpage} />}
       </div>
     </>
   );
