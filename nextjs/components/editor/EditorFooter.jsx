@@ -35,12 +35,24 @@ function LoadingSpinner() {
   );
 }
 
-export default function EditorFooter({ wordCount = 0, saveState = 'idle', onRetrySave }) {
+export default function EditorFooter({ wordCount = 0, saveState = 'idle', onRetrySave, onFindToggle }) {
   return (
     <div className="flex items-center justify-between px-4 py-2 border-t border-[#D1DCE8] dark:border-white/10 text-xs text-[#9CA3AF] dark:text-[#4A6380] select-none">
-      <span>
-        {wordCount} {wordCount === 1 ? 'word' : 'words'}
-      </span>
+      <div className="flex items-center gap-3">
+        <span>{wordCount} {wordCount === 1 ? 'word' : 'words'}</span>
+        {onFindToggle && (
+          <button
+            onClick={onFindToggle}
+            title="Find in note (Ctrl+F)"
+            className="flex items-center gap-1 hover:text-[#185FA5] dark:hover:text-[#5B9FD4] transition-colors"
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
+            </svg>
+            Find
+          </button>
+        )}
+      </div>
 
       <div className="flex items-center gap-1.5">
         {saveState === 'saving' && (

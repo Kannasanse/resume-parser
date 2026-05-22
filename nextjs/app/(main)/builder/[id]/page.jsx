@@ -720,7 +720,7 @@ export default function BuilderEditor() {
   const templateName = TEMPLATES?.find(t => t.id === previewData.template_id)?.name || previewData.template_id;
 
   return (
-    <div className="gradient-mesh-1 flex flex-col" style={{ height: 'calc(100vh - 56px)' }}>
+    <div className="gradient-mesh-1 flex flex-col h-full">
 
       {/* ── Top bar ──────────────────────────────────────────────────────── */}
       <div className="glass-light flex items-center gap-3 px-4 h-14 border-b border-ds-border flex-shrink-0">

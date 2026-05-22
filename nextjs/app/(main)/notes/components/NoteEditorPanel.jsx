@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback, Component } from 'react';
 import dynamic from 'next/dynamic';
 import EditorFooter from '@/components/editor/EditorFooter';
 import NotesBreadcrumb from './NotesBreadcrumb';
+import FindBar from '@/components/editor/FindBar';
 
 const BlockEditor = dynamic(() => import('@/components/editor/BlockEditor'), {
   ssr: false,
@@ -31,6 +32,8 @@ export default function NoteEditorPanel({ noteId, onNoteUpdated, notes = [], onC
   const [loading, setLoading] = useState(true);
   const [saveState, setSaveState] = useState('idle');
   const [wordCount, setWordCount] = useState(0);
+  const [findBarOpen, setFindBarOpen] = useState(false);
+  const [editorInstance, setEditorInstance] = useState(null);
 
   const titleTimerRef = useRef(null);
   const contentTimerRef = useRef(null);
@@ -115,6 +118,18 @@ export default function NoteEditorPanel({ noteId, onNoteUpdated, notes = [], onC
     };
   }, [noteId]);
 
+  // Ctrl/Cmd+F → open find bar
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        setFindBarOpen(v => !v);
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
+
   if (loading) {
     return (
       <div className="flex flex-col h-full bg-white dark:bg-[#111F35]">
@@ -147,6 +162,16 @@ export default function NoteEditorPanel({ noteId, onNoteUpdated, notes = [], onC
         <img src={note.cover_url} alt="" className="w-full h-48 object-cover flex-shrink-0" />
       )}
 
+      {/* Find bar */}
+      {findBarOpen && (
+        <div className="flex-shrink-0 px-4 pt-2">
+          <FindBar
+            editor={editorInstance}
+            onClose={() => setFindBarOpen(false)}
+          />
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto">
         {/* Breadcrumb — only if note has a parent */}
         {note.parent_id && notes.length > 0 && (
@@ -174,6 +199,7 @@ export default function NoteEditorPanel({ noteId, onNoteUpdated, notes = [], onC
               placeholder="Start writing, or press '/' for commands…"
               autoFocus={false}
               onCreateSubpage={onCreateSubpage ? () => onCreateSubpage(noteId) : undefined}
+              onEditorReady={setEditorInstance}
             />
           </EditorErrorBoundary>
         </div>
@@ -183,6 +209,7 @@ export default function NoteEditorPanel({ noteId, onNoteUpdated, notes = [], onC
         wordCount={wordCount}
         saveState={saveState}
         onRetrySave={retrySave}
+        onFindToggle={() => setFindBarOpen(v => !v)}
       />
     </div>
   );

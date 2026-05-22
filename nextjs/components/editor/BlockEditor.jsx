@@ -20,10 +20,66 @@ import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight';
 import CharacterCount from '@tiptap/extension-character-count';
 import { createLowlight, common } from 'lowlight';
 
+import { Extension } from '@tiptap/core';
 import { CalloutExtension } from './extensions/CalloutNode';
 import { ToggleExtension } from './extensions/ToggleNode';
+import { SearchExtension } from './extensions/SearchExtension';
 import NoteBubbleMenu from './NoteBubbleMenu';
 import NoteSlashMenu from './NoteSlashMenu';
+
+// Block-level keyboard shortcuts (Ctrl+D duplicate, Alt+Shift+↑↓ move)
+const BlockShortcuts = Extension.create({
+  name: 'blockShortcuts',
+  addKeyboardShortcuts() {
+    return {
+      'Mod-d': () => {
+        const { state, dispatch } = this.editor.view;
+        const { $from, $to } = state.selection;
+        const from = $from.start($from.depth);
+        const to = $to.end($to.depth);
+        const slice = state.doc.slice(from, to);
+        const tr = state.tr.insert(to, slice.content);
+        dispatch(tr);
+        return true;
+      },
+      'Alt-Shift-ArrowUp': () => {
+        const { state, dispatch } = this.editor.view;
+        const { $from } = state.selection;
+        const depth = $from.depth;
+        const nodeStart = $from.start(depth) - 1;
+        const nodeEnd = $from.end(depth) + 1;
+        if (nodeStart <= 0) return false;
+        const $before = state.doc.resolve(nodeStart - 1);
+        const prevStart = $before.start($before.depth) - 1;
+        if (prevStart < 0) return false;
+        const node = state.doc.nodeAt(nodeStart);
+        if (!node) return false;
+        const tr = state.tr
+          .delete(nodeStart, nodeEnd)
+          .insert(prevStart, node);
+        dispatch(tr);
+        return true;
+      },
+      'Alt-Shift-ArrowDown': () => {
+        const { state, dispatch } = this.editor.view;
+        const { $from } = state.selection;
+        const depth = $from.depth;
+        const nodeStart = $from.start(depth) - 1;
+        const nodeEnd = $from.end(depth) + 1;
+        if (nodeEnd >= state.doc.content.size) return false;
+        const $after = state.doc.resolve(nodeEnd + 1);
+        const nextEnd = $after.end($after.depth) + 1;
+        const node = state.doc.nodeAt(nodeStart);
+        if (!node) return false;
+        const tr = state.tr
+          .insert(nextEnd, node)
+          .delete(nodeStart, nodeEnd);
+        dispatch(tr);
+        return true;
+      },
+    };
+  },
+});
 
 const lowlight = createLowlight(common);
 
@@ -45,6 +101,7 @@ export default function BlockEditor({
   readOnly = false,
   className,
   onCreateSubpage,
+  onEditorReady,
 }) {
   const debounceTimer = useRef(null);
   const onChangeRef = useRef(onChange);
@@ -93,6 +150,8 @@ export default function BlockEditor({
       CharacterCount,
       CalloutExtension,
       ToggleExtension,
+      SearchExtension,
+      BlockShortcuts,
     ],
 
     editorProps: {
@@ -106,6 +165,12 @@ export default function BlockEditor({
     content: isValidDoc(content) ? content : undefined,
     onUpdate: handleUpdate,
   });
+
+  // Expose editor instance to parent
+  useEffect(() => {
+    if (editor && onEditorReady) onEditorReady(editor);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor]);
 
   // Sync external content changes when editor is not focused
   useEffect(() => {
@@ -198,4 +263,12 @@ mark { background: #FEF08A; border-radius: 2px; padding: 0 2px; }
 /* Placeholder for non-first empty paragraphs */
 .note-editor-content .is-empty::before { content: attr(data-placeholder); color: #D1DCE8; pointer-events: none; float: left; height: 0; }
 .dark .note-editor-content .is-empty::before { color: #4A6380; }
+/* Search highlights */
+.search-result { background: #FEF3C7; border-radius: 2px; }
+.dark .search-result { background: rgba(254,243,199,0.25); }
+.search-result-current { background: #F59E0B !important; color: white; border-radius: 2px; }
+/* Block hover state */
+.note-editor-content > * { position: relative; border-radius: 6px; transition: background 80ms; }
+.note-editor-content > *:hover { background: rgba(24,95,165,0.02); }
+.dark .note-editor-content > *:hover { background: rgba(24,95,165,0.04); }
 `;
