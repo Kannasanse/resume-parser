@@ -1,10 +1,29 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, Component } from 'react';
 import dynamic from 'next/dynamic';
 import EditorFooter from '@/components/editor/EditorFooter';
 
-const BlockEditor = dynamic(() => import('@/components/editor/BlockEditor'), { ssr: false });
+const BlockEditor = dynamic(() => import('@/components/editor/BlockEditor'), {
+  ssr: false,
+  loading: () => <div className="min-h-[300px]" />,
+});
 const EditorTitle = dynamic(() => import('@/components/editor/EditorTitle'), { ssr: false });
+
+class EditorErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="p-6 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg m-4">
+          Editor failed to load. Please refresh the page.
+          <pre className="mt-2 text-xs opacity-70 whitespace-pre-wrap">{this.state.error.message}</pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default function NoteEditorPanel({ noteId, onNoteUpdated }) {
   const [note, setNote] = useState(null);
@@ -159,16 +178,16 @@ export default function NoteEditorPanel({ noteId, onNoteUpdated }) {
             onIconChange={handleIconChange}
             coverUrl={note.cover_url}
             onCoverChange={(url) => patchNote({ cover_url: url })}
-            onEnterPress={() => {
-              // Focus is handled by BlockEditor's autoFocus; nothing extra needed
-            }}
+            onEnterPress={() => {}}
           />
+          <EditorErrorBoundary>
           <BlockEditor
             content={editorContent}
             onChange={handleContentChange}
             placeholder="Start writing, or press '/' for commands..."
             autoFocus={false}
           />
+          </EditorErrorBoundary>
         </div>
       </div>
 

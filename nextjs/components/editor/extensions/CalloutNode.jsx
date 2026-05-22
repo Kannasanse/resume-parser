@@ -1,4 +1,3 @@
-'use client';
 import { Node } from '@tiptap/core';
 
 export const CalloutExtension = Node.create({

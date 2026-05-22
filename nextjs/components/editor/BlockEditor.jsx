@@ -63,6 +63,7 @@ export default function BlockEditor({
   }, []);
 
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({ codeBlock: false }),
       Underline,
