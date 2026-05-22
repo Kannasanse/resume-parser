@@ -66,7 +66,7 @@ const USER_NAV_GROUPS = [
 ];
 
 const USER_MORE = [
-  { id: 'settings', icon: 'settings', label: 'Settings',         href: '/settings' },
+  { id: 'settings', icon: 'settings', label: 'Settings',         href: '/profile' },
   { id: 'billing',  icon: 'receipt',  label: 'Billing & Credits', href: '/credits' },
 ];
 
@@ -250,15 +250,22 @@ export default function Sidebar() {
       }}
       className="flex-shrink-0 h-full flex flex-col bg-white dark:bg-[#0D1830] border-r border-[#D1DCE8] dark:border-white/10 overflow-hidden relative"
     >
-      {/* ── Header: logo mark + wordmark ── */}
-      <div className={`flex items-center gap-2.5 flex-shrink-0 ${collapsed ? 'justify-center px-0 py-5' : 'px-4 py-5'}`}>
-        <div className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-[#185FA5] to-[#0C447C] flex items-center justify-center shadow-[0_4px_12px_rgba(24,95,165,0.25)] flex-shrink-0">
-          <NavIc name="shield" size={20} sw={2.25} />
-        </div>
-        {!collapsed && (
-          <span className="text-[18px] font-[800] tracking-[-0.02em] text-[#2C2C2A] dark:text-[#E8EFF7] select-none">
-            Proflect
-          </span>
+      {/* ── Header: logo ── */}
+      <div className={`flex items-center flex-shrink-0 ${collapsed ? 'justify-center px-0 py-5' : 'px-4 py-5'}`}>
+        {collapsed ? (
+          <img
+            src="/logo.png"
+            alt="Proflect"
+            style={{ height: 32, width: 32, objectFit: 'cover', objectPosition: 'left center', flexShrink: 0 }}
+            className="dark:brightness-0 dark:invert"
+          />
+        ) : (
+          <img
+            src="/logo.png"
+            alt="Proflect"
+            style={{ height: 36, width: 118, objectFit: 'contain', flexShrink: 0 }}
+            className="dark:brightness-0 dark:invert"
+          />
         )}
       </div>
 
@@ -332,20 +339,6 @@ export default function Sidebar() {
 
       {/* ── Footer ── */}
       <div className="flex-shrink-0 border-t border-[#D1DCE8] dark:border-white/10 p-2 flex flex-col gap-1">
-        {/* Search */}
-        <div
-          className={`relative flex items-center gap-2.5 cursor-pointer transition-colors text-[#6B7280] dark:text-[#8BA3C1] hover:bg-[rgba(24,95,165,0.06)] dark:hover:bg-[rgba(24,95,165,0.12)] hover:text-[#185FA5] dark:hover:text-[#5B9FD4] rounded-lg
-            ${collapsed ? 'h-11 w-11 mx-auto justify-center' : 'h-9 px-3'}`}
-        >
-          <NavIc name="search" size={collapsed ? 20 : 16} />
-          {!collapsed && (
-            <>
-              <span className="flex-1 text-[13px] font-medium text-[#2C2C2A] dark:text-[#E8EFF7]">Search</span>
-              <kbd className="text-[10px] font-mono text-[#9CA3AF] bg-[#F4F8FC] dark:bg-[#0D1830] px-1.5 py-0.5 rounded border border-[#D1DCE8] dark:border-white/10">⌘K</kbd>
-            </>
-          )}
-        </div>
-
         {/* Collapse toggle */}
         <button
           onClick={toggle}
