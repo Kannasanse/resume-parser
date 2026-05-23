@@ -1,1084 +1,785 @@
-# Proflect — Requirements Document
+# Proflect — Requirements & Implementation Reference
 
-**Version:** 3.0  
-**Last Updated:** 2026-05-20  
-**Platform:** https://proflect-neo.vercel.app
+> **Status:** Living document. Reflects implementation as of May 2026.  
+> **Stack:** Next.js 15 App Router · Tiptap v3 · Supabase · Anthropic · Groq · OpenRouter  
+> **Platform:** https://proflect-neo.vercel.app
 
 ---
 
 ## Table of Contents
 
-1. [Overview](#1-overview)
+1. [Product Overview](#1-product-overview)
 2. [Tech Stack](#2-tech-stack)
-3. [Deployment](#3-deployment)
-4. [User Roles & Access](#4-user-roles--access)
-5. [Authentication](#5-authentication)
-6. [Design System Summary](#6-design-system-summary)
-7. [Admin Features](#7-admin-features)
-8. [Resume Upload & Parsing (Admin)](#8-resume-upload--parsing-admin)
-9. [Job Profile Management (Admin)](#9-job-profile-management-admin)
-10. [Resume Builder (User)](#10-resume-builder-user)
-11. [Portfolio Builder (User)](#11-portfolio-builder-user)
-12. [Interview Prep (User)](#12-interview-prep-user)
-13. [Career Map (User)](#13-career-map-user)
-14. [Study Plan & Course Detail (User)](#14-study-plan--course-detail-user)
-15. [My Courses Dashboard (User)](#15-my-courses-dashboard-user)
-16. [Database Schema](#16-database-schema)
-17. [API Endpoints](#17-api-endpoints)
-18. [Non-Functional Requirements](#18-non-functional-requirements)
-19. [Known Limitations](#19-known-limitations)
+3. [AI Model Usage](#3-ai-model-usage)
+4. [Credit System](#4-credit-system)
+5. [Feature Inventory by Surface](#5-feature-inventory-by-surface)
+6. [Block Editor](#6-block-editor)
+7. [API Route Inventory](#7-api-route-inventory)
+8. [Database Tables](#8-database-tables)
+9. [Environment Variables](#9-environment-variables)
+10. [Authentication & Authorization](#10-authentication--authorization)
 
 ---
 
-## 1. Overview
+## 1. Product Overview
 
-Proflect is a career platform built with Next.js 15 providing:
+Proflect is a career-intelligence platform for job seekers and professionals. It combines AI-powered resume analysis, a visual resume builder, a portfolio website builder, a Notion-style block editor for notes, a self-assessment test engine, and an AI-guided career-map learning roadmap — all in one product.
 
-- **Resume parsing and scoring** for admins managing candidate pipelines
-- **Resume builder** with 20 templates and live preview
-- **Portfolio builder** with AI-assisted content and public pages
-- **Interview prep** (self-test) with multiple assessment modes
-- **Career Map** — AI-driven career path graph, skill gap analysis, and personalised study plan generation
-- **My Courses** — dashboard to manage, track, and resume all active study plans
+**Primary users:**
+- Job seekers preparing resumes and portfolios
+- Professionals mapping their career path
+- Students studying for technical roles
+- Organizations using the proctored test engine (admin surface)
 
 ---
 
 ## 2. Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
-| Frontend | Next.js 15 (App Router), React, TailwindCSS 3.4 |
-| API | Next.js API Routes at `/app/api/v1/...` |
-| Database | Supabase (PostgreSQL) with Row Level Security |
-| Auth | Supabase Auth (`@supabase/ssr`) — email/password + Google OAuth |
-| AI — Resume parsing | OpenRouter (`meta-llama/llama-3.3-70b-instruct:free`) → Groq (`meta-llama/llama-4-scout-17b-16e-instruct`) → regex fallback |
-| AI — Portfolio features | Anthropic Claude (`claude-sonnet-4-6`) — bio, tagline, project description, skills gap, SEO suggestions |
-| AI — Career Map | Groq (`meta-llama/llama-4-scout-17b-16e-instruct`) — resume analysis, role recommendations; Groq (`llama-3.3-70b-versatile`) — study plan generation and section content |
-| Video — Career Map | YouTube Data API v3 — two-pass quality-scored video fetch (search + statistics) |
-| Email | Resend (transactional) |
-| Scoring | Custom 7-factor engine (Skills, Experience, Education, Title, Certifications, Projects, Quality) + TF-IDF cosine similarity |
-| Export | SheetJS (XLSX, client-side), Puppeteer (PDF — portfolio, planned) |
+|---|---|
+| Framework | Next.js 15, App Router, `'use client'` components |
+| UI | Tailwind CSS, dark-mode via `dark:` variant |
+| Rich Text | Tiptap v3 (`^3.23.6`) — ProseMirror-based block editor |
+| Auth | Supabase Auth (email/password + email verification) |
+| Database | Supabase (Postgres) with RLS + RPC functions |
+| Storage | Supabase Storage (avatars, resume files) |
+| PDF export | Puppeteer (headless Chrome) |
+| DOCX export | `docx` npm package |
+| PDF parsing | `pdfjs-dist` (coordinate-aware, multi-column aware) + `pdf-parse` fallback |
+| DOCX parsing | `mammoth` |
+| AI — Portfolio | Anthropic API (direct fetch, no SDK) |
+| AI — Resume/Test/Career | Groq SDK + OpenRouter (fallback chain) |
+| Deployment | Vercel |
 
 ---
 
-## 3. Deployment
+## 3. AI Model Usage
 
-| App | Platform | URL |
-|-----|----------|-----|
-| Next.js (frontend + API) | Vercel | https://proflect-neo.vercel.app |
-| Express backend (file processing) | Vercel | Separate Vercel project |
+### 3.1 Model Reference
 
-### Environment Variables
+| Provider | Model ID | Notes |
+|---|---|---|
+| Anthropic | `claude-sonnet-4-6` | Latest Claude Sonnet; used for portfolio AI |
+| Groq | `meta-llama/llama-4-scout-17b-16e-instruct` | Fast inference; primary Groq model |
+| Groq | `llama-3.3-70b-versatile` | Higher-quality Groq model; used for content generation |
+| OpenRouter | `meta-llama/llama-3.3-70b-instruct:free` | Free tier; primary for parsing/scoring |
 
-| Variable | Purpose |
-|----------|---------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key (client-side) |
-| `SUPABASE_SECRET_KEY` | Supabase service-role key (server-side) |
-| `OPENROUTER_API_KEY` | OpenRouter AI (resume parsing primary) |
-| `GROQ_API_KEY` | Groq AI (resume parsing fallback) |
-| `ANTHROPIC_API_KEY` | Anthropic Claude (portfolio AI features) |
-| `RESEND_API_KEY` | Resend transactional email |
-| `RESEND_FROM_EMAIL` | Sender address for transactional email |
-| `NEXT_PUBLIC_APP_URL` | Public app base URL |
-| `GROQ_API_KEY` | Groq AI — career map analysis, study plan generation, section content |
-| `YOUTUBE_API_KEY` | YouTube Data API v3 — video fetch for course sections (optional; falls back to search link) |
+### 3.2 Feature → Model Map
+
+| Feature | Provider | Primary Model | Fallback | Cost |
+|---|---|---|---|---|
+| **Portfolio: Bio generation** | Anthropic | `claude-sonnet-4-6` | — | Free, 5/month |
+| **Portfolio: Tagline generation** | Anthropic | `claude-sonnet-4-6` | — | Free, 5/month |
+| **Portfolio: Project description** | Anthropic | `claude-sonnet-4-6` | — | Free, 5/month |
+| **Portfolio: SEO metadata** | Anthropic | `claude-sonnet-4-6` | — | Free, 5/month |
+| **Portfolio: Skills gap analysis** | Anthropic | `claude-sonnet-4-6` | — | Free, 5/month |
+| **Resume parsing (file upload)** | OpenRouter | `llama-3.3-70b-instruct:free` | Groq `llama-4-scout` | Free |
+| **Resume parsing (builder import)** | Groq only | `llama-4-scout-17b-16e-instruct` | Regex fallback | 5 credits |
+| **Resume reparse** | OpenRouter | `llama-3.3-70b-instruct:free` | Groq `llama-4-scout` | Free |
+| **ATS score analysis** | Groq | `llama-4-scout-17b-16e-instruct` | — | 3 credits |
+| **ATS score narrative summary** | OpenRouter | `llama-3.3-70b-instruct:free` | Groq `llama-4-scout` | Included in ATS |
+| **Writing assistant** | Groq | `llama-4-scout-17b-16e-instruct` | — | 1 credit |
+| **Self-test: Question generation (skills/content)** | OpenRouter | `llama-3.3-70b-instruct:free` | Groq `llama-4-scout` | Free |
+| **Self-test: Question generation (JD-based)** | OpenRouter | `llama-3.3-70b-instruct:free` | Groq `llama-4-scout` | Free |
+| **Self-test: JD skill extraction** | OpenRouter | `llama-3.3-70b-instruct:free` | — | Free |
+| **Self-test: Short-answer grading** | Groq | `llama-4-scout-17b-16e-instruct` | — | Free |
+| **Career Map: Learning roadmap generation** | Groq | `llama-4-scout-17b-16e-instruct` | — | Free |
+| **Career Map: Section content generation** | Groq | `llama-3.3-70b-versatile` | — | Free |
+| **Jobs: Skill extraction from JD** | Groq | `llama-3.3-70b-versatile` | — | Free |
+| **Admin: Question library generation** | Groq | `llama-4-scout-17b-16e-instruct` | — | Admin only |
+
+### 3.3 Portfolio AI Rate Limit
+
+Portfolio AI features (bio, tagline, project description, SEO, skills gap) share a **5 uses/month** free quota per user tracked in the `ai_usage` table. The `checkAiUsage()` helper counts rows in `ai_usage` for the current calendar month. There is no credit cost — the limit is a monthly quota check only.
+
+### 3.4 OpenRouter → Groq Fallback Pattern
+
+The resume parser and ATS scorer use a shared fallback chain:
+
+```
+OpenRouter (llama-3.3-70b-instruct:free)
+  → 429 / rate-limit → wait 5s, retry
+  → 429 again        → wait 15s, retry
+  → still failing    → Groq (llama-4-scout-17b-16e-instruct)
+```
+
+Groq input is limited to 14,000 chars (context window); OpenRouter accepts up to 60,000 chars.
+
+### 3.5 AI Wrapper Functions
+
+| Function | File | Purpose |
+|---|---|---|
+| `callClaude(prompt, maxTokens)` | `lib/aiHelpers.js` | Anthropic API fetch wrapper; uses `claude-sonnet-4-6` |
+| `checkAiUsage(userId, supabase)` | `lib/aiHelpers.js` | Count portfolio AI uses this calendar month |
+| `recordAiUsage(userId, feature, supabase)` | `lib/aiHelpers.js` | Insert row into `ai_usage` |
+| `parseResume(buffer, mimeType)` | `lib/parser.js` | OpenRouter → Groq chain; returns `{ rawText, structured }` |
+| `parseResumeWithGroq(buffer, mimeType)` | `lib/parser.js` | Groq-only parsing (builder import) |
+| `extractResumeText(buffer, mimeType)` | `lib/parser.js` | Text extraction only (no AI) |
 
 ---
 
-## 4. User Roles & Access
+## 4. Credit System
 
-| Role | Access |
-|------|--------|
-| Admin | Profiles, Job Profiles, Resume Builder, Tests, Question Library, Templates, Admin Dashboard, Admin CMS, Admin Credits |
-| User | Resume Builder, Portfolio Builder, Interview Prep, Career Map, My Courses |
+### 4.1 Credit Costs
 
----
+Defined in `lib/credits.js` (`CREDIT_COSTS`):
 
-## 5. Authentication
+| Action | Credit Type Key | Cost |
+|---|---|---|
+| ATS Score Analysis | `ats_score` | **3 credits** |
+| Resume Import (AI parse in builder) | `resume_import` | **5 credits** |
+| AI Writing Assistant | `writing_assist` | **1 credit** |
 
-| ID | Requirement |
-|----|-------------|
-| FR-AUTH-01 | Email/password signup with email verification |
-| FR-AUTH-02 | Google SSO |
-| FR-AUTH-03 | Login with rate limiting — 5 failed attempts triggers 15-minute lockout |
-| FR-AUTH-04 | Forgot password / reset password flow |
-| FR-AUTH-05 | Email verification resend (max 3 per hour) |
-| FR-AUTH-06 | Invite acceptance flow |
-| FR-AUTH-07 | Role-based routing middleware |
-| FR-AUTH-08 | Session timeout — 25-minute inactivity warning, 30-minute auto sign-out |
+### 4.2 Initial Grant
 
-### 5.1 Token-Based Authentication (JWT)
+New users automatically receive **30 credits** on first login (inserted by `ensureCredits()`).
 
-All API routes use **JWT Bearer token** authentication backed by Supabase Auth.
+### 4.3 Credit Flow
 
-**Flow:**
+1. Client calls a credit-gated API route
+2. Route calls `deductCredits(userId, type)` which executes the Supabase RPC `deduct_credits(p_user_id, p_amount)` atomically
+3. RPC returns new balance or `-1` if insufficient
+4. On insufficient balance: `{ ok: false, balance }` — client shows upgrade prompt
+5. Each deduction is logged as a row in `credit_transactions`
 
-1. Client calls `POST /api/v1/auth/login` with email + password
-2. Server returns `{ access_token, refresh_token, expires_in, isAdmin }` in the response body
-3. Client stores `access_token` in `localStorage` via `lib/authToken.js`
-4. Every subsequent API request includes `Authorization: Bearer <access_token>`
-5. Server resolves the user by calling `supabase.auth.getUser(token)` against the JWT
-6. On sign-out, token is cleared from `localStorage`
+### 4.4 Credit Sources
 
-**Dual-mode support:** Page navigation (SSR) still uses Supabase session cookies via middleware. API routes accept either a Bearer token (preferred) or the cookie session as a fallback — so browser-driven page loads and direct API calls both work.
+| Source | Type Key | Description |
+|---|---|---|
+| Account creation | `initial_grant` | 30 credits automatically |
+| Admin grant | `admin_grant` | Admin dashboard → user credits panel |
+| Approved request | `request_approved` | User submits credit request; admin approves |
 
-**Token storage:** `lib/authToken.js`
+### 4.5 Admin Credit Management
 
-| Function | Purpose |
-|----------|---------|
-| `setAuthToken(token)` | Persist token to `localStorage` |
-| `getAuthToken()` | Read token from `localStorage` |
-| `clearAuthToken()` | Remove on sign-out |
-| `authHeaders()` | Returns `{ Authorization: 'Bearer …', 'Content-Type': 'application/json' }` |
-| `authHeadersFormData()` | Returns `{ Authorization: 'Bearer …' }` without Content-Type (for `FormData` uploads) |
-
-**Where tokens are attached:**
-
-- `lib/api.js` — all resume, job, builder, and admin API calls
-- `lib/portfolioApi.js` — all portfolio CRUD and AI feature calls
-- `hooks/useAuth.js` — persists token on `onAuthStateChange`, clears on sign-out
-- `app/login/page.jsx` — saves token immediately on successful login response
-
-**Server-side auth guard (`lib/auth-helpers.js`):**
-
-```js
-// Reads Authorization: Bearer <token> first; falls back to cookie session
-export async function requireUser(request) { … }
-export async function requireAdmin(request) { … }
-```
-
-Resolution order:
-1. Extract `Authorization: Bearer <token>` from request headers
-2. If found → `supabase.auth.getUser(token)` (JWT validation)
-3. If not found → build SSR Supabase client from request cookies
-
-**Swagger / API Docs:**
-
-The Swagger UI at `/admin/api-docs` uses `bearerAuth` (HTTP Bearer / JWT). To authenticate:
-1. Call `POST /api/v1/auth/login` in Swagger → copy `access_token` from response
-2. Click **Authorize** → paste token → all subsequent requests are authenticated
+- `GET /api/v1/admin/credits` — list all users with balances
+- `POST /api/v1/admin/credits` — grant credits to a specific user
+- `GET /api/v1/admin/credits/requests` — list pending credit requests
+- `PATCH /api/v1/admin/credits/requests/[reqId]` — approve/reject request
+- `GET /api/v1/admin/credits/transactions` — full transaction log
 
 ---
 
-## 6. Design System Summary
-
-> Full specification is in `design-system.md`. This section is a quick-reference for developers.
+## 5. Feature Inventory by Surface
 
-**System:** Proflect Design System v2.0 · Tailwind CSS 3.4
-
-### Color Tokens
+### 5.1 Resume Upload & Parsing
 
-| Token | Value / Usage |
-|-------|--------------|
-| `bg-ds-bg` | Page background (#F4F8FC-equivalent) |
-| `bg-ds-card` | Card background (white / dark mode variant) |
-| `border-ds-border` | Dividers and card borders (#D1DCE8) |
-| `text-ds-text` | Primary text (#2C2C2A) |
-| `text-ds-textMuted` | Secondary / muted text (#6B7280) |
-| `bg-primary` | Proflect Blue (#185FA5) |
-| `bg-primary-light` | Sky Mist (#E6F1FB) |
-| `text-primary` | #185FA5 |
-| `bg-ds-successLight` | Success background |
-| `text-ds-success` | Success text (#1D9E75) |
-| `bg-ds-dangerLight` | Error background |
-| `text-ds-danger` | Error text (#D93025) |
-| `font-heading` | Heading font (Inter 600/700) |
+**Route:** `POST /api/v1/resumes/upload`
 
-### Responsive Breakpoints (mobile-first)
+- Accepts PDF, DOCX, TXT (max 10 MB)
+- Coordinate-aware PDF text extraction handles multi-column layouts (`pdfjs-dist`, sorted by Y then X coordinate)
+- Fallback to `pdf-parse` for encrypted/non-standard PDFs
+- AI parsing: OpenRouter primary → Groq fallback
+- Extracted fields: `personal_info`, `summary`, `skills` (with proficiency), `experience`, `projects`, `education`, `certifications`, `other`
+- Skills proficiency inferred: Expert / Advanced / Intermediate / Beginner / null
+- Stored in `resumes` table with `raw_text` and `parsed_data` (JSONB)
 
-| Prefix | Breakpoint |
-|--------|-----------|
-| _(default)_ | Mobile |
-| `sm:` | 640px (mobile landscape) |
-| `md:` | 768px (tablet) |
-| `lg:` | 1024px (desktop) |
-| `xl:` | 1280px (wide) |
+**Reparse:** `POST /api/v1/resumes/[id]/reparse`
+- Re-runs AI parsing on existing `raw_text`; same OpenRouter → Groq chain
 
-### Component Patterns
+### 5.2 Resume Viewer
 
-**Primary button:**
-```
-bg-primary text-white rounded px-4 py-2 text-sm font-medium hover:bg-primary/90 transition-colors
-```
+**Route:** `app/(main)/resumes/[id]`
 
-**Card:**
-```
-bg-ds-card border border-ds-border rounded-lg
-```
+- Read-only view of parsed resume
+- Sections: Contact, Summary, Skills, Experience, Projects, Education, Certifications
+- Skills display with proficiency badges
+- Review mode: `app/(main)/review/[id]` — recruiter-facing link-based view (no auth required)
 
-**Input:**
-```
-bg-ds-bg border border-ds-border rounded px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary
-```
+### 5.3 ATS Score
 
-**Skeleton loader:**
-```js
-import { Sk } from '@/components/Skeleton'
-<Sk className="h-5 w-32" />
-```
+**Route:** `POST /api/v1/resumes/[id]/score`  
+**Cost:** 3 credits (`ats_score`)
 
-**API auth guard (Bearer token + cookie fallback):**
-```js
-import { requireUser, requireAdmin } from '@/lib/auth-helpers.js'
+- Requires a job profile (from `job_profiles` table or raw JD text)
+- Scoring dimensions: Skills (40%), Experience (25%), Education (15%), Projects (10%), Quality (10%)
+- Skill synonym matching via `SKILL_SYNONYMS` map in `lib/scorer.js`
+- Returns: overall score (0–100), band (Excellent/Good/Fair/Poor), per-dimension breakdown, skill match detail, narrative summary
+- AI narrative summary: OpenRouter `llama-3.3-70b-instruct:free` → Groq `llama-4-scout` fallback (200–400 tokens)
 
-// In any API route handler:
-const { user, profile } = await requireUser(request);   // throws 401/403 on failure
-const { user, profile } = await requireAdmin(request);  // additionally enforces role === 'admin'
-```
+### 5.4 Resume Builder
 
-**Attaching auth headers in client-side fetches:**
-```js
-import { authHeaders, authHeadersFormData } from '@/lib/authToken.js'
+**Routes:** `GET/POST /api/v1/builder`, `GET/PUT/DELETE /api/v1/builder/[id]`
 
-// JSON request
-fetch('/api/v1/...', { headers: authHeaders() })
+**Sections:** `GET/POST /api/v1/builder/[id]/sections`, `PUT/DELETE /api/v1/builder/[id]/sections/[sectionId]`
 
-// File upload (FormData)
-fetch('/api/v1/...', { method: 'POST', headers: authHeadersFormData(), body: formData })
-```
+- Visual resume editor with reorderable sections
+- Section types: Summary, Experience, Education, Skills, Projects, Certifications, Custom
+- Photo upload: `POST /api/v1/builder/[id]/photo`
 
-**Supabase client (API routes, service-role):**
-```js
-import supabase from '@/lib/supabase.js'
-```
+**AI Import (parse resume into builder):**
+- `POST /api/v1/builder/[id]/import` — costs 5 credits (`resume_import`)
+- Uses Groq-only parsing (`parseResumeWithGroq`) — no OpenRouter (deterministic, no rate-limit risk)
 
-**Dark mode:** `dark:` Tailwind prefix; toggled via `useTheme` hook, persisted in `localStorage`.
+**AI Writing Assistant:**
+- `POST /api/v1/builder/[id]/writing-assist` — costs 1 credit (`writing_assist`)
+- Model: Groq `llama-4-scout-17b-16e-instruct`
+- Rewrites or improves selected section content
 
----
+**ATS Score (builder):**
+- `POST /api/v1/builder/[id]/ats-score` — costs 3 credits (`ats_score`)
+- Same scoring logic as resume ATS score
 
-## 7. Admin Features
+**Export:**
+- `POST /api/v1/builder/[id]/export/pdf` — Puppeteer headless PDF
+- `POST /api/v1/builder/[id]/export/word` — DOCX via `docx` package
 
-### 7.1 Admin Dashboard
+**Share / Public view:**
+- `POST /api/v1/builder/[id]/share` — generates a share token
+- `GET /api/public/resume/[token]` — public read-only view (no auth required)
 
-- Summary stats: total users, pending invitations
-- Quick action links to major admin sections
+**Templates:**
+- `GET /api/v1/templates` — list available resume templates
+- Admin: `GET/POST /api/v1/admin/templates`
 
-### 7.2 User Management
+### 5.5 Portfolio Builder
 
-- List all users with search and filter
-- Edit user profile and role
-- Delete user
-- Audit log: tracks admin actions with performed_by, action, target, IP, timestamp
+**Routes:** `GET/POST /api/v1/portfolios`, `GET/PUT/DELETE /api/v1/portfolios/[id]`
 
-### 7.3 Invite Users
+**Sections:** `GET/POST /api/v1/portfolios/[id]/sections`, reorder, delete  
+**Projects:** `GET/POST/PUT/DELETE /api/v1/portfolios/[id]/projects`  
+**Publish:** `POST /api/v1/portfolios/[id]/publish`  
+**Public:** `GET /api/v1/portfolios/public/[slug]`  
+**Analytics:** `GET /api/v1/portfolios/analytics`
 
-- Send batch email invitations
-- View pending invitations list
-- Cancel pending invitations
+Portfolio AI endpoints — all use **Anthropic `claude-sonnet-4-6`**, shared 5/month limit:
 
-### 7.4 Bulk Import
+| Endpoint | Feature | Max Tokens |
+|---|---|---|
+| `POST /api/v1/portfolios/ai/bio` | Generate About/bio text | 300 |
+| `POST /api/v1/portfolios/ai/tagline` | Generate headline tagline | 100 |
+| `POST /api/v1/portfolios/ai/project-description` | Generate project description | 256 |
+| `POST /api/v1/portfolios/ai/seo` | Generate SEO title + meta description | 200 |
+| `POST /api/v1/portfolios/ai/skills-gap` | Identify skill gaps vs target role | 512 |
 
-- CSV upload (maximum 500 rows)
-- Client-side validation before submission
-- Preview rows before import
-- Per-row success / error results after import
+- Portfolio has a custom URL slug (checked for uniqueness via `GET /api/v1/portfolios/check-slug`)
+- Public portfolios served with Next.js ISR; revalidated via `POST /api/v1/portfolios/revalidate`
+- Analytics: track views per portfolio
 
-### 7.5 Tests
+### 5.6 Notes (Block Editor)
 
-- Create, edit, and publish multiple-choice tests
-- Tests draw from the Question Library
-- Configurable difficulty and question count
+**Routes:** `GET/POST /api/v1/notes`, `GET/PUT/DELETE /api/v1/notes/[id]`  
+**Pages:** `app/(main)/notes`, `app/(main)/notes/[noteId]`
 
-### 7.6 Question Library
-
-- Manage reusable questions tagged by skill and category
-- Questions referenced by Tests and Interview Prep
-
-### 7.7 Templates
-
-- Manage resume template availability
-
-### 7.8 Admin CMS (Homepage)
-
-- Manage homepage content sections
-- Publish sections to live homepage
-
-### 7.9 Admin Credits
-
-- View and manage user credit allocations (AI usage and other metered features)
-
----
-
-## 8. Resume Upload & Parsing (Admin)
-
-### 8.1 Upload
-
-- Supported formats: PDF, DOC, DOCX
-- Maximum file size: 10 MB
-- Bulk upload with per-file status tracking
-
-### 8.2 AI Parsing Chain
-
-1. **Primary:** OpenRouter (`meta-llama/llama-3.3-70b-instruct:free`)
-2. **Fallback:** Groq (`meta-llama/llama-4-scout-17b-16e-instruct`)
-3. **Final fallback:** Regex extraction
-
-Extracted fields: personal info, summary, skills, work experience, projects, education, certifications.
-
-### 8.3 Scoring
-
-**7-factor scoring engine:**
-
-| Factor | Description |
-|--------|-------------|
-| Skills | Match against job profile required and preferred skills |
-| Experience | Years and relevance of work experience |
-| Education | Degree level and field match |
-| Title | Job title alignment |
-| Certifications | Matching certifications |
-| Projects | Relevant project work |
-| Quality | Resume completeness and quality signals |
-
-- TF-IDF cosine similarity applied across factors
-- Custom per-job-profile factor weights supported
-- Result stored as overall score (0–100), band, and per-factor breakdown
-- Unique constraint: one score record per (resume, job profile) pair; rescoring updates existing record
-
-### 8.4 Other Features
-
-- AI score summary: narrative strengths/gaps paragraph per scored resume
-- Reparse: re-run AI parsing on stored `raw_text` without re-uploading
-- Export: XLSX download of candidate scores for a job profile
-
----
-
-## 9. Job Profile Management (Admin)
-
-### 9.1 Create / Edit Job Profiles
-
-Fields: title, rich text description, role type, seniority, required years of experience, required degree, required certifications, custom factor weights, organization.
-
-### 9.2 AI Skill Extraction
-
-- POST job description text → returns extracted skill list
-- Skills stored in `job_skills` with proficiency and required flag
-
-### 9.3 Candidates Tab
-
-- Lists all resumes scored against the job profile
-- Search by candidate name
-- Filter by score band
-- Sort by score, name, or date
-- Pagination
-- Rescore individual candidates
-- Export all candidates to XLSX
-- "Add Existing" — discovers resumes not yet linked to this job profile
-
----
-
-## 10. Resume Builder (User)
-
-### 10.1 Templates
-
-20 templates available:
-
-| # | Template Name |
-|---|--------------|
-| 1 | Classic Professional |
-| 2 | Modern Slate |
-| 3 | Minimal White |
-| 4 | ATS Clean |
-| 5 | Heritage |
-| 6 | Beacon |
-| 7 | Banded |
-| 8 | Foundry |
-| 9 | Corporate |
-| 10 | Silver Banner |
-| 11 | Teal Sidebar |
-| 12 | Timeline |
-| 13 | Photo Sidebar |
-| 14 | Creative Edge |
-| 15 | Executive Navy |
-| 16 | Tech Stack |
-| 17 | Soft Gradient |
-| 18 | Bold Impact |
-| 19 | Elegant Script |
-| 20 | Beacon Dark |
-
-Template selector shows 8 at a time; all 20 are accessible.
-
-### 10.2 Sections
-
-Personal Info, Summary, Skills, Work Experience, Education, Certifications, Projects, Languages, Awards, Interests, Other.
-
-### 10.3 Editor Features
-
-| Feature | Details |
-|---------|---------|
-| Live preview pane | Split-pane: editor left, rendered resume right |
-| Auto-save | Debounced |
-| Layout | One Column / Two Column / Mix; per-section column assignment |
-| Page breaks | Insert or remove between sections |
-| Section title size | Small / Medium / Large |
-| Subtitle size | Small / Medium / Large |
-| List style | Bullet or Hyphen |
-| Heading icon | None / Outline / Filled |
-| Font size | 9–14 pt (slider + number input) |
-| Line height | 1.0–1.16 |
-| Margins | Left / Right / Top / Bottom — 10–25 mm |
-| Entry spacing | 1–10 lines |
-| Footer | Page Numbers / Email / Name (independent toggles) |
-| Skills layout | Rows / Grid / Compact / Bubble / Level |
-| Education order | School→Degree or Degree→School |
-| Work Experience order | Job Title→Employer or Employer→Job Title |
-
-### 10.4 Actions
-
-- Import content from a parsed resume
-- Duplicate resume
-- Public share link at `/r/:token`
-- PDF export via browser print
-
-### 10.5 Pagination Engine
-
-- Smart page-break detection with minimum-space orphan prevention
-- `data-entry-heading` markers on section entries
-- Direct bullet-id querying for precise element positioning
-- DPR change listener with debounced re-measurement
-- Rounded measurements for cross-DPR stability
-
----
-
-## 11. Portfolio Builder (User)
-
-### 11.1 Routes
-
-| Route | Purpose |
-|-------|---------|
-| `/portfolios` | Dashboard — list all portfolios as cards |
-| `/portfolios/[id]/edit` | Split-pane editor (Content / Design / Settings tabs) |
-| `/portfolios/[id]/analytics` | Analytics view (page views, summary cards) |
-| `/portfolios/[id]/projects` | Manage portfolio projects |
-| `/portfolios/[id]/projects/[projectId]/edit` | Project editor (7 accordion panels) |
-| `/portfolios/[id]` | Public portfolio page (SSG/ISR, revalidate 60s) |
-| `/portfolios/[id]/unlock` | Password-protected portfolio unlock (stub — not yet implemented) |
-
-### 11.2 Portfolio Core Features
-
-| Feature | Details |
-|---------|---------|
-| Multiple portfolios | Each user can have multiple portfolios |
-| Status | Draft / Published / Archived |
-| Template selection | Minimal, Creative, Developer, Corporate, Freelancer |
-| Design | Primary color picker (8 swatches), font pair selector (4 options) |
-| Custom slug | Custom URL (`proflect-neo.vercel.app/portfolios/[slug]`), real-time availability check |
-| Sections | Drag-and-drop reorder: About, Experience, Education, Skills, Projects, Certifications, Testimonials, Services, Contact, Custom, Embed |
-| Share panel | Copy URL, LinkedIn/Twitter/Email share, embed code |
-| Analytics | View count tracking per portfolio |
-| ISR revalidation | Triggered on publish |
-
-### 11.3 Portfolio Projects
-
-| Field | Details |
-|-------|---------|
-| Title | Text |
-| Tagline | Short descriptor |
-| Description | Rich text |
-| Cover image | URL |
-| Project URL | External link |
-| Source code URL | Repository link |
-| Tech stack | Array of tags |
-| Role | Role type dropdown + free text |
-| Timeline | Start date / End date, or "Ongoing" toggle |
-| Category | Web App / Mobile App / Design / Research / Writing / Other |
-| Status | Completed / In Progress / Concept |
-| Visibility | Public / Private / Unlisted |
-| Featured | Toggle |
-| Case study mode | Problem, Process, Solution, Results panels |
-| Outcomes | Metric name + value pairs |
-
-Auto-save: 1-second debounce. New project flow replaces URL after creation (no duplicate creates on refresh).
-
-### 11.4 AI Features (Portfolio)
-
-All AI features are powered by Anthropic Claude (`claude-sonnet-4-6`), auth-gated, and usage-tracked.
-
-| Feature | Description |
-|---------|-------------|
-| Bio/About generator | Generates a 2–4 sentence first-person bio |
-| Tagline generator | Returns 5 options with tone selector (Professional / Creative / Technical / Friendly) |
-| Project description enhancer | Results-focused rewrite of project description |
-| Skills gap analysis | Identifies missing skills for a target role with importance ratings |
-| SEO suggestions | Generates optimised meta title and meta description |
-
-**Usage limit:** 5 AI generations per month (free plan). Usage tracked in `ai_usage` table.
-
-**Status:** Bio and tagline generators are wired into the editor. Skills gap and SEO features have UI components but are not yet wired into the editor.
-
-### 11.5 PDF Export (Planned)
-
-- Route: `POST /api/v1/portfolios/export-pdf`
-- Engine: Puppeteer (server-side)
-- Config options: include cover page, include table of contents, page size (A4 / Letter), colour or B&W
-- Output: ATS-compliant PDF (tagged, selectable text, embedded fonts)
-- Status: route exists; Puppeteer implementation pending
-
----
-
-## 12. Interview Prep (User)
-
-**Route:** `/self-test`
-
-### 12.1 Assessment Modes
-
-| Mode | Description |
-|------|-------------|
-| Assess by Skill | Select a skill to be tested on |
-| Assess by Content | Upload or paste content; questions generated from it |
-| Assess by JD | Paste a job description; questions target that role's requirements |
-
-### 12.2 Configuration
-
+- Hierarchical notes: parent/child pages (sub-pages)
+- Each note stores content as Tiptap JSON in `notes.content` (JSONB)
+- Notes sidebar: folder tree navigation
+- Block editor uses `mode='full'` (all features enabled)
+- Move-to modal for restructuring note hierarchy
+- Grid and list view for note browsing
+
+### 5.7 Self-Test Engine
+
+**Routes:**  
+`POST /api/v1/self-test` — create session  
+`GET /api/v1/self-test/[id]` — fetch session + questions  
+`POST /api/v1/self-test/[id]/self-grade` — grade short-answer responses  
+`POST /api/v1/self-test/skills` — list available skills  
+`POST /api/v1/self-test/jd-extract` — extract skills from job description  
+
+**Input types:**
+
+| `input_type` | Source | Description |
+|---|---|---|
+| `skills` | User selects from skill list | Generate questions for chosen skills |
+| `content` | Free text or topic content | Generate questions from pasted content (min 100 chars) |
+| `jd` | Job description URL or text | Extract skills from JD → generate skill-mapped questions |
+
+**Question types:**
+- **MCQ** — 4 options, exactly 1 correct, all have `explanation` field
+- **True/False** — one definitively correct answer with `explanation`
+- **Short Answer** — 2–6 sentence written response; AI-graded; has `model_answer`, `grading_rubric`, `answer_keywords`
+
+**Configuration options:**
+- Question count: 5 / 10 / 15 / 20
 - Difficulty: Easy / Medium / Hard
-- Question count: configurable
-- Timer: configurable duration in minutes
+- Timer: optional per-session countdown (minutes)
+- Question type: MCQ only / Mixed (MCQ + Short Answer)
 
-### 12.3 Quiz Behaviour
+**AI models:**
+- Question generation: OpenRouter `llama-3.3-70b-instruct:free` → Groq `llama-4-scout` fallback
+- JD skill extraction: OpenRouter `llama-3.3-70b-instruct:free`
+- Short-answer grading: Groq `llama-4-scout-17b-16e-instruct`
 
-- Timed multiple-choice quiz
-- Auto-submit when timer expires
+**Self-test from topic (Career Map integration):**
+- "Test yourself" button on `CourseDetailPage` opens `TestConfigModal`
+- Modal extracts plain text from topic sections (handles string content or Tiptap JSON via recursive `extractTiptapText()`)
+- POSTs to `/api/v1/self-test` with `input_type: 'content'`
+- Redirects to `/self-test/[sessionId]` on success
 
-### 12.4 Results
+### 5.8 Career Map
 
-| Output | Details |
-|--------|---------|
-| Score | Percentage correct |
-| Per-skill breakdown | Available in JD mode |
-| Readiness badge | Strong Match / Partial Match / Needs Improvement |
+**Pages:**
+- `app/(main)/career-map` — search and select target role
+- `app/(main)/career-map/study-plan/[studyPlanId]` — study plan overview
+- `app/(main)/career-map/study-plan/[studyPlanId]/topic/[topicId]` — course topic detail
 
-### 12.5 Session History
+**Routes:**
+- `POST /api/v1/career-map/learning-roadmap` — generate full study plan for a target role
+- `POST /api/v1/career-map/generate-section-content` — generate content for one topic section (streaming-friendly)
+- `POST /api/v1/career-map/complete-section` — mark section as complete
+- `POST /api/v1/career-map/complete-topic` — mark topic as complete
+- `GET /api/v1/career-map/study-plan/[id]` — fetch plan + all topics
+- `POST /api/v1/career-map/update-study-plan` — update plan metadata
 
-- User view: list of past sessions with scores and dates
-- Admin view: `/admin/users/[id]/self-tests/[sessionId]` — full session detail for any user
+**AI models:**
+- Roadmap generation: Groq `llama-4-scout-17b-16e-instruct` (max 1500 tokens)
+- Section content generation: Groq `llama-3.3-70b-versatile` (max 1024 tokens)
+  - Prompt adapts to learner level and learning style
+  - Content is 300–600 words, structured with `###` sub-headings
+  - Includes code examples or exercises when relevant
 
----
+**Breadcrumb resolution:**  
+TopBar detects UUID segments in career-map URLs and fetches real names from `/api/v1/career-map/study-plan/[planId]` to show human-readable breadcrumbs (e.g., "Career Map > Frontend Developer > React Hooks") instead of raw UUIDs.
 
-## 13. Career Map (User)
+**My Courses:**
+- `app/(main)/my-courses` — list enrolled study plans with progress
+- `GET/POST /api/v1/my-courses/[id]` — course details / enroll
+- `GET /api/v1/my-courses/stats` — progress statistics
+- `POST /api/v1/my-courses/[id]/status` — update enrollment status
+- `POST /api/v1/my-courses/[id]/reset-progress` — reset all section/topic progress
 
-**Route:** `/career-map`
+### 5.9 Jobs
 
-### 13.1 Overview
+**Routes:** `GET/POST /api/v1/jobs`, `GET/PUT/DELETE /api/v1/jobs/[id]`  
+`GET /api/v1/jobs/[id]/candidates` — list resumes scored for this job  
+`GET /api/v1/jobs/[id]/score/[resumeId]` — get score for a specific resume  
 
-The Career Map is a multi-step AI workflow that analyses the user's resume, presents personalised role recommendations, renders an interactive career path graph, and generates a week-by-week study plan for closing skill gaps.
+**Job skill parsing:**
+- `POST /api/v1/jobs/parse-skills` — extract skills from raw JD text
+- Model: Groq `llama-3.3-70b-versatile`
 
-### 13.2 Steps
+### 5.10 Admin Surface
 
-| Step | Description |
-|------|-------------|
-| 1 — Resume analysis | Upload or reuse existing resume. Groq extracts `currentTitle`, `currentSeniority`, `currentDomain`, `totalYearsExp`, `skills`, `industries`, `educationLevel`, `topTechStack`, `hasManagement`, `hasLeadership`, `certifications`. Stored in `career_map_sessions`. |
-| 2 — Questionnaire | 7 questions (one at a time with progress bar) covering target seniority, remote preference, relocation, salary range, timeline, work style, and top learning interest. Answers sent with profile to recommendation API. |
-| 3 — Recommendations | Groq ranks roles from `career_role_database` based on profile + questionnaire. Returns 5 role cards with title, match %, key skills, and estimated timeline. |
-| 4 — Career Graph | React Flow graph (Dagre LR layout) showing current role → intermediate paths → target role. Node types: Current, Target, Path, Locked (< 40% match). Edge colours by path type. |
+**Users:**
+- `GET/POST /api/v1/admin/users` — list / create users
+- `GET/PUT/DELETE /api/v1/admin/users/[id]` — user management
+- `POST /api/v1/admin/users/[id]/actions` — suspend, activate, reset password
+- `GET /api/v1/admin/users/[id]/resumes/[resumeId]` — view any user's resume
+- `GET /api/v1/admin/users/[id]/self-tests` — view user's test history
 
-### 13.3 Career Graph Interactions
+**Proctored Test Engine (admin):**
+- Create / edit tests: `GET/POST/PUT /api/v1/admin/tests/[id]`
+- Add questions: `GET/POST /api/v1/admin/tests/[id]/questions`
+- Reorder questions: `POST /api/v1/admin/tests/[id]/questions/reorder`
+- Share test via links (token-based): `GET/POST /api/v1/admin/tests/[id]/links`
+- View attempts: `GET /api/v1/admin/tests/[id]/attempts`, `GET .../[aid]`
 
-| Interaction | Behaviour |
-|-------------|-----------|
-| Click a node | Opens NodeDetailPanel (Overview / Skills / Actions tabs) |
-| Click skill gap | Opens SkillGapDrawer — match meter and missing skill chips |
-| "Generate Study Plan" | Opens PreferenceModal |
+**Question Library:**
+- `GET/POST /api/v1/admin/question-library` — browse / create questions
+- `PUT/DELETE /api/v1/admin/question-library/[qid]` — edit / delete
+- `POST /api/v1/admin/question-library/generate` — AI-generate questions
+  - Model: Groq `llama-4-scout-17b-16e-instruct`
+- `POST /api/v1/admin/tests/[id]/questions/from-library` — add library questions to a test
 
-### 13.4 Questionnaire Questions
+**Homepage CMS:**
+- `GET/PUT /api/v1/admin/homepage` — edit landing page content
+- Editable sections: Hero, Features, Steps, Pricing, Testimonials, CTA, Footer, Custom HTML/text blocks
 
-| # | Question | Type |
-|---|----------|------|
-| 1 | Target seniority level | Single select |
-| 2 | Open to remote / hybrid / on-site | Single select |
-| 3 | Open to relocation | Yes / No |
-| 4 | Target salary range | Single select |
-| 5 | Timeline to transition | Single select |
-| 6 | Preferred work style | Single select |
-| 7 | Top area of learning interest | Single select |
+**Skills database:**
+- `GET/POST /api/v1/admin/skills` — manage global skills taxonomy
+- Users can submit new skills; admin approves via pending submissions tab
 
-### 13.5 Components
+**Import:**
+- `POST /api/v1/admin/import` — bulk user import
 
-| Component | Description |
-|-----------|-------------|
-| `CareerMapPage.jsx` | 4-step state machine (RESUME → QUESTIONNAIRE → RECOMMENDATIONS → GRAPH) |
-| `Questionnaire.jsx` | One-question-at-a-time with animated progress bar |
-| `Recommendations.jsx` | Loading skeletons → role cards → empty state |
-| `CareerGraph.jsx` | React Flow + Dagre layout |
-| `nodes/` | `CurrentRoleNode`, `TargetRoleNode`, `PathNode`, `LockedNode` |
-| `SkillGapDrawer.jsx` | Right panel — match meter, skill chips |
-| `NodeDetailPanel.jsx` | Overview / Skills / Actions tabs |
+### 5.11 Profile
 
----
+- `GET/PUT /api/v1/profile` — user profile (name, headline, bio, location, etc.)
+- `POST /api/v1/profile/avatar` — upload avatar to Supabase Storage
 
-## 14. Study Plan & Course Detail (User)
+### 5.12 Proctored Test (Candidate)
 
-### 14.1 Study Plan Generation
-
-Triggered from CareerGraph via **PreferenceModal**. User sets:
-- Hours per day (0.5–8, slider)
-- Days per week (2–7, toggle buttons)
-- Learning style: Video-first / Reading-first / Project-based / Mixed (multi-select)
-- Current level: Beginner / Some exposure / Intermediate / Advanced
-
-Live summary shows estimated weeks and total hours. Calls `POST /api/v1/career-map/generate-study-plan`.
-
-**Learning style drives section types:**
-
-| Style | Section structure |
-|-------|-----------------|
-| Video-first | First section of every topic is `video-only` ("Watch: …"), remaining are `text` |
-| Mixed | Every 2nd section is `video-only`, others are `text` |
-| Reading-first / Project-based | All sections are `text`, no video-only sections |
-
-### 14.2 Study Plan Page
-
-**Route:** `/career-map/study-plan/[studyPlanId]`
-
-| Panel | Description |
-|-------|-------------|
-| Left — WeekNavigation | Collapsible week accordion with topic checkboxes and completion state |
-| Right — Topic grid | Cards showing status chip, progress mini-bar, estimated hours, "Start / Continue" CTA |
-| Top bar | Breadcrumb, overall progress bar, **gear icon → Adjust Preferences modal** |
-
-### 14.3 Course Detail Page
-
-**Route:** `/career-map/study-plan/[studyPlanId]/topic/[topicId]`
-
-| Area | Description |
-|------|-------------|
-| Top bar | Back link, topic title, skill chip, circular progress % |
-| Left sidebar | Section list with type icons (red play = video-only, doc = text), completion checkboxes, overall progress bar |
-| Main content | Scrollable section blocks |
-| Bottom nav bar | Previous / Next section, Mark topic complete |
-
-**Section block rendering by type:**
-
-| Type | Renders |
-|------|---------|
-| `video-only` | YouTube embed only — no written content, "Mark as watched" checkbox |
-| `text` | Placeholder → Generate → Generated markdown content |
-| `text-with-video` | Written content + "Recommended video" block below |
-
-**Content generation:** Each text section has a "Generate content" button that calls `POST /api/v1/career-map/generate-section-content` (Groq, 300–600 word markdown). Generated content is persisted to `study_plan_topics.sections` JSONB.
-
-**Deep-link resume:** `?section=<sectionId>` query param scrolls to the exact section on load (used by My Courses "Continue learning" links).
-
-**Lazy video fetch:** On mount, if the topic has `youtube_queries` but no `youtube_videos`, calls `POST /api/v1/career-map/fetch-youtube-videos/single` automatically.
-
-### 14.4 YouTube Video System
-
-**Two-pass quality fetch:**
-
-1. `search.list` — 10 candidates per topic query (`videoDuration=medium`, `order=relevance`)
-2. `videos.list` — fetch statistics + contentDetails for all candidates in one batched call
-
-**Quality score** (0–1 composite):
-
-| Signal | Weight |
-|--------|--------|
-| View count (log scale) | 25% |
-| Like count (log scale) | 25% |
-| Engagement rate (like/view ratio) | 20% |
-| Recency (decays over 5 years) | 15% |
-| Duration fit (8–20 min preferred) | 15% |
-
-Top 3 ranked videos stored in `study_plan_topics.youtube_videos`. Assigned to sections by type: best video → first `video-only` section, remaining → `text-with-video` sections.
-
-**Fallback:** If API key is missing or quota exceeded, a "Search on YouTube" button is shown linking to `youtube.com/results?search_query=…`.
-
-**Quota management:** `search.list` runs per topic (~100 units each); `videos.list` runs once per plan with all candidate IDs batched (~1 unit). Total ~1,515 units for a 15-topic plan against a 10,000 unit daily quota.
-
-### 14.5 Update Preferences (Existing Plan)
-
-Users can update preferences on any existing plan from two entry points:
-
-| Entry point | Location |
-|-------------|----------|
-| "Adjust preferences" | `...` context menu on My Courses course card |
-| Gear icon button | Top bar of the Study Plan page |
-
-**Flow:**
-1. PreferenceModal opens pre-filled with current plan preferences
-2. User changes any field — summary box shows live estimated weeks diff
-3. "Update my plan →" → Confirmation screen showing what changes and what is preserved
-4. On confirm: Groq regenerates plan structure, heading-similarity matching preserves completed section content, old topics deleted, new topics inserted, `preferences_history` updated (last 5 versions kept)
-
-**What is preserved on regeneration:**
-- Completed section content matched by heading similarity
-- `study_plan_progress` rows are deleted (IDs change on regeneration)
+- `GET /api/v1/test/[token]` — load test by share link token (no auth)
+- `POST /api/v1/test/[token]/save` — save answers
+- `POST /api/v1/test/[token]/integrity` — log integrity events (tab-switch, focus-loss, copy-paste, etc.)
 
 ---
 
-## 15. My Courses Dashboard (User)
+## 6. Block Editor
 
-**Route:** `/my-courses`
+Built on **Tiptap v3** with ProseMirror. The main component is `BlockEditor` (`components/editor/BlockEditor.jsx`).
 
-### 15.1 Overview
+### 6.1 Mode Prop
 
-Dashboard showing all non-archived study plans as cards with filter tabs, sort, search, and a stats bar.
+| Mode | Description | Used On |
+|---|---|---|
+| `full` | All blocks, drag handles, slash menu, bubble menu | Notes |
+| `standard` | Common blocks, no video, no sub-pages | Portfolio sections (planned) |
+| `minimal` | Paragraphs + basic formatting only | Short fields |
+| `readonly` | No editing; renders content only | Review, public views |
 
-### 15.2 Stats Bar
+`isReadonly = readOnly prop || mode === 'readonly'`  
+`isMinimal = mode === 'minimal'`  
+VideoExtension is excluded when `mode === 'minimal'`.
 
-| Stat | Description |
-|------|-------------|
-| Total courses | All non-archived plans |
-| In progress | Plans with `status = active` and `overallPercent > 0` |
-| Completed | Plans with `status = completed` |
-| Hours studied | Estimated from completed sections |
+### 6.2 Supported Block Types
 
-### 15.3 Filter Tabs
+**TEXT**
+- Paragraph (`¶`) — shortcut: Enter
+- Heading 1 (`H1`) — markdown: `# + Space`
+- Heading 2 (`H2`) — markdown: `## + Space`
+- Heading 3 (`H3`) — markdown: `### + Space`
+- Heading 4 (`H4`) — markdown: `#### + Space`
+- Heading 5 (`H5`)
+- Heading 6 (`H6`)
 
-| Tab | Filter |
-|-----|--------|
-| All | All non-archived |
-| In Progress | `status = active` AND `overallPercent > 0` |
-| Not Started | `status = active` AND `overallPercent = 0` |
-| Completed | `status = completed` |
-| Paused | `status = paused` |
+**LISTS**
+- Bulleted List (`•`) — markdown: `- + Space`
+- Numbered List (`1.`) — markdown: `1. + Space`
+- To-do / Task List (`☑`) — markdown: `[] + Space`
+- Toggle — collapsible content block (`▶`)
 
-### 15.4 Sort Options
+**MEDIA** *(excluded in `minimal` mode)*
+- Image (`🖼`) — insert by URL via `window.prompt`
+- Video (`▶️`) — embed YouTube, Vimeo, or Loom
 
-Last updated / Most progress / Least progress / Newest first / Oldest first
+**STRUCTURE**
+- Quote / Blockquote (`"`) — markdown: `> + Space`
+- Divider / Horizontal Rule (`—`)
+- Table (`⊞`) — 3×3 default with header row
 
-### 15.5 Course Card
+**CODE**
+- Code Block (`<>`) — markdown: ` ``` + Enter`; supports syntax highlighting
 
-| Element | Description |
-|---------|-------------|
-| Header (100px) | Gradient based on status: blue (in progress), green (completed), grey (not started / paused) |
-| Progress bar | White bar in gradient header showing `overallPercent` |
-| Status chip | In Progress / Not Started / Completed / Paused |
-| Stats row | Sections done, last studied (relative time) |
-| Action links | "Start / Continue / Review learning →" + "View plan" |
-| `...` menu | Mark as Active, Pause, **Adjust preferences**, Reset progress, Remove course |
+**CALLOUTS** (7 types)
 
-### 15.6 Course Card Menu Actions
+| Block | Icon | `data-callout-type` value |
+|---|---|---|
+| Note (Info) | 💡 | `info` |
+| Success | ✅ | `success` |
+| Warning | ⚠️ | `warning` |
+| Danger | 🚨 | `danger` |
+| Important | 🔥 | `important` |
+| Tip | 🎯 | `tip` |
+| Quote block | 💬 | `quote` |
 
-| Action | Behaviour |
-|--------|-----------|
-| Mark as Active / Pause | PATCH `status` via API, optimistic UI update |
-| Adjust preferences | Opens PreferenceModal pre-filled — regenerates plan on confirm |
-| Reset progress | Confirmation dialog → clears all `study_plan_progress` rows and resets topic completion |
-| Remove course | Soft delete — sets `status = archived` |
+**PAGES** *(full mode only)*
+- Sub-page (`📄`) — triggers `onCreateSubpage` callback
 
-### 15.7 Deep-Link Resume
+### 6.3 Inline Formatting (Bubble Menu)
 
-"Continue learning →" link on each card constructs the resume URL:
-- If `resumeTopicId` and `resumeSectionId` exist: `/career-map/study-plan/[id]/topic/[topicId]?section=[sectionId]`
-- Otherwise: `/career-map/study-plan/[id]`
+Appears on text selection. Components in `NoteBubbleMenu.jsx`:
 
----
+Bold · Italic · Underline · Strikethrough · Superscript · Subscript · Inline Code · Link (prompt) · Highlight · H1 / H2 / H3 toggle · Text Alignment (Left / Center / Right / Justify via dropdown)
 
-## 16. Database Schema
+### 6.4 Keyboard Shortcuts
 
-### 16.1 Core (Admin / Parsing)
+| Shortcut | Action |
+|---|---|
+| `Ctrl+B` | Bold |
+| `Ctrl+I` | Italic |
+| `Ctrl+U` | Underline |
+| `Ctrl+E` | Inline code |
+| `Ctrl+K` | Link |
+| `Ctrl+Shift+H` | Highlight |
+| `Ctrl+Shift+K` | Delete current block |
+| `# + Space` | Heading 1 |
+| `## + Space` | Heading 2 |
+| `### + Space` | Heading 3 |
+| `#### + Space` | Heading 4 |
+| `- + Space` | Bullet list |
+| `1. + Space` | Numbered list |
+| `[] + Space` | Task list |
+| `` ``` + Enter `` | Code block |
+| `> + Space` | Blockquote |
 
-```sql
-organizations
-  id, name, created_at
+### 6.5 Slash Menu (`/` command)
 
-resumes
-  id, file_name, file_url, raw_text, status, job_id, created_at, updated_at
+Component: `NoteSlashMenu.jsx`
 
-parsed_data
-  id, resume_id, candidate_name, email, phone, summary, skills[], raw_json
+- Triggered by typing `/` at the start of a paragraph
+- Supports keyboard navigation: ↑↓ to move, Enter to insert, Escape to close
+- Mouse hover updates selection; `onMouseDown` (not `onClick`) prevents editor blur
+- Shows "Recently used" section (up to 3 items, stored in `localStorage` under key `editor_recent_blocks`)
+- Real-time fuzzy search across block `label`, `desc`, and `id`
 
-work_experience
-  id, parsed_data_id, company, title, start_date, end_date, description
+### 6.6 Drag Handle Left Rail (`BlockLeftRail`)
 
-education
-  id, parsed_data_id, institution, degree, field, graduation_year
+Component: `components/editor/BlockLeftRail.jsx`
 
-job_profiles
-  id, title, description, role_type, seniority, required_years, required_degree,
-  required_certs[], custom_weights, organization_id, created_at, updated_at
+- Rendered as a React portal (`createPortal`) at `position: fixed` in `document.body` to escape `overflow: hidden` containers
+- Tracks hovered block via `mousemove` on `editor.view.dom`, walking up the DOM to find direct children of the editor root
+- Block position resolved via `editor.view.posAtDOM(el, 0) - 1` → `$pos.before(1)` / `$pos.after(1)` for top-level block bounds
+- Three buttons per hovered block:
+  - `+` — insert new paragraph below current block
+  - `⠿` (drag handle) — initiate drag-and-drop
+  - `⋮` — open block context menu
 
-job_skills
-  id, job_profile_id, skill, proficiency, is_required
+**Drag-and-drop (no Tiptap Pro extension required):**
+- `mousedown` on `⠿` → begin tracking mouse movement
+- 2 px blue drop-line renders between blocks during drag
+- Drop target stored in a `ref` (not state) to avoid stale closure in the `mouseup` handler
+- `mouseup` executes ProseMirror transaction:
+  - Moving **down**: `tr.insert(targetPos, node).delete(nodeStart, nodeEnd)` (insert first to keep positions valid)
+  - Moving **up**: `tr.delete(nodeStart, nodeEnd).insert(targetPos, node)`
+- Left rail positions cleared on `#layout-main` scroll events
 
-resume_scores
-  id, resume_id, job_profile_id, overall_score, band,
-  [7 factor score columns], score_summary, scored_at
-  UNIQUE(resume_id, job_profile_id)
-```
+### 6.7 Block Context Menu (`BlockContextMenu`)
 
-### 16.2 Resume Builder
+Component: `components/editor/BlockContextMenu.jsx`
 
-```sql
-builder_resumes
-  id, user_id, title, template_id, design_settings, personal_info,
-  footer_settings, spacing_settings, layout_settings,
-  share_token, share_enabled, created_at, updated_at
+- Opens from `⋮` button; renders at `position: fixed` via a React portal at click coordinates
+- Closes on Escape key or outside click (`mousedown` listener on `document`)
 
-builder_sections
-  id, resume_id, type, title, position, enabled, content, display_settings
-```
+**Sections:**
+- **Actions:** Delete block, Duplicate block, Copy text to clipboard
+- **Move:** Move up one block, Move down one block (same ProseMirror transaction pattern as drag-and-drop)
+- **Turn into:** Text (paragraph), H1, H2, H3, Bullet list, Numbered list, Quote, Code block
 
-### 16.3 RBAC
+### 6.8 Custom Tiptap Extensions
 
-```sql
-profiles
-  id, email, first_name, last_name, role, status,
-  failed_login_attempts, locked_until, last_login_at, created_at, updated_at
+| Extension | File | Description |
+|---|---|---|
+| `CalloutExtension` | `extensions/CalloutNode.jsx` | 7 callout variants; `data-callout-type` attribute; content via `block+` |
+| `VideoExtension` | `extensions/VideoNode.jsx` | YouTube/Vimeo/Loom embed; `toEmbedUrl()` transforms share URLs to embed URLs; renders `<iframe>` at 16:9 |
+| `BlockShortcuts` | `extensions/BlockShortcuts.js` | `Ctrl+Shift+K` keyboard shortcut to delete current block |
 
-invite_tokens
-  id, email, role, token, invited_by, accepted_by, expires_at, used_at, status
+### 6.9 Tiptap Extensions Used
 
-audit_log
-  id, performed_by, action, target_user_id, details, ip_address, created_at
+From `@tiptap/*` packages:
 
-email_resend_limits
-  email, resend_count, window_start, updated_at
-```
-
-### 16.4 Portfolio
-
-```sql
-portfolios
-  id, user_id, resume_id (nullable), name, slug (unique), status,
-  template_id, customisation, is_linked_to_resume, meta_title,
-  meta_description, og_image_url, password_hash, is_indexed,
-  view_count, created_at, updated_at, published_at
-
-portfolio_sections
-  id, portfolio_id, section_type, sort_order, is_visible,
-  content (JSONB), created_at, updated_at
-
-portfolio_projects
-  id, portfolio_id, title, tagline, description, cover_image_url,
-  project_url, source_url, tech_stack[], my_role, role_type,
-  start_date, end_date, is_ongoing, category, is_featured,
-  is_case_study, visibility, status, media_gallery, outcomes,
-  team_size, sort_order, created_at, updated_at
-
-portfolio_analytics
-  id, portfolio_id, event_type, referrer, project_id,
-  country_code, created_at
-
-user_integrations
-  id, user_id, provider, provider_uid, access_token, refresh_token,
-  scopes[], connected_at, last_synced
-  UNIQUE(user_id, provider)
-
-ai_usage
-  id, user_id, feature, used_at
-```
-
-### 16.5 Interview Prep (Self-Test)
-
-```sql
-self_test_sessions
-  id, user_id, input_type, difficulty, question_count, timer_minutes, status, created_at
-
-self_test_attempts
-  id, session_id, score, max_score, pct, submitted_at, auto_submitted
-
-self_test_answers
-  id, attempt_id, question_id, selected_option, is_correct
-```
-
-### 16.6 Career Map
-
-```sql
-career_map_sessions
-  id, user_id, resume_text, extracted_profile (jsonb), questionnaire_answers (jsonb),
-  recommended_role_ids (text[]), selected_role_id, created_at, updated_at
-
-career_role_database
-  id, title, seniority, domain, required_skills (text[]), preferred_skills (text[]),
-  typical_years_exp, description, avg_salary_range, created_at
-
-career_map_paths
-  id, from_role_id, to_role_id, path_type, skill_overlap_pct, created_at
-```
-
-### 16.7 Study Plans
-
-```sql
-study_plans
-  id, user_id, session_id, target_role_id, target_role_title,
-  missing_skills (text[]), preferences (jsonb), preferences_history (jsonb),
-  plan_structure (jsonb), total_weeks, total_hours, status,
-  created_at, updated_at
-  -- preferences shape: { hoursPerDay, daysPerWeek, learningStyle[], currentLevel }
-  -- preferences_history: last 5 { preferences, updatedAt } snapshots
-
-study_plan_topics
-  id, study_plan_id, week_number, topic_order, skill, title, description,
-  estimated_hours, sections (jsonb[]), youtube_queries (text[]),
-  youtube_videos (jsonb[]), is_completed, completed_at, created_at, updated_at
-  -- section shape: { id, order, heading, type, estimatedReadMinutes,
-  --                  content, is_generated, generation_status, youtube_video_id }
-  -- type: "video-only" | "text" | "text-with-video"
-  -- youtube_videos shape: { videoId, title, channelName, thumbnail, duration,
-  --                          viewCount, likeCount, publishedAt, qualityScore }
-
-study_plan_progress
-  id, user_id, topic_id, section_id, is_completed, completed_at
-  UNIQUE(user_id, topic_id, section_id)
-```
+`StarterKit` (heading levels 1–6, paragraph, lists, code block, blockquote, horizontal rule, bold, italic, strike, code, history) · `TaskList` + `TaskItem` · `TextAlign` · `Image` · `Link` · `Highlight` · `Underline` · `Superscript` · `Subscript` · `Table` + `TableRow` + `TableCell` + `TableHeader` · `Placeholder` · `Typography`
 
 ---
 
-## 17. API Endpoints
+## 7. API Route Inventory
 
-### 17.1 Auth (public)
-
-| Method | Path |
-|--------|------|
-| POST | `/api/v1/auth/signup` |
-| POST | `/api/v1/auth/login` |
-| POST | `/api/v1/auth/resend-verification` |
-| GET, POST | `/api/v1/auth/invite` |
-| GET, POST | `/api/v1/auth/accept-invite` |
-| GET | `/auth/callback` |
-
-### 17.2 Admin — User Management
-
-| Method | Path |
-|--------|------|
-| GET, PATCH, DELETE | `/api/v1/admin/users` |
-| GET, PATCH, DELETE | `/api/v1/admin/users/:id` |
-| POST, GET, DELETE | `/api/v1/admin/invite` |
-| GET, POST | `/api/v1/admin/import` |
-
-### 17.3 Admin — Tests & Questions
-
-| Method | Path |
-|--------|------|
-| GET, POST, PATCH, DELETE | `/api/v1/admin/tests` |
-| GET, PATCH, DELETE | `/api/v1/admin/tests/:id` |
-| GET, POST, PATCH, DELETE | `/api/v1/admin/question-library` |
-
-### 17.4 Admin — CMS & Credits
-
-| Method | Path |
-|--------|------|
-| GET, PATCH | `/api/v1/admin/homepage` |
-| POST | `/api/v1/admin/homepage/publish` |
-| GET, POST, PATCH | `/api/v1/admin/credits` |
-
-### 17.5 Resume (Admin)
-
-| Method | Path |
-|--------|------|
-| POST | `/api/v1/resumes/upload` |
-| GET, DELETE | `/api/v1/resumes` |
-| GET, DELETE | `/api/v1/resumes/:id` |
-| GET | `/api/v1/resumes/:id/export` |
-| POST | `/api/v1/resumes/:id/reparse` |
-| POST | `/api/v1/resumes/:id/score` |
-
-### 17.6 Jobs (Admin)
-
-| Method | Path |
-|--------|------|
-| POST | `/api/v1/jobs/parse-skills` |
-| GET, POST, PUT, DELETE | `/api/v1/jobs` |
-| GET, PUT, DELETE | `/api/v1/jobs/:id` |
-| GET | `/api/v1/jobs/:id/candidates` |
-| POST | `/api/v1/jobs/:id/score/:resumeId` |
-
-### 17.7 Resume Builder (User)
-
-| Method | Path |
-|--------|------|
-| GET, POST | `/api/v1/builder` |
-| GET, PATCH, DELETE | `/api/v1/builder/:id` |
-| GET, POST, PATCH, DELETE | `/api/v1/builder/:id/sections` |
-| PATCH, DELETE | `/api/v1/builder/:id/sections/:sectionId` |
-| POST | `/api/v1/builder/:id/duplicate` |
-| POST | `/api/v1/builder/:id/import` |
-| GET, POST | `/api/v1/builder/:id/share` |
-
-### 17.8 Portfolio (User)
-
-| Method | Path | Notes |
-|--------|------|-------|
-| GET, POST | `/api/v1/portfolios` | |
-| GET, PATCH, DELETE | `/api/v1/portfolios/:id` | |
-| GET | `/api/v1/portfolios/check-slug?slug=` | Availability check |
-| GET, POST | `/api/v1/portfolios/:id/sections` | |
-| PATCH, DELETE | `/api/v1/portfolios/:id/sections/:sectionId` | |
-| POST | `/api/v1/portfolios/:id/sections/reorder` | |
-| GET, POST | `/api/v1/portfolios/:id/projects` | |
-| GET, PATCH, DELETE | `/api/v1/portfolios/:id/projects/:projectId` | |
-| POST | `/api/v1/portfolios/:id/publish` | Triggers ISR revalidation |
-| GET | `/api/v1/portfolios/public/:slug` | No auth required |
-| POST | `/api/v1/portfolios/analytics` | Record page view events |
-| POST | `/api/v1/portfolios/revalidate` | Manual ISR revalidation |
-| POST | `/api/v1/portfolios/ai/bio` | Claude — bio generator |
-| POST | `/api/v1/portfolios/ai/tagline` | Claude — tagline generator |
-| POST | `/api/v1/portfolios/ai/project-description` | Claude — description enhancer |
-| POST | `/api/v1/portfolios/ai/skills-gap` | Claude — skills gap analysis |
-| POST | `/api/v1/portfolios/ai/seo` | Claude — SEO suggestions |
-| POST | `/api/v1/portfolios/export-pdf` | Puppeteer PDF — planned |
-
-### 17.9 Interview Prep (User)
-
-| Method | Path |
-|--------|------|
-| GET, POST | `/api/v1/self-tests/sessions` |
-| GET | `/api/v1/self-tests/sessions/:id` |
-| POST | `/api/v1/self-tests/sessions/:id/submit` |
-| GET | `/api/v1/admin/users/:id/self-tests` |
-| GET | `/api/v1/admin/users/:id/self-tests/:sessionId` |
-
-### 17.10 Career Map (User)
+### Resume
 
 | Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/v1/career-map/analyse-resume` | Extract profile from resume text; create session |
-| POST | `/api/v1/career-map/recommend` | Rank roles for profile + questionnaire answers |
-| POST | `/api/v1/career-map/compute-graph` | BFS graph from selected role; compute skill gaps |
-| POST | `/api/v1/career-map/generate-study-plan` | Groq plan generation; persist topics with section types |
-| POST | `/api/v1/career-map/update-study-plan` | Regenerate plan for existing study plan; preserve content by heading match |
-| GET | `/api/v1/career-map/study-plan/:id` | Fetch plan + enriched topics + progress |
-| POST | `/api/v1/career-map/generate-section-content` | Groq markdown content for one section |
-| POST | `/api/v1/career-map/complete-section` | Upsert / delete progress row |
-| POST | `/api/v1/career-map/complete-topic` | Mark all sections complete, check plan done |
-| POST | `/api/v1/career-map/fetch-youtube-videos` | Two-pass quality-scored fetch for all topics in a plan |
-| POST | `/api/v1/career-map/fetch-youtube-videos/single` | Lazy fetch for a single topic |
+|---|---|---|
+| GET | `/api/v1/resumes` | List user's resumes |
+| POST | `/api/v1/resumes/upload` | Upload & parse resume (OpenRouter → Groq) |
+| GET | `/api/v1/resumes/[id]` | Get parsed resume |
+| PUT | `/api/v1/resumes/[id]` | Update resume data |
+| DELETE | `/api/v1/resumes/[id]` | Delete resume |
+| POST | `/api/v1/resumes/[id]/reparse` | Re-run AI parsing |
+| POST | `/api/v1/resumes/[id]/score` | ATS score vs job — **3 credits** |
+| GET | `/api/v1/resumes/[id]/export` | Export resume |
+| GET | `/api/public/resume/[token]` | Public resume view (no auth) |
 
-### 17.11 My Courses (User)
+### Builder
 
 | Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/v1/my-courses` | List non-archived plans with computed progress fields |
-| GET | `/api/v1/my-courses/stats` | Summary stats (total, in-progress, completed, hours studied) |
-| PATCH | `/api/v1/my-courses/:id/status` | Update plan status (active / paused) |
-| DELETE | `/api/v1/my-courses/:id` | Soft delete — set status to archived |
-| POST | `/api/v1/my-courses/:id/reset-progress` | Clear all progress rows, reset topic completion |
+|---|---|---|
+| GET/POST | `/api/v1/builder` | List / create resume builders |
+| GET/PUT/DELETE | `/api/v1/builder/[id]` | Get / update / delete builder |
+| GET/POST | `/api/v1/builder/[id]/sections` | List / add sections |
+| PUT/DELETE | `/api/v1/builder/[id]/sections/[sectionId]` | Update / delete section |
+| POST | `/api/v1/builder/[id]/import` | Import from resume file — **5 credits** |
+| POST | `/api/v1/builder/[id]/ats-score` | ATS score builder — **3 credits** |
+| POST | `/api/v1/builder/[id]/writing-assist` | AI rewrite section — **1 credit** |
+| POST | `/api/v1/builder/[id]/photo` | Upload photo |
+| POST | `/api/v1/builder/[id]/share` | Generate share link |
+| POST | `/api/v1/builder/[id]/duplicate` | Duplicate builder |
+| POST | `/api/v1/builder/[id]/export/pdf` | Export PDF (Puppeteer) |
+| POST | `/api/v1/builder/[id]/export/word` | Export DOCX |
+
+### Portfolio
+
+| Method | Path | Description |
+|---|---|---|
+| GET/POST | `/api/v1/portfolios` | List / create portfolios |
+| GET/PUT/DELETE | `/api/v1/portfolios/[id]` | Get / update / delete |
+| GET/POST | `/api/v1/portfolios/[id]/sections` | Sections CRUD |
+| POST | `/api/v1/portfolios/[id]/sections/reorder` | Reorder sections |
+| GET/POST | `/api/v1/portfolios/[id]/projects` | Projects CRUD |
+| PUT/DELETE | `/api/v1/portfolios/[id]/projects/[projectId]` | Update/delete project |
+| POST | `/api/v1/portfolios/[id]/publish` | Publish / unpublish |
+| GET | `/api/v1/portfolios/public/[slug]` | Public portfolio data |
+| GET | `/api/v1/portfolios/check-slug` | Check slug availability |
+| GET | `/api/v1/portfolios/analytics` | View analytics |
+| POST | `/api/v1/portfolios/revalidate` | ISR revalidation |
+| POST | `/api/v1/portfolios/ai/bio` | AI bio — Claude `claude-sonnet-4-6` |
+| POST | `/api/v1/portfolios/ai/tagline` | AI tagline — Claude |
+| POST | `/api/v1/portfolios/ai/project-description` | AI project description — Claude |
+| POST | `/api/v1/portfolios/ai/seo` | AI SEO metadata — Claude |
+| POST | `/api/v1/portfolios/ai/skills-gap` | AI skills gap analysis — Claude |
+
+### Jobs
+
+| Method | Path | Description |
+|---|---|---|
+| GET/POST | `/api/v1/jobs` | List / create job profiles |
+| GET/PUT/DELETE | `/api/v1/jobs/[id]` | Job CRUD |
+| GET | `/api/v1/jobs/[id]/candidates` | Scored candidates for job |
+| GET | `/api/v1/jobs/[id]/score/[resumeId]` | Score for specific resume |
+| POST | `/api/v1/jobs/parse-skills` | Extract skills from JD (Groq) |
+
+### Self-Test
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/v1/self-test` | Create test session |
+| GET | `/api/v1/self-test/[id]` | Fetch session + questions |
+| POST | `/api/v1/self-test/[id]/self-grade` | AI-grade short-answer responses |
+| POST | `/api/v1/self-test/skills` | List available skills |
+| POST | `/api/v1/self-test/jd-extract` | Extract skills from JD |
+
+### Career Map
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/v1/career-map/learning-roadmap` | Generate study plan (Groq llama-4-scout) |
+| POST | `/api/v1/career-map/generate-section-content` | Generate topic section (Groq llama-3.3-70b-versatile) |
+| POST | `/api/v1/career-map/complete-section` | Mark section complete |
+| POST | `/api/v1/career-map/complete-topic` | Mark topic complete |
+| GET | `/api/v1/career-map/study-plan/[id]` | Get plan + all topics |
+| POST | `/api/v1/career-map/update-study-plan` | Update plan metadata |
+| GET | `/api/v1/my-courses/[id]` | Course enrollment details |
+| GET | `/api/v1/my-courses/stats` | Enrollment statistics |
+| POST | `/api/v1/my-courses/[id]/status` | Update enrollment status |
+| POST | `/api/v1/my-courses/[id]/reset-progress` | Reset progress |
+
+### Auth
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/v1/auth/login` | Login |
+| POST | `/api/v1/auth/signup` | Register |
+| POST | `/api/v1/auth/resend-verification` | Resend email verification |
+| POST | `/api/v1/auth/invite` | Generate invite |
+| POST | `/api/v1/auth/accept-invite` | Accept invite token |
+
+### Credits
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/v1/credits` | Get balance + recent transactions |
+| POST | `/api/v1/credits/request` | Submit credit request |
+
+### Profile
+
+| Method | Path | Description |
+|---|---|---|
+| GET/PUT | `/api/v1/profile` | Get / update profile |
+| POST | `/api/v1/profile/avatar` | Upload avatar |
+
+### Admin
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/v1/admin/users` | List users |
+| GET/PUT/DELETE | `/api/v1/admin/users/[id]` | Manage user |
+| POST | `/api/v1/admin/users/[id]/actions` | Suspend / activate |
+| POST | `/api/v1/admin/invite` | Invite user |
+| POST | `/api/v1/admin/import` | Bulk import |
+| GET/POST | `/api/v1/admin/tests` | Test library CRUD |
+| GET/PUT/DELETE | `/api/v1/admin/tests/[id]` | Test management |
+| GET/POST | `/api/v1/admin/tests/[id]/questions` | Questions CRUD |
+| PUT/DELETE | `/api/v1/admin/tests/[id]/questions/[qid]` | Edit/delete question |
+| POST | `/api/v1/admin/tests/[id]/questions/reorder` | Reorder questions |
+| GET/POST | `/api/v1/admin/tests/[id]/links` | Share link management |
+| DELETE | `/api/v1/admin/tests/[id]/links/[lid]` | Delete share link |
+| GET | `/api/v1/admin/tests/[id]/attempts` | All attempts |
+| GET/PUT | `/api/v1/admin/tests/[id]/attempts/[aid]` | Attempt detail / score |
+| GET/POST | `/api/v1/admin/question-library` | Question library |
+| PUT/DELETE | `/api/v1/admin/question-library/[qid]` | Edit / delete question |
+| POST | `/api/v1/admin/question-library/generate` | AI-generate questions (Groq llama-4-scout) |
+| POST | `/api/v1/admin/tests/[id]/questions/from-library` | Add from library |
+| GET | `/api/v1/admin/credits` | Credit overview |
+| POST | `/api/v1/admin/credits` | Grant credits |
+| GET | `/api/v1/admin/credits/requests` | Pending credit requests |
+| PATCH | `/api/v1/admin/credits/requests/[reqId]` | Approve / reject |
+| GET | `/api/v1/admin/credits/transactions` | Transaction log |
+| GET/PUT | `/api/v1/admin/homepage` | Homepage CMS |
+| GET/POST | `/api/v1/admin/templates` | Resume templates |
+| GET/POST | `/api/v1/admin/skills` | Skills taxonomy management |
+
+### Proctored Test (Candidate)
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/v1/test/[token]` | Load test by share link token |
+| POST | `/api/v1/test/[token]/save` | Save answers |
+| POST | `/api/v1/test/[token]/integrity` | Log integrity event |
 
 ---
 
-## 18. Non-Functional Requirements
+## 8. Database Tables
 
-| Requirement | Target |
-|-------------|--------|
-| Resume upload + parse + score | < 15 seconds for files under 2 MB |
-| Page load | < 2 seconds |
-| Search debounce | 300 ms |
-| Responsiveness | Fully responsive (mobile and desktop) |
-| Loading states | All async operations use skeleton loaders |
-| Theme | Dark and light mode supported |
-| Navigation | Role-aware navbar |
-| AI usage limit | 5 AI generations per month (free plan) |
-| Portfolio public pages | SSG/ISR, revalidate every 60 seconds for SEO performance |
-| PDF export | ATS-compliant: tagged PDF, selectable text, embedded fonts |
-| Career Map AI | Study plan generation < 20 seconds; section content < 8 seconds |
-| YouTube quota | ~1,515 API units per plan (10,000 daily default); lazy per-topic fetch minimises usage |
+| Table | Purpose |
+|---|---|
+| `resumes` | Uploaded resume files; `parsed_data` (JSONB), `raw_text` |
+| `builder_sections` | Resume builder section data |
+| `portfolios` | Portfolio metadata, slug, publish state |
+| `portfolio_sections` | Portfolio section blocks |
+| `portfolio_projects` | Portfolio project items |
+| `notes` | Block editor notes; `content` (Tiptap JSON JSONB), `parent_id` for hierarchy |
+| `study_plans` | Career map study plans |
+| `study_plan_topics` | Topics within a plan; `sections` (JSONB array with `generation_status`) |
+| `career_map_sessions` | Career map assessment sessions; `extracted_profile` |
+| `career_role_database` | Master role/skill taxonomy; `required_skills`, `core_skills`, `avg_years_exp` |
+| `self_test_sessions` | Self-test sessions with questions (JSONB) |
+| `self_test_attempts` | Candidate answers and scores |
+| `admin_tests` | Admin-created proctored tests |
+| `admin_test_questions` | Questions for admin tests |
+| `admin_test_links` | Share links with token for proctored tests |
+| `admin_test_attempts` | Candidate attempt records with integrity events |
+| `question_library` | Reusable admin question bank |
+| `user_credits` | Current credit balance per user |
+| `credit_transactions` | Full ledger of all credit changes (amount, type, description) |
+| `ai_usage` | Portfolio AI usage tracking for monthly rate limiting |
+| `jobs` | Job profiles (title, JD text, required skills) |
+| `job_skills` | Normalized skills per job |
+| `organizations` | Multi-tenant organization support |
+| `profiles` | User profile data (name, headline, avatar URL, bio, location) |
+| `skills` | Global skills taxonomy with pending approval queue |
+
+**Supabase RPCs:**
+
+| RPC | Signature | Purpose |
+|---|---|---|
+| `deduct_credits` | `(p_user_id uuid, p_amount int) → int` | Atomic credit deduction; returns new balance or -1 if insufficient |
+| `add_credits` | `(p_user_id uuid, p_amount int) → int` | Admin credit grant; returns new balance |
 
 ---
 
-## 19. Known Limitations
+## 9. Environment Variables
 
-| Area | Limitation |
-|------|-----------|
-| AI parsing latency | ~3–8 seconds per resume (OpenRouter free tier) |
-| AI score summary latency | ~2–5 seconds per score |
-| Portfolio preview pane | Placeholder only — "coming soon" |
-| Portfolio PDF export | Route exists; Puppeteer implementation pending |
-| Portfolio password unlock | UI stub — "coming soon" |
-| Portfolio analytics | Page view count only; referrer and geographic breakdown planned |
-| Skills gap AI feature | UI component exists; not yet wired into the portfolio editor |
-| SEO suggestions AI feature | UI component exists; not yet wired into the portfolio editor |
-| Career Map graph | Locked nodes (< 40% skill match) are visible but not interactive |
-| YouTube API key | Optional — falls back to "Search on YouTube" link if key is absent or quota exceeded |
-| Career Map role database | Seeded with ~30 roles; not user-editable |
-| Study plan content | Section content is generated on-demand per section, not pre-generated |
-| Preferences history rollback | History stored (last 5 versions) but rollback UI not yet implemented |
+All secrets in `.env.local` — **gitignored, never commit**.
+
+| Variable | Used By | Required |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase client (browser) | Yes |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase client (browser) | Yes |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase server-side (admin, bypasses RLS) | Yes |
+| `ANTHROPIC_API_KEY` | Portfolio AI — Claude `claude-sonnet-4-6` | Yes |
+| `GROQ_API_KEY` | Groq SDK — `llama-4-scout` and `llama-3.3-70b-versatile` | Yes |
+| `OPENROUTER_API_KEY` | OpenRouter — `llama-3.3-70b-instruct:free` | Yes |
+| `YOUTUBE_API_KEY` | YouTube Data API | Optional |
+| `NEXT_PUBLIC_APP_URL` | Base URL for share links and public routes | Yes |
+
+---
+
+## 10. Authentication & Authorization
+
+- Auth provider: Supabase Auth (email/password)
+- New accounts require email verification before login
+- Server routes use `requireUser(request)` helper (`lib/auth-helpers.js`)
+  - Reads `Authorization: Bearer <token>` header
+  - Returns `{ user }` or throws 401
+- Admin routes additionally check `profiles.role === 'admin'`
+- Organizations: users can belong to an org; org-level access control scopes admin test visibility
+- Public routes (no auth required):
+  - `GET /api/public/resume/[token]` — share link for resume
+  - `GET /api/v1/portfolios/public/[slug]` — published portfolio
+  - `GET /api/v1/test/[token]` — proctored test by share link
+
+---
+
+## Appendix: Planned / Not Yet Implemented
+
+The following features were scoped in the block editor specification but not yet built:
+
+- **Block editor — additional block types:** Math/KaTeX, Mermaid diagrams, Wikilinks, @mentions, tags, YAML frontmatter, footnotes, columns layout, synced blocks, template blocks, TOC block, bookmark/URL embed block, database/properties block
+- **Builder → BlockEditor migration:** Replace textarea-based section editors in the resume builder with the block editor
+- **Portfolio → BlockEditor migration:** Replace portfolio section text inputs with the block editor
+- **Self-test improvements:** Spaced repetition scheduling, history/trend charts, per-skill performance breakdown, leaderboard
+- **Career Map:** Video resource embedding per topic section, community notes on topics
+- **Notes:** Full-text search across all notes, sharing individual notes publicly
+
+---
+
+*Last updated: May 2026*
