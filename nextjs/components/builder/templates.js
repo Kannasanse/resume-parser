@@ -8,6 +8,10 @@ export const TEMPLATES = [
   { id: 'mercury-flow',   name: 'Mercury Flow',   style: 'Modern',   plan: 'basic', description: 'Gray banner header with photo and a clean date-column layout.',        accent: '#374151', sw1: '#E5E7EB', sw2: '#FFFFFF' },
   { id: 'steady-form',    name: 'Steady Form',    style: 'Creative', plan: 'basic', description: 'Photo aligned right, name and role inline, gray-bar section headings.', accent: '#1F2A44', sw1: '#FFFFFF', sw2: '#EEF1F5' },
   { id: 'executive',      name: 'Executive',      style: 'Serif',    plan: 'pro',   description: 'Editorial serif style with a minimal date-column experience block.',    accent: '#0F172A', sw1: '#FFFFFF', sw2: '#0F172A' },
+  { id: 'azure-wave',    name: 'Azure Wave',    style: 'Creative', plan: 'basic', description: 'Soft waves at top and bottom, two-column body, small-caps headings.',     accent: '#5BAEEB', sw1: '#D9ECFB', sw2: '#FFFFFF' },
+  { id: 'noir-flash',    name: 'Noir Flash',    style: 'Creative', plan: 'basic', description: 'Dark background with yellow accent, vertical display name, two-column.',  accent: '#F5C842', sw1: '#141414', sw2: '#F5C842' },
+  { id: 'verdant-crest', name: 'Verdant Crest', style: 'Creative', plan: 'basic', description: 'Green low-poly polygon header, circular photo, lollipop skill bars.',     accent: '#5BAE82', sw1: '#D6EFE0', sw2: '#FFFFFF' },
+  { id: 'confetti',      name: 'Confetti',      style: 'Creative', plan: 'basic', description: 'Coral bubble decorations, pill-shaped section headings, two-column.',     accent: '#C66A66', sw1: '#EBA9A4', sw2: '#FFFFFF' },
 ];
 
 export const TEMPLATE_CATEGORIES = ['All', 'Clean', 'Classic', 'Modern', 'Creative', 'Serif'];

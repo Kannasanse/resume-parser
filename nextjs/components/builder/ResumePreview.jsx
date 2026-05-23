@@ -1341,6 +1341,504 @@ function TemplateExecutive({ resume, ds, ss, sectionAdjustments, visibleBlockIds
   );
 }
 
+// ── Template 8: Azure Wave (soft waves · two-column · small-caps headings) ────
+
+const WAVE_LEFT_TYPES = new Set(['skills', 'languages', 'hobbies', 'references']);
+
+function TemplateAzureWave({ resume, ds, ss, sectionAdjustments, visibleBlockIds = null, showHeader = true }) {
+  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult } = util;
+  const { pi, sections } = buildRenderData(resume);
+
+  const wave     = '#D9ECFB';
+  const waveDeep = '#BBDDF6';
+
+  const leftSections  = sections.filter(s => WAVE_LEFT_TYPES.has(s.type));
+  const rightSections = sections.filter(s => !WAVE_LEFT_TYPES.has(s.type));
+
+  const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#2C2C2A', position: 'relative', minHeight: '100%', overflow: 'hidden' };
+
+  const SmallCapsHead = ({ children }) => (
+    <div style={{ marginTop: '1.2em', marginBottom: '0.45em', fontSize: `${0.74 * titleSizeMult}em`, textTransform: 'uppercase', letterSpacing: '0.16em', fontWeight: 700, color: colIf(t.headings) || '#9CA3AF' }}>
+      {children}
+    </div>
+  );
+
+  const contact = (icon, txt) => txt ? (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#6B7280', fontSize: '0.92em' }}>
+      <Icon name={icon} size={fontSize - 2} color={colIf(t.headerIcons) || accent} />{txt}
+    </span>
+  ) : null;
+
+  return (
+    <div style={pageStyle}>
+      {/* Top waves */}
+      <svg viewBox="0 0 200 100" preserveAspectRatio="none" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '26%', pointerEvents: 'none' }}>
+        <path d="M 0 0 L 200 0 L 200 55 C 165 75, 130 35, 95 55 S 30 80, 0 60 Z" fill={waveDeep} opacity="0.55" />
+        <path d="M 0 0 L 200 0 L 200 30 C 165 55, 130 15, 95 35 S 30 60, 0 40 Z" fill={wave} />
+      </svg>
+      {/* Bottom waves */}
+      <svg viewBox="0 0 200 100" preserveAspectRatio="none" style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '20%', pointerEvents: 'none' }}>
+        <path d="M 0 100 L 200 100 L 200 50 C 170 30, 130 70, 95 50 S 30 25, 0 45 Z" fill={waveDeep} opacity="0.55" />
+        <path d="M 0 100 L 200 100 L 200 70 C 170 55, 130 90, 95 70 S 30 50, 0 65 Z" fill={wave} />
+      </svg>
+
+      <div style={{ position: 'relative', padding: `${padY}mm ${padX}mm` }}>
+        {showHeader && (
+          <div style={{ marginBottom: '1em' }}>
+            <div style={{ fontSize: '2em', fontWeight: 700, letterSpacing: '-0.01em', color: colIf(t.name) || '#2C2C2A', lineHeight: 1 }}>{pi.name || 'Your Name'}</div>
+            {pi.title && <div style={{ fontSize: '0.95em', color: colIf(t.jobTitle) || accent, marginTop: 4, fontWeight: 500 }}>{pi.title}</div>}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px', marginTop: 10 }}>
+              {contact('phone', pi.phone)}
+              {contact('mail', pi.email)}
+              {contact('link', pi.link)}
+              {contact('pin', pi.location)}
+            </div>
+          </div>
+        )}
+        <div style={{ display: 'grid', gridTemplateColumns: '38% 1fr', gap: 22 }}>
+          <div>
+            {leftSections.map(sec => {
+              if (!isSectionVisible(sec, visibleBlockIds)) return null;
+              const body = renderSectionBody(sec, util);
+              if (!body) return null;
+              const adj = sectionAdjustments?.[sec.id];
+              const headingVisible = showSectionHeading(sec, visibleBlockIds);
+              return (
+                <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
+                  {headingVisible && <SmallCapsHead>{sec.title}</SmallCapsHead>}
+                  {body}
+                </div>
+              );
+            })}
+          </div>
+          <div>
+            {rightSections.map(sec => {
+              if (!isSectionVisible(sec, visibleBlockIds)) return null;
+              const body = renderSectionBody(sec, util, { expVariant: sec.type === 'work_experience' ? 'stacked' : undefined });
+              if (!body) return null;
+              const adj = sectionAdjustments?.[sec.id];
+              const headingVisible = showSectionHeading(sec, visibleBlockIds);
+              return (
+                <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
+                  {headingVisible && <SmallCapsHead>{sec.title}</SmallCapsHead>}
+                  {body}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        {/* Footer */}
+        <div style={{ position: 'absolute', left: padX + 'mm', right: padX + 'mm', bottom: padY * 0.45 + 'mm', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#9CA3AF', fontSize: '0.78em' }}>
+          <span>{pi.link || ''}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>Powered by <span style={{ fontWeight: 700, color: accent }}>Proflect</span></span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Template 9: Noir Flash (dark · yellow · vertical name · triangle) ─────────
+
+const NOIR_LEFT_TYPES = new Set(['summary', 'skills', 'languages', 'hobbies', 'references']);
+
+function NoirSkillsLolly({ sec, accentColor }) {
+  const entries = (sec?.content?.entries || []);
+  if (!entries.length) return null;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+      {entries.map((s, i) => (
+        <div key={i}>
+          <div style={{ fontSize: '0.92em', marginBottom: 2 }}>{s.name}</div>
+          <div style={{ height: 4, background: 'rgba(255,255,255,0.12)', borderRadius: 2 }}>
+            <div style={{ height: '100%', width: `${Math.round(((s.level || 2) / 3) * 100)}%`, background: accentColor, borderRadius: 2 }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function NoirLanguagesGrid({ sec }) {
+  const entries = sec?.content?.entries || [];
+  if (!entries.length) return null;
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 18, rowGap: 3 }}>
+      {entries.map((l, i) => (
+        <div key={i}>
+          <div style={{ fontSize: '0.92em' }}>{l.name}</div>
+          {l.level && <div style={{ fontSize: '0.85em', color: '#9CA3AF' }}>{l.level}</div>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TemplateNoirFlash({ resume, ds, ss, sectionAdjustments, visibleBlockIds = null, showHeader = true }) {
+  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult } = util;
+  const { pi, sections } = buildRenderData(resume);
+
+  const isDefault = !ds.accentColor || ds.accentColor === '#185FA5';
+  const yellow = isDefault ? '#F5C842' : accent;
+
+  const leftSections  = sections.filter(s => NOIR_LEFT_TYPES.has(s.type));
+  const rightSections = sections.filter(s => !NOIR_LEFT_TYPES.has(s.type));
+
+  const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#E8EFF7', background: '#141414', position: 'relative', minHeight: '100%', overflow: 'hidden' };
+
+  const NoirHead = ({ children }) => (
+    <div style={{ marginTop: '1.2em', marginBottom: '0.5em', fontSize: `${1 * titleSizeMult}em`, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: yellow }}>
+      {children}
+    </div>
+  );
+
+  const contact = (icon, txt) => txt ? (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.9em', color: '#E8EFF7' }}>
+      <Icon name={icon} size={fontSize - 2} color={yellow} />{txt}
+    </div>
+  ) : null;
+
+  const nameWords = (pi.name || 'Your Name').split(/\s+/);
+
+  return (
+    <div style={pageStyle}>
+      {/* Top-right yellow diagonal */}
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', top: 0, right: 0, width: '40%', height: '34%', pointerEvents: 'none' }}>
+        <polygon points="100,0 100,100 0,0" fill={yellow} />
+      </svg>
+      {/* Bottom-right yellow band */}
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', bottom: 0, right: 0, width: '55%', height: '8%', pointerEvents: 'none' }}>
+        <polygon points="0,100 100,100 100,0 8,0" fill={yellow} />
+      </svg>
+
+      <div style={{ position: 'relative', padding: `${padY}mm ${padX}mm`, zIndex: 1 }}>
+        {showHeader && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 16, alignItems: 'center', marginBottom: '1em' }}>
+            <div>
+              <div style={{ fontSize: '2.6em', fontWeight: 900, letterSpacing: '0.01em', lineHeight: 0.95, textTransform: 'uppercase', color: '#fff' }}>
+                {nameWords.map((w, i) => <div key={i}>{w}</div>)}
+              </div>
+              {pi.title && <div style={{ fontSize: '0.9em', color: yellow, marginTop: 6 }}>{pi.title}</div>}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10 }}>
+              <PhotoPlaceholder size={80} shape="circle" name={pi.name} src={pi.photo || null} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'flex-end' }}>
+                {contact('pin', pi.location)}
+                {contact('phone', pi.phone)}
+                {contact('mail', pi.email)}
+                {contact('link', pi.link)}
+              </div>
+            </div>
+          </div>
+        )}
+        <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 24 }}>
+          <div>
+            {leftSections.map(sec => {
+              if (!isSectionVisible(sec, visibleBlockIds)) return null;
+              const headingVisible = showSectionHeading(sec, visibleBlockIds);
+              const adj = sectionAdjustments?.[sec.id];
+              let body;
+              if (sec.type === 'skills') body = <NoirSkillsLolly sec={sec} accentColor={yellow} />;
+              else if (sec.type === 'languages') body = <NoirLanguagesGrid sec={sec} />;
+              else body = renderSectionBody(sec, util);
+              if (!body) return null;
+              return (
+                <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
+                  {headingVisible && <NoirHead>{sec.title}</NoirHead>}
+                  {body}
+                </div>
+              );
+            })}
+          </div>
+          <div>
+            {rightSections.map(sec => {
+              if (!isSectionVisible(sec, visibleBlockIds)) return null;
+              const body = renderSectionBody(sec, util, { expVariant: sec.type === 'work_experience' ? 'stacked' : undefined });
+              if (!body) return null;
+              const adj = sectionAdjustments?.[sec.id];
+              const headingVisible = showSectionHeading(sec, visibleBlockIds);
+              return (
+                <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
+                  {headingVisible && <NoirHead>{sec.title}</NoirHead>}
+                  {body}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Template 10: Verdant Crest (green polygons · photo · lollipop bars) ───────
+
+const VERDANT_RIGHT_TYPES = new Set(['skills', 'languages', 'hobbies', 'certifications', 'references', 'custom']);
+
+function SkillsLolly({ sec, accentColor, softColor }) {
+  const entries = sec?.content?.entries || [];
+  if (!entries.length) return null;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      {entries.map((s, i) => {
+        const pct = Math.min(100, Math.max(10, Math.round(((s.level || 2) / 3) * 100)));
+        return (
+          <div key={i} style={{ display: 'grid', gridTemplateColumns: '90px 1fr', alignItems: 'center', gap: 8 }}>
+            <div style={{ fontSize: '0.92em' }}>{s.name}</div>
+            <div style={{ position: 'relative', height: 2, background: softColor || '#E5E7EB' }}>
+              <div style={{ position: 'absolute', left: 0, top: 0, height: 2, width: pct + '%', background: accentColor }} />
+              <div style={{ position: 'absolute', left: `calc(${pct}% - 4px)`, top: -3, width: 8, height: 8, background: accentColor, borderRadius: '50%' }} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function LanguageRings({ sec, accentColor, softColor }) {
+  const entries = sec?.content?.entries || [];
+  if (!entries.length) return null;
+  const map = { Beginner: 30, Intermediate: 55, Advanced: 75, Fluent: 90, Native: 100 };
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 14px' }}>
+      {entries.map((l, i) => {
+        const pct = map[l.level] ?? (typeof l.level === 'number' ? Math.round(l.level / 3 * 100) : 70);
+        const r = 12; const circ = 2 * Math.PI * r;
+        return (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <svg width="28" height="28" viewBox="0 0 28 28">
+              <circle cx="14" cy="14" r={r} fill="none" stroke={softColor || '#E5E7EB'} strokeWidth="2.5" />
+              <circle cx="14" cy="14" r={r} fill="none" stroke={accentColor} strokeWidth="2.5"
+                strokeDasharray={circ} strokeDashoffset={circ - (pct / 100) * circ}
+                strokeLinecap="round" transform="rotate(-90 14 14)" />
+            </svg>
+            <div>
+              <div style={{ fontWeight: 500, fontSize: '0.88em' }}>{l.name}</div>
+              {l.level && <div style={{ fontSize: '0.75em', color: '#6B7280' }}>{l.level}</div>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function HashChips({ sec, accentColor }) {
+  const text  = sec?.content?.text || '';
+  const items = text.split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
+  if (!items.length) return null;
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px', fontSize: '0.92em' }}>
+      {items.map((it, i) => (
+        <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ color: accentColor, fontWeight: 700 }}>#</span>{it}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function TemplateVerdantCrest({ resume, ds, ss, sectionAdjustments, visibleBlockIds = null, showHeader = true }) {
+  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult } = util;
+  const { pi, sections } = buildRenderData(resume);
+
+  const isDefault  = !ds.accentColor || ds.accentColor === '#185FA5';
+  const green      = isDefault ? '#7BC79A' : accent;
+  const greenDeep  = isDefault ? '#5BAE82' : accent;
+  const greenSoft  = isDefault ? '#D6EFE0' : accent + '33';
+
+  const leftSections  = sections.filter(s => !VERDANT_RIGHT_TYPES.has(s.type));
+  const rightSections = sections.filter(s => VERDANT_RIGHT_TYPES.has(s.type));
+
+  const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#1F2937', minHeight: '100%', position: 'relative', overflow: 'hidden' };
+
+  const GreenHead = ({ children }) => (
+    <div style={{ marginTop: '1.1em', marginBottom: '0.45em', display: 'flex', alignItems: 'center', gap: 6 }}>
+      <span style={{ fontSize: `${1.05 * titleSizeMult}em`, fontWeight: 700, color: colIf(t.headings) || '#1F2937' }}>{children}</span>
+    </div>
+  );
+
+  return (
+    <div style={pageStyle}>
+      {/* Header: polygon SVG confined within overflow:hidden wrapper */}
+      <div style={{ position: 'relative', overflow: 'hidden' }}>
+        <svg viewBox="0 0 600 200" preserveAspectRatio="xMidYMid slice" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}>
+          <rect width="600" height="200" fill={greenSoft} />
+          <polygon points="0,0 140,0 70,90"             fill={green}     opacity="0.55" />
+          <polygon points="140,0 280,0 200,70 110,90"   fill={greenDeep} opacity="0.32" />
+          <polygon points="280,0 420,0 350,80 220,100"  fill={green}     opacity="0.45" />
+          <polygon points="420,0 600,0 600,90 500,100 410,70" fill={greenDeep} opacity="0.28" />
+          <polygon points="0,200 80,160 180,180 130,200" fill={green}    opacity="0.4" />
+          <polygon points="180,180 320,140 380,200 130,200" fill={greenDeep} opacity="0.25" />
+          <polygon points="320,140 460,160 540,200 380,200" fill={green} opacity="0.45" />
+          <polygon points="70,90 200,70 280,180 130,180"  fill="#fff"     opacity="0.18" />
+        </svg>
+        {showHeader && (
+          <div style={{ position: 'relative', padding: `${padY * 0.7}mm ${padX}mm`, display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 18, alignItems: 'center' }}>
+            <PhotoPlaceholder size={84} shape="circle" name={pi.name} src={pi.photo || null} />
+            <div>
+              <div style={{ fontSize: '2.2em', fontWeight: 800, letterSpacing: '-0.01em', color: colIf(t.name) || '#1F2937', lineHeight: 1 }}>{pi.name || 'Your Name'}</div>
+              {pi.title && <div style={{ fontSize: '0.95em', color: '#374151', marginTop: 4 }}>{pi.title}</div>}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px 14px', marginTop: 6, fontSize: '0.88em', color: '#374151' }}>
+                {pi.phone    && <span><Icon name="phone" size={10} color={greenDeep} /> {pi.phone}</span>}
+                {pi.email    && <span><Icon name="mail"  size={10} color={greenDeep} /> {pi.email}</span>}
+                {pi.location && <span><Icon name="pin"   size={10} color={greenDeep} /> {pi.location}</span>}
+                {pi.link     && <span><Icon name="link"  size={10} color={greenDeep} /> {pi.link}</span>}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      {/* Two-column body */}
+      <div style={{ padding: `${padY * 0.4}mm ${padX}mm ${padY}mm`, display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 26 }}>
+        <div>
+          {leftSections.map(sec => {
+            if (!isSectionVisible(sec, visibleBlockIds)) return null;
+            const body = renderSectionBody(sec, util, { expVariant: sec.type === 'work_experience' ? 'stacked' : undefined });
+            if (!body) return null;
+            const adj = sectionAdjustments?.[sec.id];
+            const headingVisible = showSectionHeading(sec, visibleBlockIds);
+            return (
+              <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
+                {headingVisible && <GreenHead>{sec.title}</GreenHead>}
+                {body}
+              </div>
+            );
+          })}
+        </div>
+        <div>
+          {rightSections.map(sec => {
+            if (!isSectionVisible(sec, visibleBlockIds)) return null;
+            const headingVisible = showSectionHeading(sec, visibleBlockIds);
+            const adj = sectionAdjustments?.[sec.id];
+            let body;
+            if (sec.type === 'skills')    body = <SkillsLolly sec={sec} accentColor={greenDeep} softColor={greenSoft} />;
+            else if (sec.type === 'languages') body = <LanguageRings sec={sec} accentColor={greenDeep} softColor={greenSoft} />;
+            else if (sec.type === 'hobbies')   body = <HashChips sec={sec} accentColor={greenDeep} />;
+            else body = renderSectionBody(sec, util);
+            if (!body) return null;
+            return (
+              <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
+                {headingVisible && <GreenHead>{sec.title}</GreenHead>}
+                {body}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Template 11: Confetti (coral bubbles · pill headers · two-column) ─────────
+
+const CONFETTI_LEFT_TYPES = new Set(['summary', 'work_experience', 'education', 'projects']);
+
+function TemplateConfetti({ resume, ds, ss, sectionAdjustments, visibleBlockIds = null, showHeader = true }) {
+  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult } = util;
+  const { pi, sections } = buildRenderData(resume);
+
+  const isDefault  = !ds.accentColor || ds.accentColor === '#185FA5';
+  const coral      = isDefault ? '#EBA9A4' : accent;
+  const coralDeep  = isDefault ? '#C66A66' : accent;
+  const beige      = '#D8C8B5';
+  const blue       = '#B6CFE0';
+
+  const leftSections  = sections.filter(s => CONFETTI_LEFT_TYPES.has(s.type));
+  const rightSections = sections.filter(s => !CONFETTI_LEFT_TYPES.has(s.type));
+
+  const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#1F2937', minHeight: '100%', position: 'relative', overflow: 'hidden' };
+
+  const PillHead = ({ children }) => (
+    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: coral, color: '#fff', padding: '4px 14px', borderRadius: 999, fontSize: `${0.95 * titleSizeMult}em`, fontWeight: 700, marginTop: '1em', marginBottom: '0.45em' }}>
+      {children}
+    </div>
+  );
+
+  const contactLine = (label, val) => val ? (
+    <div style={{ fontSize: '0.92em' }}><strong>{label}:</strong>&nbsp;{val}</div>
+  ) : null;
+
+  return (
+    <div style={pageStyle}>
+      {/* Confetti circles — full-page, pointer-events none */}
+      <svg viewBox="0 0 600 800" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+        <circle cx="520" cy="50"  r="55" fill={coral}     opacity="0.55" />
+        <circle cx="565" cy="120" r="22" fill={coral}     opacity="0.35" />
+        <circle cx="460" cy="80"  r="14" fill={beige}     opacity="0.7"  />
+        <circle cx="500" cy="160" r="32" fill={beige}     opacity="0.55" />
+        <circle cx="430" cy="30"  r="10" fill={blue}      opacity="0.6"  />
+        <circle cx="580" cy="22"  r="18" fill={blue}      opacity="0.55" />
+        <circle cx="590" cy="420" r="34" fill={coral}     opacity="0.35" />
+        <circle cx="575" cy="500" r="14" fill={beige}     opacity="0.8"  />
+        <circle cx="40"  cy="760" r="48" fill={coral}     opacity="0.45" />
+        <circle cx="98"  cy="730" r="18" fill={beige}     opacity="0.6"  />
+        <circle cx="20"  cy="700" r="10" fill={blue}      opacity="0.65" />
+        <circle cx="120" cy="780" r="22" fill={blue}      opacity="0.45" />
+        <circle cx="180" cy="760" r="14" fill={coral}     opacity="0.6"  />
+        <circle cx="10"  cy="320" r="14" fill={beige}     opacity="0.6"  />
+        <circle cx="20"  cy="500" r="10" fill={coral}     opacity="0.5"  />
+      </svg>
+
+      <div style={{ position: 'relative', padding: `${padY}mm ${padX}mm` }}>
+        {showHeader && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 16, alignItems: 'center', marginBottom: '0.6em' }}>
+            <div>
+              <div style={{ fontSize: '2.1em', fontWeight: 800, letterSpacing: '-0.01em', color: colIf(t.name) || '#1F2937', lineHeight: 1 }}>{pi.name || 'Your Name'}</div>
+              <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {contactLine('Address', pi.location)}
+                {contactLine('Phone', pi.phone)}
+                {contactLine('Email', pi.email)}
+                {contactLine('Web', pi.link)}
+              </div>
+            </div>
+            <PhotoPlaceholder size={86} shape="circle" name={pi.name} src={pi.photo || null} />
+          </div>
+        )}
+        <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 22 }}>
+          <div>
+            {leftSections.map(sec => {
+              if (!isSectionVisible(sec, visibleBlockIds)) return null;
+              const body = renderSectionBody(sec, util, { expVariant: sec.type === 'work_experience' ? 'stacked' : undefined });
+              if (!body) return null;
+              const adj = sectionAdjustments?.[sec.id];
+              const headingVisible = showSectionHeading(sec, visibleBlockIds);
+              return (
+                <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
+                  {headingVisible && <PillHead>{sec.title}</PillHead>}
+                  <div style={{ marginTop: 4 }}>{body}</div>
+                </div>
+              );
+            })}
+          </div>
+          <div>
+            {rightSections.map(sec => {
+              if (!isSectionVisible(sec, visibleBlockIds)) return null;
+              const headingVisible = showSectionHeading(sec, visibleBlockIds);
+              const adj = sectionAdjustments?.[sec.id];
+              let body;
+              if (sec.type === 'skills')  body = <SkillsLolly sec={sec} accentColor={coralDeep} softColor={coral + '55'} />;
+              else if (sec.type === 'hobbies') body = <HashChips sec={sec} accentColor={coralDeep} />;
+              else body = renderSectionBody(sec, util);
+              if (!body) return null;
+              return (
+                <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
+                  {headingVisible && <PillHead>{sec.title}</PillHead>}
+                  <div style={{ marginTop: 4 }}>{body}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Template registry ─────────────────────────────────────────────────────────
 
 const TEMPLATE_COMPONENTS = {
@@ -1351,6 +1849,10 @@ const TEMPLATE_COMPONENTS = {
   'mercury-flow':   TemplateMercuryFlow,
   'steady-form':    TemplateSteadyForm,
   'executive':      TemplateExecutive,
+  'azure-wave':     TemplateAzureWave,
+  'noir-flash':     TemplateNoirFlash,
+  'verdant-crest':  TemplateVerdantCrest,
+  'confetti':       TemplateConfetti,
 };
 
 // ── ResumePreview default export ──────────────────────────────────────────────
