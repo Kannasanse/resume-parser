@@ -104,12 +104,6 @@ export default function AdminDashboard() {
             <p className="text-xs text-ds-textMuted mt-0.5">Mark resume builder templates as Featured.</p>
           </Link>
 
-          <Link href="/admin/homepage"
-            className="card card-interactive p-4 group">
-            <p className="text-sm font-bold text-ds-text group-hover:text-primary transition-colors">Homepage CMS</p>
-            <p className="text-xs text-ds-textMuted mt-0.5">Edit homepage sections, toggle visibility, and publish changes.</p>
-          </Link>
-
         </div>
       </div>
     </div>

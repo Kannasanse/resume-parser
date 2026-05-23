@@ -89,6 +89,36 @@ const DIFF_LABELS = {
   hard:   'Hard (advanced concepts and edge cases, senior-level)',
 };
 
+// Scenario-based question instructions — injected for skills/jd modes only.
+// content mode generates from pasted material so scenario framing would be off-topic.
+function buildScenarioInstruction(difficulty) {
+  if (difficulty === 'easy') {
+    return `All questions must be direct knowledge or recall questions.
+Do NOT use scenario-based framing. Ask about definitions, concepts, syntax, or straightforward facts.`;
+  }
+  if (difficulty === 'medium') {
+    return `Generate a MIX of question types:
+- Approximately 40% of questions should be SCENARIO-BASED: begin with a realistic workplace or coding situation (2-3 sentences), then ask what the candidate would do, what is wrong, or what the best approach is.
+- Approximately 60% should be direct conceptual or factual questions.
+For scenario questions, ground them in the specific skill(s) being tested — use starters like:
+  "You are debugging a production issue where..."
+  "A colleague's code review reveals that..."
+  "Your team is two weeks from a deadline and..."
+  "You are analysing a dataset and discover that..."
+The correct answer should require genuine understanding. Wrong MCQ options should be plausible mistakes a real practitioner might make.`;
+  }
+  // hard
+  return `Generate MOSTLY SCENARIO-BASED questions:
+- Approximately 70% of questions should be SCENARIO-BASED: each scenario must describe a specific, realistic situation a professional would face (debugging, architecture decision, performance issue, security vulnerability, team conflict, etc.). The situation should be 2-4 sentences. Then ask the candidate to identify the problem, choose the best approach, or explain their reasoning.
+- The remaining 30% may be advanced conceptual or analytical questions (trade-off analysis, "why does X happen", edge cases).
+Use scenario starters like:
+  "Your application is experiencing intermittent timeouts under peak load. You notice that..."
+  "You need to design a system that handles 10,000 concurrent users. The primary constraint is..."
+  "A user reports that [symptom]. After investigation you find..."
+  "You are onboarding a new developer and notice the codebase..."
+Hard questions must require reasoning, not recall. Avoid questions that can be answered by memorising a definition.`;
+}
+
 // ── POST — create session ─────────────────────────────────────────────────────
 
 export async function POST(request) {
@@ -186,15 +216,17 @@ export async function POST(request) {
 
     if (input_type === 'skills') {
       const skills = input_data.split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
+      const scenarioBlock = buildScenarioInstruction(difficulty);
       systemPrompt = SYSTEM_PROMPT;
-      userPrompt = `Generate exactly ${totalCount} ${diffLabel} questions about these skills/topics: ${skills.join(', ')}\n\nDistribution: ${typeDescription}\nFor MCQ/TF: distribute evenly between MCQ and True/False.\nFor Short Answer: require 2-6 sentence written responses.`;
+      userPrompt = `Generate exactly ${totalCount} ${diffLabel} questions about these skills/topics: ${skills.join(', ')}\n\nDistribution: ${typeDescription}\nFor MCQ/TF: distribute evenly between MCQ and True/False.\nFor Short Answer: require 2-6 sentence written responses.\n\n${scenarioBlock}`;
     } else if (input_type === 'content') {
       systemPrompt = SYSTEM_PROMPT;
       userPrompt = `Generate exactly ${totalCount} ${diffLabel} questions based on this content:\n\n${input_data.trim()}\n\nDistribution: ${typeDescription}`;
     } else {
       systemPrompt = SYSTEM_PROMPT_JD;
       const skillList = jd_skills.map(s => `- ${s.name} (${s.type})`).join('\n');
-      userPrompt = `Generate exactly ${totalCount} ${diffLabel} questions for this job role.\n\nSkills (distribute evenly):\n${skillList}\n\nDistribution: ${typeDescription}\nEach question must include the "skill" field.`;
+      const scenarioBlock = buildScenarioInstruction(difficulty);
+      userPrompt = `Generate exactly ${totalCount} ${diffLabel} questions for this job role.\n\nSkills (distribute evenly):\n${skillList}\n\nDistribution: ${typeDescription}\nEach question must include the "skill" field.\n\n${scenarioBlock}`;
     }
 
     const generated = await callAI(userPrompt, systemPrompt);

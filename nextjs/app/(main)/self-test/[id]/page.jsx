@@ -51,23 +51,11 @@ function QuestionView({
             {result.correct ? '✓ Correct' : '✗ Wrong'}
           </span>
         )}
-        {isResults && result && isSA && (() => {
-          if (result.pending_grade) {
-            return (
-              <span className="flex-shrink-0 flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-700/50">
-                <span className="w-2.5 h-2.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-                Grading…
-              </span>
-            );
-          }
-          const score = result.ai_score;
-          if (score != null) {
-            if (score >= 0.7) return <span className="flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded chip-success">✓ Correct</span>;
-            if (score >= 0.4) return <span className="flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700/50">◑ Partial</span>;
-            return <span className="flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded chip-error">✗ Incorrect</span>;
-          }
-          return <span className={`flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded ${result.correct ? 'chip-success' : 'chip-error'}`}>{result.correct ? '✓ Correct' : '✗ Incorrect'}</span>;
-        })()}
+        {isResults && result && isSA && (
+          <span title="Short answer questions are for practice only" className="flex-shrink-0 text-[11px] font-medium px-2 py-0.5 rounded bg-[#F3F4F6] dark:bg-white/10 text-[#9CA3AF]">
+            Not scored
+          </span>
+        )}
       </div>
 
       {/* MCQ options */}
@@ -159,43 +147,14 @@ function QuestionView({
           <div className="bg-ds-bg border border-ds-border rounded-lg px-3 py-2.5">
             <p className="text-[10px] font-semibold text-ds-textMuted uppercase tracking-wide mb-1.5">Your Answer</p>
             {result?.short_answer_text
-              ? <p className="text-sm text-ds-text leading-relaxed whitespace-pre-wrap">{result.short_answer_text}</p>
+              ? <p className="text-sm italic text-ds-text leading-relaxed whitespace-pre-wrap">{result.short_answer_text}</p>
               : <p className="text-sm italic text-ds-textMuted">No answer provided</p>
             }
           </div>
 
-          {/* AI grading pending */}
-          {result?.grading_method === 'ai' && result?.pending_grade && (
-            <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700/50 rounded-lg px-3 py-2.5 flex items-center gap-2">
-              <div className="w-3.5 h-3.5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-              <p className="text-xs text-blue-700 dark:text-blue-300">AI is grading this answer…</p>
-            </div>
-          )}
-
-          {/* AI feedback */}
-          {result?.grading_method === 'ai' && result?.ai_feedback && !result?.pending_grade && (
-            <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700/50 rounded-lg px-3 py-2.5">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">AI Feedback</span>
-                {result.ai_score != null && (
-                  <div className="flex items-center gap-2">
-                    <div className="w-20 h-1.5 bg-blue-100 dark:bg-blue-900/50 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${result.ai_score >= 0.7 ? 'bg-ds-success' : result.ai_score >= 0.4 ? 'bg-amber-400' : 'bg-ds-danger'}`}
-                        style={{ width: `${Math.round(result.ai_score * 100)}%` }}
-                      />
-                    </div>
-                    <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">{Math.round(result.ai_score * 100)}%</span>
-                  </div>
-                )}
-              </div>
-              <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">{result.ai_feedback}</p>
-            </div>
-          )}
-
           {/* Model answer */}
           {question.model_answer && (
-            <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700/50 rounded-lg px-3 py-2.5">
+            <div className="bg-green-50 dark:bg-green-900/30 border-l-4 border-green-400 dark:border-green-500 rounded-lg px-3 py-2.5">
               <p className="text-[10px] font-semibold text-green-700 dark:text-green-400 uppercase tracking-wide mb-1.5">Model Answer</p>
               <p className="text-sm text-green-800 dark:text-green-200 leading-relaxed">{question.model_answer}</p>
             </div>
@@ -267,39 +226,6 @@ export default function SelfTestPage() {
           if (d.attempt.combined_pct != null) setCombinedPct(d.attempt.combined_pct);
           setState('results');
 
-          // Re-trigger AI grading if any answers are still pending (e.g. previous grading failed)
-          const pendingAI = (d.questions || []).map((q, i) => {
-            if (q.type !== 'short_answer') return null;
-            const res = attemptResults[i];
-            if (!res || !res.pending_grade || res.grading_method !== 'ai') return null;
-            return {
-              questionIndex:  i,
-              questionText:   q.question_text,
-              modelAnswer:    q.model_answer    || '',
-              gradingRubric:  q.grading_rubric  || '',
-              answerKeywords: q.answer_keywords || [],
-              userAnswer:     res.short_answer_text || '',
-            };
-          }).filter(Boolean);
-
-          if (pendingAI.length > 0) {
-            fetch(`/api/v1/self-test/${id}/grade-short-answers`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ answers: pendingAI }),
-            }).then(r => r.ok ? r.json() : null).then(gd => {
-              if (!gd?.grades) return;
-              setLocalResults(prev => {
-                const updated = [...prev];
-                for (const { questionIndex: qi, score, feedback } of gd.grades) {
-                  if (updated[qi]) {
-                    updated[qi] = { ...updated[qi], ai_score: score, ai_feedback: feedback, grading_method: 'ai', correct: score >= 0.7, pending_grade: false };
-                  }
-                }
-                return updated;
-              });
-            }).catch(() => {});
-          }
           return;
         }
 
@@ -334,31 +260,6 @@ export default function SelfTestPage() {
     }
   }, [answers, shortAnswerTexts, timeLeft, flagged, state]);
 
-  // Poll for AI grading completion (fallback if grading is still running after page load)
-  useEffect(() => {
-    if (state !== 'results') return;
-    const hasPendingAI = localResults.some(r => r?.pending_grade && r?.grading_method === 'ai');
-    if (!hasPendingAI) return;
-
-    let attempts = 0;
-    const pollId = setInterval(async () => {
-      attempts++;
-      if (attempts >= 20) { clearInterval(pollId); return; } // stop after 60s
-      try {
-        const r = await fetch(`/api/v1/self-test/${id}`);
-        if (!r.ok) return;
-        const d = await r.json();
-        if (!d.attempt?.results) return;
-        const updated = d.attempt.results;
-        const stillPending = updated.some(r => r?.pending_grade && r?.grading_method === 'ai');
-        setLocalResults(updated);
-        if (d.attempt.combined_pct != null) setCombinedPct(d.attempt.combined_pct);
-        if (!stillPending) clearInterval(pollId);
-      } catch {}
-    }, 3000);
-
-    return () => clearInterval(pollId);
-  }, [state, id]); // intentionally excludes localResults to avoid restart loop
 
   // Submit
   const doSubmit = useCallback(async (auto = false) => {
@@ -404,52 +305,6 @@ export default function SelfTestPage() {
     setLocalResults([...(d.results || [])]);
     setState('results');
 
-    // AI-grade short answers if needed
-    if (d.has_short_answers) {
-      const aiAnswers = (d.questions || []).map((q, i) => {
-        if (q.type !== 'short_answer') return null;
-        const res = d.results?.[i];
-        if (!res || res.grading_method !== 'ai') return null;
-        return {
-          questionIndex:  i,
-          questionText:   q.question_text,
-          modelAnswer:    q.model_answer    || '',
-          gradingRubric:  q.grading_rubric  || '',
-          answerKeywords: q.answer_keywords || [],
-          userAnswer:     res.short_answer_text || shortAnswerTexts[String(i)] || '',
-        };
-      }).filter(Boolean);
-
-      if (aiAnswers.length > 0) {
-        try {
-          const gr = await fetch(`/api/v1/self-test/${id}/grade-short-answers`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ answers: aiAnswers }),
-          });
-          if (gr.ok) {
-            const gd = await gr.json();
-            setLocalResults(prev => {
-              const updated = [...prev];
-              for (const grade of (gd.grades || [])) {
-                const { questionIndex: qi, score, feedback } = grade;
-                if (updated[qi]) {
-                  updated[qi] = {
-                    ...updated[qi],
-                    ai_score:       score,
-                    ai_feedback:    feedback,
-                    grading_method: 'ai',
-                    correct:        score >= 0.7,
-                    pending_grade:  false,
-                  };
-                }
-              }
-              return updated;
-            });
-          }
-        } catch {}
-      }
-    }
   }, [answers, shortAnswerTexts, timeLeft, id]);
 
   submitRef.current = doSubmit;
@@ -510,10 +365,11 @@ export default function SelfTestPage() {
 
   // ── Results ──────────────────────────────────────────────────────────────────
   if (state === 'results' && results) {
-    const rawPct  = results.max_score > 0 ? Math.round((results.score / results.max_score) * 100) : 0;
-    const displayPct = combinedPct ?? rawPct;
+    const displayPct = combinedPct ?? (results.max_score > 0 ? Math.round((results.score / results.max_score) * 100) : 0);
     const isJd    = session?.input_type === 'jd';
     const hasSA   = results.has_short_answers || localResults.some(r => r?.question_type === 'short_answer');
+    const saCount = localResults.filter(r => r?.question_type === 'short_answer').length;
+    const scoredCount = localResults.filter(r => r?.question_type !== 'short_answer').length;
 
     const band = isJd
       ? (displayPct >= 80 ? { label: 'Strong Match',     cls: 'text-ds-success bg-ds-successLight border border-ds-success/30' }
@@ -535,8 +391,6 @@ export default function SelfTestPage() {
         .sort((a, b) => b.pct - a.pct);
     })() : null;
 
-    const pendingAIGrade = localResults.some(r => r?.pending_grade && r?.grading_method === 'ai');
-
     const handleRetake = () => {
       if (session?.jd_skills) {
         try { sessionStorage.setItem('jd_retake', JSON.stringify({ skills: session.jd_skills, jdText: session.input_data || '' })); } catch {}
@@ -549,15 +403,15 @@ export default function SelfTestPage() {
         {/* Score card — centred, readable width */}
         <div className="max-w-2xl mx-auto mb-8 space-y-4">
         <div className="card card-featured shadow-2xl p-6 text-center space-y-3">
-          <p className="text-sm text-ds-textMuted font-medium uppercase tracking-wide">
-            {hasSA && combinedPct != null ? 'Combined Score' : 'Your Score'}
-          </p>
+          <p className="text-sm text-ds-textMuted font-medium uppercase tracking-wide">Your Score</p>
           <p className="text-5xl font-bold font-heading text-gradient-primary">{displayPct}%</p>
-          {hasSA && combinedPct != null && (
-            <p className="text-xs text-ds-textMuted">MCQ 60% + Short Answer 40% weighted</p>
-          )}
-          {!hasSA && (
-            <p className="text-sm text-ds-textMuted">{results.score} / {results.max_score} points</p>
+          <p className="text-sm text-ds-textMuted">
+            {results.score} / {results.max_score} scored question{scoredCount !== 1 ? 's' : ''}
+          </p>
+          {hasSA && (
+            <p className="text-xs text-[#9CA3AF] mt-1">
+              {saCount} short answer question{saCount !== 1 ? 's' : ''} not included in score — review model answers below
+            </p>
           )}
           {isJd && (
             <span className={`inline-block text-xs font-semibold px-3 py-1 rounded-full ${band.cls}`}>
@@ -582,13 +436,6 @@ export default function SelfTestPage() {
           )}
         </div>
 
-        {/* SA grading notice */}
-        {pendingAIGrade && (
-          <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700/50 rounded-lg px-4 py-3 flex items-center gap-3">
-            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-            <p className="text-sm text-blue-700 dark:text-blue-300">AI is grading your short answers — scores will update automatically.</p>
-          </div>
-        )}
         </div>{/* end max-w-2xl score section */}
 
         {/* Per-skill breakdown (JD mode) */}

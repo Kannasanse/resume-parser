@@ -52,20 +52,10 @@ export async function POST(request, { params }) {
       short_answer_count:     saCount,
     };
 
-    // Calculate combined score (MCQ 60% / SA 40% if mixed, else 100% for whichever)
-    const mcqCount = session.questions.filter(q => q.type !== 'short_answer').length;
-    if (saCount > 0 && mcqCount > 0) {
-      // MCQ score as pct
-      const mcqCorrect = results.filter((r, i) => session.questions[i]?.type !== 'short_answer' && r.correct).length;
-      const mcqPct = mcqCount > 0 ? (mcqCorrect / mcqCount) * 100 : 0;
-      // SA: pending grading — score 0 until graded
-      attemptRow.combined_score = Math.round(mcqPct * 0.6);
-      attemptRow.combined_pct   = attemptRow.combined_score;
-    } else {
-      const pct = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
-      attemptRow.combined_score = pct;
-      attemptRow.combined_pct   = pct;
-    }
+    // Score is MCQ/TF only — short answers are excluded from scoring
+    const pct = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
+    attemptRow.combined_score = pct;
+    attemptRow.combined_pct   = pct;
 
     const { data: attempt, error: aErr } = await supabase
       .from('self_test_attempts')
@@ -109,26 +99,22 @@ function calculateScore(questions, answers, shortAnswerMap = {}) {
   let saCount = 0;
 
   const results = (questions || []).map((q, i) => {
-    const pts = q.points || 1;
-    maxScore += pts;
     const ans = answers[String(i)];
 
     if (q.type === 'short_answer') {
       saCount++;
-      const saInfo = shortAnswerMap[String(i)] || {};
+      // Short answers are not scored — show model answer only
       return {
-        correct:       false,  // pending grading
-        answer:        ans ?? null,
-        skill:         q.skill ?? null,
-        question_type: 'short_answer',
+        correct:           false,
+        answer:            ans ?? null,
+        skill:             q.skill ?? null,
+        question_type:     'short_answer',
         short_answer_text: ans ?? '',
-        grading_method:    saInfo.gradingMethod || 'per_question',
-        ai_score:      null,
-        ai_feedback:   null,
-        self_grade:    null,
-        pending_grade: true,
       };
     }
+
+    const pts = q.points || 1;
+    maxScore += pts;
 
     let correct = false;
     if (q.type === 'mcq') {
@@ -142,9 +128,9 @@ function calculateScore(questions, answers, shortAnswerMap = {}) {
 
     return {
       correct,
-      answer:        ans ?? null,
-      skill:         q.skill ?? null,
-      question_type: q.type || 'mcq',
+      answer:         ans ?? null,
+      skill:          q.skill ?? null,
+      question_type:  q.type || 'mcq',
       correct_index:  q.type === 'mcq' ? q.options?.findIndex(o => o.is_correct) : undefined,
       correct_answer: q.type === 'true_false' ? q.correct_answer : undefined,
     };
