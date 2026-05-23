@@ -1,18 +1,9 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth-helpers.js';
-import supabase from '@/lib/supabase.js';
-import { callClaude, checkAiUsage, recordAiUsage } from '@/lib/aiHelpers.js';
-
-const FREE_LIMIT = 5;
 
 export async function POST(req) {
   const user = await requireUser(req);
   if (user instanceof NextResponse) return user;
-
-  const usage = await checkAiUsage(user.id, supabase);
-  if (usage >= FREE_LIMIT) {
-    return NextResponse.json({ error: 'limit_reached', message: "You've used all 5 AI generations this month." }, { status: 402 });
-  }
 
   const { title, category, techStack, myRole, draftText, outcomes } = await req.json();
 
@@ -42,7 +33,20 @@ Rewrite this project description to be:
 
 Return ONLY the improved description as plain text. No markdown, no bullet points, no preamble.`;
 
-  const text = await callClaude(prompt, 400);
-  await recordAiUsage(user.id, 'project', supabase);
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'meta-llama/llama-3.3-70b-instruct:free',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 400,
+    }),
+  });
+  if (!res.ok) throw new Error(`OpenRouter ${res.status}`);
+  const data = await res.json();
+  const text = data.choices?.[0]?.message?.content ?? '';
   return NextResponse.json({ text });
 }

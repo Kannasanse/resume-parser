@@ -66,7 +66,7 @@ Return the content as clean markdown. No preamble, no "Here is the content:".
 Start directly with the first paragraph or sub-heading.`;
 
     const completion = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
+      model: 'llama-3.1-8b-instant',
       temperature: 0.5,
       max_tokens: 1024,
       messages: [{ role: 'user', content: prompt }],

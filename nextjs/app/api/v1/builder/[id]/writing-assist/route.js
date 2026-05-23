@@ -87,7 +87,7 @@ export async function POST(req, { params }) {
 
   try {
     const completion = await groq.chat.completions.create({
-      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+      model: 'llama-3.1-8b-instant',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user',   content: userMessage },

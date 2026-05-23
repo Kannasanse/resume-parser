@@ -1,18 +1,9 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth-helpers.js';
-import supabase from '@/lib/supabase.js';
-import { callClaude, checkAiUsage, recordAiUsage } from '@/lib/aiHelpers.js';
-
-const FREE_LIMIT = 5;
 
 export async function POST(req) {
   const user = await requireUser(req);
   if (user instanceof NextResponse) return user;
-
-  const usage = await checkAiUsage(user.id, supabase);
-  if (usage >= FREE_LIMIT) {
-    return NextResponse.json({ error: 'limit_reached', message: "You've used all 5 AI generations this month." }, { status: 402 });
-  }
 
   const { name, jobTitle, topSkills, targetRole, tone } = await req.json();
 
@@ -33,13 +24,26 @@ Requirements:
 Return ONLY a JSON array of 5 strings. No explanation, no numbering, no preamble.
 Example format: ["Tagline one", "Tagline two", "Tagline three", "Tagline four", "Tagline five"]`;
 
-  const raw = await callClaude(prompt, 300);
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'meta-llama/llama-3.3-70b-instruct:free',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 300,
+    }),
+  });
+  if (!res.ok) throw new Error(`OpenRouter ${res.status}`);
+  const data = await res.json();
+  const raw = data.choices?.[0]?.message?.content ?? '';
   let taglines;
   try {
     taglines = JSON.parse(raw);
   } catch {
     taglines = raw.split('\n').filter(l => l.trim()).slice(0, 5);
   }
-  await recordAiUsage(user.id, 'tagline', supabase);
   return NextResponse.json({ taglines });
 }

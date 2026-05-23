@@ -25,7 +25,7 @@ Do not duplicate skills. Return only the JSON array, no explanation or markdown.
 
 export async function parseJobSkills(description) {
   const response = await groq.chat.completions.create({
-    model: 'llama-3.3-70b-versatile',
+    model: 'llama-3.1-8b-instant',
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: `Job Description:\n${description}` },
