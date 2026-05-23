@@ -1,7 +1,7 @@
 # Proflect — Requirements & Implementation Reference
 
 > **Status:** Living document. Reflects implementation as of May 2026.  
-> **Stack:** Next.js 15 App Router · Tiptap v3 · Supabase · Anthropic · Groq · OpenRouter  
+> **Stack:** Next.js 15 App Router · Tiptap v3 · Supabase  · Groq · OpenRouter  
 > **Platform:** https://proflect-neo.vercel.app
 
 ---
