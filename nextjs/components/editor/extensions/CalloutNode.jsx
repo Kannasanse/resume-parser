@@ -1,12 +1,19 @@
 import { Node } from '@tiptap/core';
 
+export const CALLOUT_TYPES = {
+  info:      { icon: '💡', label: 'Note' },
+  success:   { icon: '✅', label: 'Success' },
+  warning:   { icon: '⚠️', label: 'Warning' },
+  danger:    { icon: '🚨', label: 'Danger' },
+  important: { icon: '🔥', label: 'Important' },
+  tip:       { icon: '🎯', label: 'Tip' },
+  quote:     { icon: '💬', label: 'Quote' },
+};
+
 export const CalloutExtension = Node.create({
   name: 'callout',
-
   group: 'block',
-
   content: 'block+',
-
   atom: false,
 
   addAttributes() {
@@ -53,20 +60,10 @@ export const CalloutExtension = Node.create({
             type: this.name,
             attrs: {
               calloutType: attrs?.type || 'info',
-              icon: attrs?.icon || getDefaultIcon(attrs?.type),
+              icon: attrs?.icon || CALLOUT_TYPES[attrs?.type]?.icon || '💡',
             },
             content: [{ type: 'paragraph' }],
           }),
     };
   },
 });
-
-function getDefaultIcon(type) {
-  switch (type) {
-    case 'success': return '✅';
-    case 'warning': return '⚠️';
-    case 'danger':  return '🚨';
-    case 'info':
-    default:        return '💡';
-  }
-}
