@@ -5,6 +5,9 @@ import { usePathname } from 'next/navigation';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isUUID = s => UUID_RE.test(s);
+
 function useCreditBalance(enabled) {
   const [balance, setBalance] = useState(null);
   useEffect(() => {
@@ -144,6 +147,7 @@ export default function TopBar({ onMobileMenu }) {
   const { user } = useAuth();
   const creditBalance = useCreditBalance(!!user);
   const [scrolled, setScrolled] = useState(false);
+  const [resolvedNames, setResolvedNames] = useState({});
 
   useEffect(() => {
     // Listen to the main scroll container (the layout's main element)
@@ -160,6 +164,42 @@ export default function TopBar({ onMobileMenu }) {
   const parts = pathname.split('/').filter(Boolean);
   const isBreadcrumb = parts.length >= 3 && (parts[0] === 'my-courses' || parts[0] === 'career-map');
 
+  // Resolve UUID segments to human-readable names for career-map paths
+  useEffect(() => {
+    if (!isBreadcrumb || parts[0] !== 'career-map') return;
+    const uuids = parts.filter(isUUID);
+    if (!uuids.length) return;
+    if (uuids.every(id => resolvedNames[id])) return;
+    const planId = uuids[0];
+    fetch(`/api/v1/career-map/study-plan/${planId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) return;
+        const names = {};
+        if (data.plan?.target_role_title) names[planId] = data.plan.target_role_title;
+        for (const id of uuids.slice(1)) {
+          const topic = data.topics?.find(t => t.id === id);
+          if (topic) names[id] = topic.title;
+        }
+        setResolvedNames(prev => ({ ...prev, ...names }));
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  // Build breadcrumb parts: for career-map resolve UUIDs, for others slugify
+  let breadcrumbParts = [];
+  if (isBreadcrumb) {
+    if (parts[0] === 'career-map') {
+      breadcrumbParts = ['Career Map'];
+      const uuids = parts.filter(isUUID);
+      if (uuids[0]) breadcrumbParts.push(resolvedNames[uuids[0]] ?? '…');
+      if (uuids[1]) breadcrumbParts.push(resolvedNames[uuids[1]] ?? '…');
+    } else {
+      breadcrumbParts = parts.map(p => p.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()));
+    }
+  }
+
   return (
     <header className={`h-[52px] flex-shrink-0 flex items-center px-6 gap-4 bg-white dark:bg-[#111F35] border-b border-[#D1DCE8] dark:border-white/10 transition-shadow duration-200 ${scrolled ? 'shadow-[0_2px_8px_rgba(12,68,124,0.06)]' : ''}`}>
 
@@ -173,7 +213,7 @@ export default function TopBar({ onMobileMenu }) {
       {/* Left: page title or breadcrumb */}
       <div className="flex items-center gap-2 min-w-0">
         {isBreadcrumb
-          ? <Breadcrumb parts={parts.map(p => p.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()))} />
+          ? <Breadcrumb parts={breadcrumbParts} />
           : <h1 className="text-[16px] font-[700] tracking-[-0.01em] text-[#2C2C2A] dark:text-[#E8EFF7] whitespace-nowrap">{title}</h1>
         }
       </div>

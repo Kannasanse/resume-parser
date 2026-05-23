@@ -7,6 +7,7 @@ import SectionBlock from './SectionBlock';
 import BottomNavBar from './BottomNavBar';
 import CompletionCelebration from '../roadmap/CompletionCelebration';
 import TopicNotesPanel from './TopicNotesPanel';
+import TestConfigModal from './TestConfigModal';
 
 function NotebookIcon() {
   return (
@@ -27,6 +28,7 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
   const [showCelebration, setShowCelebration] = useState(false);
   const [nextTopic, setNextTopic] = useState(null);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [testModalOpen, setTestModalOpen] = useState(false);
   const sectionRefs = useRef({});
 
   async function load() {
@@ -150,6 +152,15 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
             >
               <NotebookIcon /> Notes
             </button>
+            <button
+              onClick={() => setTestModalOpen(true)}
+              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-[#D1DCE8] dark:border-white/10 text-[#6B7280] dark:text-[#8BA3C1] hover:bg-[var(--c-primary-light)] hover:text-[var(--c-primary)] transition-colors"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/>
+              </svg>
+              Test yourself
+            </button>
             <div className="flex items-center gap-1.5">
               <div className="relative w-9 h-9">
                 <svg viewBox="0 0 36 36" className="w-9 h-9 -rotate-90">
@@ -227,6 +238,10 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
           studyPlanId={studyPlanId}
           onClose={() => setShowCelebration(false)}
         />
+      )}
+
+      {testModalOpen && topic && (
+        <TestConfigModal topic={topic} onClose={() => setTestModalOpen(false)} />
       )}
     </div>
   );
