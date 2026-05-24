@@ -1,5 +1,6 @@
 import supabase from '@/lib/supabase.js';
 import { requireUser } from '@/lib/auth-helpers.js';
+import { updateLibraryQuestionStats } from '@/lib/self-test/questionLibrary.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -78,6 +79,11 @@ export async function POST(request, { params }) {
       .from('self_test_sessions')
       .update({ status: 'completed' })
       .eq('id', id);
+
+    // Fire-and-forget: update times_correct/times_incorrect for library questions
+    updateLibraryQuestionStats(session.questions, results).catch(err => {
+      console.error('[Library] Stats update failed:', err.message);
+    });
 
     return Response.json({
       attempt_id: attempt?.id,

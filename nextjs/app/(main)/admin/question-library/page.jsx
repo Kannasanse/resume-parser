@@ -34,11 +34,38 @@ function DifficultyBadge({ difficulty }) {
   );
 }
 
+// ─── Source badge ─────────────────────────────────────────────────────────────
+function SourceBadge({ question }) {
+  const isAI = question.source === 'ai-generated' || question.ai_generated;
+  if (!isAI) return null;
+  return (
+    <span className="text-xs px-1.5 py-0.5 rounded border bg-amber-50 text-amber-700 border-amber-200 font-medium">AI</span>
+  );
+}
+
+// ─── Usage stats chip ─────────────────────────────────────────────────────────
+function UsageStat({ question }) {
+  const used = question.times_used;
+  if (!used && used !== 0) return <span className="text-xs text-ds-textMuted">—</span>;
+  const answered = (question.times_correct || 0) + (question.times_incorrect || 0);
+  const pct = answered >= 5
+    ? Math.round(((question.times_correct || 0) / answered) * 100)
+    : null;
+  return (
+    <span className="text-xs text-ds-textMuted whitespace-nowrap">
+      {used} use{used !== 1 ? 's' : ''}
+      {pct !== null && <> · <span className={pct >= 60 ? 'text-ds-success' : pct >= 40 ? 'text-amber-600' : 'text-ds-danger'}>{pct}%</span></>}
+    </span>
+  );
+}
+
 // ─── Preview modal ────────────────────────────────────────────────────────────
-function PreviewModal({ question, onClose, onDelete }) {
-  const [usages, setUsages]       = useState(null);
-  const [deleting, setDeleting]   = useState(false);
-  const [deleteWarn, setDeleteWarn] = useState(null);
+function PreviewModal({ question, onClose, onDelete, onSuppressToggle }) {
+  const [usages, setUsages]          = useState(null);
+  const [deleting, setDeleting]      = useState(false);
+  const [suppressing, setSuppressing] = useState(false);
+  const [deleteWarn, setDeleteWarn]  = useState(null);
+  const [localApproved, setLocalApproved] = useState(question.is_approved !== false);
 
   useEffect(() => {
     fetch(`/api/v1/admin/question-library/${question.id}`)
@@ -67,6 +94,22 @@ function PreviewModal({ question, onClose, onDelete }) {
     setDeleting(false);
   };
 
+  const handleSuppressToggle = async () => {
+    setSuppressing(true);
+    const action = localApproved ? 'suppress' : 'approve';
+    const r = await fetch(`/api/v1/admin/question-library/${question.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action }),
+    });
+    if (r.ok) {
+      const newApproved = !localApproved;
+      setLocalApproved(newApproved);
+      onSuppressToggle?.(question.id, newApproved);
+    }
+    setSuppressing(false);
+  };
+
   const correctOpt = question.question_library_options?.find(o => o.is_correct);
 
   return (
@@ -74,11 +117,12 @@ function PreviewModal({ question, onClose, onDelete }) {
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-ds-card border border-ds-border rounded-lg shadow-xl w-full max-w-lg max-h-[85vh] overflow-y-auto">
         <div className="sticky top-0 bg-ds-card border-b border-ds-border px-5 py-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <TypeBadge type={question.type} />
             {question.difficulty && <DifficultyBadge difficulty={question.difficulty} />}
-            {question.ai_generated && (
-              <span className="text-xs px-1.5 py-0.5 rounded border bg-amber-50 text-amber-700 border-amber-200 font-medium">AI</span>
+            <SourceBadge question={question} />
+            {!localApproved && (
+              <span className="text-xs px-1.5 py-0.5 rounded border bg-gray-100 text-gray-500 border-gray-300 font-medium">Suppressed</span>
             )}
             <span className="text-xs text-ds-textMuted font-mono">{question.points}pt</span>
           </div>
@@ -116,6 +160,36 @@ function PreviewModal({ question, onClose, onDelete }) {
           {question.skill_tag && (
             <p className="text-xs text-ds-textMuted">Skill: <span className="font-medium text-ds-text">{question.skill_tag}</span></p>
           )}
+
+          {/* Usage stats */}
+          {(question.times_used !== undefined && question.times_used !== null) && (
+            <div className="bg-ds-bg border border-ds-border rounded px-3 py-2 flex items-center gap-4 text-xs">
+              <span className="text-ds-textMuted">{question.times_used} session{question.times_used !== 1 ? 's' : ''}</span>
+              {((question.times_correct || 0) + (question.times_incorrect || 0)) >= 5 && (
+                <>
+                  <span className="text-ds-textMuted">·</span>
+                  <span className="text-ds-textMuted">
+                    {Math.round(((question.times_correct || 0) / ((question.times_correct || 0) + (question.times_incorrect || 0))) * 100)}% correct
+                  </span>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Suppress / Re-approve */}
+          <div className="flex items-center justify-between">
+            <button
+              onClick={handleSuppressToggle}
+              disabled={suppressing}
+              className={`text-xs px-3 py-1.5 rounded border transition-colors disabled:opacity-50 ${
+                localApproved
+                  ? 'border-ds-border text-ds-textMuted hover:bg-ds-bg hover:text-ds-text'
+                  : 'border-ds-success text-ds-success hover:bg-ds-successLight'
+              }`}
+            >
+              {suppressing ? '…' : localApproved ? 'Suppress' : 'Re-approve'}
+            </button>
+          </div>
 
           {/* Usage */}
           <div className="border-t border-ds-border pt-3">
@@ -781,10 +855,11 @@ export default function QuestionLibrary() {
   const [loading, setLoading]     = useState(true);
   const [loadError, setLoadError] = useState('');
   const [page, setPage]           = useState(1);
+  const [tab, setTab]             = useState('all'); // 'all' | 'needs_review'
   const [search, setSearch]       = useState('');
   const [filterType, setFilterType]           = useState('');
   const [filterSkill, setFilterSkill]         = useState('');
-  const [filterAI, setFilterAI]               = useState('');
+  const [filterSource, setFilterSource]       = useState('');
   const [filterDifficulty, setFilterDifficulty] = useState('');
   const [skillTags, setSkillTags] = useState([]);
   const [preview, setPreview]     = useState(null);
@@ -802,8 +877,9 @@ export default function QuestionLibrary() {
       if (search)           params.set('search', search);
       if (filterType)       params.set('type', filterType);
       if (filterSkill)      params.set('skill_tag', filterSkill);
-      if (filterAI)         params.set('ai_generated', filterAI);
+      if (filterSource)     params.set('source', filterSource);
       if (filterDifficulty) params.set('difficulty', filterDifficulty);
+      if (tab === 'needs_review') params.set('needs_review', 'true');
 
       const r = await fetch(`/api/v1/admin/question-library?${params}`);
       const d = await r.json();
@@ -816,9 +892,9 @@ export default function QuestionLibrary() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, filterType, filterSkill, filterAI, filterDifficulty]);
+  }, [page, tab, search, filterType, filterSkill, filterSource, filterDifficulty]);
 
-  useEffect(() => { load(page); }, [page, filterType, filterSkill, filterAI, filterDifficulty]);
+  useEffect(() => { load(page); }, [page, tab, filterType, filterSkill, filterSource, filterDifficulty]);
 
   // Debounce search
   useEffect(() => {
@@ -828,6 +904,11 @@ export default function QuestionLibrary() {
   }, [search]);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 4000); };
+
+  const handleSuppressToggle = (id, newApproved) => {
+    setQuestions(prev => prev.map(q => q.id === id ? { ...q, is_approved: newApproved } : q));
+    showToast(newApproved ? 'Question re-approved.' : 'Question suppressed — will not be reused in future tests.');
+  };
 
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
@@ -861,6 +942,29 @@ export default function QuestionLibrary() {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-ds-border">
+        {[['all','All Questions'],['needs_review','Needs Review']].map(([v, l]) => (
+          <button key={v} onClick={() => { setTab(v); setPage(1); }}
+            className={`text-sm px-4 py-2 font-medium border-b-2 transition-colors -mb-px ${
+              tab === v
+                ? 'border-primary text-primary'
+                : 'border-transparent text-ds-textMuted hover:text-ds-text'
+            }`}>
+            {l}
+            {v === 'needs_review' && (
+              <span className="ml-1.5 text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">!</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'needs_review' && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-xs text-amber-700">
+          Questions answered 10+ times with under 40% correct rate. Review and suppress or edit as needed.
+        </div>
+      )}
+
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
         <input
@@ -890,11 +994,11 @@ export default function QuestionLibrary() {
             {skillTags.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         )}
-        <select value={filterAI} onChange={e => { setFilterAI(e.target.value); setPage(1); }}
+        <select value={filterSource} onChange={e => { setFilterSource(e.target.value); setPage(1); }}
           className="px-3 py-2 text-sm border border-ds-inputBorder rounded bg-ds-bg text-ds-text focus:outline-none focus:ring-2 focus:ring-primary">
           <option value="">All sources</option>
-          <option value="true">AI-generated</option>
-          <option value="false">Manual</option>
+          <option value="ai-generated">AI-generated</option>
+          <option value="admin">Admin</option>
         </select>
       </div>
 
@@ -920,7 +1024,9 @@ export default function QuestionLibrary() {
         </div>
       ) : questions.length === 0 ? (
         <div className="text-center py-20 bg-ds-card border border-dashed border-ds-border rounded-lg">
-          {search || filterType || filterSkill || filterAI || filterDifficulty ? (
+          {tab === 'needs_review' ? (
+            <p className="text-ds-textMuted text-sm">No questions need review right now. Questions appear here after 10+ uses with under 40% accuracy.</p>
+          ) : search || filterType || filterSkill || filterSource || filterDifficulty ? (
             <p className="text-ds-textMuted text-sm">No questions found matching your search.</p>
           ) : (
             <div className="space-y-2">
@@ -935,14 +1041,12 @@ export default function QuestionLibrary() {
         <div className="space-y-2">
           {questions.map(q => (
             <div key={q.id}
-              className="bg-ds-card border border-ds-border rounded-lg px-4 py-3.5 hover:border-ds-borderStrong transition-colors">
+              className={`bg-ds-card border rounded-lg px-4 py-3.5 hover:border-ds-borderStrong transition-colors ${q.is_approved === false ? 'opacity-60 border-dashed border-ds-border' : 'border-ds-border'}`}>
               <div className="flex items-start gap-3">
                 <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5 flex-wrap">
                   <TypeBadge type={q.type} />
                   {q.difficulty && <DifficultyBadge difficulty={q.difficulty} />}
-                  {q.ai_generated && (
-                    <span className="text-xs px-1.5 py-0.5 rounded border bg-amber-50 text-amber-700 border-amber-200">AI</span>
-                  )}
+                  <SourceBadge question={q} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-ds-text leading-snug line-clamp-2">{q.question_text}</p>
@@ -951,6 +1055,10 @@ export default function QuestionLibrary() {
                       <span className="text-xs text-ds-textMuted bg-ds-bg border border-ds-border px-1.5 py-0.5 rounded">{q.skill_tag}</span>
                     )}
                     <span className="text-xs text-ds-textMuted font-mono">{q.points}pt</span>
+                    <UsageStat question={q} />
+                    {q.is_approved === false && (
+                      <span className="text-xs text-gray-400 italic">suppressed</span>
+                    )}
                   </div>
                 </div>
                 <button onClick={() => setPreview(q)}
@@ -987,6 +1095,7 @@ export default function QuestionLibrary() {
           question={preview}
           onClose={() => setPreview(null)}
           onDelete={(id) => { setQuestions(prev => prev.filter(q => q.id !== id)); setTotal(t => t - 1); }}
+          onSuppressToggle={handleSuppressToggle}
         />
       )}
       {showCreate && (

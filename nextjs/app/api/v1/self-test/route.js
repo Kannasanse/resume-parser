@@ -1,5 +1,6 @@
 import supabase from '@/lib/supabase.js';
 import { requireUser } from '@/lib/auth-helpers.js';
+import { fetchFromLibrary, saveQuestionsToLibrary } from '@/lib/self-test/questionLibrary.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -206,49 +207,90 @@ export async function POST(request) {
       return Response.json({ error: 'Please configure at least 1 question.' }, { status: 400 });
     }
 
-    // Build prompt
-    let userPrompt, systemPrompt;
-    const typeDescription = wantsMCQ && wantsSA
-      ? `${mcqCount} MCQ/True-False questions and ${saCount} Short Answer questions`
-      : wantsSA
-        ? `${saCount} Short Answer questions only`
-        : `${mcqCount} MCQ/True-False questions (distribute evenly between MCQ and True/False)`;
+    // ── Library-first: fetch existing questions before calling AI ─────────────
+    let libraryQuestions = [];
+    let skills = [];
 
     if (input_type === 'skills') {
-      const skills = input_data.split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
-      const scenarioBlock = buildScenarioInstruction(difficulty);
-      systemPrompt = SYSTEM_PROMPT;
-      userPrompt = `Generate exactly ${totalCount} ${diffLabel} questions about these skills/topics: ${skills.join(', ')}\n\nDistribution: ${typeDescription}\nFor MCQ/TF: distribute evenly between MCQ and True/False.\nFor Short Answer: require 2-6 sentence written responses.\n\n${scenarioBlock}`;
-    } else if (input_type === 'content') {
-      systemPrompt = SYSTEM_PROMPT;
-      userPrompt = `Generate exactly ${totalCount} ${diffLabel} questions based on this content:\n\n${input_data.trim()}\n\nDistribution: ${typeDescription}`;
-    } else {
-      systemPrompt = SYSTEM_PROMPT_JD;
-      const skillList = jd_skills.map(s => `- ${s.name} (${s.type})`).join('\n');
-      const scenarioBlock = buildScenarioInstruction(difficulty);
-      userPrompt = `Generate exactly ${totalCount} ${diffLabel} questions for this job role.\n\nSkills (distribute evenly):\n${skillList}\n\nDistribution: ${typeDescription}\nEach question must include the "skill" field.\n\n${scenarioBlock}`;
+      skills = input_data.split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
+    } else if (input_type === 'jd') {
+      skills = jd_skills.map(s => s.name || '').filter(Boolean);
     }
 
-    const generated = await callAI(userPrompt, systemPrompt);
-    console.log('AI raw question count:', generated?.questions?.length);
-    console.log('AI questions sample:', JSON.stringify(generated?.questions?.[0]));
+    if (input_type !== 'content' && skills.length) {
+      // Only fetch MCQ/TF from library — SA always comes from AI (too context-specific to reuse)
+      libraryQuestions = await fetchFromLibrary({
+        skills,
+        difficulty,
+        questionTypes: question_types,
+        requestedCount: mcqCount,
+      });
+      console.log(`[Library] fetched ${libraryQuestions.length} of ${mcqCount} MCQ/TF from library`);
+    }
 
-    const normalized = (generated?.questions || []).map(normalizeQuestion);
-    console.log('Normalized sample:', JSON.stringify(normalized?.[0]));
+    // aiNeeded = total slots - what library provided
+    const aiNeeded = totalCount - libraryQuestions.length;
 
-    const valid = normalized.filter(q => {
-      if (!['mcq', 'true_false', 'short_answer'].includes(q.type)) return false;
-      if (!q.question_text?.trim()) return false;
-      if (q.type === 'mcq' && (!Array.isArray(q.options) || q.options.length < 2)) return false;
-      if (q.type === 'mcq' && !q.options.some(o => o.is_correct)) return false;
-      if (q.type === 'true_false' && !['true', 'false'].includes(q.correct_answer)) return false;
-      if (q.type === 'short_answer' && !q.model_answer?.trim()) return false;
-      return true;
-    }).slice(0, totalCount);
+    // Build prompt
+    let valid = [...libraryQuestions];
 
-    console.log('Valid question count after filter:', valid.length);
+    if (aiNeeded > 0) {
+      const existingTexts = libraryQuestions.map(q => q.question_text);
+      const dedupeNote = existingTexts.length
+        ? `\n\nDo NOT generate questions similar to these already-covered topics:\n${existingTexts.map(t => `- ${t.slice(0, 80)}`).join('\n')}`
+        : '';
+
+      // Adjust type distribution based on what library already provided
+      const libMcqCount = libraryQuestions.filter(q => q.type !== 'short_answer').length;
+      const libSaCount  = libraryQuestions.filter(q => q.type === 'short_answer').length;
+      const aiMcqNeeded = Math.max(0, mcqCount - libMcqCount);
+      const aiSaNeeded  = Math.max(0, saCount  - libSaCount);
+      const aiTotal     = aiMcqNeeded + aiSaNeeded;
+
+      const typeDescription = aiMcqNeeded > 0 && aiSaNeeded > 0
+        ? `${aiMcqNeeded} MCQ/True-False questions and ${aiSaNeeded} Short Answer questions`
+        : aiSaNeeded > 0
+          ? `${aiSaNeeded} Short Answer questions only`
+          : `${aiMcqNeeded} MCQ/True-False questions (distribute evenly between MCQ and True/False)`;
+
+      let userPrompt, systemPrompt;
+
+      if (input_type === 'skills') {
+        const scenarioBlock = buildScenarioInstruction(difficulty);
+        systemPrompt = SYSTEM_PROMPT;
+        userPrompt = `Generate exactly ${aiTotal} ${diffLabel} questions about these skills/topics: ${skills.join(', ')}\n\nDistribution: ${typeDescription}\nFor MCQ/TF: distribute evenly between MCQ and True/False.\nFor Short Answer: require 2-6 sentence written responses.\n\n${scenarioBlock}${dedupeNote}`;
+      } else if (input_type === 'content') {
+        systemPrompt = SYSTEM_PROMPT;
+        userPrompt = `Generate exactly ${aiTotal} ${diffLabel} questions based on this content:\n\n${input_data.trim()}\n\nDistribution: ${typeDescription}`;
+      } else {
+        systemPrompt = SYSTEM_PROMPT_JD;
+        const skillList = jd_skills.map(s => `- ${s.name} (${s.type})`).join('\n');
+        const scenarioBlock = buildScenarioInstruction(difficulty);
+        userPrompt = `Generate exactly ${aiTotal} ${diffLabel} questions for this job role.\n\nSkills (distribute evenly):\n${skillList}\n\nDistribution: ${typeDescription}\nEach question must include the "skill" field.\n\n${scenarioBlock}${dedupeNote}`;
+      }
+
+      const generated = await callAI(userPrompt, systemPrompt);
+      console.log('AI raw question count:', generated?.questions?.length);
+
+      const normalized = (generated?.questions || []).map(normalizeQuestion);
+      const aiValid = normalized.filter(q => {
+        if (!['mcq', 'true_false', 'short_answer'].includes(q.type)) return false;
+        if (!q.question_text?.trim()) return false;
+        if (q.type === 'mcq' && (!Array.isArray(q.options) || q.options.length < 2)) return false;
+        if (q.type === 'mcq' && !q.options.some(o => o.is_correct)) return false;
+        if (q.type === 'true_false' && !['true', 'false'].includes(q.correct_answer)) return false;
+        if (q.type === 'short_answer' && !q.model_answer?.trim()) return false;
+        return true;
+      }).slice(0, aiNeeded);
+
+      console.log('Valid AI question count:', aiValid.length);
+
+      // Combine library + AI and shuffle
+      valid = [...libraryQuestions, ...aiValid].sort(() => Math.random() - 0.5).slice(0, totalCount);
+    }
+
+    console.log('Total valid questions:', valid.length);
     if (!valid.length) {
-      console.error('All questions rejected — first normalized:', JSON.stringify(normalized[0]));
       return Response.json({
         error: 'We were unable to generate questions at this time. Please try again.',
       }, { status: 422 });
@@ -306,6 +348,13 @@ export async function POST(request) {
           session = data;
         }
       }
+    }
+
+    // Fire-and-forget: auto-save AI questions + increment times_used for library questions
+    if (input_type !== 'content') {
+      saveQuestionsToLibrary(valid, session.id, user.id, input_type).catch(err => {
+        console.error('[Library] Auto-save failed:', err.message);
+      });
     }
 
     return Response.json({ session }, { status: 201 });

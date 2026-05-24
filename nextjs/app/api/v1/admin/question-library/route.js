@@ -7,39 +7,57 @@ export async function GET(request) {
   try {
     await requireAdmin(request);
     const { searchParams } = new URL(request.url);
-    const search      = searchParams.get('search') || '';
-    const type        = searchParams.get('type') || '';
-    const skill_tag   = searchParams.get('skill_tag') || '';
-    const ai_generated = searchParams.get('ai_generated') || '';
-    const difficulty  = searchParams.get('difficulty') || '';
-    const page        = parseInt(searchParams.get('page') || '1');
-    const limit       = Math.min(parseInt(searchParams.get('limit') || '50'), 200);
-    const offset      = (page - 1) * limit;
+    const search        = searchParams.get('search') || '';
+    const type          = searchParams.get('type') || '';
+    const skill_tag     = searchParams.get('skill_tag') || '';
+    const source        = searchParams.get('source') || '';       // 'admin' | 'ai-generated'
+    const ai_generated  = searchParams.get('ai_generated') || ''; // legacy alias
+    const difficulty    = searchParams.get('difficulty') || '';
+    const needs_review  = searchParams.get('needs_review') === 'true';
+    const page          = parseInt(searchParams.get('page') || '1');
+    const limit         = Math.min(parseInt(searchParams.get('limit') || '50'), 200);
+    const offset        = (page - 1) * limit;
 
-    let query = supabase
-      .from('question_library')
-      .select('id, type, question_text, points, skill_tag, topic, ai_generated, difficulty, created_at, question_library_options(id, option_text, is_correct, position)', { count: 'exact' });
+    // Try to select new columns; fall back to base columns on error
+    const extendedSel = 'id, type, question_text, points, skill_tag, topic, ai_generated, difficulty, created_at, source, times_used, times_correct, times_incorrect, quality_score, is_approved, question_library_options(id, option_text, is_correct, position)';
+    const baseSel     = 'id, type, question_text, points, skill_tag, topic, ai_generated, difficulty, created_at, question_library_options(id, option_text, is_correct, position)';
 
-    if (search) query = query.ilike('question_text', `%${search}%`);
-    if (type)   query = query.eq('type', type);
-    if (skill_tag) query = query.eq('skill_tag', skill_tag);
-    if (ai_generated === 'true')  query = query.eq('ai_generated', true);
-    if (ai_generated === 'false') query = query.eq('ai_generated', false);
-    if (difficulty) query = query.eq('difficulty', difficulty);
+    const applyBaseFilters = (q) => {
+      if (search)    q = q.ilike('question_text', `%${search}%`);
+      if (type)      q = q.eq('type', type);
+      if (skill_tag) q = q.eq('skill_tag', skill_tag);
+      if (difficulty) q = q.eq('difficulty', difficulty);
+      const srcFilter = source || (ai_generated === 'true' ? 'ai-generated' : ai_generated === 'false' ? 'admin' : '');
+      if (srcFilter === 'ai-generated') q = q.eq('ai_generated', true);
+      if (srcFilter === 'admin')        q = q.eq('ai_generated', false);
+      return q;
+    };
 
-    const { data, error, count } = await query
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+    let data, error, count;
+
+    // Try extended select (with new columns + new-column filters)
+    let q = applyBaseFilters(supabase.from('question_library').select(extendedSel, { count: 'exact' }));
+    if (needs_review) q = q.gte('times_used', 10).lt('quality_score', 0.40);
+    ({ data, error, count } = await q.order('created_at', { ascending: false }).range(offset, offset + limit - 1));
+
+    if (error) {
+      // New columns not yet in DB — fall back to base select (without new-column filters)
+      if (needs_review) {
+        // Can't run needs_review filter without migration — return empty
+        return Response.json({ questions: [], total: 0, page, limit, skillTags: [], topics: [] });
+      }
+      ({ data, error, count } = await applyBaseFilters(
+        supabase.from('question_library').select(baseSel, { count: 'exact' })
+      ).order('created_at', { ascending: false }).range(offset, offset + limit - 1));
+    }
 
     if (error) throw error;
 
-    // Sort options by position
     const questions = (data || []).map(q => ({
       ...q,
       question_library_options: (q.question_library_options || []).sort((a, b) => a.position - b.position),
     }));
 
-    // Distinct skill tags and topics for filters
     const [{ data: skillRows }, { data: topicRows }] = await Promise.all([
       supabase.from('question_library').select('skill_tag').not('skill_tag', 'is', null).neq('skill_tag', ''),
       supabase.from('question_library').select('topic').not('topic', 'is', null).neq('topic', ''),
