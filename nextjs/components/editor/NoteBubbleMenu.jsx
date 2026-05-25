@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import EditorPromptModal from './EditorPromptModal';
 
 function ToolBtn({ active, onClick, title, children }) {
   return (
@@ -61,6 +62,7 @@ function AlignDropdown({ editor, onClose }) {
 export default function NoteBubbleMenu({ editor }) {
   const [pos, setPos] = useState(null);
   const [showAlign, setShowAlign] = useState(false);
+  const [linkModal, setLinkModal] = useState({ open: false, defaultValue: '' });
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -101,8 +103,11 @@ export default function NoteBubbleMenu({ editor }) {
 
   function handleLink() {
     const prevUrl = editor.getAttributes('link').href || '';
-    const url = window.prompt('Link URL', prevUrl);
-    if (url === null) return;
+    setLinkModal({ open: true, defaultValue: prevUrl });
+  }
+
+  function applyLink(url) {
+    setLinkModal({ open: false, defaultValue: '' });
     if (url === '') {
       editor.chain().focus().extendMarkRange('link').unsetLink().run();
     } else {
@@ -118,6 +123,19 @@ export default function NoteBubbleMenu({ editor }) {
   };
 
   return (
+    <>
+    <EditorPromptModal
+      open={linkModal.open}
+      title="Insert Link"
+      inputLabel="URL"
+      placeholder="https://"
+      defaultValue={linkModal.defaultValue}
+      confirmLabel="Apply"
+      cancelLabel="Cancel"
+      secondaryAction={linkModal.defaultValue ? { label: 'Remove link', destructive: true, onClick: () => applyLink('') } : undefined}
+      onConfirm={(url) => applyLink(url.trim())}
+      onCancel={() => setLinkModal({ open: false, defaultValue: '' })}
+    />
     <div
       ref={menuRef}
       style={{ position: 'fixed', top: pos.top, left: pos.left, zIndex: 999 }}
@@ -162,5 +180,6 @@ export default function NoteBubbleMenu({ editor }) {
         {showAlign && <AlignDropdown editor={editor} onClose={() => setShowAlign(false)} />}
       </div>
     </div>
+    </>
   );
 }

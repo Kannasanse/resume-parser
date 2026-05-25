@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import EditorPromptModal from './EditorPromptModal';
 
 const BLOCKS = [
   // ── TEXT ──────────────────────────────────────────────────────────────────
@@ -18,8 +19,8 @@ const BLOCKS = [
   { id: 'toggle',    label: 'Toggle',         desc: 'Collapsible content block',  icon: '▶', group: 'LISTS',                              action: (e) => e.chain().focus().insertToggle().run() },
 
   // ── MEDIA ─────────────────────────────────────────────────────────────────
-  { id: 'image',     label: 'Image',          desc: 'Insert an image by URL',     icon: '🖼', group: 'MEDIA',                             action: (e) => { const url = window.prompt('Image URL'); if (url) e.chain().focus().setImage({ src: url }).run(); } },
-  { id: 'video',     label: 'Video',          desc: 'Embed YouTube or Vimeo',     icon: '▶️', group: 'MEDIA',                             action: (e) => { const url = window.prompt('YouTube / Vimeo URL'); if (url) e.chain().focus().insertVideo({ src: url }).run(); } },
+  { id: 'image',     label: 'Image',          desc: 'Insert an image by URL',     icon: '🖼', group: 'MEDIA', requiresUrl: true,        action: (e, { url }) => e.chain().focus().setImage({ src: url }).run() },
+  { id: 'video',     label: 'Video',          desc: 'Embed YouTube or Vimeo',     icon: '▶️', group: 'MEDIA', requiresUrl: true,        action: (e, { url }) => e.chain().focus().insertVideo({ src: url }).run() },
 
   // ── STRUCTURE ─────────────────────────────────────────────────────────────
   { id: 'quote',     label: 'Quote',          desc: 'Highlight a quotation',      icon: '"',  group: 'STRUCTURE', shortcut: '> + Space',  action: (e) => e.chain().focus().toggleBlockquote().run() },
@@ -62,6 +63,7 @@ export default function NoteSlashMenu({ editor, onCreateSubpage }) {
   const [coords, setCoords] = useState({ top: 0, left: 0 });
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [recentIds, setRecentIds] = useState([]);
+  const [pendingBlock, setPendingBlock] = useState(null);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -157,10 +159,14 @@ export default function NoteSlashMenu({ editor, onCreateSubpage }) {
     setSlashState({ open: false, query: '', from: 0 });
     saveRecentId(block.id);
     editor.chain().focus().deleteRange({ from: from - 1, to: from + query.length }).run();
-    block.action(editor, { onCreateSubpage });
+    if (block.requiresUrl) {
+      setPendingBlock(block);
+    } else {
+      block.action(editor, { onCreateSubpage });
+    }
   }
 
-  if (!slashState.open) return null;
+  if (!slashState.open && !pendingBlock) return null;
 
   const filtered = getFiltered(slashState.query);
   const recentBlocks = slashState.query ? [] : recentIds.map(id => BLOCKS.find(b => b.id === id)).filter(Boolean);
@@ -172,41 +178,58 @@ export default function NoteSlashMenu({ editor, onCreateSubpage }) {
   const flatList = [...recentBlocks, ...groupedFiltered.flatMap(g => g.items)];
 
   return (
-    <div
-      ref={menuRef}
-      style={{ position: 'fixed', top: coords.top + 4, left: coords.left, zIndex: 1000 }}
-      className="bg-white dark:bg-[#1A2C45] border border-[#D1DCE8] dark:border-white/10 rounded-xl shadow-xl w-72 max-h-96 overflow-y-auto py-2"
-    >
-      {slashState.query.length > 0 && filtered.length === 0 && (
-        <p className="text-xs text-[#9CA3AF] dark:text-[#4A6380] px-3 py-2">
-          No blocks match &ldquo;{slashState.query}&rdquo;
-        </p>
-      )}
+    <>
+      {slashState.open && (
+        <div
+          ref={menuRef}
+          style={{ position: 'fixed', top: coords.top + 4, left: coords.left, zIndex: 1000 }}
+          className="bg-white dark:bg-[#1A2C45] border border-[#D1DCE8] dark:border-white/10 rounded-xl shadow-xl w-72 max-h-96 overflow-y-auto py-2"
+        >
+          {slashState.query.length > 0 && filtered.length === 0 && (
+            <p className="text-xs text-[#9CA3AF] dark:text-[#4A6380] px-3 py-2">
+              No blocks match &ldquo;{slashState.query}&rdquo;
+            </p>
+          )}
 
-      {recentBlocks.length > 0 && (
-        <div>
-          <p className="text-[10px] font-semibold text-[#9CA3AF] dark:text-[#4A6380] uppercase tracking-widest px-3 py-1 mt-1">
-            Recently used
-          </p>
-          {recentBlocks.map(block => {
-            const idx = flatList.indexOf(block);
-            return <BlockItem key={block.id} block={block} isSelected={idx === selectedIndex} onInsert={() => insertBlock(block)} onHover={() => setSelectedIndex(idx)} />;
-          })}
+          {recentBlocks.length > 0 && (
+            <div>
+              <p className="text-[10px] font-semibold text-[#9CA3AF] dark:text-[#4A6380] uppercase tracking-widest px-3 py-1 mt-1">
+                Recently used
+              </p>
+              {recentBlocks.map(block => {
+                const idx = flatList.indexOf(block);
+                return <BlockItem key={block.id} block={block} isSelected={idx === selectedIndex} onInsert={() => insertBlock(block)} onHover={() => setSelectedIndex(idx)} />;
+              })}
+            </div>
+          )}
+
+          {groupedFiltered.map(({ group, items }) => (
+            <div key={group}>
+              <p className="text-[10px] font-semibold text-[#9CA3AF] dark:text-[#4A6380] uppercase tracking-widest px-3 py-1 mt-1">
+                {group}
+              </p>
+              {items.map(block => {
+                const idx = flatList.indexOf(block);
+                return <BlockItem key={block.id} block={block} isSelected={idx === selectedIndex} onInsert={() => insertBlock(block)} onHover={() => setSelectedIndex(idx)} />;
+              })}
+            </div>
+          ))}
         </div>
       )}
 
-      {groupedFiltered.map(({ group, items }) => (
-        <div key={group}>
-          <p className="text-[10px] font-semibold text-[#9CA3AF] dark:text-[#4A6380] uppercase tracking-widest px-3 py-1 mt-1">
-            {group}
-          </p>
-          {items.map(block => {
-            const idx = flatList.indexOf(block);
-            return <BlockItem key={block.id} block={block} isSelected={idx === selectedIndex} onInsert={() => insertBlock(block)} onHover={() => setSelectedIndex(idx)} />;
-          })}
-        </div>
-      ))}
-    </div>
+      <EditorPromptModal
+        open={!!pendingBlock}
+        title={pendingBlock?.id === 'image' ? 'Insert Image' : 'Embed Video'}
+        inputLabel={pendingBlock?.id === 'image' ? 'Image URL' : 'YouTube or Vimeo URL'}
+        placeholder="https://"
+        confirmLabel="Insert"
+        onConfirm={(url) => {
+          if (url?.trim()) pendingBlock.action(editor, { url: url.trim() });
+          setPendingBlock(null);
+        }}
+        onCancel={() => setPendingBlock(null)}
+      />
+    </>
   );
 }
 

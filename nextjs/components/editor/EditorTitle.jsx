@@ -1,5 +1,6 @@
 'use client';
-import { useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import EditorPromptModal from './EditorPromptModal';
 
 export default function EditorTitle({
   value = '',
@@ -12,6 +13,8 @@ export default function EditorTitle({
   onEnterPress,
 }) {
   const textareaRef = useRef(null);
+  const [iconModal, setIconModal] = useState(false);
+  const [coverModal, setCoverModal] = useState(false);
 
   // Auto-resize textarea height
   const resize = useCallback(() => {
@@ -38,27 +41,37 @@ export default function EditorTitle({
   }
 
   function handleIconClick() {
-    const newIcon = window.prompt('Enter an emoji for the icon:', icon || '');
-    if (newIcon !== null) {
-      onIconChange?.(newIcon.trim() || null);
-    }
+    setIconModal(true);
   }
 
   function handleCoverClick() {
-    if (coverUrl) {
-      const action = window.confirm('Remove cover image?\n\nClick OK to remove, Cancel to change URL.');
-      if (action) {
-        onCoverChange?.(null);
-        return;
-      }
-    }
-    const url = window.prompt('Cover image URL:', coverUrl || '');
-    if (url !== null) {
-      onCoverChange?.(url.trim() || null);
-    }
+    setCoverModal(true);
   }
 
   return (
+    <>
+    <EditorPromptModal
+      open={iconModal}
+      title="Note icon"
+      inputLabel="Emoji"
+      placeholder="e.g. 📝"
+      defaultValue={icon || ''}
+      confirmLabel="Set icon"
+      onConfirm={(val) => { setIconModal(false); onIconChange?.(val.trim() || null); }}
+      onCancel={() => setIconModal(false)}
+      secondaryAction={icon ? { label: 'Remove icon', destructive: true, onClick: () => { setIconModal(false); onIconChange?.(null); } } : undefined}
+    />
+    <EditorPromptModal
+      open={coverModal}
+      title="Cover image"
+      inputLabel="Image URL"
+      placeholder="https://"
+      defaultValue={coverUrl || ''}
+      confirmLabel="Set cover"
+      onConfirm={(val) => { setCoverModal(false); onCoverChange?.(val.trim() || null); }}
+      onCancel={() => setCoverModal(false)}
+      secondaryAction={coverUrl ? { label: 'Remove cover', destructive: true, onClick: () => { setCoverModal(false); onCoverChange?.(null); } } : undefined}
+    />
     <div className="editor-title-wrapper group">
       {/* Cover image */}
       {coverUrl && (
@@ -131,5 +144,6 @@ export default function EditorTitle({
       />
 
     </div>
+    </>
   );
 }
