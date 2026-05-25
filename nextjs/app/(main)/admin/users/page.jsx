@@ -11,6 +11,12 @@ const STATUS_COLORS = {
   deactivated: 'bg-ds-dangerLight text-ds-danger',
 };
 
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleDateString();
+}
+
 function useDebounce(value, ms = 300) {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -158,7 +164,7 @@ export default function AdminUsersPage() {
                         </span>
                       </td>
                       <td className="hidden sm:table-cell px-4 py-3 text-ds-textMuted text-xs">
-                        {u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}
+                        {fmtDate(u.created_at)}
                       </td>
                       <td className="px-4 py-3">
                         <Link href={`/admin/users/${u.id}`}

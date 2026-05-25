@@ -3,12 +3,14 @@ import { useState, useEffect, useCallback } from 'react';
 
 function fmt(date) {
   if (!date) return '—';
-  return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const d = new Date(date);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function fmtTime(date) {
   if (!date) return '—';
-  return new Date(date).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+  const d = new Date(date);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
 const TX_TYPE_LABELS = {

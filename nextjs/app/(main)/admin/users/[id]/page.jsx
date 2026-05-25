@@ -56,11 +56,13 @@ const EVENT_LABELS = {
 
 function fmt(iso) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 function fmtDate(iso) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 function SortIcon({ col, active, dir }) {
