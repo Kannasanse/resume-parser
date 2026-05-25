@@ -18,6 +18,13 @@ function StatusBadge({ status }) {
   );
 }
 
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleDateString();
+}
+
+
 export default function AdminTests() {
   const [tests, setTests]   = useState([]);
   const [total, setTotal]   = useState(0);
@@ -142,7 +149,7 @@ export default function AdminTests() {
                       )}
                       <span>{test.question_count} question{test.question_count !== 1 ? 's' : ''}</span>
                       <span>{test.link_count} link{test.link_count !== 1 ? 's' : ''} sent</span>
-                      <span className="font-mono">{new Date(test.created_at).toLocaleDateString()}</span>
+                      <span className="font-mono">{fmtDate(test.created_at)}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">

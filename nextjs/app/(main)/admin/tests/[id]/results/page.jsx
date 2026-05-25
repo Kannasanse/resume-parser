@@ -26,6 +26,13 @@ function IntegrityBadges({ summary }) {
   );
 }
 
+function fmtDateTime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleString();
+}
+
+
 export default function TestResults() {
   const { id } = useParams();
   const [testTitle, setTestTitle] = useState('');
@@ -131,7 +138,7 @@ export default function TestResults() {
                       <div className="flex items-center gap-3 mt-1">
                         <IntegrityBadges summary={attempt.integrity_summary || {}} />
                         <span className="text-xs text-ds-textMuted font-mono">
-                          {new Date(attempt.submitted_at).toLocaleString()}
+                          {fmtDateTime(attempt.submitted_at)}
                         </span>
                       </div>
                     </div>

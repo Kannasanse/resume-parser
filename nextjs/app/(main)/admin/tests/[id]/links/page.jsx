@@ -30,6 +30,13 @@ function CopyButton({ text }) {
   );
 }
 
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleDateString();
+}
+
+
 export default function TestLinks() {
   const { id } = useParams();
   const [test, setTest]     = useState(null);
@@ -162,7 +169,7 @@ export default function TestLinks() {
                         )}
                         {link.expires_at && (
                           <span className="text-xs text-ds-textMuted font-mono">
-                            Expires {new Date(link.expires_at).toLocaleDateString()}
+                            Expires {fmtDate(link.expires_at)}
                           </span>
                         )}
                       </div>

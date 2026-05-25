@@ -14,6 +14,13 @@ function EmailChip({ email, onRemove }) {
   );
 }
 
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleDateString();
+}
+
+
 export default function AdminInvitePage() {
   const [emailInput, setEmailInput] = useState('');
   const [emails, setEmails]         = useState([]);
@@ -189,7 +196,7 @@ export default function AdminInvitePage() {
                         <tr key={invite.id} className="hover:bg-ds-bg/50">
                           <td className="px-4 py-2.5 text-ds-text">{invite.email}</td>
                           <td className="px-4 py-2.5 text-ds-textMuted capitalize">{invite.role}</td>
-                          <td className="px-4 py-2.5 text-ds-textMuted text-xs">{new Date(invite.expires_at).toLocaleDateString()}</td>
+                          <td className="px-4 py-2.5 text-ds-textMuted text-xs">{fmtDate(invite.expires_at)}</td>
                           <td className="px-4 py-2.5">
                             <button onClick={() => handleCancelInvite(invite.id)}
                               className="text-xs text-ds-danger hover:underline">Cancel</button>

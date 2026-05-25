@@ -19,6 +19,19 @@ const EVENT_LABELS = {
   visibility_change: 'Visibility Change',
 };
 
+function fmtDateTime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleString();
+}
+
+function fmtTime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleTimeString();
+}
+
+
 // ─── Score bar ────────────────────────────────────────────────────────────────
 function ScoreBar({ score, max }) {
   if (!max) return null;
@@ -293,13 +306,13 @@ export default function GradeAttempt() {
             </h1>
             <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-ds-textMuted">
               {link?.recipient_name && <span>{link.recipient_email}</span>}
-              <span className="font-mono">Submitted {new Date(data.submitted_at).toLocaleString()}</span>
+              <span className="font-mono">Submitted {fmtDateTime(data.submitted_at)}</span>
               {data.auto_submitted && (
                 <span className="text-ds-warning bg-ds-warningLight border border-ds-warning/30 px-1.5 py-0.5 rounded font-medium">Auto-submitted</span>
               )}
               {data.graded_at && (
                 <span className="text-ds-success bg-ds-successLight border border-ds-success/30 px-1.5 py-0.5 rounded font-medium">
-                  Graded {new Date(data.graded_at).toLocaleString()}
+                  Graded {fmtDateTime(data.graded_at)}
                 </span>
               )}
             </div>
@@ -402,7 +415,7 @@ export default function GradeAttempt() {
                         <div className="flex-1 min-w-0">
                           <p className={`font-medium ${c.text}`}>{EVENT_LABELS[ev.event_type] || ev.event_type}</p>
                           <p className="text-gray-400 font-mono mt-0.5">
-                            {new Date(ev.occurred_at).toLocaleTimeString()}
+                            {fmtTime(ev.occurred_at)}
                             {elapsedStr && ` · ${elapsedStr} in`}
                           </p>
                         </div>
