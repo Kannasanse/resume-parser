@@ -114,9 +114,11 @@ export default function BlockEditor({
   className,
   onCreateSubpage,
   onEditorReady,
+  noteId,
 }) {
   const debounceTimer = useRef(null);
   const onChangeRef = useRef(onChange);
+  const editorContainerRef = useRef(null);
   const [contextMenu, setContextMenu] = useState(null);
 
   const isReadonly  = readOnly || mode === 'readonly';
@@ -212,13 +214,84 @@ export default function BlockEditor({
     editor.setEditable(!isReadonly);
   }, [isReadonly, editor]);
 
+  // ── Paste image from clipboard ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!editor || !noteId) return;
+
+    const handlePaste = async (event) => {
+      const items = Array.from(event.clipboardData?.items || []);
+      const imageItem = items.find(item => item.type.startsWith('image/'));
+      if (!imageItem) return;
+
+      event.preventDefault();
+      const file = imageItem.getAsFile();
+      if (!file) return;
+
+      try {
+        const { uploadImageFile } = await import('@/lib/editor/uploadImage');
+        const url = await uploadImageFile(file, noteId);
+        editor.chain().focus().setImage({ src: url }).run();
+      } catch (err) {
+        console.error('[BlockEditor] paste image upload failed:', err.message);
+      }
+    };
+
+    const dom = editor.view.dom;
+    dom.addEventListener('paste', handlePaste);
+    return () => dom.removeEventListener('paste', handlePaste);
+  }, [editor, noteId]);
+
+  // ── Drag image file onto editor ────────────────────────────────────────────
+  useEffect(() => {
+    if (!editor || !noteId) return;
+    const container = editorContainerRef.current;
+    if (!container) return;
+
+    const handleDragOver = (e) => {
+      if (!Array.from(e.dataTransfer.types).includes('Files')) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      container.classList.add('drag-image-over');
+    };
+
+    const handleDragLeave = (e) => {
+      if (!container.contains(e.relatedTarget)) {
+        container.classList.remove('drag-image-over');
+      }
+    };
+
+    const handleDrop = async (e) => {
+      container.classList.remove('drag-image-over');
+      const file = Array.from(e.dataTransfer.files).find(f => f.type.startsWith('image/'));
+      if (!file) return;
+      e.preventDefault();
+
+      try {
+        const { uploadImageFile } = await import('@/lib/editor/uploadImage');
+        const url = await uploadImageFile(file, noteId);
+        editor.chain().focus().setImage({ src: url }).run();
+      } catch (err) {
+        console.error('[BlockEditor] drop image upload failed:', err.message);
+      }
+    };
+
+    container.addEventListener('dragover', handleDragOver);
+    container.addEventListener('dragleave', handleDragLeave);
+    container.addEventListener('drop', handleDrop);
+    return () => {
+      container.removeEventListener('dragover', handleDragOver);
+      container.removeEventListener('dragleave', handleDragLeave);
+      container.removeEventListener('drop', handleDrop);
+    };
+  }, [editor, noteId]);
+
   return (
     <>
       <style>{EDITOR_STYLES}</style>
-      <div className={`note-editor ${className || ''}`}>
+      <div ref={editorContainerRef} className={`note-editor ${className || ''}`}>
         <EditorContent editor={editor} />
         {editor && showBubble  && <NoteBubbleMenu editor={editor} />}
-        {editor && showSlash   && <NoteSlashMenu editor={editor} onCreateSubpage={onCreateSubpage} />}
+        {editor && showSlash   && <NoteSlashMenu editor={editor} onCreateSubpage={onCreateSubpage} noteId={noteId} />}
         {editor && showRail    && (
           <BlockLeftRail
             editor={editor}
@@ -341,4 +414,7 @@ mark { background: #FEF08A; border-radius: 2px; padding: 0 2px; }
 .note-editor-content > * { position: relative; border-radius: 6px; transition: background 80ms; }
 .note-editor-content > *:hover { background: rgba(24,95,165,0.02); }
 .dark .note-editor-content > *:hover { background: rgba(24,95,165,0.04); }
+
+/* ── Drag image drop target ───────────────────────────────────────────────── */
+.note-editor.drag-image-over { outline: 2px dashed #185FA5; outline-offset: -3px; border-radius: 8px; }
 `;

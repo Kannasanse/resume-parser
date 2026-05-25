@@ -48,41 +48,84 @@ export default function BlockLeftRail({ editor, onContextMenu }) {
   const [isDragging, setIsDragging] = useState(false);
   const [dropLine, setDropLine] = useState(null);
 
-  const isDraggingRef = useRef(false);
-  const dragSourceRef = useRef(null);
-  const dropTargetRef = useRef(null);
+  const isDraggingRef   = useRef(false);
+  const isOverRailRef   = useRef(false);
+  const hoveredBlockRef = useRef(null);
+  const rafRef          = useRef(null);
+  const editorDomRef    = useRef(null);
+  const dragSourceRef   = useRef(null);
+  const dropTargetRef   = useRef(null);
+
+  // Batch state updates via rAF to prevent per-pixel re-renders
+  const scheduleUpdate = useCallback((value) => {
+    hoveredBlockRef.current = value;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      setHoveredBlock(hoveredBlockRef.current);
+    });
+  }, []);
 
   // ── Track hovered block ────────────────────────────────────────────────────
   useEffect(() => {
     if (!editor) return;
     const dom = editor.view.dom;
+    editorDomRef.current = dom;
 
     const onMouseMove = (e) => {
-      if (isDraggingRef.current) return;
+      // Don't update while dragging or while mouse is over the rail itself
+      if (isDraggingRef.current || isOverRailRef.current) return;
+
       let el = e.target;
       while (el && el !== dom && el.parentElement !== dom) el = el.parentElement;
-      if (!el || el === dom || el.parentElement !== dom) { setHoveredBlock(null); return; }
+      if (!el || el === dom || el.parentElement !== dom) {
+        scheduleUpdate(null);
+        return;
+      }
 
       let pmPos = null;
       try { pmPos = editor.view.posAtDOM(el, 0); } catch { /* ignore */ }
-      setHoveredBlock({ rect: el.getBoundingClientRect(), pmPos });
+      scheduleUpdate({ rect: el.getBoundingClientRect(), pmPos });
     };
 
-    const clearHover = () => { if (!isDraggingRef.current) setHoveredBlock(null); };
+    const clearHover = () => {
+      // Don't clear if mouse is now over the rail (prevents flicker loop)
+      if (isDraggingRef.current || isOverRailRef.current) return;
+      scheduleUpdate(null);
+    };
+
+    const onScroll = () => {
+      if (isDraggingRef.current || isOverRailRef.current) return;
+      scheduleUpdate(null);
+    };
 
     dom.addEventListener('mousemove', onMouseMove);
     dom.addEventListener('mouseleave', clearHover);
 
-    // Clear when the scroll container scrolls (block rects become stale)
     const layoutMain = document.getElementById('layout-main');
-    if (layoutMain) layoutMain.addEventListener('scroll', clearHover, { passive: true });
+    if (layoutMain) layoutMain.addEventListener('scroll', onScroll, { passive: true });
 
     return () => {
       dom.removeEventListener('mousemove', onMouseMove);
       dom.removeEventListener('mouseleave', clearHover);
-      if (layoutMain) layoutMain.removeEventListener('scroll', clearHover);
+      if (layoutMain) layoutMain.removeEventListener('scroll', onScroll);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [editor]);
+  }, [editor, scheduleUpdate]);
+
+  // ── Rail mouse enter/leave — prevents flicker when hovering rail buttons ──
+  const handleRailMouseEnter = useCallback(() => {
+    isOverRailRef.current = true;
+  }, []);
+
+  const handleRailMouseLeave = useCallback((e) => {
+    isOverRailRef.current = false;
+    // Only clear if mouse did not re-enter the editor
+    const editorDom = editorDomRef.current;
+    if (!editorDom || !editorDom.contains(e.relatedTarget)) {
+      scheduleUpdate(null);
+    }
+  }, [scheduleUpdate]);
 
   // ── Resolve top-level block bounds from a PM position ────────────────────
   function resolveBlock(pmPos) {
@@ -98,13 +141,17 @@ export default function BlockLeftRail({ editor, onContextMenu }) {
     } catch { return null; }
   }
 
-  // ── Add block below ────────────────────────────────────────────────────────
+  // ── Add block below + open slash menu ─────────────────────────────────────
   function handleAdd(e) {
     e.preventDefault();
     if (!hoveredBlock?.pmPos || !editor) return;
     const b = resolveBlock(hoveredBlock.pmPos);
     if (!b) return;
     editor.chain().focus().insertContentAt(b.nodeEnd, { type: 'paragraph' }).run();
+    // Insert '/' after DOM settles to trigger slash menu
+    setTimeout(() => {
+      editor.chain().focus().insertContent('/').run();
+    }, 50);
   }
 
   // ── Context menu ───────────────────────────────────────────────────────────
@@ -112,7 +159,7 @@ export default function BlockLeftRail({ editor, onContextMenu }) {
     e.preventDefault();
     if (!hoveredBlock || !onContextMenu) return;
     const b = resolveBlock(hoveredBlock.pmPos);
-    onContextMenu({ x: e.clientX, y: e.clientY, bounds: b, onClose: () => setHoveredBlock(null) });
+    onContextMenu({ x: e.clientX, y: e.clientY, bounds: b, onClose: () => scheduleUpdate(null) });
   }
 
   // ── Drag to reorder ────────────────────────────────────────────────────────
@@ -125,7 +172,7 @@ export default function BlockLeftRail({ editor, onContextMenu }) {
     dragSourceRef.current = b;
     isDraggingRef.current = true;
     setIsDragging(true);
-    setHoveredBlock(null);
+    scheduleUpdate(null);
 
     const editorDom = editor.view.dom;
     const editorRect = editorDom.getBoundingClientRect();
@@ -182,7 +229,8 @@ export default function BlockLeftRail({ editor, onContextMenu }) {
 
     document.addEventListener('mousemove', onDragMove);
     document.addEventListener('mouseup', onDragEnd);
-  }, [hoveredBlock, editor]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hoveredBlock, editor, scheduleUpdate]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
   if (typeof document === 'undefined') return null;
@@ -192,6 +240,8 @@ export default function BlockLeftRail({ editor, onContextMenu }) {
     <>
       {hoveredBlock && !isDragging && (
         <div
+          onMouseEnter={handleRailMouseEnter}
+          onMouseLeave={handleRailMouseLeave}
           style={{
             position: 'fixed',
             top: hoveredBlock.rect.top,

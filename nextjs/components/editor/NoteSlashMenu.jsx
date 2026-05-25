@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import EditorPromptModal from './EditorPromptModal';
+import ImageInsertDialog from './ImageInsertDialog';
 
 const BLOCKS = [
   // ── TEXT ──────────────────────────────────────────────────────────────────
@@ -19,7 +20,7 @@ const BLOCKS = [
   { id: 'toggle',    label: 'Toggle',         desc: 'Collapsible content block',  icon: '▶', group: 'LISTS',                              action: (e) => e.chain().focus().insertToggle().run() },
 
   // ── MEDIA ─────────────────────────────────────────────────────────────────
-  { id: 'image',     label: 'Image',          desc: 'Insert an image by URL',     icon: '🖼', group: 'MEDIA', requiresUrl: true,        action: (e, { url }) => e.chain().focus().setImage({ src: url }).run() },
+  { id: 'image',     label: 'Image',          desc: 'Upload or insert by URL',    icon: '🖼', group: 'MEDIA', requiresUploadDialog: true, action: (e, { url }) => e.chain().focus().setImage({ src: url }).run() },
   { id: 'video',     label: 'Video',          desc: 'Embed YouTube or Vimeo',     icon: '▶️', group: 'MEDIA', requiresUrl: true,        action: (e, { url }) => e.chain().focus().insertVideo({ src: url }).run() },
 
   // ── STRUCTURE ─────────────────────────────────────────────────────────────
@@ -58,12 +59,13 @@ function saveRecentId(id) {
   } catch {}
 }
 
-export default function NoteSlashMenu({ editor, onCreateSubpage }) {
+export default function NoteSlashMenu({ editor, onCreateSubpage, noteId }) {
   const [slashState, setSlashState] = useState({ open: false, query: '', from: 0 });
   const [coords, setCoords] = useState({ top: 0, left: 0 });
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [recentIds, setRecentIds] = useState([]);
   const [pendingBlock, setPendingBlock] = useState(null);
+  const [pendingImageInsert, setPendingImageInsert] = useState(false);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -159,14 +161,16 @@ export default function NoteSlashMenu({ editor, onCreateSubpage }) {
     setSlashState({ open: false, query: '', from: 0 });
     saveRecentId(block.id);
     editor.chain().focus().deleteRange({ from: from - 1, to: from + query.length }).run();
-    if (block.requiresUrl) {
+    if (block.requiresUploadDialog) {
+      setPendingImageInsert(true);
+    } else if (block.requiresUrl) {
       setPendingBlock(block);
     } else {
       block.action(editor, { onCreateSubpage });
     }
   }
 
-  if (!slashState.open && !pendingBlock) return null;
+  if (!slashState.open && !pendingBlock && !pendingImageInsert) return null;
 
   const filtered = getFiltered(slashState.query);
   const recentBlocks = slashState.query ? [] : recentIds.map(id => BLOCKS.find(b => b.id === id)).filter(Boolean);
@@ -217,10 +221,20 @@ export default function NoteSlashMenu({ editor, onCreateSubpage }) {
         </div>
       )}
 
+      <ImageInsertDialog
+        open={pendingImageInsert}
+        noteId={noteId}
+        onInsert={(url) => {
+          if (url) editor.chain().focus().setImage({ src: url }).run();
+          setPendingImageInsert(false);
+        }}
+        onCancel={() => setPendingImageInsert(false)}
+      />
+
       <EditorPromptModal
         open={!!pendingBlock}
-        title={pendingBlock?.id === 'image' ? 'Insert Image' : 'Embed Video'}
-        inputLabel={pendingBlock?.id === 'image' ? 'Image URL' : 'YouTube or Vimeo URL'}
+        title="Embed Video"
+        inputLabel="YouTube or Vimeo URL"
         placeholder="https://"
         confirmLabel="Insert"
         onConfirm={(url) => {

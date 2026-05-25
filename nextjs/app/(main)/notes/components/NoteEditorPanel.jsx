@@ -198,6 +198,7 @@ export default function NoteEditorPanel({ noteId, onNoteUpdated, notes = [], onC
               onChange={handleContentChange}
               placeholder="Start writing, or press '/' for commands…"
               autoFocus={false}
+              noteId={noteId}
               onCreateSubpage={onCreateSubpage ? () => onCreateSubpage(noteId) : undefined}
               onEditorReady={setEditorInstance}
             />
