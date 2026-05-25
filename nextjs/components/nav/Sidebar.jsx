@@ -2,8 +2,21 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/hooks/useTheme';
+
+// ── Credit balance hook (admin sidebar only) ─────────────────────────────────
+function useCreditBalance(enabled) {
+  const [balance, setBalance] = useState(null);
+  useEffect(() => {
+    if (!enabled) return;
+    fetch('/api/v1/credits').then(r => r.ok ? r.json() : null).then(d => {
+      if (d?.balance != null) setBalance(d.balance);
+    }).catch(() => {});
+  }, [enabled]);
+  return balance;
+}
 
 // ── Inline icons (Lucide-style strokes matching design) ───────────────────────
 const Ic = ({ size = 18, sw = 1.75, children }) => (
@@ -33,6 +46,9 @@ const Icons = {
   logout: <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></>,
   keyboard: <><rect x="2" y="6" width="20" height="12" rx="2" /><line x1="6" y1="10" x2="6.01" y2="10" /><line x1="10" y1="10" x2="10.01" y2="10" /><line x1="14" y1="10" x2="14.01" y2="10" /><line x1="18" y1="10" x2="18.01" y2="10" /><line x1="7" y1="14" x2="17" y2="14" /></>,
   user: <><circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" /></>,
+  sun: <><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="4.2" y1="4.2" x2="6.3" y2="6.3"/><line x1="17.7" y1="17.7" x2="19.8" y2="19.8"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.2" y1="19.8" x2="6.3" y2="17.7"/><line x1="17.7" y1="6.3" x2="19.8" y2="4.2"/></>,
+  moon: <><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></>,
+  sparkles: <><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7z"/><path d="M19 17l.7 2.3L22 20l-2.3.7L19 23l-.7-2.3L16 20l2.3-.7z"/></>,
   pen: <><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></>,
   checkSq: <><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></>,
   library: <><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></>,
@@ -194,7 +210,10 @@ function NavItem({ item, isActive, collapsed, showTooltip, onClick }) {
 // ── Main sidebar ──────────────────────────────────────────────────────────────
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, isAdmin, displayName, initials, avatarUrl, signOut } = useAuth();
+  const [dark, toggleTheme] = useTheme();
+  const creditBalance = useCreditBalance(isAdmin);
 
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem('nav_collapsed') === 'true'; } catch { return false; }
@@ -287,6 +306,52 @@ export default function Sidebar() {
 
       {/* ── Footer ── */}
       <div className="flex-shrink-0 border-t border-[#D1DCE8] dark:border-white/10 p-2 flex flex-col gap-1">
+
+        {/* Admin-only: credits + theme (moved here from TopBar) */}
+        {isAdmin && (
+          <>
+            {/* Credits pill */}
+            {creditBalance != null && (
+              collapsed ? (
+                <button
+                  onClick={() => router.push('/admin/credits')}
+                  title={`+${creditBalance} credits`}
+                  className="h-11 w-11 mx-auto flex items-center justify-center rounded-xl transition-colors hover:bg-[rgba(24,95,165,0.06)] dark:hover:bg-[rgba(24,95,165,0.12)]"
+                >
+                  <NavIc name="sparkles" size={16} sw={2.25} />
+                </button>
+              ) : (
+                <div className="flex items-center justify-between px-3 py-1.5">
+                  <span className="text-[12px] font-medium text-[#9CA3AF] dark:text-[#4A6380]">Credits</span>
+                  <button
+                    onClick={() => router.push('/admin/credits')}
+                    title="AI credits remaining"
+                    style={creditBalance < 5
+                      ? { background:'linear-gradient(135deg,#fee2e2,#fecaca)', border:'1px solid #fca5a5', color:'#dc2626' }
+                      : { background:'linear-gradient(135deg,#FEF3C7,#FDE68A)', border:'1px solid rgba(245,158,11,0.25)', color:'#B45309' }
+                    }
+                    className="flex items-center gap-1 h-6 px-2 rounded-full text-[12px] font-bold hover:shadow-[0_2px_8px_rgba(245,158,11,0.25)] transition-shadow cursor-pointer"
+                  >
+                    <NavIc name="sparkles" size={11} sw={2.25} />
+                    +{creditBalance}
+                  </button>
+                </div>
+              )
+            )}
+
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+              className={`flex items-center gap-2.5 cursor-pointer transition-colors text-[#9CA3AF] dark:text-[#4A6380] hover:bg-[rgba(24,95,165,0.06)] dark:hover:bg-[rgba(24,95,165,0.12)] hover:text-[#185FA5] dark:hover:text-[#5B9FD4] rounded-lg
+                ${collapsed ? 'h-11 w-11 mx-auto justify-center' : 'h-8 px-3 w-full'}`}
+            >
+              <NavIc name={dark ? 'sun' : 'moon'} size={16} />
+              {!collapsed && <span className="text-[12px] font-medium">{dark ? 'Light mode' : 'Dark mode'}</span>}
+            </button>
+          </>
+        )}
+
         {/* Collapse toggle */}
         <button
           onClick={toggle}

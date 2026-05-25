@@ -158,6 +158,9 @@ export default function TopBar({ onMobileMenu }) {
     return () => main.removeEventListener('scroll', handler);
   }, []);
 
+  // Admin pages have no TopBar — controls live in the sidebar instead
+  if (pathname.startsWith('/admin')) return null;
+
   const { title, ctx } = resolvePage(pathname);
 
   // Check for nested breadcrumb routes (e.g., /my-courses/[id]/[topic])

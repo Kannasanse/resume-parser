@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useCallback } from 'react';
+import { PageHeading } from '@/components/admin/PageHeading';
 
 function parseCsvText(text) {
   const lines = text.split(/\r?\n/).filter(l => l.trim());
@@ -90,12 +91,12 @@ export default function AdminImportPage() {
   };
 
   return (
-    <div className="space-y-8 max-w-3xl">
+    <div className="px-6 lg:px-8 pt-8 pb-8 space-y-8 max-w-3xl">
       <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-ds-text font-heading">Bulk Import Users</h1>
-          <p className="text-sm text-ds-textMuted mt-1">Upload a CSV to invite multiple users at once. Max 500 rows.</p>
-        </div>
+        <PageHeading
+          title="Bulk Import Users"
+          subtitle="Upload a CSV to invite multiple users at once. Max 500 rows."
+        />
         <button onClick={handleDownloadTemplate}
           className="text-sm text-primary hover:underline font-medium flex items-center gap-1.5">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

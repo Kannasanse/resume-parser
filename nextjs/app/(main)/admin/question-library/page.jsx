@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { PageHeading } from '@/components/admin/PageHeading';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const PRIMARY   = '#185FA5';
@@ -975,7 +976,7 @@ export default function QuestionLibrary() {
   // ── Styles ─────────────────────────────────────────────────────────────────
   const filterSelectStyle = {
     width:160, height:36, border:`1px solid ${BORDER}`, borderRadius:10, fontSize:13, padding:'0 10px',
-    background:'white', color:TEXT, outline:'none', cursor:'pointer',
+    background:'var(--ql-input-bg, white)', color:'var(--ql-input-text, #2C2C2A)', outline:'none', cursor:'pointer',
   };
 
   const pageChipStyle = (active) => ({
@@ -988,7 +989,7 @@ export default function QuestionLibrary() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:20, paddingBottom: selectedIds.size > 0 ? 68 : 24 }}>
+    <div style={{ display:'flex', flexDirection:'column', gap:20, padding:'32px 32px 24px', paddingBottom: selectedIds.size > 0 ? 68 : 24 }}>
       <style>{`
         @keyframes ql-spin { to { transform: rotate(360deg); } }
         .ql-row:hover { background: rgba(24,95,165,0.025) !important; }
@@ -996,6 +997,13 @@ export default function QuestionLibrary() {
         .ql-menu-item:hover { background: #F4F8FC; }
         .ql-menu-item-danger:hover { background: #FEE2E2; color: #D93025; }
         .ql-page-chip:hover { outline-color: #185FA5 !important; color: #185FA5 !important; }
+
+        /* Dark mode overrides */
+        .dark { --ql-input-bg: #111F35; --ql-input-text: #E8EFF7; }
+        .dark select, .dark input[type="text"] { border-color: rgba(255,255,255,0.1) !important; color: #E8EFF7 !important; background: #111F35 !important; }
+        .dark .ql-row { background: #111F35 !important; }
+        .dark .ql-row:hover { background: rgba(24,95,165,0.12) !important; }
+        .dark .ql-menu-item:hover { background: #0D1830; }
       `}</style>
 
       {/* Toast */}
@@ -1009,13 +1017,11 @@ export default function QuestionLibrary() {
       )}
 
       {/* ── Page Header ──────────────────────────────────────────────────────── */}
-      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:16 }}>
-        <div>
-          <h1 style={{ fontSize:28, fontWeight:800, letterSpacing:'-0.03em', color:TEXT, margin:0 }}>Question Library</h1>
-          <p style={{ fontSize:14, color:MUTED, marginTop:4, marginBottom:0 }}>
-            Reusable questions tagged by type, skill, topic, and difficulty.
-          </p>
-        </div>
+      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:16, flexWrap:'wrap' }}>
+        <PageHeading
+          title="Question Library"
+          subtitle="Reusable questions tagged by type, skill, topic, and difficulty."
+        />
         <div style={{ display:'flex', gap:8, alignItems:'center', flexShrink:0 }}>
           <button onClick={()=>setShowGenerate(true)}
             style={{ border:`1px solid ${BORDER}`, borderRadius:10, padding:'8px 16px', background:'white', fontSize:13, fontWeight:500, color:MUTED, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>

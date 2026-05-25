@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Sk } from '@/components/Skeleton';
+import { PageHeading } from '@/components/admin/PageHeading';
 
 const STATUS_COLORS = {
   draft:     'bg-ds-bg text-ds-textMuted border border-ds-border',
@@ -47,14 +48,14 @@ export default function AdminTests() {
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-ds-text font-heading">Tests</h1>
-          <p className="text-sm text-ds-textMuted mt-0.5">Manage assessments for job profiles</p>
-        </div>
+    <div className="px-6 lg:px-8 pt-8 pb-8 space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <PageHeading
+          title="Tests"
+          subtitle="Manage assessments for job profiles"
+        />
         <Link href="/admin/tests/new"
-          className="bg-primary text-white px-4 py-2 rounded-btn text-sm font-medium hover:bg-primary-dark transition-colors">
+          className="flex-shrink-0 bg-primary text-white px-4 py-2 rounded-btn text-sm font-medium hover:bg-primary-dark transition-colors">
           + New Test
         </Link>
       </div>

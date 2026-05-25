@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { TemplateThumbnail } from '@/components/builder/ResumePreview.jsx';
+import { PageHeading } from '@/components/admin/PageHeading';
 
 function StarIcon({ filled }) {
   return (
@@ -47,16 +48,14 @@ export default function AdminTemplatesPage() {
   const featuredCount = templates.filter(t => t.featured).length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-ds-text font-heading">Templates</h1>
-          <p className="text-sm text-ds-textMuted mt-1">
-            Mark templates as Featured to highlight them for users in the template gallery.
-          </p>
-        </div>
+    <div className="px-6 lg:px-8 pt-8 pb-8 space-y-6">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <PageHeading
+          title="Templates"
+          subtitle="Mark templates as Featured to highlight them for users in the template gallery."
+        />
         {!loading && (
-          <span className="text-sm text-ds-textMuted">
+          <span className="text-sm text-ds-textMuted flex-shrink-0 pt-1">
             {featuredCount} of {templates.length} featured
           </span>
         )}

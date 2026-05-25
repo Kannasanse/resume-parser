@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { PageHeading } from '@/components/admin/PageHeading';
 
 function EmailChip({ email, onRemove }) {
   return (
@@ -97,11 +98,11 @@ export default function AdminInvitePage() {
   };
 
   return (
-    <div className="space-y-8 max-w-2xl">
-      <div>
-        <h1 className="text-2xl font-bold text-ds-text font-heading">Invite Users</h1>
-        <p className="text-sm text-ds-textMuted mt-1">Send email invitations. Invitations expire after 7 days.</p>
-      </div>
+    <div className="px-6 lg:px-8 pt-8 pb-8 space-y-8 max-w-2xl">
+      <PageHeading
+        title="Invite Users"
+        subtitle="Send email invitations. Invitations expire after 7 days."
+      />
 
       <div className="bg-ds-card border border-ds-border rounded-lg p-6 space-y-4">
         <form onSubmit={handleSend} className="space-y-4">
