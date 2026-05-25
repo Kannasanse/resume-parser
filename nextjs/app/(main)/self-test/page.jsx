@@ -359,7 +359,7 @@ function SessionHistoryTable() {
         <div
           className="hidden md:grid border-b border-[#D1DCE8] dark:border-white/10"
           style={{
-            gridTemplateColumns: '1fr 140px 90px 100px 100px 120px 140px',
+            gridTemplateColumns: '1fr 140px 90px 115px 100px 120px 140px',
             background: 'linear-gradient(180deg, #F4F8FC, #EEF3F9)',
             height: 40,
           }}
@@ -428,7 +428,7 @@ function SessionHistoryTable() {
                         {MODE_LABELS[s.mode] || s.mode}
                       </span>
                       <span className="text-[12px] font-semibold px-2 py-0.5 rounded-full"
-                        style={{ background: band.bg, color: band.color, border: `1px solid ${band.border}` }}>
+                        style={{ background: band.bg, color: band.color, border: `1px solid ${band.border}`, whiteSpace: 'nowrap' }}>
                         {band.label}
                       </span>
                       <span className="text-[12px] text-[#6B7280]">{s.questionCount} questions</span>
@@ -448,7 +448,7 @@ function SessionHistoryTable() {
                   <div
                     className="hidden md:grid items-center"
                     style={{
-                      gridTemplateColumns: '1fr 140px 90px 100px 100px 120px 140px',
+                      gridTemplateColumns: '1fr 140px 90px 115px 100px 120px 140px',
                       height: 56,
                     }}
                   >
@@ -482,9 +482,9 @@ function SessionHistoryTable() {
                     </div>
 
                     {/* BAND */}
-                    <div className="px-4">
+                    <div className="px-4 flex items-center">
                       <span className="text-[12px] font-semibold px-2.5 py-1 rounded-full"
-                        style={{ background: band.bg, color: band.color, border: `1px solid ${band.border}` }}>
+                        style={{ background: band.bg, color: band.color, border: `1px solid ${band.border}`, whiteSpace: 'nowrap' }}>
                         {band.label}
                       </span>
                     </div>
