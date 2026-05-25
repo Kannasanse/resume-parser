@@ -27,6 +27,8 @@ import { CalloutExtension } from './extensions/CalloutNode';
 import { ToggleExtension } from './extensions/ToggleNode';
 import { SearchExtension } from './extensions/SearchExtension';
 import { VideoExtension } from './extensions/VideoNode';
+import { TagExtension } from './extensions/TagExtension';
+import { WikilinkExtension } from './extensions/WikilinkExtension';
 import NoteBubbleMenu from './NoteBubbleMenu';
 import NoteSlashMenu from './NoteSlashMenu';
 import BlockLeftRail from './BlockLeftRail';
@@ -175,6 +177,8 @@ export default function BlockEditor({
       ToggleExtension,
       SearchExtension,
       BlockShortcuts,
+      TagExtension,
+      WikilinkExtension,
       ...(mode !== 'minimal' ? [VideoExtension] : []),
     ],
 
@@ -213,6 +217,21 @@ export default function BlockEditor({
     if (!editor || editor.isDestroyed) return;
     editor.setEditable(!isReadonly);
   }, [isReadonly, editor]);
+
+  // ── Wikilink click → navigate to linked note ───────────────────────────────
+  useEffect(() => {
+    if (!editor) return;
+    const handleClick = (event) => {
+      const el = event.target.closest('[data-wikilink]');
+      if (!el) return;
+      const noteId = el.dataset.wikilink;
+      if (!noteId) return;
+      // Emit a custom event; the notes page listens and selects the note
+      window.dispatchEvent(new CustomEvent('proflect:navigate-note', { detail: { noteId } }));
+    };
+    editor.view.dom.addEventListener('click', handleClick);
+    return () => editor.view.dom.removeEventListener('click', handleClick);
+  }, [editor]);
 
   // ── Paste image from clipboard ─────────────────────────────────────────────
   useEffect(() => {
@@ -417,4 +436,37 @@ mark { background: #FEF08A; border-radius: 2px; padding: 0 2px; }
 
 /* ── Drag image drop target ───────────────────────────────────────────────── */
 .note-editor.drag-image-over { outline: 2px dashed #185FA5; outline-offset: -3px; border-radius: 8px; }
+
+/* ── Tag chips (#word) ────────────────────────────────────────────────────── */
+.editor-tag {
+  display: inline-flex; align-items: center;
+  background: #E6F1FB; color: #185FA5;
+  border-radius: 9999px; padding: 1px 8px;
+  font-size: 0.9em; font-weight: 600; cursor: pointer;
+  text-decoration: none; transition: background 150ms;
+  line-height: 1.6;
+}
+.editor-tag:hover { background: #D4E8F8; }
+.dark .editor-tag { background: rgba(24,95,165,0.20); color: #5B9FD4; }
+.dark .editor-tag:hover { background: rgba(24,95,165,0.30); }
+
+/* ── Wikilinks ([[Note Title]]) ───────────────────────────────────────────── */
+.wikilink {
+  display: inline; border-radius: 4px; padding: 1px 4px;
+  font-size: 0.95em; cursor: pointer; transition: background 150ms;
+}
+.wikilink-resolved {
+  color: #185FA5; background: rgba(24,95,165,0.08);
+  text-decoration: underline; text-decoration-color: rgba(24,95,165,0.30);
+  text-decoration-style: dotted;
+}
+.wikilink-resolved:hover { background: rgba(24,95,165,0.15); text-decoration-color: #185FA5; }
+.wikilink-unresolved {
+  color: #D93025; background: rgba(217,48,37,0.06);
+  text-decoration: underline; text-decoration-style: dotted;
+  text-decoration-color: rgba(217,48,37,0.40);
+}
+.wikilink-unresolved:hover { background: rgba(217,48,37,0.12); }
+.dark .wikilink-resolved   { color: #5B9FD4; background: rgba(24,95,165,0.15); }
+.dark .wikilink-unresolved { color: #F87171; background: rgba(217,48,37,0.10); }
 `;

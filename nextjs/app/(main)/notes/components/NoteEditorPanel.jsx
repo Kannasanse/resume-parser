@@ -4,6 +4,9 @@ import dynamic from 'next/dynamic';
 import EditorFooter from '@/components/editor/EditorFooter';
 import NotesBreadcrumb from './NotesBreadcrumb';
 import FindBar from '@/components/editor/FindBar';
+import NotePropertiesPanel from './NotePropertiesPanel';
+import NoteSharePanel from './NoteSharePanel';
+import { extractTagsFromContent } from '@/lib/notes/extractTags';
 
 const BlockEditor = dynamic(() => import('@/components/editor/BlockEditor'), {
   ssr: false,
@@ -27,6 +30,15 @@ class EditorErrorBoundary extends Component {
   }
 }
 
+function ShareIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+    </svg>
+  );
+}
+
 export default function NoteEditorPanel({ noteId, onNoteUpdated, notes = [], onCreateSubpage }) {
   const [note, setNote] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -34,10 +46,26 @@ export default function NoteEditorPanel({ noteId, onNoteUpdated, notes = [], onC
   const [wordCount, setWordCount] = useState(0);
   const [findBarOpen, setFindBarOpen] = useState(false);
   const [editorInstance, setEditorInstance] = useState(null);
+  const [allTagDefs, setAllTagDefs] = useState([]);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const titleTimerRef = useRef(null);
   const contentTimerRef = useRef(null);
   const pendingPatchRef = useRef(null);
+  const noteTagsRef = useRef([]);
+
+  // Keep ref in sync so content-save timeout can read latest tags without stale closure
+  useEffect(() => {
+    noteTagsRef.current = note?.tags ?? [];
+  }, [note?.tags]);
+
+  // Fetch tag definitions once (for autocomplete in NotePropertiesPanel)
+  useEffect(() => {
+    fetch('/api/v1/notes/tags')
+      .then(r => r.json())
+      .then(d => setAllTagDefs(Array.isArray(d.tags) ? d.tags : []))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!noteId) return;
@@ -46,6 +74,7 @@ export default function NoteEditorPanel({ noteId, onNoteUpdated, notes = [], onC
     async function loadNote() {
       setLoading(true);
       setSaveState('idle');
+      setShareOpen(false);
       try {
         const res = await fetch(`/api/v1/notes/${noteId}`);
         if (!res.ok) throw new Error('Failed to fetch note');
@@ -107,8 +136,15 @@ export default function NoteEditorPanel({ noteId, onNoteUpdated, notes = [], onC
     setWordCount(wc ?? 0);
     clearTimeout(contentTimerRef.current);
     contentTimerRef.current = setTimeout(() => {
-      patchNote({ content, word_count: wc ?? 0 });
+      const inlineTags = extractTagsFromContent(content);
+      const merged = [...new Set([...noteTagsRef.current, ...inlineTags])];
+      patchNote({ content, word_count: wc ?? 0, tags: merged });
     }, 1500);
+  }, [patchNote]);
+
+  const handleTagsChange = useCallback((newTags) => {
+    setNote(prev => prev ? { ...prev, tags: newTags } : prev);
+    patchNote({ tags: newTags });
   }, [patchNote]);
 
   useEffect(() => {
@@ -162,6 +198,30 @@ export default function NoteEditorPanel({ noteId, onNoteUpdated, notes = [], onC
         <img src={note.cover_url} alt="" className="w-full h-48 object-cover flex-shrink-0" />
       )}
 
+      {/* Top bar: share button */}
+      <div className="flex items-center justify-end px-6 py-1.5 flex-shrink-0 border-b border-[#E8EFF7] dark:border-white/10" style={{ position: 'relative' }}>
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setShareOpen(v => !v)}
+            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-[#D1DCE8] dark:border-white/10 text-[#6B7280] dark:text-[#8BA3C1] hover:border-[#185FA5] hover:text-[#185FA5] dark:hover:text-[#5B9FD4] transition-colors"
+          >
+            <ShareIcon />
+            Share
+            {note.is_public && (
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#1D9E75', display: 'inline-block', marginLeft: 2 }} />
+            )}
+          </button>
+          {shareOpen && (
+            <NoteSharePanel
+              noteId={noteId}
+              initialIsPublic={note.is_public ?? false}
+              initialShareToken={note.share_token ?? null}
+              onClose={() => setShareOpen(false)}
+            />
+          )}
+        </div>
+      </div>
+
       {/* Find bar */}
       {findBarOpen && (
         <div className="flex-shrink-0 px-4 pt-2">
@@ -183,6 +243,11 @@ export default function NoteEditorPanel({ noteId, onNoteUpdated, notes = [], onC
         )}
 
         <div className="max-w-[720px] mx-auto px-8 py-8">
+          <NotePropertiesPanel
+            tags={note.tags ?? []}
+            allTagDefs={allTagDefs}
+            onChange={handleTagsChange}
+          />
           <EditorTitle
             value={note.title || ''}
             onChange={handleTitleChange}

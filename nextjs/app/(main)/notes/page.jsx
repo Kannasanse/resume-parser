@@ -6,6 +6,7 @@ import NotesEmptyState from './components/NotesEmptyState';
 import NotesGridView from './components/NotesGridView';
 import NotesListView from './components/NotesListView';
 import MoveToModal from './components/MoveToModal';
+import FullSearchModal from './components/FullSearchModal';
 
 // ── View/sort toggle bar ──────────────────────────────────────────────────────
 function HomeToolbar({ view, onViewChange, sort, onSortChange, onCreateNote }) {
@@ -97,6 +98,8 @@ export default function NotesPage() {
   const [selectedNoteId, setSelectedNoteId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [tagFilter, setTagFilter] = useState(null);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
 
   // Sidebar collapse (persisted)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => safeLS('notes_sidebar_collapsed', false));
@@ -122,6 +125,28 @@ export default function NotesPage() {
   useEffect(() => {
     try { localStorage.setItem('notes_sort', JSON.stringify(sort)); } catch {}
   }, [sort]);
+
+  // Cmd+K → open search modal
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchModalOpen(v => !v);
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
+
+  // Listen for wikilink navigation events from BlockEditor
+  useEffect(() => {
+    const handler = (e) => {
+      const noteId = e.detail?.noteId;
+      if (noteId) setSelectedNoteId(noteId);
+    };
+    window.addEventListener('proflect:navigate-note', handler);
+    return () => window.removeEventListener('proflect:navigate-note', handler);
+  }, []);
 
   const fetchNotes = useCallback(async () => {
     try {
@@ -222,6 +247,11 @@ export default function NotesPage() {
     setSort(newSort);
   }, []);
 
+  const handleSelectNoteFromSearch = useCallback((noteId) => {
+    setSelectedNoteId(noteId);
+    setSearchModalOpen(false);
+  }, []);
+
   // Sort the notes for home view (sort is already applied via API, but handle title ascending client-side too)
   const rootNotes = notes.filter(n => !n.parent_id && !n.is_archived);
 
@@ -242,6 +272,9 @@ export default function NotesPage() {
           onNoteAction={handleNoteAction}
           search={search}
           onSearchChange={setSearch}
+          onOpenSearch={() => setSearchModalOpen(true)}
+          tagFilter={tagFilter}
+          onTagFilter={setTagFilter}
           loading={loading}
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(v => !v)}
@@ -311,6 +344,14 @@ export default function NotesPage() {
           onClose={() => setMoveToNoteId(null)}
         />
       )}
+
+      {/* Full-text search modal (Cmd+K) */}
+      <FullSearchModal
+        open={searchModalOpen}
+        onClose={() => setSearchModalOpen(false)}
+        onSelectNote={handleSelectNoteFromSearch}
+        notes={notes}
+      />
     </div>
   );
 }
