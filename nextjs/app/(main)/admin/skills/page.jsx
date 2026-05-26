@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import SkillsTable from './components/SkillsTable';
 import AddSkillDrawer from './components/AddSkillDrawer';
 import PendingSubmissionsTab from './components/PendingSubmissionsTab';
+import ImportSkillsModal from './components/ImportSkillsModal';
 
 export default function AdminSkillsPage() {
   const [activeTab, setActiveTab] = useState('skills');
@@ -35,6 +36,9 @@ export default function AdminSkillsPage() {
   // Drawer
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingSkill, setEditingSkill] = useState(null);
+
+  // Import modal
+  const [importOpen, setImportOpen] = useState(false);
 
   // Stats
   const [activeCount, setActiveCount] = useState(0);
@@ -198,6 +202,12 @@ export default function AdminSkillsPage() {
             )}
           </div>
           <button
+            onClick={() => setImportOpen(true)}
+            className="px-4 py-2 text-sm font-semibold border border-[var(--c-border)] dark:border-white/15 rounded-xl text-[var(--c-text)] hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+          >
+            Import
+          </button>
+          <button
             onClick={handleOpenAdd}
             className="bg-[var(--c-primary)] text-white px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity"
           >
@@ -281,6 +291,7 @@ export default function AdminSkillsPage() {
               <option value="manual">Manual</option>
               <option value="esco">ESCO</option>
               <option value="user_submitted">User Submitted</option>
+              <option value="import">Import</option>
             </select>
           </div>
 
@@ -308,6 +319,13 @@ export default function AdminSkillsPage() {
           onCountChange={(n) => setPendingCount(n)}
         />
       )}
+
+      {/* Import modal */}
+      <ImportSkillsModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImported={() => { setPage(1); fetchSkills(1); }}
+      />
 
       {/* Add / Edit Drawer */}
       <AddSkillDrawer
