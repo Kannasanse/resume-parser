@@ -12,21 +12,22 @@ export async function GET(request) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('headline, location, skills')
+      .select('headline, city, country, skills')
       .eq('id', user.id)
       .single();
 
-    if (!profile?.headline || !profile?.location) {
+    if (!profile?.headline || !profile?.city) {
       return NextResponse.json({
         jobs:    [],
         reason:  'incomplete_profile',
-        message: 'Add your job title and location to your profile to see job recommendations.',
+        message: 'Add your job title and city to your profile to see job recommendations.',
       });
     }
 
     const { query, jobTitle, city, country } = buildJobQuery({
       headline: profile.headline,
-      location: profile.location,
+      city:     profile.city,
+      country:  profile.country,
       skills:   profile.skills ?? [],
     });
 
@@ -34,6 +35,7 @@ export async function GET(request) {
       query,
       jobTitle,
       city,
+      country,
     });
 
     // Remove jobs this user has dismissed

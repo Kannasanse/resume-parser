@@ -5,8 +5,8 @@ import { checkQuota, logApiCall } from './quotaMonitor.js';
 
 const CACHE_TTL_HOURS = 12;
 
-export async function getJobsWithCache({ query, jobTitle, city }) {
-  const cacheKey = buildCacheKey(jobTitle, city);
+export async function getJobsWithCache({ query, jobTitle, city, country = 'india' }) {
+  const cacheKey = buildCacheKey(jobTitle, city, country);
 
   // 1. Try fresh cache
   try {

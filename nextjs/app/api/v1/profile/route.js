@@ -18,7 +18,7 @@ export async function GET() {
   const supabase = makeAdminClient();
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, first_name, last_name, email, role, status, avatar_url, created_at, last_login_at')
+    .select('id, first_name, last_name, email, role, status, avatar_url, created_at, last_login_at, headline, city, country')
     .eq('id', user.id)
     .single();
 
@@ -33,6 +33,9 @@ export async function PATCH(req) {
   const body = await req.json();
   const firstName = (body.first_name || '').trim();
   const lastName  = (body.last_name  || '').trim();
+  const headline  = (body.headline   || '').trim() || null;
+  const city      = (body.city       || '').trim() || null;
+  const country   = (body.country    || '').trim() || null;
 
   if (!firstName) return Response.json({ error: 'First name is required.' }, { status: 400 });
 
@@ -40,7 +43,7 @@ export async function PATCH(req) {
 
   const { error: profileError } = await supabase
     .from('profiles')
-    .update({ first_name: firstName, last_name: lastName })
+    .update({ first_name: firstName, last_name: lastName, headline, city, country })
     .eq('id', user.id);
 
   if (profileError) return Response.json({ error: profileError.message }, { status: 500 });
