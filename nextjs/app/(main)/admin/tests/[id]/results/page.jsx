@@ -63,7 +63,7 @@ export default function TestResults() {
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   return (
-    <div className="space-y-6">
+    <div className="px-6 lg:px-8 pt-8 pb-8 space-y-6">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <Link href={`/admin/tests/${id}`} className="text-ds-textMuted hover:text-ds-text transition-colors mt-1">

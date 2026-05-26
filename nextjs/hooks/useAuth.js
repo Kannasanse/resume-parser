@@ -57,7 +57,7 @@ export function useAuth() {
 
   // Display name: first+last from profile, or email prefix
   const displayName = profile
-    ? [profile.first_name, profile.last_name].filter(Boolean).join(' ') || profile.email
+    ? [profile.first_name, profile.last_name].filter(Boolean).join(' ') || profile.email || user?.email || ''
     : user?.email || '';
 
   const initials = displayName

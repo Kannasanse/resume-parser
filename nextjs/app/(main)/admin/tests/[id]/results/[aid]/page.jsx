@@ -269,7 +269,7 @@ export default function GradeAttempt() {
 
   if (loading) {
     return (
-      <div className="space-y-4 animate-pulse">
+      <div className="px-6 lg:px-8 pt-8 pb-8 space-y-4 animate-pulse">
         <div className="h-7 bg-ds-border/60 rounded w-64" />
         <div className="h-4 bg-ds-border/40 rounded w-48" />
         <div className="grid grid-cols-3 gap-4 mt-4">
@@ -293,7 +293,7 @@ export default function GradeAttempt() {
   const highRiskCount = highRiskKeys.reduce((s, k) => s + (summary[k] || 0), 0);
 
   return (
-    <div className="space-y-5">
+    <div className="px-6 lg:px-8 pt-8 pb-8 space-y-5">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">

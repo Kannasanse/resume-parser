@@ -828,7 +828,7 @@ export default function TestDetail() {
 
   if (loading) {
     return (
-      <div className="space-y-4 animate-pulse">
+      <div className="px-6 lg:px-8 pt-8 pb-8 space-y-4 animate-pulse">
         <div className="h-8 bg-ds-border/60 rounded w-80" />
         <div className="h-4 bg-ds-border/40 rounded w-48" />
         <div className="h-px bg-ds-border" />
@@ -848,7 +848,7 @@ export default function TestDetail() {
   const isArchived  = test.status === 'archived';
 
   return (
-    <div className="space-y-6">
+    <div className="px-6 lg:px-8 pt-8 pb-8 space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
