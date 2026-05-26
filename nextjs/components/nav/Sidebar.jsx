@@ -97,6 +97,7 @@ const ADMIN_NAV_GROUPS = [
     items: [
       { id: 'tests', icon: 'checkSq', label: 'Tests', href: '/admin/tests' },
       { id: 'library', icon: 'library', label: 'Library', href: '/admin/question-library' },
+      { id: 'skills', icon: 'code', label: 'Skills', href: '/admin/skills' },
       { id: 'dashboard', icon: 'shield', label: 'Dashboard', href: '/admin' },
     ],
   },
