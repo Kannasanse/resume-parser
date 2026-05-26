@@ -24,16 +24,16 @@ const TX_TYPE_LABELS = {
 function TxAmount({ amount }) {
   const positive = amount > 0;
   return (
-    <span style={{ color: positive ? '#059669' : '#D93025', fontWeight: 600 }}>
+    <span className={`font-semibold ${positive ? 'text-ds-success' : 'text-ds-danger'}`}>
       {positive ? '+' : ''}{amount}
     </span>
   );
 }
 
 const STATUS_CONFIG = {
-  pending:  { label: 'Pending',  bg: '#FEF3C7', color: '#D97706', border: '#FDE68A' },
-  approved: { label: 'Approved', bg: '#ECFDF5', color: '#059669', border: '#BBF7D0' },
-  rejected: { label: 'Rejected', bg: '#FEE2E2', color: '#D93025', border: '#FECACA' },
+  pending:  { label: 'Pending',  cls: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-600/40' },
+  approved: { label: 'Approved', cls: 'bg-ds-successLight text-ds-success border-ds-success/30' },
+  rejected: { label: 'Rejected', cls: 'bg-ds-dangerLight text-ds-danger border-ds-danger/30' },
 };
 
 function GrantModal({ user, onClose, onDone }) {
@@ -281,8 +281,7 @@ export default function AdminCreditsPage() {
                       </div>
                       {r.admin_notes && <div className="text-xs text-ds-textMuted mt-0.5 italic">Note: {r.admin_notes}</div>}
                     </div>
-                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full border flex-shrink-0"
-                      style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>
+                    <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border flex-shrink-0 ${sc.cls}`}>
                       {sc.label}
                     </span>
                     {r.status === 'pending' && (
@@ -323,7 +322,7 @@ export default function AdminCreditsPage() {
                         <div className="text-xs text-ds-textMuted">{u.email}</div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${u.role === 'admin' ? 'bg-purple-50 text-purple-700' : 'bg-ds-bg text-ds-textMuted'}`}>
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${u.role === 'admin' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' : 'bg-ds-bg text-ds-textMuted'}`}>
                           {u.role}
                         </span>
                       </td>

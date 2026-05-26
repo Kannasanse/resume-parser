@@ -521,9 +521,9 @@ function LibraryPickerModal({ testId, existingLibraryIds, onAdd, onClose }) {
                   )}
                   {!alreadyIn && (
                     <span className={`text-xs px-1.5 py-0.5 rounded border font-medium flex-shrink-0 ${
-                      q.type === 'mcq'          ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                      q.type === 'true_false'   ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                      'bg-teal-50 text-teal-700 border-teal-200'
+                      q.type === 'mcq'          ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700/40' :
+                      q.type === 'true_false'   ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700/40' :
+                      'bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-700/40'
                     }`}>{TYPE_LABELS[q.type]}</span>
                   )}
                 </label>
@@ -774,6 +774,8 @@ export default function TestDetail() {
   const [statusSaving, setStatusSaving] = useState(false);
   const [publishError, setPublishError] = useState('');
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const dragIdx = useRef(null);
 
   const load = useCallback(async () => {
@@ -903,6 +905,35 @@ export default function TestDetail() {
               {publishError && (
                 <p className="text-xs text-ds-danger">{publishError}</p>
               )}
+            </div>
+          )}
+          {/* Delete test */}
+          {!deleteConfirm ? (
+            <button
+              onClick={() => setDeleteConfirm(true)}
+              title="Delete test"
+              className="w-8 h-8 flex items-center justify-center border border-ds-border text-ds-textMuted rounded-btn hover:border-ds-danger/50 hover:text-ds-danger hover:bg-ds-dangerLight transition-colors"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M6 6v14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V6"/>
+              </svg>
+            </button>
+          ) : (
+            <div className="flex items-center gap-1.5 border border-ds-danger/50 rounded-btn px-2 py-1 bg-ds-dangerLight">
+              <span className="text-xs text-ds-danger font-medium">Delete?</span>
+              <button
+                disabled={deleting}
+                onClick={async () => {
+                  setDeleting(true);
+                  const r = await fetch(`/api/v1/admin/tests/${id}`, { method: 'DELETE' });
+                  if (r.ok) router.push('/admin/tests');
+                  else setDeleting(false);
+                }}
+                className="text-xs font-semibold text-white bg-ds-danger px-2 py-0.5 rounded disabled:opacity-50 hover:opacity-90 transition-opacity"
+              >
+                {deleting ? '…' : 'Yes'}
+              </button>
+              <button onClick={() => setDeleteConfirm(false)} className="text-xs text-ds-danger hover:opacity-70">No</button>
             </div>
           )}
         </div>

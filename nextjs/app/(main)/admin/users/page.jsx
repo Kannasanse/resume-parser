@@ -156,10 +156,10 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="px-4 py-3 text-ds-textMuted">{u.email}</td>
                       <td className="px-4 py-3">
-                        <span className="text-xs font-medium text-ds-textMuted">{ROLE_LABELS[u.role] || u.role}</span>
+                        <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${u.role === 'admin' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' : 'text-ds-textMuted'}`}>{ROLE_LABELS[u.role] || u.role}</span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[u.status] || 'bg-ds-bg text-ds-textMuted'}`}>
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[u.status] ?? 'bg-ds-bg text-ds-textMuted'}`}>
                           {STATUS_LABELS[u.status] || u.status}
                         </span>
                       </td>

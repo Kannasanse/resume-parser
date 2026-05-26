@@ -80,7 +80,7 @@ export default function AdminTemplatesPage() {
                 ${t.featured ? 'border-yellow-400/70' : 'border-ds-border'}`}
             >
               {/* Thumbnail */}
-              <div className="bg-gray-100 px-6 pt-4 pb-2">
+              <div className="bg-gray-100 dark:bg-white/5 px-6 pt-4 pb-2">
                 <TemplateThumbnail
                   templateId={t.id}
                   active={false}
@@ -104,7 +104,7 @@ export default function AdminTemplatesPage() {
                   title={t.featured ? 'Remove from Featured' : 'Mark as Featured'}
                   className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-btn border transition-colors disabled:opacity-50
                     ${t.featured
-                      ? 'bg-yellow-50 border-yellow-400 text-yellow-700 hover:bg-yellow-100'
+                      ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-400 dark:border-yellow-600/50 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/30'
                       : 'bg-ds-bg border-ds-border text-ds-textMuted hover:text-ds-text hover:border-ds-borderStrong'
                     }`}
                 >
