@@ -8,6 +8,8 @@ const AUTH_PAGES       = ['/login', '/signup', '/verify-email', '/forgot-passwor
 const PUBLIC_PATHS     = [...MARKETING_PATHS, ...AUTH_PAGES];
 const ADMIN_ONLY_PATHS = ['/resumes', '/jobs', '/upload', '/admin', '/home/preview'];
 const ADMIN_ONLY_API   = ['/api/v1/resumes', '/api/v1/jobs', '/api/v1/admin', '/api/v1/organizations'];
+// Job recommendation routes under /api/v1/jobs/ that are user-facing (not admin-only)
+const USER_JOB_API     = ['/api/v1/jobs/recommendations', '/api/v1/jobs/interact', '/api/v1/jobs/saved'];
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
@@ -86,7 +88,8 @@ export async function middleware(request) {
 
   // ── Role enforcement: API ──────────────────────────────────────────────────
   if (pathname.startsWith('/api/')) {
-    const blocked = ADMIN_ONLY_API.some(p => pathname.startsWith(p));
+    const isUserJobApi = USER_JOB_API.some(p => pathname.startsWith(p));
+    const blocked = !isUserJobApi && ADMIN_ONLY_API.some(p => pathname.startsWith(p));
     if (blocked && !isAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

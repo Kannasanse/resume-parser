@@ -1,4 +1,4 @@
-const JSEARCH_BASE = 'https://jsearch.p.rapidapi.com';
+const JSEARCH_BASE = 'https://api.openwebninja.com/jsearch';
 
 export async function fetchFromJSearch(query, options = {}) {
   const params = new URLSearchParams({
@@ -10,10 +10,9 @@ export async function fetchFromJSearch(query, options = {}) {
     language:    'en',
   });
 
-  const response = await fetch(`${JSEARCH_BASE}/search?${params}`, {
+  const response = await fetch(`${JSEARCH_BASE}/search-v2?${params}`, {
     headers: {
-      'x-rapidapi-key':  process.env.JSEARCH_API_KEY,
-      'x-rapidapi-host': 'jsearch.p.rapidapi.com',
+      'x-api-key': process.env.JSEARCH_API_KEY,
     },
   });
 
