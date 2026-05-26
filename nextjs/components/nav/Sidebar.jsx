@@ -89,6 +89,7 @@ const ADMIN_NAV_GROUPS = [
     items: [
       { id: 'resumes', icon: 'fileText', label: 'Profiles', href: '/resumes' },
       { id: 'jobs', icon: 'briefcase', label: 'Job Profiles', href: '/jobs' },
+      { id: 'users', icon: 'users', label: 'Users', href: '/admin/users' },
       { id: 'builder', icon: 'pen', label: 'Builder', href: '/builder' },
     ],
   },
@@ -98,6 +99,8 @@ const ADMIN_NAV_GROUPS = [
       { id: 'tests', icon: 'checkSq', label: 'Tests', href: '/admin/tests' },
       { id: 'library', icon: 'library', label: 'Library', href: '/admin/question-library' },
       { id: 'skills', icon: 'code', label: 'Skills', href: '/admin/skills' },
+      { id: 'templates', icon: 'notebook', label: 'Templates', href: '/admin/templates' },
+      { id: 'credits', icon: 'receipt', label: 'Credits', href: '/admin/credits' },
       { id: 'dashboard', icon: 'shield', label: 'Dashboard', href: '/admin' },
     ],
   },
