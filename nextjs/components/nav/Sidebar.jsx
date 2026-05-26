@@ -54,6 +54,7 @@ const Icons = {
   library: <><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></>,
   users: <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></>,
   home: <><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z" /><path d="M9 21V12h6v9" /></>,
+  findJobs: <><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><circle cx="11" cy="14" r="2.5"/><path d="m21 21-1.5-1.5"/><path d="m14 17 2 2"/></>,
   portfolio: <><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" /></>,
   code: <><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></>,
 };
@@ -78,6 +79,12 @@ const USER_NAV_GROUPS = [
       { id: 'my-courses', icon: 'bookOpen', label: 'My Courses', href: '/my-courses' },
       { id: 'self-test', icon: 'target', label: 'Interview Prep', href: '/self-test' },
       { id: 'notes', icon: 'notebook', label: 'Notes', href: '/notes' },
+    ],
+  },
+  {
+    id: 'opportunities', label: 'OPPORTUNITIES',
+    items: [
+      { id: 'job-recommendations', icon: 'findJobs', label: 'Find Jobs', href: '/job-recommendations' },
     ],
   },
 ];
