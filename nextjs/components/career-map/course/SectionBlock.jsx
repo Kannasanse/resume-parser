@@ -4,6 +4,7 @@ import PlaceholderState from './PlaceholderState';
 import GeneratingState from './GeneratingState';
 import GeneratedContent from './GeneratedContent';
 import YouTubeEmbed from './YouTubeEmbed';
+import ContentSourceModal from '@/components/career-map/ContentSourceModal';
 
 function PlayVideoButton({ onClick, loading }) {
   return (
@@ -55,6 +56,8 @@ export default function SectionBlock({
   const [localSection, setLocalSection] = useState(section);
   const [videoFetchState, setVideoFetchState] = useState('idle'); // idle | loading | done | error
   const [fetchedVideo, setFetchedVideo] = useState(null);
+  const [showSourceModal, setShowSourceModal] = useState(false);
+  const [pendingSource, setPendingSource] = useState('web');
 
   const sectionType = localSection.type || 'text';
   const isVideoOnly = sectionType === 'video-only';
@@ -111,7 +114,8 @@ export default function SectionBlock({
     }
   }
 
-  async function handleGenerate() {
+  async function handleGenerate(source = 'ai') {
+    setShowSourceModal(false);
     setLocalSection(s => ({ ...s, generation_status: 'generating' }));
     try {
       const res = await fetch('/api/v1/career-map/generate-section-content', {
@@ -120,12 +124,22 @@ export default function SectionBlock({
         body: JSON.stringify({
           topicId, sectionId: section.id, sectionHeading: section.heading,
           topicTitle, skill, currentLevel: 'intermediate',
-          learningStyle: ['mixed'], precedingSections,
+          learningStyle: ['mixed'], precedingSections, source,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      setLocalSection(s => ({ ...s, content: data.content, is_generated: true, generation_status: 'done' }));
+      setLocalSection(s => ({
+        ...s,
+        content: data.content,
+        is_generated: true,
+        generation_status: 'done',
+        source_type: data.source_type,
+        source_url: data.source_url,
+        source_title: data.source_title,
+        source_domain: data.source_domain,
+        fetched_at: data.fetched_at,
+      }));
       onGenerated(data.content);
     } catch {
       setLocalSection(s => ({ ...s, generation_status: 'error' }));
@@ -133,7 +147,8 @@ export default function SectionBlock({
   }
 
   function handleRegenerate() {
-    setLocalSection(s => ({ ...s, is_generated: false, generation_status: 'idle', content: null }));
+    setPendingSource('web');
+    setShowSourceModal(true);
   }
 
   const checkLabel = isVideoOnly ? 'Mark as watched' : 'Mark as read';
@@ -144,6 +159,14 @@ export default function SectionBlock({
 
   return (
     <div className="space-y-4">
+      {showSourceModal && (
+        <ContentSourceModal
+          source={pendingSource}
+          onChangeSource={setPendingSource}
+          onConfirm={handleGenerate}
+          onClose={() => setShowSourceModal(false)}
+        />
+      )}
       {/* Section header */}
       <div className="flex items-center justify-between">
         <span className="text-xs uppercase tracking-widest text-[var(--c-text-muted)] font-medium">Section {index + 1}</span>
@@ -189,9 +212,9 @@ export default function SectionBlock({
               </button>
             </div>
           ) : localSection.is_generated && localSection.content ? (
-            <GeneratedContent content={localSection.content} onRegenerate={handleRegenerate} />
+            <GeneratedContent section={localSection} onRegenerate={handleRegenerate} />
           ) : (
-            <PlaceholderState estimatedMinutes={section.estimatedReadMinutes} onGenerate={handleGenerate} />
+            <PlaceholderState estimatedMinutes={section.estimatedReadMinutes} onGenerate={() => { setPendingSource('web'); setShowSourceModal(true); }} />
           )}
 
           {/* Video slot for text-with-video sections */}
