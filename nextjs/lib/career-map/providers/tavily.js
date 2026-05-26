@@ -21,6 +21,10 @@ const TRUSTED_DOMAINS = [
 ];
 
 export async function searchWithTavily(query) {
+  if (!process.env.TAVILY_API_KEY) {
+    console.warn('[Tavily] TAVILY_API_KEY not set — skipping');
+    return null;
+  }
   try {
     const response = await fetch('https://api.tavily.com/search', {
       method: 'POST',
@@ -34,7 +38,7 @@ export async function searchWithTavily(query) {
         include_domains:     TRUSTED_DOMAINS,
         max_results:         3,
         include_answer:      false,
-        include_raw_content: false,
+        include_raw_content: true,
       }),
     });
 
@@ -47,17 +51,19 @@ export async function searchWithTavily(query) {
     const results = data.results ?? [];
     if (results.length === 0) return null;
 
+    // Prefer raw_content (full page text) over the short snippet in content
     const best = results
-      .filter(r => r.content && r.content.length > 500)
-      .sort((a, b) => (b.content?.length ?? 0) - (a.content?.length ?? 0))[0];
+      .map(r => ({ ...r, _text: r.raw_content || r.content || '' }))
+      .filter(r => r._text.length > 300)
+      .sort((a, b) => b._text.length - a._text.length)[0];
 
     if (!best) return null;
 
     return {
-      content: best.content,
+      content: best._text,
       url:     best.url,
       title:   best.title,
-      quality: Math.min(1, best.content.length / 3000),
+      quality: Math.min(1, best._text.length / 3000),
     };
   } catch (err) {
     console.error('[Tavily] Exception:', err);

@@ -11,6 +11,10 @@ const EXA_DOMAINS = [
 ];
 
 export async function searchWithExa(query) {
+  if (!process.env.EXA_API_KEY) {
+    console.warn('[Exa] EXA_API_KEY not set — skipping');
+    return null;
+  }
   try {
     const response = await fetch('https://api.exa.ai/search', {
       method: 'POST',
