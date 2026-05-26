@@ -15,6 +15,7 @@ export async function GET(request) {
     const topic        = searchParams.get('topic') || '';
     const difficulty   = searchParams.get('difficulty') || '';
     const needs_review = searchParams.get('needs_review') === 'true';
+    const suppressed   = searchParams.get('suppressed') === 'true';
     const sortField    = ['created_at', 'difficulty', 'times_used', 'quality_score'].includes(searchParams.get('sort'))
                            ? searchParams.get('sort') : 'created_at';
     const sortAsc      = (searchParams.get('order') || 'desc') === 'asc';
@@ -45,10 +46,11 @@ export async function GET(request) {
       return q;
     };
 
-    // Apply filters that require new columns (topic, needs_review, 'ai' source)
+    // Apply filters that require new columns (topic, needs_review, suppressed, 'ai' source)
     const applyExtendedFilters = (q) => {
       if (topic) q = q.eq('topic', topic);
       if (needs_review) q = q.gte('times_used', 10).lt('quality_score', 0.40);
+      if (suppressed) q = q.eq('is_approved', false);
       return q;
     };
 
@@ -75,8 +77,8 @@ export async function GET(request) {
 
     if (error) {
       // Extended columns not yet migrated — fall back gracefully
-      if (needs_review) {
-        // Cannot apply needs_review without new columns
+      if (needs_review || suppressed) {
+        // Cannot apply these filters without new columns
         return Response.json({ questions: [], total: 0, page, pages: 0, limit, facets: { skills: [], topics: [] } });
       }
 

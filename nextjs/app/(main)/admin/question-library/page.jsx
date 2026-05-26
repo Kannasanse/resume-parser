@@ -849,6 +849,7 @@ export default function QuestionLibrary() {
       if (filterSource)     params.set('source', filterSource);
       if (filterDifficulty) params.set('difficulty', filterDifficulty);
       if (tab === 'needs_review') params.set('needs_review', 'true');
+      if (tab === 'suppressed')   params.set('suppressed', 'true');
 
       const r = await fetch(`/api/v1/admin/question-library?${params}`);
       const d = await r.json();
@@ -932,8 +933,33 @@ export default function QuestionLibrary() {
     const r = await fetch(`/api/v1/admin/question-library/${q.id}`, {
       method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ action:'suppress' }),
     });
-    if (r.ok) { handleSuppressToggle(q.id, false); }
+    if (r.ok) {
+      handleSuppressToggle(q.id, false);
+      if (tab === 'all') setQuestions(prev => prev.map(x => x.id === q.id ? { ...x, is_approved: false } : x));
+    }
     setOpenMenuId(null);
+  };
+
+  const handleRowReapprove = async (q) => {
+    const r = await fetch(`/api/v1/admin/question-library/${q.id}`, {
+      method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ action:'approve' }),
+    });
+    if (r.ok) {
+      handleSuppressToggle(q.id, true);
+      if (tab === 'suppressed') setQuestions(prev => prev.filter(x => x.id !== q.id));
+    }
+    setOpenMenuId(null);
+  };
+
+  const handleBulkReapprove = async () => {
+    const ids = [...selectedIds];
+    await Promise.all(ids.map(id => fetch(`/api/v1/admin/question-library/${id}`, {
+      method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ action:'approve' }),
+    })));
+    setQuestions(prev => prev.filter(q => !selectedIds.has(q.id)));
+    setTotal(t => t - ids.length);
+    setSelectedIds(new Set());
+    showToast(`${ids.length} question${ids.length!==1?'s':''} re-approved.`);
   };
 
   const handleRowDelete = async (q) => {
@@ -1112,8 +1138,8 @@ export default function QuestionLibrary() {
 
       {/* ── Tabs ─────────────────────────────────────────────────────────────── */}
       <div className="ql-tabs-border" style={{ display:'flex', borderBottom:`1px solid ${BORDER}`, gap:0 }}>
-        {[['all','All Questions'],['needs_review','Needs Review']].map(([v,l]) => (
-          <button key={v} onClick={()=>{ setTab(v); setPage(1); }}
+        {[['all','All Questions'],['needs_review','Needs Review'],['suppressed','Suppressed']].map(([v,l]) => (
+          <button key={v} onClick={()=>{ setTab(v); setPage(1); setSelectedIds(new Set()); }}
             className={`ql-tab ${tab===v ? 'ql-tab-active' : ''}`}
             style={{
               fontSize:13, fontWeight:600, padding:'10px 16px', cursor:'pointer', background:'none', border:'none',
@@ -1132,6 +1158,12 @@ export default function QuestionLibrary() {
       {tab === 'needs_review' && (
         <div className="ql-needs-review-alert" style={{ background:'#FFFBEB', border:'1px solid rgba(245,158,11,0.30)', borderRadius:10, padding:'12px 16px', fontSize:13, color:'#B45309' }}>
           Questions answered 10+ times with under 40% correct rate. Review and suppress or edit as needed.
+        </div>
+      )}
+
+      {tab === 'suppressed' && (
+        <div style={{ background:'#F3F4F6', border:`1px solid ${BORDER}`, borderRadius:10, padding:'12px 16px', fontSize:13, color:MUTED }}>
+          Suppressed questions are excluded from all test generation. Re-approve to make them active again.
         </div>
       )}
 
@@ -1205,6 +1237,8 @@ export default function QuestionLibrary() {
         <div className="ql-empty" style={{ background:'white', border:`1px dashed ${BORDER}`, borderRadius:16, padding:'60px 20px', textAlign:'center' }}>
           {tab === 'needs_review' ? (
             <p style={{ fontSize:14, color:MUTED, margin:0 }}>No questions need review right now.</p>
+          ) : tab === 'suppressed' ? (
+            <p style={{ fontSize:14, color:MUTED, margin:0 }}>No suppressed questions — all questions are active.</p>
           ) : search || filterType || filterSkill || filterSource || filterDifficulty || filterTopic ? (
             <p style={{ fontSize:14, color:MUTED, margin:0 }}>No questions found matching your filters.</p>
           ) : (
@@ -1341,7 +1375,12 @@ export default function QuestionLibrary() {
                                 Duplicate
                               </button>
                               <hr style={{ margin:'4px 0', border:'none', borderTop:`1px solid ${BORDER}` }} />
-                              {src !== 'manual' && (
+                              {q.is_approved === false ? (
+                                <button className="ql-menu-item" onClick={()=>handleRowReapprove(q)}
+                                  style={{ display:'block', width:'100%', textAlign:'left', padding:'8px 14px', fontSize:13, color:SUCCESS, background:'none', border:'none', cursor:'pointer' }}>
+                                  ✓ Re-approve
+                                </button>
+                              ) : src !== 'manual' && (
                                 <button className="ql-menu-item" onClick={()=>handleRowSuppress(q)}
                                   style={{ display:'block', width:'100%', textAlign:'left', padding:'8px 14px', fontSize:13, color:TEXT, background:'none', border:'none', cursor:'pointer' }}>
                                   Suppress
@@ -1406,6 +1445,11 @@ export default function QuestionLibrary() {
       }}>
         <span style={{ fontSize:14, fontWeight:600 }}>{selectedIds.size} question{selectedIds.size!==1?'s':''} selected</span>
         <div style={{ display:'flex', gap:12, alignItems:'center' }}>
+          {tab === 'suppressed' && (
+            <button onClick={handleBulkReapprove} style={{ border:'1px solid rgba(255,255,255,0.40)', borderRadius:8, padding:'6px 14px', background:'rgba(29,158,117,0.25)', color:'white', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+              ✓ Re-approve selected
+            </button>
+          )}
           <button onClick={handleBulkDelete} style={{ border:'1px solid rgba(255,255,255,0.40)', borderRadius:8, padding:'6px 14px', background:'transparent', color:'white', fontSize:13, fontWeight:600, cursor:'pointer' }}>
             Delete selected
           </button>
