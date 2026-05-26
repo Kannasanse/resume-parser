@@ -158,12 +158,7 @@ export default function TopBar({ onMobileMenu }) {
     return () => main.removeEventListener('scroll', handler);
   }, []);
 
-  // Admin pages have no TopBar — controls live in the sidebar instead
-  if (pathname.startsWith('/admin')) return null;
-
-  const { title, ctx } = resolvePage(pathname);
-
-  // Check for nested breadcrumb routes (e.g., /my-courses/[id]/[topic])
+  // Computed before any early return so hook count stays constant across renders
   const parts = pathname.split('/').filter(Boolean);
   const isBreadcrumb = parts.length >= 3 && (parts[0] === 'my-courses' || parts[0] === 'career-map');
 
@@ -189,6 +184,11 @@ export default function TopBar({ onMobileMenu }) {
       .catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
+
+  // Admin pages have no TopBar — controls live in the sidebar instead
+  if (pathname.startsWith('/admin')) return null;
+
+  const { title, ctx } = resolvePage(pathname);
 
   // Build breadcrumb parts: for career-map resolve UUIDs, for others slugify
   let breadcrumbParts = [];
