@@ -47,7 +47,7 @@ export default function AdminSkillsPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams({ page: p, limit, sort, dir });
-      if (search) params.set('search', search);
+      if (search) params.set('q', search);
       if (filterCategory) params.set('category', filterCategory);
       if (filterStatus) params.set('status', filterStatus);
       if (filterSource) params.set('source', filterSource);
