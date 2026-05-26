@@ -1,6 +1,7 @@
 import supabase from '@/lib/supabase.js';
 import { requireUser } from '@/lib/auth-helpers.js';
 import { fetchFromLibrary, saveQuestionsToLibrary } from '@/lib/self-test/questionLibrary.js';
+import { METADATA_INSTRUCTION } from '@/lib/self-test/prompts/metadataInstruction.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,6 +9,8 @@ export const dynamic = 'force-dynamic';
 
 const MCQ_SHAPE = `{
   "type": "mcq",
+  "skill": "React",
+  "topic": "Custom Hooks",
   "question_text": "...",
   "points": 1,
   "options": [
@@ -21,6 +24,8 @@ const MCQ_SHAPE = `{
 
 const TF_SHAPE = `{
   "type": "true_false",
+  "skill": "Python",
+  "topic": "List Comprehensions",
   "question_text": "...",
   "points": 1,
   "correct_answer": "true",
@@ -29,6 +34,8 @@ const TF_SHAPE = `{
 
 const SA_SHAPE = `{
   "type": "short_answer",
+  "skill": "System Design",
+  "topic": "CAP Theorem",
   "question_text": "...",
   "points": 2,
   "model_answer": "The ideal 2-6 sentence answer to this question.",
@@ -55,6 +62,8 @@ const SYSTEM_PROMPT = `You are an expert assessment question writer. Generate hi
 
 ${BASE_RULES}
 
+${METADATA_INSTRUCTION}
+
 Return this exact JSON structure:
 {
   "questions": [${MCQ_SHAPE}, ${TF_SHAPE}, ${SA_SHAPE}]
@@ -66,17 +75,19 @@ ${BASE_RULES}
 - Each question MUST include a "skill" field with the exact skill name it tests
 - Distribute questions evenly across all skills
 
+${METADATA_INSTRUCTION}
+
 Return this exact JSON structure:
 {
   "questions": [
     {
-      "type": "mcq", "skill": "Python",
+      "type": "mcq", "skill": "Python", "topic": "List Comprehensions",
       "question_text": "...", "points": 1,
       "options": [...],
       "explanation": "..."
     },
     {
-      "type": "short_answer", "skill": "System Design",
+      "type": "short_answer", "skill": "System Design", "topic": "CAP Theorem",
       "question_text": "...", "points": 2,
       "model_answer": "...", "grading_rubric": "...", "answer_keywords": [...],
       "explanation": "..."
@@ -210,6 +221,8 @@ export async function POST(request) {
     // ── Library-first: fetch existing questions before calling AI ─────────────
     let libraryQuestions = [];
     let skills = [];
+    // topicHints: { [skillName]: string } — optional per-skill focus area from UI
+    const topicHintsMap = body.topic_hints || {};
 
     if (input_type === 'skills') {
       skills = input_data.split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
@@ -217,10 +230,14 @@ export async function POST(request) {
       skills = jd_skills.map(s => s.name || '').filter(Boolean);
     }
 
+    // Collect non-empty topic hints to pass to library retrieval
+    const topicHintValues = Object.values(topicHintsMap).map(t => t.trim()).filter(Boolean);
+
     if (input_type !== 'content' && skills.length) {
       // Only fetch MCQ/TF from library — SA always comes from AI (too context-specific to reuse)
       libraryQuestions = await fetchFromLibrary({
         skills,
+        topics: topicHintValues,
         difficulty,
         questionTypes: question_types,
         requestedCount: mcqCount,
@@ -258,7 +275,12 @@ export async function POST(request) {
       if (input_type === 'skills') {
         const scenarioBlock = buildScenarioInstruction(difficulty);
         systemPrompt = SYSTEM_PROMPT;
-        userPrompt = `Generate exactly ${aiTotal} ${diffLabel} questions about these skills/topics: ${skills.join(', ')}\n\nDistribution: ${typeDescription}\nFor MCQ/TF: distribute evenly between MCQ and True/False.\nFor Short Answer: require 2-6 sentence written responses.\n\n${scenarioBlock}${dedupeNote}`;
+        // Build skill list with optional topic hints: "React (focus: hooks lifecycle), Python"
+        const skillContext = skills.map(s => {
+          const hint = topicHintsMap[s]?.trim();
+          return hint ? `${s} (focus: ${hint})` : s;
+        }).join(', ');
+        userPrompt = `Generate exactly ${aiTotal} ${diffLabel} questions about these skills/topics: ${skillContext}\n\nDistribution: ${typeDescription}\nFor MCQ/TF: distribute evenly between MCQ and True/False.\nFor Short Answer: require 2-6 sentence written responses.\n\n${scenarioBlock}${dedupeNote}`;
       } else if (input_type === 'content') {
         systemPrompt = SYSTEM_PROMPT;
         userPrompt = `Generate exactly ${aiTotal} ${diffLabel} questions based on this content:\n\n${input_data.trim()}\n\nDistribution: ${typeDescription}`;
@@ -403,6 +425,10 @@ function normalizeQuestion(q) {
   out.type = rawType === 'short answer' || rawType === 'shortanswer' ? 'short_answer'
     : rawType === 'true/false' || rawType === 'truefalse' ? 'true_false'
     : rawType;
+
+  // preserve skill + topic from AI response
+  out.skill  = q.skill  || null;
+  out.topic  = q.topic  || null;
 
   // points
   out.points = q.points || (out.type === 'short_answer' ? 2 : 1);

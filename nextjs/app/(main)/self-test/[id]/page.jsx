@@ -238,6 +238,7 @@ export default function SelfTestPage() {
   const [localResults, setLocalResults] = useState([]);
   const [combinedPct, setCombinedPct]  = useState(null);
   const [connBanner, setConnBanner]    = useState(false);
+  const [topicBreakdownOpen, setTopicBreakdownOpen] = useState(false);
 
   const timerRef  = useRef(null);
   const submitRef = useRef(null);
@@ -500,6 +501,22 @@ export default function SelfTestPage() {
         .sort((a, b) => b.pct - a.pct);
     })() : null;
 
+    // Topic breakdown — available for all modes when questions carry topic metadata
+    const perTopic = (() => {
+      const map = {};
+      (results.questions || []).forEach((q, i) => {
+        if (!q.topic || q.type === 'short_answer') return;
+        const key = q.topic;
+        if (!map[key]) map[key] = { correct: 0, total: 0, skill: q.skill || '' };
+        map[key].total++;
+        if (localResults[i]?.correct) map[key].correct++;
+      });
+      const entries = Object.entries(map)
+        .map(([name, { correct, total, skill }]) => ({ name, correct, total, skill, pct: total > 0 ? Math.round((correct / total) * 100) : 0 }))
+        .sort((a, b) => b.pct - a.pct);
+      return entries.length >= 2 ? entries : null;
+    })();
+
     const handleRetake = () => {
       if (session?.jd_skills) {
         try { sessionStorage.setItem('jd_retake', JSON.stringify({ skills: session.jd_skills, jdText: session.input_data || '' })); } catch {}
@@ -568,11 +585,57 @@ export default function SelfTestPage() {
           </div>
         )}
 
+        {perTopic && (
+          <div className="bg-ds-card border border-ds-border rounded-lg overflow-hidden">
+            <button
+              onClick={() => setTopicBreakdownOpen(o => !o)}
+              className="w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-ds-bg/50 transition-colors"
+            >
+              <span className="text-sm font-semibold text-ds-text">Topic Breakdown</span>
+              <span className="text-xs text-ds-textMuted flex items-center gap-1.5">
+                {perTopic.length} topics
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  style={{ transform: topicBreakdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </span>
+            </button>
+            {topicBreakdownOpen && (
+              <div className="px-5 pb-4 space-y-2 border-t border-ds-border pt-3">
+                {perTopic.map(t => {
+                  const band = t.pct >= 80
+                    ? { bar: 'bg-ds-success' }
+                    : t.pct >= 50 ? { bar: 'bg-amber-400' }
+                    : { bar: 'bg-ds-danger' };
+                  return (
+                    <div key={t.name} className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <div className="min-w-0 flex items-center gap-1.5">
+                          <span className="text-xs font-medium text-ds-text truncate">{t.name}</span>
+                          {t.skill && <span className="text-[10px] text-ds-textMuted opacity-70 flex-shrink-0">· {t.skill}</span>}
+                        </div>
+                        <span className="text-xs text-ds-textMuted flex-shrink-0 ml-2">{t.correct}/{t.total}</span>
+                      </div>
+                      <div className="h-1 bg-ds-border rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${band.bar}`} style={{ width: `${t.pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="space-y-3">
           {(results.questions || []).map((q, i) => (
             <div key={i} className="bg-ds-card border border-ds-border rounded-lg p-4">
-              {isJd && q.skill && (
-                <p className="text-[10px] font-semibold text-ds-textMuted uppercase tracking-wide mb-2">{q.skill}</p>
+              {(q.skill || q.topic) && (
+                <div className="flex items-center gap-1.5 mb-2">
+                  {q.skill && <p className="text-[10px] font-semibold text-ds-textMuted uppercase tracking-wide">{q.skill}</p>}
+                  {q.skill && q.topic && <span className="text-[10px] text-ds-textMuted">·</span>}
+                  {q.topic && <p className="text-[10px] text-ds-textMuted">{q.topic}</p>}
+                </div>
               )}
               {q.type === 'short_answer' && (
                 <span className="inline-block text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/50 px-1.5 py-0.5 rounded mb-2">Short Answer</span>

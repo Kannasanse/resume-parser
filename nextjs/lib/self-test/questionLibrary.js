@@ -13,6 +13,7 @@ export function normaliseLibraryQuestion(q) {
     question_text: q.question_text,
     points:        q.points || 1,
     skill:         q.skill_tag || null,
+    topic:         q.topic || null,
     difficulty:    q.difficulty || null,
     explanation:   q.explanation || null,
   };
@@ -36,7 +37,8 @@ export function normaliseLibraryQuestion(q) {
 // Fetch matching questions from the shared library before calling AI.
 // Only returns MCQ and True/False — short answers are too context-specific.
 // All errors return empty array (non-fatal, AI will fill the gap).
-export async function fetchFromLibrary({ skills = [], difficulty, questionTypes = [], requestedCount = 0 }) {
+// Two-pass: topic-matched questions first, then fill remainder from same skill/difficulty.
+export async function fetchFromLibrary({ skills = [], topics = [], difficulty, questionTypes = [], requestedCount = 0 }) {
   if (!requestedCount || !skills.length) return [];
 
   const fetchTypes = questionTypes.filter(t => ['mcq', 'true_false'].includes(t));
@@ -47,31 +49,60 @@ export async function fetchFromLibrary({ skills = [], difficulty, questionTypes 
     .filter(Boolean);
   if (!normalizedSkills.length) return [];
 
-  const sel = 'id, type, question_text, points, skill_tag, difficulty, explanation, model_answer, question_library_options(id, option_text, is_correct, position)';
-  const fetchLimit = requestedCount * 4; // fetch extra pool for randomisation
+  const normalizedTopics = (topics || []).map(t => t.trim()).filter(Boolean);
 
-  const buildQuery = (filterApproved) => {
+  const sel = 'id, type, question_text, points, skill_tag, topic, difficulty, explanation, model_answer, question_library_options(id, option_text, is_correct, position)';
+  const fetchLimit = requestedCount * 4;
+
+  const buildQuery = (filterApproved, topicFilter = null) => {
     let q = supabase.from('question_library').select(sel)
       .in('skill_tag', normalizedSkills)
       .in('type', fetchTypes)
       .limit(fetchLimit);
     if (difficulty) q = q.eq('difficulty', difficulty);
+    if (topicFilter?.length) q = q.in('topic', topicFilter);
     if (filterApproved) q = q.eq('is_approved', true);
     return q;
   };
 
   try {
-    let { data, error } = await buildQuery(true);
-    if (error) {
-      // is_approved column may not exist yet — retry without the filter
-      ({ data, error } = await buildQuery(false));
-      if (error) {
-        console.error('[Library] fetchFromLibrary error:', error.message);
-        return [];
+    const collected = [];
+    const usedIds = new Set();
+
+    // Pass 1: topic-matched questions (only if topic hints provided)
+    if (normalizedTopics.length) {
+      let { data: topicData, error: topicErr } = await buildQuery(true, normalizedTopics);
+      if (topicErr) ({ data: topicData } = await buildQuery(false, normalizedTopics));
+      if (topicData?.length) {
+        const shuffled = [...topicData].sort(() => Math.random() - 0.5);
+        for (const row of shuffled) {
+          if (collected.length >= requestedCount) break;
+          collected.push(normaliseLibraryQuestion(row));
+          usedIds.add(row.id);
+        }
       }
     }
-    if (!data?.length) return [];
-    return [...data].sort(() => Math.random() - 0.5).slice(0, requestedCount).map(normaliseLibraryQuestion);
+
+    // Pass 2: fill remainder with any matching skill/difficulty questions
+    if (collected.length < requestedCount) {
+      let { data, error } = await buildQuery(true);
+      if (error) {
+        ({ data, error } = await buildQuery(false));
+        if (error) {
+          console.error('[Library] fetchFromLibrary error:', error.message);
+          return collected;
+        }
+      }
+      if (data?.length) {
+        const remaining = [...data].filter(r => !usedIds.has(r.id)).sort(() => Math.random() - 0.5);
+        for (const row of remaining) {
+          if (collected.length >= requestedCount) break;
+          collected.push(normaliseLibraryQuestion(row));
+        }
+      }
+    }
+
+    return collected;
   } catch (err) {
     console.error('[Library] fetchFromLibrary exception:', err.message);
     return [];
@@ -109,6 +140,7 @@ export async function saveQuestionsToLibrary(questions, sessionId, userId, input
         question_text: q.question_text,
         points:        q.points || 1,
         skill_tag:     q.skill || null,
+        topic:         q.topic || null,
         difficulty:    q.difficulty || null,
         ai_generated:  true,
         source:        'ai-generated',

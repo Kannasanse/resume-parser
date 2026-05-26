@@ -114,6 +114,7 @@ function calculateScore(questions, answers, shortAnswerMap = {}) {
         correct:           false,
         answer:            ans ?? null,
         skill:             q.skill ?? null,
+        topic:             q.topic ?? null,
         question_type:     'short_answer',
         short_answer_text: ans ?? '',
       };
@@ -136,6 +137,7 @@ function calculateScore(questions, answers, shortAnswerMap = {}) {
       correct,
       answer:         ans ?? null,
       skill:          q.skill ?? null,
+      topic:          q.topic ?? null,
       question_type:  q.type || 'mcq',
       correct_index:  q.type === 'mcq' ? q.options?.findIndex(o => o.is_correct) : undefined,
       correct_answer: q.type === 'true_false' ? q.correct_answer : undefined,

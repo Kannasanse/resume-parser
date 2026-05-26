@@ -575,6 +575,7 @@ export default function SelfTestCreate() {
   const [step, setStep]       = useState('mode-select');
   const [mode, setMode]       = useState(null);
   const [skills, setSkills]   = useState([]);
+  const [topicHints, setTopicHints] = useState({}); // { [skillName]: focusArea }
   const [content, setContent] = useState('');
   const [questionType, setQuestionType] = useState('mcq');
   const [difficulty, setDifficulty] = useState(null);
@@ -688,13 +689,25 @@ export default function SelfTestCreate() {
     ? suggestions.filter(s => s.toLowerCase().includes(addSkillInput.toLowerCase()) && !jdSkills.find(j => j.name === s))
     : [];
 
+  const setSkillsAndPruneHints = (newSkills) => {
+    setSkills(newSkills);
+    // Remove hints for skills that were removed
+    setTopicHints(prev => {
+      const next = { ...prev };
+      for (const key of Object.keys(next)) {
+        if (!newSkills.includes(key)) delete next[key];
+      }
+      return next;
+    });
+  };
+
   const generate = async () => {
     setError('');
     if (!validateTimer(timer)) return;
     const qtypes = questionType === 'mixed' ? ['mcq', 'short_answer'] : [questionType];
     let body;
     if (mode === 'skills') {
-      body = { input_type: 'skills', input_data: skills.join(', '), difficulty, timer_minutes: timer, question_types: qtypes };
+      body = { input_type: 'skills', input_data: skills.join(', '), topic_hints: topicHints, difficulty, timer_minutes: timer, question_types: qtypes };
     } else if (mode === 'content') {
       body = { input_type: 'content', input_data: content, difficulty, timer_minutes: timer, question_types: qtypes };
     } else {
@@ -797,8 +810,26 @@ export default function SelfTestCreate() {
             {mode === 'skills' ? (
               <div>
                 <label className="block text-sm font-medium text-ds-text mb-1.5">Skills <span className="text-ds-danger">*</span></label>
-                <SkillTagInput skills={skills} onChange={setSkills} suggestions={suggestions} />
+                <SkillTagInput skills={skills} onChange={setSkillsAndPruneHints} suggestions={suggestions} />
                 {skills.length === 0 && <p className="text-xs text-ds-textMuted mt-1">Select skills from suggestions or type your own</p>}
+                {skills.length > 0 && (
+                  <div className="mt-3 space-y-1.5">
+                    <p className="text-xs font-medium text-ds-textMuted">Focus area <span className="font-normal opacity-70">(optional — narrow the topic for each skill)</span></p>
+                    {skills.map(skill => (
+                      <div key={skill} className="flex items-center gap-2">
+                        <span className="text-xs text-ds-text font-medium w-28 truncate flex-shrink-0">{skill}</span>
+                        <input
+                          type="text"
+                          value={topicHints[skill] || ''}
+                          onChange={e => setTopicHints(prev => ({ ...prev, [skill]: e.target.value }))}
+                          placeholder="e.g. hooks lifecycle, async/await…"
+                          maxLength={60}
+                          className="flex-1 text-xs px-2.5 py-1.5 border border-ds-inputBorder rounded bg-ds-bg text-ds-text placeholder-ds-textMuted focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               <div>
