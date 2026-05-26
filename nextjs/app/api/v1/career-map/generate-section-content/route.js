@@ -3,6 +3,7 @@ import { requireUser } from '@/lib/auth-helpers.js';
 import supabase from '@/lib/supabase.js';
 import Groq from 'groq-sdk';
 import { generateFromWeb } from '@/lib/career-map/generateFromWeb.js';
+import { fetchYouTubeVideo } from '@/lib/career-map/fetchYouTubeVideo.js';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -74,10 +75,28 @@ export async function POST(request) {
       content = await generateWithAI({ groq, sectionHeading, topicTitle, skill, currentLevel, learningStyle, precedingSections });
     }
 
+    // Auto-fetch video for text-with-video sections
+    const sectionMeta = (topic.sections || []).find(s => s.id === sectionId);
+    let videoFields = {};
+    let videoResult = null;
+    if (sectionMeta?.type === 'text-with-video') {
+      try {
+        videoResult = await fetchYouTubeVideo({ skill, sectionTitle: sectionHeading, level: currentLevel });
+        if (videoResult) {
+          videoFields = {
+            youtube_video_id:       videoResult.videoId,
+            youtube_video_fetched_at: new Date().toISOString(),
+          };
+        }
+      } catch (videoErr) {
+        console.error('[generate-section-content] Video fetch failed (non-fatal):', videoErr);
+      }
+    }
+
     // Update section with generated content
     const updatedSections = (topic.sections || []).map(s =>
       s.id === sectionId
-        ? { ...s, content, is_generated: true, generation_status: 'done', content_type: 'generated', ...sourceFields }
+        ? { ...s, content, is_generated: true, generation_status: 'done', content_type: 'generated', ...sourceFields, ...videoFields }
         : s
     );
 
@@ -86,7 +105,21 @@ export async function POST(request) {
       .update({ sections: updatedSections, updated_at: new Date().toISOString() })
       .eq('id', topicId);
 
-    return NextResponse.json({ content, section_id: sectionId, ...sourceFields });
+    return NextResponse.json({
+      content,
+      section_id: sectionId,
+      ...sourceFields,
+      ...(videoResult ? {
+        video_id:          videoResult.videoId,
+        video_title:       videoResult.title,
+        video_channel:     videoResult.channelTitle,
+        video_thumbnail:   videoResult.thumbnailUrl,
+        video_duration:    videoResult.duration,
+        video_duration_sec: videoResult.durationSec,
+        video_fetched_at:  new Date().toISOString(),
+        video_score:       videoResult.score,
+      } : {}),
+    });
   } catch (err) {
     if (err instanceof Response) return err;
     console.error('generate-section-content error:', err);

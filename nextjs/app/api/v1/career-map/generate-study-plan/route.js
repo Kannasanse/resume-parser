@@ -17,11 +17,19 @@ export async function POST(request) {
     const isMixed = styles.includes('mixed');
     let sectionTypeRules = '';
     if (isVideoFirst) {
-      sectionTypeRules = `Section structure: The FIRST section of every topic must be type "video-only" with heading starting "Watch: " and estimatedReadMinutes: 0. Remaining sections are type "text".`;
+      sectionTypeRules = `Section structure rules:
+- The FIRST section of every topic must be type "video-only" with heading starting "Watch: " and estimatedReadMinutes: 0.
+- Approximately 50% of remaining sections should be type "text-with-video" (these have written content PLUS an embedded video). The rest are type "text".
+- Never have two consecutive "video-only" sections.
+- Target mix per topic: ~1 video-only, ~50% text-with-video, ~30% text.`;
     } else if (isMixed) {
-      sectionTypeRules = `Section structure: Every 2nd section (order 2, 4, 6) must be type "video-only" with heading starting "Watch: " and estimatedReadMinutes: 0. Other sections are type "text".`;
+      sectionTypeRules = `Section structure rules:
+- Every 2nd or 3rd section should be type "text-with-video" (written content with an embedded video). Aim for ~55% of sections being "text-with-video".
+- One section per topic may be type "video-only" with heading starting "Watch: " and estimatedReadMinutes: 0.
+- Remaining sections are type "text".
+- Target mix per topic: ~1 video-only, ~55% text-with-video, ~35% text.`;
     } else {
-      sectionTypeRules = `Section structure: All sections are type "text". No video-only sections.`;
+      sectionTypeRules = `Section structure: All sections are type "text". No video-only or text-with-video sections.`;
     }
 
     const prompt = `You are a curriculum designer creating a personalised study plan.

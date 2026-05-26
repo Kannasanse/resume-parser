@@ -139,7 +139,22 @@ export default function SectionBlock({
         source_title: data.source_title,
         source_domain: data.source_domain,
         fetched_at: data.fetched_at,
+        ...(data.video_id ? { youtube_video_id: data.video_id } : {}),
       }));
+      if (data.video_id) {
+        const vid = {
+          videoId:      data.video_id,
+          title:        data.video_title       || '',
+          channelName:  data.video_channel     || '',
+          thumbnail:    data.video_thumbnail   || null,
+          duration:     data.video_duration_sec ? data.video_duration_sec / 60 : 0,
+          viewCount:    0,
+          qualityScore: data.video_score       || 0,
+        };
+        setFetchedVideo(vid);
+        setVideoFetchState('done');
+        if (onVideoFetched) onVideoFetched([vid], []);
+      }
       onGenerated(data.content);
     } catch {
       setLocalSection(s => ({ ...s, generation_status: 'error' }));
