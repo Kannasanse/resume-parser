@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 // ── Toggle switch ──────────────────────────────────────────────────────────────
 
@@ -53,6 +53,12 @@ export default function AddSkillDrawer({ open, onClose, skill, categories, onSav
   // Track whether slug was manually edited
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
 
+  // Topics — { id, name } for existing (edit mode); plain strings for new (create mode)
+  const [topics, setTopics] = useState([]);         // { id, name } | string
+  const [topicInput, setTopicInput] = useState('');
+  const [topicAdding, setTopicAdding] = useState(false);
+  const topicInputRef = useRef(null);
+
   // UI state
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -71,7 +77,12 @@ export default function AddSkillDrawer({ open, onClose, skill, categories, onSav
         setIconUrl(skill.icon_url || '');
         setIsActive(skill.is_active ?? true);
         setIsTrending(skill.is_trending ?? false);
-        setSlugManuallyEdited(true); // existing slug — don't auto-overwrite
+        setSlugManuallyEdited(true);
+        // Fetch existing topics for edit mode
+        fetch(`/api/v1/admin/skills/${skill.id}/topics`)
+          .then(r => r.json())
+          .then(d => setTopics(d.topics || []))
+          .catch(() => setTopics([]));
       } else {
         setName('');
         setSlug('');
@@ -84,7 +95,9 @@ export default function AddSkillDrawer({ open, onClose, skill, categories, onSav
         setIsActive(true);
         setIsTrending(false);
         setSlugManuallyEdited(false);
+        setTopics([]);
       }
+      setTopicInput('');
       setError('');
     }
   }, [open, skill]);
@@ -123,6 +136,53 @@ export default function AddSkillDrawer({ open, onClose, skill, categories, onSav
     setAliases(prev => prev.filter(a => a !== tag));
   };
 
+  // ── Topic helpers ──────────────────────────────────────────────────────────
+
+  const topicName = (t) => (typeof t === 'string' ? t : t.name);
+
+  const commitTopicInput = async () => {
+    const name = topicInput.trim();
+    if (!name) return;
+    const dupe = topics.some(t => topicName(t).toLowerCase() === name.toLowerCase());
+    if (dupe) { setTopicInput(''); return; }
+
+    if (isEditing) {
+      // Immediate API call in edit mode
+      setTopicAdding(true);
+      try {
+        const r = await fetch(`/api/v1/admin/skills/${skill.id}/topics`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name }),
+        });
+        const d = await r.json();
+        if (r.ok) setTopics(prev => [...prev, d.topic]);
+      } catch {}
+      setTopicAdding(false);
+    } else {
+      // Defer to save in create mode
+      setTopics(prev => [...prev, name]);
+    }
+    setTopicInput('');
+  };
+
+  const handleTopicKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      commitTopicInput();
+    } else if (e.key === 'Backspace' && !topicInput && topics.length > 0) {
+      const last = topics[topics.length - 1];
+      removeTopic(last);
+    }
+  };
+
+  const removeTopic = async (t) => {
+    if (isEditing && t?.id) {
+      await fetch(`/api/v1/admin/skills/${skill.id}/topics/${t.id}`, { method: 'DELETE' }).catch(() => {});
+    }
+    setTopics(prev => prev.filter(x => x !== t));
+  };
+
   // ── Submit ─────────────────────────────────────────────────────────────────
 
   const handleSubmit = async (e) => {
@@ -153,6 +213,20 @@ export default function AddSkillDrawer({ open, onClose, skill, categories, onSav
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'Failed to save skill.');
+
+      // On create: save any pending topics (plain strings)
+      if (!isEditing && topics.length > 0) {
+        await Promise.allSettled(
+          topics.map(name =>
+            fetch(`/api/v1/admin/skills/${d.skill.id}/topics`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name }),
+            })
+          )
+        );
+      }
+
       onSaved(d.skill);
       onClose();
     } catch (err) {
@@ -292,6 +366,48 @@ export default function AddSkillDrawer({ open, onClose, skill, categories, onSav
               />
             </div>
             <p className="text-xs text-[var(--c-text-muted)] mt-1">Press Enter or comma to add</p>
+          </div>
+
+          {/* Topics */}
+          <div>
+            <label className="block text-sm font-medium text-[var(--c-text)] mb-1.5">
+              Topics <span className="text-[var(--c-text-muted)] font-normal">(optional)</span>
+            </label>
+            <div
+              className="flex flex-wrap gap-1.5 p-2 border border-[var(--c-border)] dark:border-white/10 rounded-lg bg-white dark:bg-[#0F1A2E] min-h-[2.5rem] cursor-text focus-within:ring-2 focus-within:ring-[var(--c-primary)]"
+              onClick={() => topicInputRef.current?.focus()}
+            >
+              {topics.map((t, i) => (
+                <span
+                  key={t?.id ?? i}
+                  className="inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full bg-[var(--c-primary)]/10 text-[var(--c-primary)] border border-[var(--c-primary)]/20 font-medium"
+                >
+                  {topicName(t)}
+                  <button
+                    type="button"
+                    onClick={() => removeTopic(t)}
+                    className="hover:opacity-70 leading-none ml-0.5"
+                    aria-label={`Remove topic ${topicName(t)}`}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+              <input
+                ref={topicInputRef}
+                type="text"
+                value={topicInput}
+                onChange={e => setTopicInput(e.target.value)}
+                onKeyDown={handleTopicKeyDown}
+                onBlur={commitTopicInput}
+                disabled={topicAdding}
+                placeholder={topics.length === 0 ? 'Type and press Enter or comma…' : ''}
+                className="flex-1 min-w-[8rem] text-sm outline-none bg-transparent text-[var(--c-text)] placeholder:text-[var(--c-text-muted)] disabled:opacity-50"
+              />
+            </div>
+            <p className="text-xs text-[var(--c-text-muted)] mt-1">
+              {isEditing ? 'Changes apply immediately' : 'Press Enter or comma to add'}
+            </p>
           </div>
 
           {/* Description */}
