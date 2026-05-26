@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import supabase from '@/lib/supabase.js';
-import { requireUser } from '@/lib/auth-helpers.js';
+import { getAuthUser } from '@/lib/authUtils.js';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request) {
+export async function GET() {
   try {
-    const { user } = await requireUser(request);
+    const user = await getAuthUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { data } = await supabase
       .from('user_job_interactions')

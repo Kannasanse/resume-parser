@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import supabase from '@/lib/supabase.js';
-import { requireUser } from '@/lib/auth-helpers.js';
+import { getAuthUser } from '@/lib/authUtils.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,7 +8,8 @@ const VALID_ACTIONS = new Set(['viewed', 'applied', 'saved', 'dismissed']);
 
 export async function POST(request) {
   try {
-    const { user } = await requireUser(request);
+    const user = await getAuthUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const body = await request.json().catch(() => ({}));
     const { job_id, job_title, company, action, cache_key } = body;
 
