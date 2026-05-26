@@ -10,7 +10,7 @@ export async function fetchFromJSearch(query, options = {}) {
     language:    'en',
   });
 
-  const response = await fetch(`${JSEARCH_BASE}/search-v2?${params}`, {
+  const response = await fetch(`${JSEARCH_BASE}/search?${params}`, {
     headers: {
       'x-api-key': process.env.JSEARCH_API_KEY,
     },
