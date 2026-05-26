@@ -14,15 +14,17 @@ export async function GET(request) {
     const category = searchParams.get('category') || 'all';
 
     if (!q) {
+      // Return ALL active skills so the lookup shows the full library
       let query = supabase
         .from('skills').select(SELECT).eq('is_active', true)
-        .order('selection_count', { ascending: false }).limit(limit);
+        .order('name', { ascending: true })
+        .limit(1000);
       if (category !== 'all') query = query.eq('category', category);
       const { data, error } = await query;
       if (error) throw error;
       return NextResponse.json({
         skills: (data || []).map(s => ({ ...s, matchedAlias: null })),
-        source: 'popular', hasExactMatch: false, searchTerm: '',
+        source: 'all', hasExactMatch: false, searchTerm: '',
       });
     }
 
@@ -39,20 +41,34 @@ export async function GET(request) {
     // 2. Exact alias array match
     let aliasQuery = supabase
       .from('skills').select(SELECT).eq('is_active', true)
-      .contains('aliases', [q]).limit(5);
+      .contains('aliases', [q]).limit(10);
     if (category !== 'all') aliasQuery = aliasQuery.eq('category', category);
     const { data: aliasData } = await aliasQuery;
 
     // 3. Fuzzy alias text match
     let fuzzyQuery = supabase
       .from('skills').select(SELECT).eq('is_active', true)
-      .filter('aliases::text', 'ilike', `%${q}%`).limit(5);
+      .filter('aliases::text', 'ilike', `%${q}%`).limit(10);
     if (category !== 'all') fuzzyQuery = fuzzyQuery.eq('category', category);
     const { data: fuzzyData } = await fuzzyQuery;
 
-    // Merge + deduplicate, attach matchedAlias flag
+    // 4. Topic name match — find skill_ids whose topics match, then fetch those skills
+    const { data: topicRows } = await supabase
+      .from('skill_topics').select('skill_id').ilike('name', `%${q}%`).eq('is_active', true);
+    const topicSkillIds = [...new Set((topicRows || []).map(r => r.skill_id))];
+    let topicData = [];
+    if (topicSkillIds.length) {
+      let topicSkillQuery = supabase
+        .from('skills').select(SELECT).eq('is_active', true).in('id', topicSkillIds);
+      if (category !== 'all') topicSkillQuery = topicSkillQuery.eq('category', category);
+      const { data: ts } = await topicSkillQuery;
+      topicData = ts || [];
+    }
+
+    // Merge + deduplicate, attach matchedAlias / matchedTopic flags
     const nameIds  = new Set((nameData  || []).map(s => s.id));
     const aliasIds = new Set((aliasData || []).map(s => s.id));
+    const fuzzyIds = new Set((fuzzyData || []).map(s => s.id));
     const combined = [
       ...(nameData || []).map(s => ({ ...s, matchedAlias: null })),
       ...(aliasData || []).map(s => ({
@@ -65,6 +81,9 @@ export async function GET(request) {
           ...s,
           matchedAlias: (s.aliases || []).find(a => a.toLowerCase().includes(qLower)) || null,
         })),
+      ...(topicData)
+        .filter(s => !nameIds.has(s.id) && !aliasIds.has(s.id) && !fuzzyIds.has(s.id))
+        .map(s => ({ ...s, matchedAlias: null, matchedTopic: true })),
     ];
 
     const seen = new Set();

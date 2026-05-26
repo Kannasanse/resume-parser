@@ -41,15 +41,45 @@ export async function GET(request) {
     const sort     = searchParams.get('sort') || 'name';
     const dir      = searchParams.get('dir') === 'desc' ? false : true;
 
+    // When a search query is provided, collect matching skill IDs across
+    // name, aliases (array column), and topic names (via skill_topics table).
+    let idFilter = null;
+    if (q) {
+      const matchedIds = new Set();
+
+      // 1. Name match
+      const { data: nameRows } = await supabase
+        .from('skills').select('id').ilike('name', `%${q}%`);
+      (nameRows || []).forEach(r => matchedIds.add(r.id));
+
+      // 2. Alias match (search aliases array cast to text)
+      const { data: aliasRows } = await supabase
+        .from('skills').select('id').filter('aliases::text', 'ilike', `%${q}%`);
+      (aliasRows || []).forEach(r => matchedIds.add(r.id));
+
+      // 3. Topic name match via skill_topics table
+      const { data: topicRows } = await supabase
+        .from('skill_topics').select('skill_id').ilike('name', `%${q}%`);
+      (topicRows || []).forEach(r => matchedIds.add(r.skill_id));
+
+      idFilter = [...matchedIds];
+    }
+
     let query = supabase
       .from('skills')
       .select('*', { count: 'exact' });
 
-    if (q)               query = query.ilike('name', `%${q}%`);
-    if (category)        query = query.eq('category', category);
+    if (idFilter !== null) {
+      if (idFilter.length === 0) {
+        return NextResponse.json({ skills: [], total: 0, page, limit });
+      }
+      query = query.in('id', idFilter);
+    }
+
+    if (category)              query = query.eq('category', category);
     if (status === 'active')   query = query.eq('is_active', true);
     if (status === 'inactive') query = query.eq('is_active', false);
-    if (source !== 'all') query = query.eq('source', source);
+    if (source !== 'all')      query = query.eq('source', source);
 
     query = query
       .order(sort, { ascending: dir })
