@@ -261,7 +261,11 @@ export default function Sidebar() {
       className="flex-shrink-0 h-full flex flex-col bg-white dark:bg-[#0D1830] border-r border-[#D1DCE8] dark:border-white/10 overflow-hidden relative"
     >
       {/* ── Header: logo ── */}
-      <div className={`flex items-center flex-shrink-0 ${collapsed ? 'justify-center px-0 py-5' : 'px-4 py-5'}`}>
+      <Link
+        href="/"
+        className={`flex items-center flex-shrink-0 opacity-100 hover:opacity-75 transition-opacity duration-150 ${collapsed ? 'justify-center px-0 py-5' : 'px-4 py-5'}`}
+        title="Go to homepage"
+      >
         {collapsed ? (
           <img
             src="/logo.png"
@@ -277,7 +281,7 @@ export default function Sidebar() {
             className="dark:brightness-0 dark:invert"
           />
         )}
-      </div>
+      </Link>
 
       {/* ── Scrollable nav area ── */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden py-1">

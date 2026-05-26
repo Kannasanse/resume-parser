@@ -975,14 +975,15 @@ export default function QuestionLibrary() {
 
   // ── Styles ─────────────────────────────────────────────────────────────────
   const filterSelectStyle = {
-    width:160, height:36, border:`1px solid ${BORDER}`, borderRadius:10, fontSize:13, padding:'0 10px',
+    flex: '1 1 140px', minWidth: 140, maxWidth: 200,
+    height:36, border:`1px solid ${BORDER}`, borderRadius:10, fontSize:13, padding:'0 10px',
     background:'var(--ql-input-bg, white)', color:'var(--ql-input-text, #2C2C2A)', outline:'none', cursor:'pointer',
   };
 
   const pageChipStyle = (active) => ({
     width:32, height:32, borderRadius:9999, display:'inline-flex', alignItems:'center', justifyContent:'center',
     fontSize:13, fontWeight: active ? 700 : 400, cursor:'pointer', border:'none',
-    background: active ? PRIMARY : 'white',
+    background: active ? PRIMARY : 'var(--ql-input-bg, white)',
     color:      active ? 'white' : MUTED,
     outline: `1px solid ${active ? PRIMARY : BORDER}`,
   });
@@ -998,12 +999,66 @@ export default function QuestionLibrary() {
         .ql-menu-item-danger:hover { background: #FEE2E2; color: #D93025; }
         .ql-page-chip:hover { outline-color: #185FA5 !important; color: #185FA5 !important; }
 
-        /* Dark mode overrides */
-        .dark { --ql-input-bg: #111F35; --ql-input-text: #E8EFF7; }
-        .dark select, .dark input[type="text"] { border-color: rgba(255,255,255,0.1) !important; color: #E8EFF7 !important; background: #111F35 !important; }
+        /* Dark mode — CSS custom properties */
+        .dark { --ql-input-bg: #1A2C45; --ql-input-text: #E8EFF7; --ql-border: rgba(255,255,255,0.1); }
+
+        /* Inputs & selects */
+        .dark select, .dark input[type="text"] {
+          border-color: rgba(255,255,255,0.1) !important;
+          color: #E8EFF7 !important;
+          background: #1A2C45 !important;
+        }
+
+        /* Table wrapper */
+        .dark .ql-table-wrap {
+          background: #111F35 !important;
+          border-color: rgba(255,255,255,0.1) !important;
+        }
+
+        /* Table header */
+        .dark .ql-thead-row {
+          background: #0D1830 !important;
+          border-color: rgba(255,255,255,0.1) !important;
+        }
+        .dark .ql-thead-row th { color: #8BA3C1 !important; }
+
+        /* Data rows */
         .dark .ql-row { background: #111F35 !important; }
         .dark .ql-row:hover { background: rgba(24,95,165,0.12) !important; }
-        .dark .ql-menu-item:hover { background: #0D1830; }
+        .dark .ql-row td { border-color: rgba(255,255,255,0.06) !important; }
+        .dark .ql-row td p { color: #E8EFF7 !important; }
+
+        /* Empty state */
+        .dark .ql-empty {
+          background: #111F35 !important;
+          border-color: rgba(255,255,255,0.1) !important;
+        }
+        .dark .ql-empty p { color: #8BA3C1 !important; }
+        .dark .ql-empty button { color: #5B9FD4 !important; }
+
+        /* Context menu */
+        .dark .ql-context-menu {
+          background: #111F35 !important;
+          border-color: rgba(255,255,255,0.1) !important;
+        }
+        .dark .ql-menu-item { color: #E8EFF7 !important; }
+        .dark .ql-menu-item:hover { background: #0D1830 !important; }
+        .dark .ql-menu-item-danger { color: #F87171 !important; }
+        .dark .ql-menu-item-danger:hover { background: rgba(217,48,37,0.12) !important; color: #F87171 !important; }
+
+        /* Tabs */
+        .dark .ql-tabs-border { border-color: rgba(255,255,255,0.1) !important; }
+        .dark .ql-tab { color: #8BA3C1 !important; }
+        .dark .ql-tab-active { color: #5B9FD4 !important; border-bottom-color: #5B9FD4 !important; }
+        .dark .ql-badge-needs-review { background: rgba(245,158,11,0.20) !important; color: #F5A623 !important; }
+        .dark .ql-needs-review-alert { background: rgba(245,158,11,0.10) !important; border-color: rgba(245,158,11,0.20) !important; color: #F5A623 !important; }
+
+        /* Pagination chips */
+        .dark .ql-page-chip { background: #1A2C45 !important; outline-color: rgba(255,255,255,0.1) !important; color: #8BA3C1 !important; }
+        .dark .ql-page-chip:hover { outline-color: #5B9FD4 !important; color: #5B9FD4 !important; }
+
+        /* Dots button */
+        .dark .ql-dots-btn:hover { background: rgba(255,255,255,0.08) !important; }
       `}</style>
 
       {/* Toast */}
@@ -1023,9 +1078,26 @@ export default function QuestionLibrary() {
           subtitle="Reusable questions tagged by type, skill, topic, and difficulty."
         />
         <div style={{ display:'flex', gap:8, alignItems:'center', flexShrink:0 }}>
-          <button onClick={()=>setShowGenerate(true)}
-            style={{ border:`1px solid ${BORDER}`, borderRadius:10, padding:'8px 16px', background:'white', fontSize:13, fontWeight:500, color:MUTED, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
-            ✦ AI Generate
+          <button
+            onClick={()=>setShowGenerate(true)}
+            className="relative inline-flex items-center gap-2 px-4 py-2 rounded-[10px] text-sm font-semibold text-white transition-all duration-200 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(139,92,246,0.45)] active:scale-[0.98]"
+            style={{
+              background: 'linear-gradient(135deg,#7C3AED 0%,#185FA5 50%,#1D9E75 100%)',
+              boxShadow: '0 0 12px rgba(124,58,237,0.30),0 2px 8px rgba(24,95,165,0.20)',
+              cursor: 'pointer', border: 'none',
+            }}
+          >
+            <span
+              className="absolute inset-0 rounded-[10px] opacity-0 hover:opacity-100 transition-opacity duration-300"
+              style={{ background:'linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.15) 50%,transparent 60%)', backgroundSize:'200% 100%' }}
+            />
+            <span className="relative z-10 flex items-center gap-1.5">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7z"/>
+                <path d="M19 17l.7 2.3L22 20l-2.3.7L19 23l-.7-2.3L16 20l2.3-.7z"/>
+              </svg>
+              AI Generate
+            </span>
           </button>
           <button onClick={()=>setShowImport(true)}
             style={{ border:`1px solid ${BORDER}`, borderRadius:10, padding:'8px 18px', background:'white', fontSize:13, fontWeight:600, color:PRIMARY, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
@@ -1039,75 +1111,74 @@ export default function QuestionLibrary() {
       </div>
 
       {/* ── Tabs ─────────────────────────────────────────────────────────────── */}
-      <div style={{ display:'flex', borderBottom:`1px solid ${BORDER}`, gap:0 }}>
+      <div className="ql-tabs-border" style={{ display:'flex', borderBottom:`1px solid ${BORDER}`, gap:0 }}>
         {[['all','All Questions'],['needs_review','Needs Review']].map(([v,l]) => (
-          <button key={v} onClick={()=>{ setTab(v); setPage(1); }} style={{
-            fontSize:13, fontWeight:600, padding:'10px 16px', cursor:'pointer', background:'none', border:'none',
-            color:      tab===v ? PRIMARY : MUTED,
-            borderBottom: tab===v ? `2px solid ${PRIMARY}` : '2px solid transparent',
-            marginBottom:-1, display:'flex', alignItems:'center', gap:6,
-          }}>
+          <button key={v} onClick={()=>{ setTab(v); setPage(1); }}
+            className={`ql-tab ${tab===v ? 'ql-tab-active' : ''}`}
+            style={{
+              fontSize:13, fontWeight:600, padding:'10px 16px', cursor:'pointer', background:'none', border:'none',
+              color:      tab===v ? PRIMARY : MUTED,
+              borderBottom: tab===v ? `2px solid ${PRIMARY}` : '2px solid transparent',
+              marginBottom:-1, display:'flex', alignItems:'center', gap:6,
+            }}>
             {l}
             {v === 'needs_review' && (
-              <span style={{ fontSize:11, fontWeight:700, padding:'1px 6px', borderRadius:9999, background:'#FEF3C7', color:'#B45309' }}>!</span>
+              <span className="ql-badge-needs-review" style={{ fontSize:11, fontWeight:700, padding:'1px 6px', borderRadius:9999, background:'#FEF3C7', color:'#B45309' }}>!</span>
             )}
           </button>
         ))}
       </div>
 
       {tab === 'needs_review' && (
-        <div style={{ background:'#FFFBEB', border:'1px solid rgba(245,158,11,0.30)', borderRadius:10, padding:'12px 16px', fontSize:13, color:'#B45309' }}>
+        <div className="ql-needs-review-alert" style={{ background:'#FFFBEB', border:'1px solid rgba(245,158,11,0.30)', borderRadius:10, padding:'12px 16px', fontSize:13, color:'#B45309' }}>
           Questions answered 10+ times with under 40% correct rate. Review and suppress or edit as needed.
         </div>
       )}
 
       {/* ── Filter Bar ───────────────────────────────────────────────────────── */}
-      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-        {/* Row 1 */}
-        <div style={{ display:'flex', flexWrap:'wrap', gap:8, alignItems:'center' }}>
-          {/* Search */}
-          <div style={{ position:'relative', flex:1, minWidth:200, maxWidth:280 }}>
-            <span style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', fontSize:14, pointerEvents:'none' }}>🔍</span>
-            <input value={search} onChange={e=>{ setSearch(e.target.value); setPage(1); }}
-              placeholder="Search questions…"
-              style={{ width:'100%', height:36, border:`1px solid ${BORDER}`, borderRadius:10, paddingLeft:32, paddingRight:10, fontSize:13, outline:'none', boxSizing:'border-box' }} />
-          </div>
-          {/* Type */}
-          <select value={filterType} onChange={e=>{ setFilterType(e.target.value); setPage(1); }} style={filterSelectStyle}>
-            <option value="">All types</option>
-            <option value="mcq">MCQ</option>
-            <option value="true_false">True/False</option>
-            <option value="short_answer">Short Answer</option>
-          </select>
-          {/* Source */}
-          <select value={filterSource} onChange={e=>{ setFilterSource(e.target.value); setPage(1); }} style={filterSelectStyle}>
-            <option value="">All sources</option>
-            <option value="skill">Skill</option>
-            <option value="manual">Manual</option>
-            <option value="ai">AI</option>
-            <option value="jd">JD</option>
-          </select>
-          {/* Skill */}
-          <select value={filterSkill} onChange={e=>{ setFilterSkill(e.target.value); setPage(1); }} style={filterSelectStyle}>
-            <option value="">All skills</option>
-            {facets.skills.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-          {/* Topic */}
-          <select value={filterTopic} onChange={e=>{ setFilterTopic(e.target.value); setPage(1); }}
-            disabled={!filterSkill && facets.topics.length === 0} style={{ ...filterSelectStyle, opacity:(!filterSkill && facets.topics.length===0)?0.5:1 }}>
-            <option value="">All topics</option>
-            {facets.topics.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
+      <div style={{ display:'flex', flexWrap:'wrap', gap:8, alignItems:'center' }}>
+        {/* Search */}
+        <div style={{ position:'relative', flex:'2 1 200px', minWidth:200 }}>
+          <span style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', fontSize:14, pointerEvents:'none' }}>🔍</span>
+          <input value={search} onChange={e=>{ setSearch(e.target.value); setPage(1); }}
+            placeholder="Search questions…"
+            style={{ width:'100%', height:36, border:`1px solid ${BORDER}`, borderRadius:10, paddingLeft:32, paddingRight:10, fontSize:13, outline:'none', boxSizing:'border-box',
+              background:'var(--ql-input-bg,white)', color:'var(--ql-input-text,#2C2C2A)' }} />
         </div>
-        {/* Row 2 */}
-        <div style={{ display:'flex', gap:8 }}>
-          <select value={filterDifficulty} onChange={e=>{ setFilterDifficulty(e.target.value); setPage(1); }} style={{ ...filterSelectStyle, width:180 }}>
-            <option value="">All difficulty</option>
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
-        </div>
+        {/* Type */}
+        <select value={filterType} onChange={e=>{ setFilterType(e.target.value); setPage(1); }} style={filterSelectStyle}>
+          <option value="">All types</option>
+          <option value="mcq">MCQ</option>
+          <option value="true_false">True/False</option>
+          <option value="short_answer">Short Answer</option>
+        </select>
+        {/* Source */}
+        <select value={filterSource} onChange={e=>{ setFilterSource(e.target.value); setPage(1); }} style={filterSelectStyle}>
+          <option value="">All sources</option>
+          <option value="skill">Skill</option>
+          <option value="manual">Manual</option>
+          <option value="ai">AI</option>
+          <option value="jd">JD</option>
+        </select>
+        {/* Skill */}
+        <select value={filterSkill} onChange={e=>{ setFilterSkill(e.target.value); setPage(1); }} style={filterSelectStyle}>
+          <option value="">All skills</option>
+          {facets.skills.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        {/* Topic */}
+        <select value={filterTopic} onChange={e=>{ setFilterTopic(e.target.value); setPage(1); }}
+          disabled={!filterSkill && facets.topics.length === 0}
+          style={{ ...filterSelectStyle, opacity:(!filterSkill && facets.topics.length===0)?0.5:1 }}>
+          <option value="">All topics</option>
+          {facets.topics.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+        {/* Difficulty */}
+        <select value={filterDifficulty} onChange={e=>{ setFilterDifficulty(e.target.value); setPage(1); }} style={filterSelectStyle}>
+          <option value="">All difficulty</option>
+          <option value="easy">Easy</option>
+          <option value="medium">Medium</option>
+          <option value="hard">Hard</option>
+        </select>
       </div>
 
       {/* ── Error ────────────────────────────────────────────────────────────── */}
@@ -1120,7 +1191,7 @@ export default function QuestionLibrary() {
 
       {/* ── Table ────────────────────────────────────────────────────────────── */}
       {loading ? (
-        <div style={{ background:'white', border:`1px solid ${BORDER}`, borderRadius:16, overflow:'hidden' }}>
+        <div className="ql-table-wrap" style={{ background:'white', border:`1px solid ${BORDER}`, borderRadius:16, overflow:'hidden' }}>
           {Array.from({length:6}).map((_,i) => (
             <div key={i} style={{ display:'flex', gap:12, padding:'14px 16px', borderBottom: i<5 ? `1px solid rgba(209,220,232,0.5)` : 'none', alignItems:'center' }}>
               <div style={{ width:16, height:16, borderRadius:4, background:'#E5E7EB', flexShrink:0 }} />
@@ -1131,7 +1202,7 @@ export default function QuestionLibrary() {
           ))}
         </div>
       ) : questions.length === 0 ? (
-        <div style={{ background:'white', border:`1px dashed ${BORDER}`, borderRadius:16, padding:'60px 20px', textAlign:'center' }}>
+        <div className="ql-empty" style={{ background:'white', border:`1px dashed ${BORDER}`, borderRadius:16, padding:'60px 20px', textAlign:'center' }}>
           {tab === 'needs_review' ? (
             <p style={{ fontSize:14, color:MUTED, margin:0 }}>No questions need review right now.</p>
           ) : search || filterType || filterSkill || filterSource || filterDifficulty || filterTopic ? (
@@ -1147,7 +1218,7 @@ export default function QuestionLibrary() {
           )}
         </div>
       ) : (
-        <div style={{ background:'white', border:`1px solid ${BORDER}`, borderRadius:16, overflow:'hidden' }}>
+        <div className="ql-table-wrap" style={{ background:'white', border:`1px solid ${BORDER}`, borderRadius:16, overflow:'hidden' }}>
           <table style={{ width:'100%', borderCollapse:'collapse', tableLayout:'fixed' }}>
             <colgroup>
               <col style={{ width:40 }} />
@@ -1160,7 +1231,7 @@ export default function QuestionLibrary() {
               <col style={{ width:100 }} />
             </colgroup>
             <thead>
-              <tr style={{ background:'linear-gradient(180deg,#F4F8FC,#EEF3F9)', borderBottom:`1px solid ${BORDER}`, height:44 }}>
+              <tr className="ql-thead-row" style={{ background:'linear-gradient(180deg,#F4F8FC,#EEF3F9)', borderBottom:`1px solid ${BORDER}`, height:44 }}>
                 <th style={{ padding:'0 0 0 14px', textAlign:'center' }}>
                   <input type="checkbox" checked={allSelected} onChange={toggleAll} style={{ accentColor:PRIMARY, width:16, height:16 }} />
                 </th>
@@ -1245,6 +1316,7 @@ export default function QuestionLibrary() {
                         {/* ⋮ menu */}
                         <div style={{ position:'relative' }}>
                           <button
+                            className="ql-dots-btn"
                             onClick={e=>{ e.stopPropagation(); setOpenMenuId(openMenuId===q.id?null:q.id); }}
                             style={{
                               width:32, height:32, borderRadius:9999, border:'none', background:'none',
@@ -1255,7 +1327,7 @@ export default function QuestionLibrary() {
                             onMouseLeave={e=>e.currentTarget.style.background='none'}
                           >⋮</button>
                           {openMenuId === q.id && (
-                            <div onClick={e=>e.stopPropagation()} style={{
+                            <div className="ql-context-menu" onClick={e=>e.stopPropagation()} style={{
                               position:'absolute', right:0, top:'calc(100% + 4px)', zIndex:50,
                               background:'white', border:`1px solid ${BORDER}`, borderRadius:10,
                               boxShadow:'0 8px 24px rgba(0,0,0,0.12)', minWidth:160,
@@ -1300,6 +1372,7 @@ export default function QuestionLibrary() {
           </span>
           <div style={{ display:'flex', alignItems:'center', gap:4 }}>
             <button onClick={()=>{ setPage(p=>p-1); load(page-1); }} disabled={page<=1}
+              className="ql-page-chip"
               style={{ ...pageChipStyle(false), opacity:page<=1?0.35:1, cursor:page<=1?'not-allowed':'pointer', width:'auto', padding:'0 12px' }}>
               ← Prev
             </button>
@@ -1314,6 +1387,7 @@ export default function QuestionLibrary() {
               )
             )}
             <button onClick={()=>{ setPage(p=>p+1); load(page+1); }} disabled={page>=pages}
+              className="ql-page-chip"
               style={{ ...pageChipStyle(false), opacity:page>=pages?0.35:1, cursor:page>=pages?'not-allowed':'pointer', width:'auto', padding:'0 12px' }}>
               Next →
             </button>
