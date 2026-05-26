@@ -1,7 +1,6 @@
 import supabase from '@/lib/supabase.js';
 
 // Maps a question_library row (with joined options) to self_test session question format.
-// MCQ options are shuffled to prevent position memorization on reuse.
 export function normaliseLibraryQuestion(q) {
   const options = (q.question_library_options || [])
     .sort((a, b) => a.position - b.position)
@@ -13,7 +12,9 @@ export function normaliseLibraryQuestion(q) {
     question_text: q.question_text,
     points:        q.points || 1,
     skill:         q.skill_tag || null,
-    topic:         q.topic || null,
+    skill_id:      q.skill_id  || null,
+    topic:         q.topic     || null,
+    topic_id:      q.topic_id  || null,
     difficulty:    q.difficulty || null,
     explanation:   q.explanation || null,
   };
@@ -35,11 +36,18 @@ export function normaliseLibraryQuestion(q) {
 }
 
 // Fetch matching questions from the shared library before calling AI.
-// Only returns MCQ and True/False — short answers are too context-specific.
-// All errors return empty array (non-fatal, AI will fill the gap).
-// Two-pass: topic-matched questions first, then fill remainder from same skill/difficulty.
-export async function fetchFromLibrary({ skills = [], topics = [], difficulty, questionTypes = [], requestedCount = 0 }) {
-  if (!requestedCount || !skills.length) return [];
+// Two-pass: topic-matched first, then fill remainder from skill/difficulty.
+// Supports both ID-based (preferred) and text-based skill matching.
+export async function fetchFromLibrary({
+  skills = [],
+  skillIds = [],
+  topics = [],
+  topicIds = [],
+  difficulty,
+  questionTypes = [],
+  requestedCount = 0,
+}) {
+  if (!requestedCount || (!skills.length && !skillIds.length)) return [];
 
   const fetchTypes = questionTypes.filter(t => ['mcq', 'true_false'].includes(t));
   if (!fetchTypes.length) return [];
@@ -47,35 +55,45 @@ export async function fetchFromLibrary({ skills = [], topics = [], difficulty, q
   const normalizedSkills = skills
     .map(s => (typeof s === 'string' ? s.trim() : (s?.name || '').trim()))
     .filter(Boolean);
-  if (!normalizedSkills.length) return [];
 
-  const normalizedTopics = (topics || []).map(t => t.trim()).filter(Boolean);
-
-  const sel = 'id, type, question_text, points, skill_tag, topic, difficulty, explanation, model_answer, question_library_options(id, option_text, is_correct, position)';
+  const sel = 'id, type, question_text, points, skill_tag, skill_id, topic, topic_id, difficulty, explanation, model_answer, question_library_options(id, option_text, is_correct, position)';
   const fetchLimit = requestedCount * 4;
 
-  const buildQuery = (filterApproved, topicFilter = null) => {
+  const buildQuery = (filterApproved, topicFilter = null, useIds = false) => {
     let q = supabase.from('question_library').select(sel)
-      .in('skill_tag', normalizedSkills)
-      .in('type', fetchTypes)
-      .limit(fetchLimit);
+      .in('type', fetchTypes).limit(fetchLimit);
+
+    if (useIds && skillIds.length) {
+      q = q.in('skill_id', skillIds);
+    } else if (normalizedSkills.length) {
+      q = q.in('skill_tag', normalizedSkills);
+    }
+
     if (difficulty) q = q.eq('difficulty', difficulty);
-    if (topicFilter?.length) q = q.in('topic', topicFilter);
+
+    if (topicFilter?.ids?.length) {
+      q = q.in('topic_id', topicFilter.ids);
+    } else if (topicFilter?.names?.length) {
+      q = q.in('topic', topicFilter.names);
+    }
+
     if (filterApproved) q = q.eq('is_approved', true);
     return q;
   };
+
+  const useIds = skillIds.length > 0;
 
   try {
     const collected = [];
     const usedIds = new Set();
 
-    // Pass 1: topic-matched questions (only if topic hints provided)
-    if (normalizedTopics.length) {
-      let { data: topicData, error: topicErr } = await buildQuery(true, normalizedTopics);
-      if (topicErr) ({ data: topicData } = await buildQuery(false, normalizedTopics));
+    // Pass 1: topic-matched
+    if (topics.length || topicIds.length) {
+      const topicFilter = { ids: topicIds, names: topics };
+      let { data: topicData, error: topicErr } = await buildQuery(true, topicFilter, useIds);
+      if (topicErr) ({ data: topicData } = await buildQuery(false, topicFilter, useIds));
       if (topicData?.length) {
-        const shuffled = [...topicData].sort(() => Math.random() - 0.5);
-        for (const row of shuffled) {
+        for (const row of [...topicData].sort(() => Math.random() - 0.5)) {
           if (collected.length >= requestedCount) break;
           collected.push(normaliseLibraryQuestion(row));
           usedIds.add(row.id);
@@ -83,19 +101,22 @@ export async function fetchFromLibrary({ skills = [], topics = [], difficulty, q
       }
     }
 
-    // Pass 2: fill remainder with any matching skill/difficulty questions
+    // Pass 2: fill remainder
     if (collected.length < requestedCount) {
-      let { data, error } = await buildQuery(true);
+      let { data, error } = await buildQuery(true, null, useIds);
       if (error) {
-        ({ data, error } = await buildQuery(false));
+        ({ data, error } = await buildQuery(false, null, useIds));
+        // Last resort: fall back to text-based if ID query failed
+        if (error && useIds && normalizedSkills.length) {
+          ({ data, error } = await buildQuery(false, null, false));
+        }
         if (error) {
           console.error('[Library] fetchFromLibrary error:', error.message);
           return collected;
         }
       }
       if (data?.length) {
-        const remaining = [...data].filter(r => !usedIds.has(r.id)).sort(() => Math.random() - 0.5);
-        for (const row of remaining) {
+        for (const row of [...data].filter(r => !usedIds.has(r.id)).sort(() => Math.random() - 0.5)) {
           if (collected.length >= requestedCount) break;
           collected.push(normaliseLibraryQuestion(row));
         }
@@ -109,38 +130,32 @@ export async function fetchFromLibrary({ skills = [], topics = [], difficulty, q
   }
 }
 
-// Save questions to the shared library after a session is created (fire-and-forget).
-// - Library questions (with library_question_id): increment times_used
-// - AI-generated questions: insert new row + options
-// Only runs for skills/jd modes; content is skipped (questions are content-specific).
+// Save questions to the shared library after session creation (fire-and-forget).
 export async function saveQuestionsToLibrary(questions, sessionId, userId, inputType) {
   if (!['skills', 'jd'].includes(inputType)) return;
 
   for (const q of questions) {
     try {
       if (q.library_question_id) {
-        // This question was pulled from library — increment usage counter
         const { data: cur } = await supabase
-          .from('question_library')
-          .select('times_used')
-          .eq('id', q.library_question_id)
-          .single();
+          .from('question_library').select('times_used')
+          .eq('id', q.library_question_id).single();
         if (cur) {
-          await supabase
-            .from('question_library')
+          await supabase.from('question_library')
             .update({ times_used: (cur.times_used || 0) + 1 })
             .eq('id', q.library_question_id);
         }
         continue;
       }
 
-      // AI-generated question — insert into library
       const row = {
         type:          q.type,
         question_text: q.question_text,
         points:        q.points || 1,
-        skill_tag:     q.skill || null,
-        topic:         q.topic || null,
+        skill_tag:     q.skill    || null,
+        skill_id:      q.skill_id || null,
+        topic:         q.topic    || null,
+        topic_id:      q.topic_id || null,
         difficulty:    q.difficulty || null,
         ai_generated:  true,
         source:        'ai-generated',
@@ -160,30 +175,20 @@ export async function saveQuestionsToLibrary(questions, sessionId, userId, input
       }
 
       const { data: libQ, error: insertErr } = await supabase
-        .from('question_library')
-        .insert(row)
-        .select('id')
-        .single();
+        .from('question_library').insert(row).select('id').single();
 
       if (insertErr) {
-        // New columns may not exist yet — fall back to minimal insert
         const compat = {
-          type:         row.type,
+          type:          row.type,
           question_text: row.question_text,
-          points:       row.points,
-          skill_tag:    row.skill_tag,
-          difficulty:   row.difficulty,
-          ai_generated: true,
+          points:        row.points,
+          skill_tag:     row.skill_tag,
+          difficulty:    row.difficulty,
+          ai_generated:  true,
         };
         const { data: libQ2, error: e2 } = await supabase
-          .from('question_library')
-          .insert(compat)
-          .select('id')
-          .single();
-        if (e2 || !libQ2) {
-          console.error('[Library] insert failed:', e2?.message || 'no data');
-          continue;
-        }
+          .from('question_library').insert(compat).select('id').single();
+        if (e2 || !libQ2) { console.error('[Library] insert failed:', e2?.message); continue; }
         await _insertOptions(libQ2.id, q);
         continue;
       }
@@ -200,10 +205,7 @@ async function _insertOptions(libQId, q) {
     if (q.type === 'mcq' && Array.isArray(q.options) && q.options.length) {
       await supabase.from('question_library_options').insert(
         q.options.map((o, i) => ({
-          question_id: libQId,
-          option_text: o.option_text,
-          is_correct:  !!o.is_correct,
-          position:    i,
+          question_id: libQId, option_text: o.option_text, is_correct: !!o.is_correct, position: i,
         }))
       );
     } else if (q.type === 'true_false') {
@@ -218,9 +220,7 @@ async function _insertOptions(libQId, q) {
   }
 }
 
-// Update times_correct / times_incorrect after a quiz attempt is submitted.
-// Only updates MCQ/TF questions that came from the library (have library_question_id).
-// Non-fatal — errors are logged and ignored.
+// Update times_correct / times_incorrect after quiz submission.
 export async function updateLibraryQuestionStats(questions, results) {
   for (let i = 0; i < questions.length; i++) {
     const q = questions[i];
@@ -229,26 +229,17 @@ export async function updateLibraryQuestionStats(questions, results) {
 
     try {
       const { data: cur } = await supabase
-        .from('question_library')
-        .select('times_correct, times_incorrect, times_used')
-        .eq('id', q.library_question_id)
-        .single();
-
+        .from('question_library').select('times_correct, times_incorrect, times_used')
+        .eq('id', q.library_question_id).single();
       if (!cur) continue;
 
       const timesCorrect   = (cur.times_correct   || 0) + (r?.correct ? 1 : 0);
       const timesIncorrect = (cur.times_incorrect  || 0) + (r?.correct ? 0 : 1);
       const answered = timesCorrect + timesIncorrect;
-
       const updates = { times_correct: timesCorrect, times_incorrect: timesIncorrect };
-      if (answered >= 5) {
-        updates.quality_score = timesCorrect / answered;
-      }
+      if (answered >= 5) updates.quality_score = timesCorrect / answered;
 
-      await supabase
-        .from('question_library')
-        .update(updates)
-        .eq('id', q.library_question_id);
+      await supabase.from('question_library').update(updates).eq('id', q.library_question_id);
     } catch (err) {
       console.error('[Library] updateLibraryQuestionStats error:', err.message);
     }

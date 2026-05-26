@@ -1,6 +1,7 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import SkillLookupInput from '@/components/skills/SkillLookupInput';
 
 const DIFF_COLORS = {
   easy:   'border-green-400 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400',
@@ -574,8 +575,11 @@ export default function SelfTestCreate() {
 
   const [step, setStep]       = useState('mode-select');
   const [mode, setMode]       = useState(null);
+  // skills: array of { id, name } objects (from SkillLookupInput)
   const [skills, setSkills]   = useState([]);
   const [topicHints, setTopicHints] = useState({}); // { [skillName]: focusArea }
+  const [topicSuggestions, setTopicSuggestions] = useState({}); // { [skillName]: [{ id, name }] }
+  const [categories, setCategories] = useState([]);
   const [content, setContent] = useState('');
   const [questionType, setQuestionType] = useState('mcq');
   const [difficulty, setDifficulty] = useState(null);
@@ -601,6 +605,10 @@ export default function SelfTestCreate() {
     fetch('/api/v1/self-test/skills')
       .then(r => r.json())
       .then(d => setSuggestions(d.skills || []))
+      .catch(() => {});
+    fetch('/api/v1/skills/categories')
+      .then(r => r.json())
+      .then(d => setCategories(d.categories || []))
       .catch(() => {});
 
     try {
@@ -629,14 +637,14 @@ export default function SelfTestCreate() {
   };
 
   const estimatedCount = mode === 'skills'
-    ? Math.min(Math.max(skills.length * 5, 5), 20)
+    ? Math.min(Math.max(skills.length * 5, 5), 20)  // skills is now array of objects
     : mode === 'jd'
     ? Math.min(Math.max(jdSkills.length * 3, 5), 20)
     : Math.min(Math.max(Math.floor(content.length / 100) * 2, 5), 10);
 
   const canGenerate = (() => {
     if (!difficulty || timerError) return false;
-    if (mode === 'skills')  return skills.length > 0;
+    if (mode === 'skills')  return skills.length > 0;  // skills: [{ id, name }]
     if (mode === 'content') return content.trim().length >= 100;
     if (mode === 'jd')      return jdSkills.length >= 1;
     return false;
@@ -691,15 +699,33 @@ export default function SelfTestCreate() {
 
   const setSkillsAndPruneHints = (newSkills) => {
     setSkills(newSkills);
-    // Remove hints for skills that were removed
+    const newNames = newSkills.map(s => s.name);
+    // Remove hints/suggestions for removed skills
     setTopicHints(prev => {
       const next = { ...prev };
       for (const key of Object.keys(next)) {
-        if (!newSkills.includes(key)) delete next[key];
+        if (!newNames.includes(key)) delete next[key];
+      }
+      return next;
+    });
+    setTopicSuggestions(prev => {
+      const next = { ...prev };
+      for (const key of Object.keys(next)) {
+        if (!newNames.includes(key)) delete next[key];
       }
       return next;
     });
   };
+
+  const fetchTopicSuggestions = useCallback(async (skill, query = '') => {
+    if (!skill.id) return;
+    try {
+      const url = `/api/v1/skills/${skill.id}/topics?limit=8${query ? `&q=${encodeURIComponent(query)}` : ''}`;
+      const r = await fetch(url);
+      const d = await r.json();
+      setTopicSuggestions(prev => ({ ...prev, [skill.name]: d.topics || [] }));
+    } catch {}
+  }, []);
 
   const generate = async () => {
     setError('');
@@ -707,7 +733,13 @@ export default function SelfTestCreate() {
     const qtypes = questionType === 'mixed' ? ['mcq', 'short_answer'] : [questionType];
     let body;
     if (mode === 'skills') {
-      body = { input_type: 'skills', input_data: skills.join(', '), topic_hints: topicHints, difficulty, timer_minutes: timer, question_types: qtypes };
+      body = {
+        input_type: 'skills',
+        input_data: skills.map(s => s.name).join(', '),
+        skills,           // send { id, name } objects for server-side resolution
+        topic_hints: topicHints,
+        difficulty, timer_minutes: timer, question_types: qtypes,
+      };
     } else if (mode === 'content') {
       body = { input_type: 'content', input_data: content, difficulty, timer_minutes: timer, question_types: qtypes };
     } else {
@@ -810,24 +842,54 @@ export default function SelfTestCreate() {
             {mode === 'skills' ? (
               <div>
                 <label className="block text-sm font-medium text-ds-text mb-1.5">Skills <span className="text-ds-danger">*</span></label>
-                <SkillTagInput skills={skills} onChange={setSkillsAndPruneHints} suggestions={suggestions} />
-                {skills.length === 0 && <p className="text-xs text-ds-textMuted mt-1">Select skills from suggestions or type your own</p>}
+                <SkillLookupInput
+                  selectedSkills={skills}
+                  onChange={setSkillsAndPruneHints}
+                  categories={categories}
+                />
                 {skills.length > 0 && (
-                  <div className="mt-3 space-y-1.5">
+                  <div className="mt-3 space-y-2">
                     <p className="text-xs font-medium text-ds-textMuted">Focus area <span className="font-normal opacity-70">(optional — narrow the topic for each skill)</span></p>
-                    {skills.map(skill => (
-                      <div key={skill} className="flex items-center gap-2">
-                        <span className="text-xs text-ds-text font-medium w-28 truncate flex-shrink-0">{skill}</span>
-                        <input
-                          type="text"
-                          value={topicHints[skill] || ''}
-                          onChange={e => setTopicHints(prev => ({ ...prev, [skill]: e.target.value }))}
-                          placeholder="e.g. hooks lifecycle, async/await…"
-                          maxLength={60}
-                          className="flex-1 text-xs px-2.5 py-1.5 border border-ds-inputBorder rounded bg-ds-bg text-ds-text placeholder-ds-textMuted focus:outline-none focus:ring-1 focus:ring-primary"
-                        />
-                      </div>
-                    ))}
+                    {skills.map(skill => {
+                      const suggestions = topicSuggestions[skill.name] || [];
+                      return (
+                        <div key={skill.id || skill.name} className="relative">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-ds-text font-medium w-28 truncate flex-shrink-0">{skill.name}</span>
+                            <input
+                              type="text"
+                              value={topicHints[skill.name] || ''}
+                              onChange={e => {
+                                setTopicHints(prev => ({ ...prev, [skill.name]: e.target.value }));
+                                fetchTopicSuggestions(skill, e.target.value);
+                              }}
+                              onFocus={() => fetchTopicSuggestions(skill, topicHints[skill.name] || '')}
+                              placeholder="e.g. hooks lifecycle, async/await…"
+                              maxLength={60}
+                              className="flex-1 text-xs px-2.5 py-1.5 border border-ds-inputBorder rounded bg-ds-bg text-ds-text placeholder-ds-textMuted focus:outline-none focus:ring-1 focus:ring-primary"
+                            />
+                          </div>
+                          {suggestions.length > 0 && (
+                            <div className="ml-30 mt-0.5 flex flex-wrap gap-1" style={{ marginLeft: '8.5rem' }}>
+                              {suggestions.slice(0, 5).map(t => (
+                                <button
+                                  key={t.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setTopicHints(prev => ({ ...prev, [skill.name]: t.name }));
+                                    setTopicSuggestions(prev => ({ ...prev, [skill.name]: [] }));
+                                  }}
+                                  className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--c-primary)]/10 text-[var(--c-primary)] border border-[var(--c-primary)]/20 hover:bg-[var(--c-primary)]/20 transition-colors"
+                                >
+                                  {t.name}
+                                  {t.usage_count > 0 && <span className="ml-1 opacity-50">·{t.usage_count}</span>}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

@@ -2,6 +2,8 @@ import supabase from '@/lib/supabase.js';
 import { requireUser } from '@/lib/auth-helpers.js';
 import { fetchFromLibrary, saveQuestionsToLibrary } from '@/lib/self-test/questionLibrary.js';
 import { METADATA_INSTRUCTION } from '@/lib/self-test/prompts/metadataInstruction.js';
+import { resolveSkill } from '@/lib/skills/resolveSkill.js';
+import { saveTopicHint, saveAIInferredTopics } from '@/lib/skills/saveTopicHint.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -142,6 +144,8 @@ export async function POST(request) {
       question_types = ['mcq'],
       mcq_count: rawMcq,
       short_answer_count: rawSa,
+      // New: array of { id, name } from SkillLookupInput (optional, backward compat)
+      skills: skillObjects,
     } = body;
 
     // Derive whether short answer is included
@@ -218,25 +222,57 @@ export async function POST(request) {
       return Response.json({ error: 'Please configure at least 1 question.' }, { status: 400 });
     }
 
-    // ── Library-first: fetch existing questions before calling AI ─────────────
+    // ── Skill resolution ──────────────────────────────────────────────────────
+    // Build resolved skill list with IDs: prefer client-supplied { id, name } objects,
+    // fall back to parsing input_data text, then resolve each name to a DB skill_id.
     let libraryQuestions = [];
-    let skills = [];
-    // topicHints: { [skillName]: string } — optional per-skill focus area from UI
+    let skills = [];           // canonical names for prompt building
+    let resolvedSkills = [];   // [{ skill_id, skill_name }] with IDs
+
     const topicHintsMap = body.topic_hints || {};
 
     if (input_type === 'skills') {
-      skills = input_data.split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
+      if (Array.isArray(skillObjects) && skillObjects.length) {
+        // Client sent pre-resolved objects — use their IDs directly
+        resolvedSkills = skillObjects.map(s => ({ skill_id: s.id || null, skill_name: s.name }));
+        skills = resolvedSkills.map(r => r.skill_name).filter(Boolean);
+      } else {
+        // Legacy: parse from comma-separated input_data, resolve each
+        const rawSkills = (input_data || '').split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
+        skills = rawSkills;
+        // Resolve asynchronously, non-blocking for prompt building
+        resolvedSkills = await Promise.all(rawSkills.map(name => resolveSkill(name, user.id)));
+      }
     } else if (input_type === 'jd') {
-      skills = jd_skills.map(s => s.name || '').filter(Boolean);
+      skills = (jd_skills || []).map(s => s.name || '').filter(Boolean);
+      resolvedSkills = await Promise.all(skills.map(name => resolveSkill(name, user.id)));
     }
 
-    // Collect non-empty topic hints to pass to library retrieval
+    const skillIds = resolvedSkills.map(r => r.skill_id).filter(Boolean);
+
+    // ── Save topic hints to skill_topics (fire-and-forget) ────────────────────
+    if (input_type === 'skills' && Object.keys(topicHintsMap).length) {
+      const skillNameToId = Object.fromEntries(
+        resolvedSkills.filter(r => r.skill_id).map(r => [r.skill_name, r.skill_id])
+      );
+      Promise.allSettled(
+        Object.entries(topicHintsMap)
+          .filter(([, hint]) => hint?.trim())
+          .map(([skillName, hint]) => {
+            const id = skillNameToId[skillName];
+            return id ? saveTopicHint(id, hint, 'user_hint') : Promise.resolve();
+          })
+      ).catch(() => {});
+    }
+
+    // Resolve topic hint values (names) for library query
     const topicHintValues = Object.values(topicHintsMap).map(t => t.trim()).filter(Boolean);
 
-    if (input_type !== 'content' && skills.length) {
-      // Only fetch MCQ/TF from library — SA always comes from AI (too context-specific to reuse)
+    // ── Library-first: fetch existing questions before calling AI ─────────────
+    if (input_type !== 'content' && (skills.length || skillIds.length)) {
       libraryQuestions = await fetchFromLibrary({
         skills,
+        skillIds,
         topics: topicHintValues,
         difficulty,
         questionTypes: question_types,
@@ -294,10 +330,22 @@ export async function POST(request) {
       const generated = await callAI(userPrompt, systemPrompt);
       console.log('AI raw question count:', generated?.questions?.length);
 
-      const normalized = (generated?.questions || []).map(q => ({
-        ...normalizeQuestion(q),
-        difficulty: q.difficulty || difficulty, // stamp session difficulty if AI didn't include it
-      }));
+      // Build skill-name → skill_id lookup for stamping onto questions
+      const skillNameToId = Object.fromEntries(
+        resolvedSkills.filter(r => r.skill_id).map(r => [r.skill_name.toLowerCase(), r.skill_id])
+      );
+
+      const normalized = (generated?.questions || []).map(q => {
+        const nq = {
+          ...normalizeQuestion(q),
+          difficulty: q.difficulty || difficulty,
+        };
+        // Stamp skill_id when the AI's skill field matches a resolved skill
+        if (nq.skill && !nq.skill_id) {
+          nq.skill_id = skillNameToId[nq.skill.toLowerCase()] || skillIds[0] || null;
+        }
+        return nq;
+      });
       const aiValid = normalized.filter(q => {
         if (!['mcq', 'true_false', 'short_answer'].includes(q.type)) return false;
         if (!q.question_text?.trim()) return false;
@@ -380,6 +428,8 @@ export async function POST(request) {
       saveQuestionsToLibrary(valid, session.id, user.id, input_type).catch(err => {
         console.error('[Library] Auto-save failed:', err.message);
       });
+      // Save AI-inferred topics to skill_topics
+      saveAIInferredTopics(valid).catch(() => {});
     }
 
     return Response.json({ session }, { status: 201 });
