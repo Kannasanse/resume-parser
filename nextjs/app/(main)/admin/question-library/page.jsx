@@ -1268,11 +1268,11 @@ export default function QuestionLibrary() {
             <colgroup>
               <col style={{ width:40 }} />
               <col />
-              <col style={{ width:90 }} />
-              <col style={{ width:120 }} />
-              <col style={{ width:140 }} />
+              <col style={{ width:80 }} />
+              <col style={{ width:160 }} />
+              <col style={{ width:150 }} />
               <col style={{ width:100 }} />
-              <col style={{ width:110 }} />
+              <col style={{ width:100 }} />
               <col style={{ width:100 }} />
             </colgroup>
             <thead>
@@ -1322,19 +1322,21 @@ export default function QuestionLibrary() {
                       <Chip bg={tc.bg} color={tc.color} border={tc.border}>{tc.label}</Chip>
                     </td>
                     {/* Skill */}
-                    <td style={{ padding:'12px 16px', verticalAlign:'middle' }}>
+                    <td style={{ padding:'12px 16px', verticalAlign:'middle', overflow:'hidden' }}>
                       {q.skill_tag ? (
                         <span style={{
-                          display:'inline-block', borderRadius:9999, padding:'3px 10px',
-                          fontSize:12, fontWeight:500, whiteSpace:'nowrap',
+                          display:'block', borderRadius:9999, padding:'3px 10px',
+                          fontSize:12, fontWeight:500,
                           background:sk.bg, color:sk.color, border:'1px solid rgba(0,0,0,0.08)',
+                          overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
                         }}>{q.skill_tag}</span>
                       ) : <span style={{ fontSize:12, color:'#D1DCE8' }}>—</span>}
                     </td>
                     {/* Topic */}
-                    <td style={{ padding:'12px 16px', verticalAlign:'middle' }}>
-                      <span style={{ fontSize:13, color:MUTED,
-                        display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden',
+                    <td style={{ padding:'12px 16px', verticalAlign:'middle', overflow:'hidden' }}>
+                      <span style={{
+                        fontSize:13, color:MUTED, display:'block',
+                        overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
                       }}>
                         {q.topic || <span style={{ color:'#D1DCE8' }}>—</span>}
                       </span>

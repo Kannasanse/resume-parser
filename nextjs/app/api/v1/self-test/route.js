@@ -294,7 +294,10 @@ export async function POST(request) {
       const generated = await callAI(userPrompt, systemPrompt);
       console.log('AI raw question count:', generated?.questions?.length);
 
-      const normalized = (generated?.questions || []).map(normalizeQuestion);
+      const normalized = (generated?.questions || []).map(q => ({
+        ...normalizeQuestion(q),
+        difficulty: q.difficulty || difficulty, // stamp session difficulty if AI didn't include it
+      }));
       const aiValid = normalized.filter(q => {
         if (!['mcq', 'true_false', 'short_answer'].includes(q.type)) return false;
         if (!q.question_text?.trim()) return false;
