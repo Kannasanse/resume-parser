@@ -74,7 +74,7 @@ const DIFFICULTY_LABELS = { easy:'Easy', medium:'Medium', hard:'Hard' };
 function PreviewModal({ question, onClose, onDelete, onSuppressToggle }) {
   const [usages, setUsages]           = useState(null);
   const [deleting, setDeleting]       = useState(false);
-  const [suppressing, setSuppressing] = useState(false);
+  const [toggling, setToggling]       = useState(false);
   const [deleteWarn, setDeleteWarn]   = useState(null);
   const [localApproved, setLocalApproved] = useState(question.is_approved !== false);
 
@@ -101,8 +101,8 @@ function PreviewModal({ question, onClose, onDelete, onSuppressToggle }) {
     setDeleting(false);
   };
 
-  const handleSuppressToggle = async () => {
-    setSuppressing(true);
+  const handleStatusToggle = async () => {
+    setToggling(true);
     const action = localApproved ? 'suppress' : 'approve';
     const r = await fetch(`/api/v1/admin/question-library/${question.id}`, {
       method:'PATCH',
@@ -114,7 +114,7 @@ function PreviewModal({ question, onClose, onDelete, onSuppressToggle }) {
       setLocalApproved(next);
       onSuppressToggle?.(question.id, next);
     }
-    setSuppressing(false);
+    setToggling(false);
   };
 
   const correctOpt = question.question_library_options?.find(o => o.is_correct);
@@ -130,7 +130,7 @@ function PreviewModal({ question, onClose, onDelete, onSuppressToggle }) {
           <div style={{ display:'flex', gap:6, alignItems:'center', flexWrap:'wrap' }}>
             <Chip bg={tc.bg} color={tc.color} border={tc.border}>{tc.label}</Chip>
             {dc && <Chip bg={dc.bg} color={dc.color} border={dc.border}>{dc.label}</Chip>}
-            {!localApproved && <Chip bg='#F3F4F6' color='#6B7280' border='#D1DCE8'>Suppressed</Chip>}
+            {!localApproved && <Chip bg='#F3F4F6' color='#6B7280' border='#D1DCE8'>Inactive</Chip>}
             <span style={{ fontSize:12, color:MUTED, fontFamily:'monospace' }}>{question.points}pt</span>
           </div>
           <button onClick={onClose} style={{ background:'none', border:'none', fontSize:22, lineHeight:1, color:MUTED, cursor:'pointer', padding:'0 2px' }}>×</button>
@@ -175,15 +175,15 @@ function PreviewModal({ question, onClose, onDelete, onSuppressToggle }) {
             </p>
           )}
 
-          {/* Suppress toggle */}
+          {/* Active / Inactive toggle */}
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-            <button onClick={handleSuppressToggle} disabled={suppressing} style={{
+            <button onClick={handleStatusToggle} disabled={toggling} style={{
               fontSize:12, padding:'6px 12px', borderRadius:8,
               border: localApproved ? `1px solid ${BORDER}` : `1px solid ${SUCCESS}`,
               color: localApproved ? MUTED : SUCCESS,
-              background: 'transparent', cursor:'pointer', opacity: suppressing ? 0.5 : 1,
+              background: 'transparent', cursor:'pointer', opacity: toggling ? 0.5 : 1,
             }}>
-              {suppressing ? '…' : localApproved ? 'Suppress' : 'Re-approve'}
+              {toggling ? '…' : localApproved ? 'Set Inactive' : 'Set Active'}
             </button>
           </div>
 
@@ -906,7 +906,7 @@ export default function QuestionLibrary() {
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleSuppressToggle = (id, newApproved) => {
     setQuestions(prev => prev.map(q => q.id === id ? {...q, is_approved:newApproved} : q));
-    showToast(newApproved ? 'Question re-approved.' : 'Question suppressed.');
+    showToast(newApproved ? 'Question set to Active.' : 'Question set to Inactive.');
   };
 
   const handleDelete = (id) => {
@@ -929,18 +929,15 @@ export default function QuestionLibrary() {
     setOpenMenuId(null);
   };
 
-  const handleRowSuppress = async (q) => {
+  const handleRowSetInactive = async (q) => {
     const r = await fetch(`/api/v1/admin/question-library/${q.id}`, {
       method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ action:'suppress' }),
     });
-    if (r.ok) {
-      handleSuppressToggle(q.id, false);
-      if (tab === 'all') setQuestions(prev => prev.map(x => x.id === q.id ? { ...x, is_approved: false } : x));
-    }
+    if (r.ok) handleSuppressToggle(q.id, false);
     setOpenMenuId(null);
   };
 
-  const handleRowReapprove = async (q) => {
+  const handleRowSetActive = async (q) => {
     const r = await fetch(`/api/v1/admin/question-library/${q.id}`, {
       method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ action:'approve' }),
     });
@@ -951,15 +948,29 @@ export default function QuestionLibrary() {
     setOpenMenuId(null);
   };
 
-  const handleBulkReapprove = async () => {
+  const handleBulkSetActive = async () => {
     const ids = [...selectedIds];
     await Promise.all(ids.map(id => fetch(`/api/v1/admin/question-library/${id}`, {
       method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ action:'approve' }),
     })));
-    setQuestions(prev => prev.filter(q => !selectedIds.has(q.id)));
-    setTotal(t => t - ids.length);
+    if (tab === 'suppressed') {
+      setQuestions(prev => prev.filter(q => !selectedIds.has(q.id)));
+      setTotal(t => t - ids.length);
+    } else {
+      setQuestions(prev => prev.map(q => selectedIds.has(q.id) ? { ...q, is_approved: true } : q));
+    }
     setSelectedIds(new Set());
-    showToast(`${ids.length} question${ids.length!==1?'s':''} re-approved.`);
+    showToast(`${ids.length} question${ids.length!==1?'s':''} set to Active.`);
+  };
+
+  const handleBulkSetInactive = async () => {
+    const ids = [...selectedIds];
+    await Promise.all(ids.map(id => fetch(`/api/v1/admin/question-library/${id}`, {
+      method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ action:'suppress' }),
+    })));
+    setQuestions(prev => prev.map(q => selectedIds.has(q.id) ? { ...q, is_approved: false } : q));
+    setSelectedIds(new Set());
+    showToast(`${ids.length} question${ids.length!==1?'s':''} set to Inactive.`);
   };
 
   const handleRowDelete = async (q) => {
@@ -1138,7 +1149,7 @@ export default function QuestionLibrary() {
 
       {/* ── Tabs ─────────────────────────────────────────────────────────────── */}
       <div className="ql-tabs-border" style={{ display:'flex', borderBottom:`1px solid ${BORDER}`, gap:0 }}>
-        {[['all','All Questions'],['needs_review','Needs Review'],['suppressed','Suppressed']].map(([v,l]) => (
+        {[['all','All Questions'],['needs_review','Needs Review'],['suppressed','Inactive']].map(([v,l]) => (
           <button key={v} onClick={()=>{ setTab(v); setPage(1); setSelectedIds(new Set()); }}
             className={`ql-tab ${tab===v ? 'ql-tab-active' : ''}`}
             style={{
@@ -1163,7 +1174,7 @@ export default function QuestionLibrary() {
 
       {tab === 'suppressed' && (
         <div style={{ background:'#F3F4F6', border:`1px solid ${BORDER}`, borderRadius:10, padding:'12px 16px', fontSize:13, color:MUTED }}>
-          Suppressed questions are excluded from all test generation. Re-approve to make them active again.
+          Inactive questions are excluded from all test generation. Set them to Active to include them again.
         </div>
       )}
 
@@ -1238,7 +1249,7 @@ export default function QuestionLibrary() {
           {tab === 'needs_review' ? (
             <p style={{ fontSize:14, color:MUTED, margin:0 }}>No questions need review right now.</p>
           ) : tab === 'suppressed' ? (
-            <p style={{ fontSize:14, color:MUTED, margin:0 }}>No suppressed questions — all questions are active.</p>
+            <p style={{ fontSize:14, color:MUTED, margin:0 }}>No inactive questions — all questions are active.</p>
           ) : search || filterType || filterSkill || filterSource || filterDifficulty || filterTopic ? (
             <p style={{ fontSize:14, color:MUTED, margin:0 }}>No questions found matching your filters.</p>
           ) : (
@@ -1303,7 +1314,7 @@ export default function QuestionLibrary() {
                         {q.question_text}
                       </p>
                       {q.is_approved === false && (
-                        <span style={{ fontSize:11, color:'#9CA3AF', fontStyle:'italic' }}>suppressed</span>
+                        <span style={{ fontSize:11, color:'#9CA3AF', fontStyle:'italic' }}>inactive</span>
                       )}
                     </td>
                     {/* Type */}
@@ -1376,14 +1387,14 @@ export default function QuestionLibrary() {
                               </button>
                               <hr style={{ margin:'4px 0', border:'none', borderTop:`1px solid ${BORDER}` }} />
                               {q.is_approved === false ? (
-                                <button className="ql-menu-item" onClick={()=>handleRowReapprove(q)}
+                                <button className="ql-menu-item" onClick={()=>handleRowSetActive(q)}
                                   style={{ display:'block', width:'100%', textAlign:'left', padding:'8px 14px', fontSize:13, color:SUCCESS, background:'none', border:'none', cursor:'pointer' }}>
-                                  ✓ Re-approve
+                                  ✓ Set Active
                                 </button>
-                              ) : src !== 'manual' && (
-                                <button className="ql-menu-item" onClick={()=>handleRowSuppress(q)}
+                              ) : (
+                                <button className="ql-menu-item" onClick={()=>handleRowSetInactive(q)}
                                   style={{ display:'block', width:'100%', textAlign:'left', padding:'8px 14px', fontSize:13, color:TEXT, background:'none', border:'none', cursor:'pointer' }}>
-                                  Suppress
+                                  Set Inactive
                                 </button>
                               )}
                               <button className="ql-menu-item-danger ql-menu-item" onClick={()=>handleRowDelete(q)}
@@ -1445,9 +1456,13 @@ export default function QuestionLibrary() {
       }}>
         <span style={{ fontSize:14, fontWeight:600 }}>{selectedIds.size} question{selectedIds.size!==1?'s':''} selected</span>
         <div style={{ display:'flex', gap:12, alignItems:'center' }}>
-          {tab === 'suppressed' && (
-            <button onClick={handleBulkReapprove} style={{ border:'1px solid rgba(255,255,255,0.40)', borderRadius:8, padding:'6px 14px', background:'rgba(29,158,117,0.25)', color:'white', fontSize:13, fontWeight:600, cursor:'pointer' }}>
-              ✓ Re-approve selected
+          {tab === 'suppressed' ? (
+            <button onClick={handleBulkSetActive} style={{ border:'1px solid rgba(255,255,255,0.40)', borderRadius:8, padding:'6px 14px', background:'rgba(29,158,117,0.25)', color:'white', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+              ✓ Set Active
+            </button>
+          ) : (
+            <button onClick={handleBulkSetInactive} style={{ border:'1px solid rgba(255,255,255,0.40)', borderRadius:8, padding:'6px 14px', background:'rgba(0,0,0,0.15)', color:'white', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+              Set Inactive
             </button>
           )}
           <button onClick={handleBulkDelete} style={{ border:'1px solid rgba(255,255,255,0.40)', borderRadius:8, padding:'6px 14px', background:'transparent', color:'white', fontSize:13, fontWeight:600, cursor:'pointer' }}>
