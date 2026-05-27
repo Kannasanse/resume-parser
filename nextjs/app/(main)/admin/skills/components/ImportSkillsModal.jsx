@@ -337,12 +337,21 @@ export default function ImportSkillsModal({ open, onClose, onImported }) {
           {result && (
             <>
               <div className="flex items-center gap-3 flex-wrap">
-                <span className="px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm font-semibold">
-                  {result.imported} imported
-                </span>
-                <span className="px-3 py-1 rounded-full bg-gray-100 dark:bg-white/10 text-[var(--c-text-muted)] text-sm font-semibold">
-                  {result.skipped} skipped (already exist)
-                </span>
+                {result.imported > 0 && (
+                  <span className="px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm font-semibold">
+                    {result.imported} imported
+                  </span>
+                )}
+                {result.updated > 0 && (
+                  <span className="px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-sm font-semibold">
+                    {result.updated} updated
+                  </span>
+                )}
+                {result.topics_imported > 0 && (
+                  <span className="px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-sm font-semibold">
+                    {result.topics_imported} topics
+                  </span>
+                )}
                 {result.failed > 0 && (
                   <span className="px-3 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm font-semibold">
                     {result.failed} failed
@@ -350,24 +359,20 @@ export default function ImportSkillsModal({ open, onClose, onImported }) {
                 )}
               </div>
 
-              {(result.skipped > 0 || result.failed > 0) && (
+              {result.failed > 0 && (
                 <div className="border border-[var(--c-border)] dark:border-white/10 rounded-xl overflow-hidden">
                   <p className="text-xs font-semibold text-[var(--c-text-muted)] px-3 py-2 bg-gray-50 dark:bg-white/5 border-b border-[var(--c-border)] dark:border-white/5">
-                    Skipped / failed rows
+                    Failed rows
                   </p>
                   <div className="max-h-48 overflow-y-auto">
                     <table className="w-full text-xs">
                       <tbody>
-                        {result.results.filter(r => r.status !== 'imported').map((r, i) => (
+                        {result.results.filter(r => r.status === 'failed').map((r, i) => (
                           <tr key={i} className="border-t border-[var(--c-border)] dark:border-white/5 first:border-0">
                             <td className="px-3 py-1.5 font-medium text-[var(--c-text)] w-1/3">{r.name || <span className="italic text-[var(--c-text-muted)]">—</span>}</td>
-                            <td className="px-3 py-1.5 w-24">
-                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                                r.status === 'skipped'
-                                  ? 'bg-gray-100 dark:bg-white/10 text-[var(--c-text-muted)]'
-                                  : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                              }`}>
-                                {r.status}
+                            <td className="px-3 py-1.5 w-16">
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
+                                failed
                               </span>
                             </td>
                             <td className="px-3 py-1.5 text-[var(--c-text-muted)]">{r.reason || ''}</td>

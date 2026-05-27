@@ -119,59 +119,61 @@ export async function POST(request) {
 
     // Load existing skills to detect name/slug conflicts
     const { data: existingSkills } = await supabase.from('skills').select('id, name, slug');
-    const existingSlugs = new Set((existingSkills || []).map(s => s.slug));
-    const existingNamesLower = new Map((existingSkills || []).map(s => [s.name.toLowerCase(), s.id]));
+    const existingSlugs    = new Set((existingSkills || []).map(s => s.slug));
+    const existingByNameLC = new Map((existingSkills || []).map(s => [s.name.toLowerCase(), s.id]));
 
-    const results = [];
-    const toInsert = [];
-    const topicsByName = new Map(); // skill name -> parsed topics array
+    const results    = [];
+    const toInsert   = [];
+    const toUpdate   = []; // { id, name, skillData }
+    const topicsByName = new Map(); // name (original case) → parsed topics
+
+    const now = new Date().toISOString();
 
     for (const row of rows) {
       const name = (row.name || '').trim();
-
       if (!name) {
         results.push({ name: '', status: 'failed', reason: 'name is required' });
         continue;
       }
 
-      if (existingNamesLower.has(name.toLowerCase())) {
-        results.push({ name, status: 'skipped', reason: 'already exists' });
-        continue;
-      }
-
-      // Generate unique slug
-      let base = (row.slug || '').trim() || toSlug(name);
-      let slug = base;
-      let suffix = 1;
-      while (existingSlugs.has(slug)) slug = `${base}-${suffix++}`;
-
-      // Reserve in-memory so duplicates within this batch are caught
-      existingSlugs.add(slug);
-      existingNamesLower.set(name.toLowerCase(), '__pending__');
-
-      toInsert.push({
-        name,
-        slug,
-        category: (row.category || '').trim() || null,
-        subcategory: (row.subcategory || '').trim() || null,
-        aliases: parseAliases(row.aliases),
-        description: (row.description || '').trim() || null,
-        icon_url: (row.icon_url || row.iconUrl || '').trim() || null,
-        is_active: parseBool(row.is_active ?? row.isActive, true),
-        is_trending: parseBool(row.is_trending ?? row.isTrending, false),
-        source: 'import',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-
       const topics = parseTopics(row.topics);
-      if (topics.length) topicsByName.set(name, topics);
+      const skillData = {
+        category:    (row.category || '').trim() || null,
+        subcategory: (row.subcategory || '').trim() || null,
+        aliases:     parseAliases(row.aliases),
+        description: (row.description || '').trim() || null,
+        icon_url:    (row.icon_url || row.iconUrl || '').trim() || null,
+        is_active:   parseBool(row.is_active ?? row.isActive, true),
+        is_trending: parseBool(row.is_trending ?? row.isTrending, false),
+        updated_at:  now,
+      };
 
-      results.push({ name, status: 'pending' });
+      if (existingByNameLC.has(name.toLowerCase())) {
+        // Existing skill — queue for update
+        const existingId = existingByNameLC.get(name.toLowerCase());
+        toUpdate.push({ id: existingId, name, skillData });
+        if (topics.length) topicsByName.set(name, topics);
+        results.push({ name, status: 'pending_update' });
+      } else {
+        // New skill — generate unique slug
+        let base = (row.slug || '').trim() || toSlug(name);
+        let slug = base;
+        let suffix = 1;
+        while (existingSlugs.has(slug)) slug = `${base}-${suffix++}`;
+        existingSlugs.add(slug);
+        existingByNameLC.set(name.toLowerCase(), '__pending__');
+
+        toInsert.push({ name, slug, ...skillData, source: 'import', created_at: now });
+        if (topics.length) topicsByName.set(name, topics);
+        results.push({ name, status: 'pending' });
+      }
     }
 
     let imported = 0;
+    let updated  = 0;
     let topicsImported = 0;
+
+    // ── INSERT new skills ──────────────────────────────────────────────────────
     if (toInsert.length) {
       const { data: inserted, error } = await supabase
         .from('skills').insert(toInsert).select('id, name');
@@ -181,52 +183,76 @@ export async function POST(request) {
           if (r.status === 'pending') { r.status = 'failed'; r.reason = error.message; }
         });
       } else {
-        const insertedNames = new Set((inserted || []).map(s => s.name.toLowerCase()));
+        const insertedMap = new Map((inserted || []).map(s => [s.name.toLowerCase(), s.id]));
         results.forEach(r => {
           if (r.status === 'pending') {
-            if (insertedNames.has(r.name.toLowerCase())) {
-              r.status = 'imported';
-              imported++;
-            } else {
-              r.status = 'failed';
-              r.reason = 'Insert did not complete';
-            }
+            if (insertedMap.has(r.name.toLowerCase())) { r.status = 'imported'; imported++; }
+            else { r.status = 'failed'; r.reason = 'Insert did not complete'; }
           }
         });
 
-        // Insert topics for successfully inserted skills
-        if (topicsByName.size > 0 && inserted?.length) {
-          const topicRows = [];
-          for (const { id, name: skillName } of inserted) {
-            const topics = topicsByName.get(skillName) || [];
-            topics.forEach((topic, i) => {
-              topicRows.push({
-                skill_id:    id,
-                name:        topic.name,
-                slug:        toSlug(topic.name),
-                description: topic.description || null,
-                sort_order:  i,
-                is_active:   true,
-              });
-            });
-          }
-          if (topicRows.length) {
-            const { data: insertedTopics, error: topicError } = await supabase
-              .from('skill_topics').insert(topicRows).select('id');
-            if (topicError) {
-              console.error('[skills/import] topic insert error:', topicError.message);
-            } else {
-              topicsImported = insertedTopics?.length ?? 0;
-            }
-          }
+        // Topics for newly inserted skills
+        const topicRows = [];
+        for (const [nameLower, id] of insertedMap) {
+          const origName = [...topicsByName.keys()].find(k => k.toLowerCase() === nameLower);
+          const topics = origName ? topicsByName.get(origName) : [];
+          topics.forEach((topic, i) => topicRows.push({
+            skill_id: id, name: topic.name, slug: toSlug(topic.name),
+            description: topic.description || null, sort_order: i, is_active: true,
+          }));
+        }
+        if (topicRows.length) {
+          const { data: t, error: te } = await supabase.from('skill_topics').insert(topicRows).select('id');
+          if (te) console.error('[skills/import] topic insert error:', te.message);
+          else topicsImported += t?.length ?? 0;
         }
       }
     }
 
-    const skipped = results.filter(r => r.status === 'skipped').length;
-    const failed  = results.filter(r => r.status === 'failed').length;
+    // ── UPDATE existing skills (parallel) ─────────────────────────────────────
+    if (toUpdate.length) {
+      const updateResults = await Promise.all(
+        toUpdate.map(async ({ id, name, skillData }) => {
+          const { error } = await supabase.from('skills').update(skillData).eq('id', id);
+          return { id, name, error };
+        })
+      );
 
-    return NextResponse.json({ imported, skipped, failed, topics_imported: topicsImported, results });
+      // Sync topics for each updated skill (delete old → insert new)
+      const topicSyncPromises = updateResults
+        .filter(r => !r.error)
+        .map(async ({ id, name }) => {
+          const topics = topicsByName.get(name) ?? [];
+          // Always replace topics when the skill is updated
+          await supabase.from('skill_topics').delete().eq('skill_id', id);
+          if (topics.length) {
+            const rows = topics.map((topic, i) => ({
+              skill_id: id, name: topic.name, slug: toSlug(topic.name),
+              description: topic.description || null, sort_order: i, is_active: true,
+            }));
+            const { data: t, error: te } = await supabase.from('skill_topics').insert(rows).select('id');
+            if (te) console.error('[skills/import] topic update error:', te.message);
+            else return t?.length ?? 0;
+          }
+          return 0;
+        });
+
+      const topicCounts = await Promise.all(topicSyncPromises);
+      topicsImported += topicCounts.reduce((a, b) => a + b, 0);
+
+      const errorMap = new Map(updateResults.map(r => [r.name.toLowerCase(), r.error?.message]));
+      results.forEach(r => {
+        if (r.status === 'pending_update') {
+          const err = errorMap.get(r.name.toLowerCase());
+          if (err) { r.status = 'failed'; r.reason = err; }
+          else { r.status = 'updated'; updated++; }
+        }
+      });
+    }
+
+    const failed = results.filter(r => r.status === 'failed').length;
+
+    return NextResponse.json({ imported, updated, failed, topics_imported: topicsImported, results });
   } catch (err) {
     if (err instanceof Response || err instanceof NextResponse) return err;
     console.error('[admin/skills/import POST]', err);
