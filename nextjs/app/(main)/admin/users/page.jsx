@@ -36,7 +36,28 @@ export default function AdminUsersPage() {
   const [page, setPage]     = useState(1);
   const [sort, setSort]     = useState('created_at');
   const [dir, setDir]       = useState('desc');
+  const [impersonating, setImpersonating] = useState(null);
+  const [impersonateError, setImpersonateError] = useState('');
   const limit = 20;
+
+  async function handleLoginAs(userId) {
+    setImpersonating(userId);
+    setImpersonateError('');
+    try {
+      const r = await fetch('/api/v1/admin/impersonate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Failed to start impersonation');
+      // Full page reload so the proxy cookie takes effect everywhere
+      window.location.href = '/builder';
+    } catch (err) {
+      setImpersonateError(err.message);
+      setImpersonating(null);
+    }
+  }
 
   const debouncedSearch = useDebounce(search);
 
@@ -80,6 +101,11 @@ export default function AdminUsersPage() {
           <h1 className="text-2xl font-bold font-heading text-gradient-primary">Users</h1>
           <p className="text-sm text-ds-textMuted mt-0.5">{total} total</p>
         </div>
+        {impersonateError && (
+          <span className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700/40 px-3 py-1.5 rounded-lg">
+            {impersonateError}
+          </span>
+        )}
         <Link href="/admin/invite"
           className="bg-primary text-white px-4 py-2 rounded-btn text-sm font-semibold hover:bg-primary/90 transition-colors">
           Invite Users
@@ -167,10 +193,21 @@ export default function AdminUsersPage() {
                         {fmtDate(u.created_at)}
                       </td>
                       <td className="px-4 py-3">
-                        <Link href={`/admin/users/${u.id}`}
-                          className="text-xs text-primary hover:underline font-medium">
-                          Edit
-                        </Link>
+                        <div className="flex items-center gap-3">
+                          <Link href={`/admin/users/${u.id}`}
+                            className="text-xs text-primary hover:underline font-medium">
+                            Edit
+                          </Link>
+                          {u.role !== 'admin' && u.status !== 'deactivated' && (
+                            <button
+                              onClick={() => handleLoginAs(u.id)}
+                              disabled={impersonating === u.id}
+                              className="text-xs text-amber-600 dark:text-amber-400 hover:underline font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {impersonating === u.id ? 'Loading…' : 'Login as'}
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))

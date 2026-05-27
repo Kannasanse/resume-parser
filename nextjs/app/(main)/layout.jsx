@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Sidebar from '@/components/nav/Sidebar';
 import TopBar from '@/components/nav/TopBar';
+import ImpersonationBanner from '@/components/impersonation/ImpersonationBanner';
 import { useAuth } from '@/hooks/useAuth';
 
 const WARN_AT   = 25 * 60 * 1000;
@@ -40,6 +41,7 @@ export default function MainLayout({ children }) {
 
       {/* Right: topbar + page content */}
       <div className="flex-1 flex flex-col min-w-0">
+        <ImpersonationBanner />
         <TopBar />
         <main id="layout-main" className="flex-1 overflow-auto">
           {children}
