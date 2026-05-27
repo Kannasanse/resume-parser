@@ -75,11 +75,16 @@ export async function requireUser(request) {
     throw Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Impersonation: if the real session is admin and proxy_uid cookie is set,
-  // serve data as the proxied user instead.
-  if (user.user_metadata?.role === 'admin') {
-    const proxyUid = request.cookies?.get?.('proxy_uid')?.value ?? null;
-    if (proxyUid) {
+  // Impersonation: if proxy_uid cookie is set and real user is an admin,
+  // serve all data as the proxied user instead.
+  const proxyUid = request.cookies?.get?.('proxy_uid')?.value ?? null;
+  if (proxyUid) {
+    const { data: realProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    if (realProfile?.role === 'admin') {
       const { data: proxyProfile } = await supabase
         .from('profiles')
         .select('id, role, status, first_name, last_name, email')

@@ -1,11 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 
 export default function ImpersonationBanner() {
   const [proxy, setProxy] = useState(null);
   const [exiting, setExiting] = useState(false);
-  const router = useRouter();
 
   useEffect(() => {
     fetch('/api/v1/admin/impersonate')
@@ -20,9 +18,8 @@ export default function ImpersonationBanner() {
     setExiting(true);
     try {
       await fetch('/api/v1/admin/impersonate', { method: 'DELETE' });
-      setProxy(null);
-      router.push('/admin/users');
-      router.refresh();
+      // Full reload so useAuth re-fetches the real admin profile
+      window.location.href = '/admin/users';
     } catch {
       setExiting(false);
     }

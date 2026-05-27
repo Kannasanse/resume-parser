@@ -222,7 +222,7 @@ function NavItem({ item, isActive, collapsed, showTooltip, onClick }) {
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isAdmin, displayName, initials, avatarUrl, signOut } = useAuth();
+  const { user, profile, isAdmin, displayName, initials, avatarUrl, signOut } = useAuth();
   const [dark, toggleTheme] = useTheme();
   const creditBalance = useCreditBalance(isAdmin);
 
@@ -392,7 +392,7 @@ export default function Sidebar() {
               <>
                 <div className="flex-1 min-w-0 text-left">
                   <p className="text-[13px] font-medium text-[#2C2C2A] dark:text-[#E8EFF7] truncate leading-snug">{displayName}</p>
-                  <p className="text-[11px] text-[#6B7280] dark:text-[#8BA3C1] truncate">{user?.email}</p>
+                  <p className="text-[11px] text-[#6B7280] dark:text-[#8BA3C1] truncate">{profile?.email || user?.email}</p>
                 </div>
                 <span className={`text-[#6B7280] dark:text-[#8BA3C1] transition-transform duration-150 ${dropdownOpen ? '-rotate-90' : ''}`}>
                   <NavIc name="chevronDown" size={14} />
@@ -403,7 +403,7 @@ export default function Sidebar() {
 
           {dropdownOpen && user && (
             <UserDropdown
-              user={user}
+              user={{ ...user, email: profile?.email || user?.email }}
               displayName={displayName}
               initials={initials}
               avatarUrl={avatarUrl}
