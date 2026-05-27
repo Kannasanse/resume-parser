@@ -24,6 +24,16 @@ function parseAliases(val) {
   return parts.length ? parts : null;
 }
 
+function parseTopics(val) {
+  if (!val) return [];
+  if (Array.isArray(val)) {
+    return val
+      .map(t => (typeof t === 'string' ? { name: t.trim() } : t))
+      .filter(t => t && (t.name || '').trim());
+  }
+  return String(val).split(/[|;]/).map(t => t.trim()).filter(Boolean).map(t => ({ name: t }));
+}
+
 function splitCSVLine(line) {
   const result = [];
   let current = '';
@@ -114,6 +124,7 @@ export async function POST(request) {
 
     const results = [];
     const toInsert = [];
+    const topicsByName = new Map(); // skill name -> parsed topics array
 
     for (const row of rows) {
       const name = (row.name || '').trim();
@@ -152,10 +163,15 @@ export async function POST(request) {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
+
+      const topics = parseTopics(row.topics);
+      if (topics.length) topicsByName.set(name, topics);
+
       results.push({ name, status: 'pending' });
     }
 
     let imported = 0;
+    let topicsImported = 0;
     if (toInsert.length) {
       const { data: inserted, error } = await supabase
         .from('skills').insert(toInsert).select('id, name');
@@ -177,13 +193,40 @@ export async function POST(request) {
             }
           }
         });
+
+        // Insert topics for successfully inserted skills
+        if (topicsByName.size > 0 && inserted?.length) {
+          const topicRows = [];
+          for (const { id, name: skillName } of inserted) {
+            const topics = topicsByName.get(skillName) || [];
+            topics.forEach((topic, i) => {
+              topicRows.push({
+                skill_id:    id,
+                name:        topic.name,
+                slug:        toSlug(topic.name),
+                description: topic.description || null,
+                sort_order:  i,
+                is_active:   true,
+              });
+            });
+          }
+          if (topicRows.length) {
+            const { data: insertedTopics, error: topicError } = await supabase
+              .from('skill_topics').insert(topicRows).select('id');
+            if (topicError) {
+              console.error('[skills/import] topic insert error:', topicError.message);
+            } else {
+              topicsImported = insertedTopics?.length ?? 0;
+            }
+          }
+        }
       }
     }
 
     const skipped = results.filter(r => r.status === 'skipped').length;
     const failed  = results.filter(r => r.status === 'failed').length;
 
-    return NextResponse.json({ imported, skipped, failed, results });
+    return NextResponse.json({ imported, skipped, failed, topics_imported: topicsImported, results });
   } catch (err) {
     if (err instanceof Response || err instanceof NextResponse) return err;
     console.error('[admin/skills/import POST]', err);

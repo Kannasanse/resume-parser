@@ -54,18 +54,18 @@ function downloadSample(type) {
   let content, filename, mime;
   if (type === 'csv') {
     content = [
-      'name,slug,category,subcategory,aliases,description,is_active,is_trending',
-      'React,react,Frontend,JavaScript,"ReactJS|React.js",JavaScript UI library,true,true',
-      'Python,python,Programming,Backend,"Python3|py",General-purpose language,true,true',
-      'Docker,docker,DevOps,Containers,,Container platform,true,false',
+      'name,slug,category,subcategory,aliases,description,is_active,is_trending,topics',
+      'React,react,Frontend,JavaScript,"ReactJS|React.js",JavaScript UI library,true,true,"Hooks|Context API|JSX|State Management"',
+      'Python,python,Programming,Backend,"Python3|py",General-purpose language,true,true,"Data Types|Functions|OOP|Modules|Error Handling"',
+      'Docker,docker,DevOps,Containers,,Container platform,true,false,"Images|Containers|Volumes|Networking|Compose"',
     ].join('\n');
     filename = 'skills_sample.csv';
     mime = 'text/csv';
   } else {
     content = JSON.stringify([
-      { name: 'React', slug: 'react', category: 'Frontend', subcategory: 'JavaScript', aliases: ['ReactJS', 'React.js'], description: 'JavaScript UI library', is_active: true, is_trending: true },
-      { name: 'Python', slug: 'python', category: 'Programming', subcategory: 'Backend', aliases: ['Python3', 'py'], description: 'General-purpose language', is_active: true, is_trending: true },
-      { name: 'Docker', slug: 'docker', category: 'DevOps', subcategory: 'Containers', aliases: [], description: 'Container platform', is_active: true, is_trending: false },
+      { name: 'React', slug: 'react', category: 'Frontend', subcategory: 'JavaScript', aliases: ['ReactJS', 'React.js'], description: 'JavaScript UI library', is_active: true, is_trending: true, topics: ['Hooks', 'Context API', 'JSX', 'State Management'] },
+      { name: 'Python', slug: 'python', category: 'Programming', subcategory: 'Backend', aliases: ['Python3', 'py'], description: 'General-purpose language', is_active: true, is_trending: true, topics: ['Data Types', 'Functions', 'OOP', 'Modules', 'Error Handling'] },
+      { name: 'Docker', slug: 'docker', category: 'DevOps', subcategory: 'Containers', aliases: [], description: 'Container platform', is_active: true, is_trending: false, topics: ['Images', 'Containers', 'Volumes', 'Networking', 'Compose'] },
     ], null, 2);
     filename = 'skills_sample.json';
     mime = 'application/json';
@@ -178,18 +178,20 @@ export default function ImportSkillsModal({ open, onClose, onImported }) {
                 <code className="font-mono bg-black/5 dark:bg-white/10 px-1 rounded">aliases</code>{' '}
                 <code className="font-mono bg-black/5 dark:bg-white/10 px-1 rounded">description</code>{' '}
                 <code className="font-mono bg-black/5 dark:bg-white/10 px-1 rounded">is_active</code>{' '}
-                <code className="font-mono bg-black/5 dark:bg-white/10 px-1 rounded">is_trending</code>
+                <code className="font-mono bg-black/5 dark:bg-white/10 px-1 rounded">is_trending</code>{' '}
+                <code className="font-mono bg-black/5 dark:bg-white/10 px-1 rounded">topics</code>
               </p>
               <p className="text-[var(--c-text-muted)]">
-                Aliases column: pipe-separated values, e.g.{' '}
-                <code className="font-mono bg-black/5 dark:bg-white/10 px-1 rounded">ReactJS|React.js</code>
+                Aliases &amp; Topics columns: pipe-separated values, e.g.{' '}
+                <code className="font-mono bg-black/5 dark:bg-white/10 px-1 rounded">Hooks|JSX|State Management</code>
               </p>
               <p className="text-[var(--c-text-muted)]">
                 <span className="font-medium text-[var(--c-text)]">JSON</span> — array{' '}
                 <code className="font-mono bg-black/5 dark:bg-white/10 px-1 rounded">[{'{'}...{'}'}]</code>
                 {' '}or{' '}
                 <code className="font-mono bg-black/5 dark:bg-white/10 px-1 rounded">{'{"skills":[...]}'}</code>
-                {' '}with the same fields
+                {'; '}
+                <code className="font-mono bg-black/5 dark:bg-white/10 px-1 rounded">topics</code> as a string array
               </p>
               <p className="text-[var(--c-text-muted)] pt-1">* required — rows missing name are skipped</p>
               <div className="flex items-center gap-3 pt-1">
@@ -284,12 +286,15 @@ export default function ImportSkillsModal({ open, onClose, onImported }) {
                         <th className="text-left px-3 py-2 font-semibold text-[var(--c-text-muted)] w-8">#</th>
                         <th className="text-left px-3 py-2 font-semibold text-[var(--c-text-muted)]">Name</th>
                         <th className="text-left px-3 py-2 font-semibold text-[var(--c-text-muted)]">Category</th>
-                        <th className="text-left px-3 py-2 font-semibold text-[var(--c-text-muted)]">Aliases</th>
+                        <th className="text-left px-3 py-2 font-semibold text-[var(--c-text-muted)]">Topics</th>
                       </tr>
                     </thead>
                     <tbody>
                       {rows.slice(0, 200).map((row, i) => {
                         const hasName = (row.name || '').trim();
+                        const topicList = Array.isArray(row.topics)
+                          ? row.topics.join(', ')
+                          : (row.topics || '').replace(/[|;]/g, ', ') || '—';
                         return (
                           <tr
                             key={i}
@@ -303,8 +308,8 @@ export default function ImportSkillsModal({ open, onClose, onImported }) {
                               }
                             </td>
                             <td className="px-3 py-1.5 text-[var(--c-text-muted)]">{row.category || '—'}</td>
-                            <td className="px-3 py-1.5 text-[var(--c-text-muted)] max-w-[12rem] truncate">
-                              {row.aliases || '—'}
+                            <td className="px-3 py-1.5 text-[var(--c-text-muted)] max-w-[14rem] truncate">
+                              {topicList}
                             </td>
                           </tr>
                         );
