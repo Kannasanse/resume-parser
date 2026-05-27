@@ -3,7 +3,7 @@ import supabase from '@/lib/supabase.js';
 
 export const dynamic = 'force-dynamic';
 
-const SELECT = 'id, name, slug, category, aliases, description, selection_count, is_trending';
+const SELECT = 'id, name, slug, category, aliases, description, selection_count, is_trending, source';
 
 // GET /api/v1/skills/search?q=&limit=20&category=all
 export async function GET(request) {
@@ -22,8 +22,11 @@ export async function GET(request) {
       if (category !== 'all') query = query.eq('category', category);
       const { data, error } = await query;
       if (error) throw error;
+      const all = (data || [])
+        .map(s => ({ ...s, matchedAlias: null }))
+        .sort((a, b) => (a.source === 'esco' ? 1 : 0) - (b.source === 'esco' ? 1 : 0));
       return NextResponse.json({
-        skills: (data || []).map(s => ({ ...s, matchedAlias: null })),
+        skills: all,
         source: 'all', hasExactMatch: false, searchTerm: '',
       });
     }
@@ -87,11 +90,14 @@ export async function GET(request) {
     ];
 
     const seen = new Set();
-    const deduped = combined.filter(s => {
-      if (seen.has(s.id)) return false;
-      seen.add(s.id);
-      return true;
-    }).slice(0, limit);
+    const deduped = combined
+      .filter(s => {
+        if (seen.has(s.id)) return false;
+        seen.add(s.id);
+        return true;
+      })
+      .sort((a, b) => (a.source === 'esco' ? 1 : 0) - (b.source === 'esco' ? 1 : 0))
+      .slice(0, limit);
 
     const hasExactMatch = deduped.some(s => s.name.toLowerCase() === qLower);
 
