@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Questionnaire from '@/components/career-map/Questionnaire';
-import SkillSelector from '@/components/skills/SkillSelector';
+import SkillLookupInput from '@/components/skills/SkillLookupInput';
 
 // ── Step indicator ──────────────────────────────────────────────────────────
 function StepDots({ current }) {
@@ -225,7 +225,7 @@ export default function CourseCreationModal({ open, onClose, onCreated }) {
       const r = await fetch('/api/v1/courses/create-from-skills', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ selectedSkills }),
+        body: JSON.stringify({ selectedSkills: selectedSkills.map(s => s.name) }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'Failed to start');
@@ -250,11 +250,12 @@ export default function CourseCreationModal({ open, onClose, onCreated }) {
     setInternalStep('generating');
     setError('');
 
-    const skillTitle = selectedSkills.length === 1
-      ? `${selectedSkills[0]} Course`
-      : selectedSkills.length === 2
-      ? `${selectedSkills[0]} & ${selectedSkills[1]} Course`
-      : `${selectedSkills.slice(0, 2).join(', ')} & More Course`;
+    const skillNames = selectedSkills.map(s => s.name);
+    const skillTitle = skillNames.length === 1
+      ? `${skillNames[0]} Course`
+      : skillNames.length === 2
+      ? `${skillNames[0]} & ${skillNames[1]} Course`
+      : `${skillNames.slice(0, 2).join(', ')} & More Course`;
 
     try {
       const r = await fetch('/api/v1/career-map/generate-study-plan', {
@@ -263,11 +264,11 @@ export default function CourseCreationModal({ open, onClose, onCreated }) {
         body: JSON.stringify({
           sessionId,
           creation_mode: 'skills',
-          selectedSkills,
+          selectedSkills: skillNames,
           questionnaireAnswers: qAnswers,
           targetRoleTitle: skillTitle,
           targetRoleId: null,
-          missingSkills: selectedSkills,
+          missingSkills: skillNames,
           preferences,
         }),
       });
@@ -333,11 +334,11 @@ export default function CourseCreationModal({ open, onClose, onCreated }) {
                 <p className="text-[14px] text-[#6B7280] dark:text-[#8BA3C1] mt-1">Choose skills to master. We'll build a personalised course around them.</p>
               </div>
 
-              <SkillSelector
-                value={selectedSkills}
+              <SkillLookupInput
+                selectedSkills={selectedSkills}
                 onChange={setSelectedSkills}
                 maxSkills={8}
-                context="course_creation"
+                placeholder="Search skills e.g. Python, Docker, React…"
               />
 
               <button
@@ -356,7 +357,7 @@ export default function CourseCreationModal({ open, onClose, onCreated }) {
             <div>
               <div className="mb-4">
                 <h2 className="text-xl font-bold text-[#2C2C2A] dark:text-[#E8EFF7]">A few quick questions</h2>
-                <p className="text-[14px] text-[#6B7280] dark:text-[#8BA3C1] mt-1">Help us personalise your {selectedSkills.slice(0,2).join(' & ')} course.</p>
+                <p className="text-[14px] text-[#6B7280] dark:text-[#8BA3C1] mt-1">Help us personalise your {selectedSkills.slice(0,2).map(s => s.name).join(' & ')} course.</p>
               </div>
               <Questionnaire
                 mode="skills"
