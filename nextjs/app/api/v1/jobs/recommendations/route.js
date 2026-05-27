@@ -11,11 +11,13 @@ export async function GET() {
     const user = await getAuthUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('headline, city, country, skills')
       .eq('id', user.id)
       .single();
+
+    console.log('[jobs/recommendations] profile:', JSON.stringify(profile), 'error:', profileError?.message);
 
     if (!profile?.headline || !profile?.city) {
       return NextResponse.json({

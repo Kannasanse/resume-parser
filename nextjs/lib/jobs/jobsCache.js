@@ -53,7 +53,7 @@ export async function getJobsWithCache({ query, jobTitle, city, country = 'india
     jobs = await fetchFromJSearch(query, { numPages: 1, datePosted: 'month' });
     await logApiCall(query, jobs.length);
   } catch (err) {
-    console.error('[JSearch] API call failed:', err);
+    console.error('[JSearch] API call failed:', err.message, err.stack);
     // Fall back to any stale entry rather than returning nothing
     const { data: stale } = await supabase
       .from('job_listings_cache')

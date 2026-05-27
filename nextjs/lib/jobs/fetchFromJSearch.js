@@ -34,7 +34,15 @@ export async function fetchFromJSearch(query, options = {}) {
   console.log('[JSearch] Response keys:', Object.keys(data), '| count:', Array.isArray(data.data) ? data.data.length : 'n/a');
 
   const jobs = data.data ?? data.jobs ?? data.results ?? [];
-  return jobs.map(normaliseJob);
+  console.log('[JSearch] Raw jobs count:', jobs.length);
+  return jobs.map((job, i) => {
+    try {
+      return normaliseJob(job);
+    } catch (e) {
+      console.error(`[JSearch] normaliseJob failed at index ${i}:`, e.message, JSON.stringify(job).slice(0, 200));
+      return null;
+    }
+  }).filter(Boolean);
 }
 
 function normaliseJob(job) {
