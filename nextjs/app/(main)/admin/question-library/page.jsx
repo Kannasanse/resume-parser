@@ -619,6 +619,34 @@ function AIReviewCard({ question, accepted, onToggle, onEdit }) {
 }
 
 // ─── Import Modal ─────────────────────────────────────────────────────────────
+function downloadQuestionSample(type) {
+  let content, filename, mime;
+  if (type === 'csv') {
+    content = [
+      'question_text,question_type,option_a,option_b,option_c,option_d,correct_answer,explanation,skill,topic,difficulty',
+      '"What does HTML stand for?",mcq,"Hyper Text Markup Language","High Tech Modern Language","Hyper Transfer Markup Language","Hyperlink and Text Markup Language",a,"HTML stands for Hyper Text Markup Language",HTML,Basics,easy',
+      '"JavaScript is a compiled language.",true_false,,,,,false,"JavaScript is interpreted, not compiled",JavaScript,Fundamentals,easy',
+      '"Explain the difference between == and === in JavaScript.",short_answer,,,,,,,JavaScript,Operators,medium',
+    ].join('\n');
+    filename = 'questions_sample.csv';
+    mime = 'text/csv';
+  } else {
+    content = JSON.stringify([
+      { question_text: 'What does HTML stand for?', question_type: 'mcq', option_a: 'Hyper Text Markup Language', option_b: 'High Tech Modern Language', option_c: 'Hyper Transfer Markup Language', option_d: 'Hyperlink and Text Markup Language', correct_answer: 'a', explanation: 'HTML stands for Hyper Text Markup Language', skill: 'HTML', topic: 'Basics', difficulty: 'easy' },
+      { question_text: 'JavaScript is a compiled language.', question_type: 'true_false', correct_answer: 'false', explanation: 'JavaScript is interpreted, not compiled', skill: 'JavaScript', topic: 'Fundamentals', difficulty: 'easy' },
+      { question_text: 'Explain the difference between == and === in JavaScript.', question_type: 'short_answer', skill: 'JavaScript', topic: 'Operators', difficulty: 'medium' },
+    ], null, 2);
+    filename = 'questions_sample.json';
+    mime = 'application/json';
+  }
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
 function ImportModal({ onClose, onImported }) {
   const [tab, setTab]           = useState('csv');
   const [csvRows, setCsvRows]   = useState(null);
@@ -743,9 +771,25 @@ function ImportModal({ onClose, onImported }) {
                 <p style={{ fontSize:14, color:MUTED, margin:0, textAlign:'center' }}>Drag a CSV file here or click to browse</p>
                 <input ref={fileRef} type="file" accept=".csv" style={{ display:'none' }} onChange={e=>handleFile(e.target.files[0])} />
               </div>
-              <p style={{ fontSize:12, color:PRIMARY, margin:0, cursor:'pointer', textDecoration:'underline' }}>
-                Download CSV template →
-              </p>
+              <div style={{ display:'flex', alignItems:'center', gap:16, flexWrap:'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => downloadQuestionSample('csv')}
+                  style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:12, color:PRIMARY, background:'none', border:'none', cursor:'pointer', textDecoration:'underline', padding:0 }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Download sample CSV
+                </button>
+                <span style={{ color:BORDER, fontSize:12 }}>|</span>
+                <button
+                  type="button"
+                  onClick={() => downloadQuestionSample('json')}
+                  style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:12, color:PRIMARY, background:'none', border:'none', cursor:'pointer', textDecoration:'underline', padding:0 }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Download sample JSON
+                </button>
+              </div>
               <p style={{ fontSize:11, color:MUTED, margin:0 }}>
                 Expected columns: {CSV_COLS.join(', ')}
               </p>
@@ -758,9 +802,19 @@ function ImportModal({ onClose, onImported }) {
                 placeholder='[{"question_text":"…","question_type":"mcq",…}]'
                 style={{ width:'100%', border:`1px solid ${BORDER}`, borderRadius:10, padding:'10px 12px', fontSize:13, outline:'none', resize:'vertical', boxSizing:'border-box' }} />
               {jsonError && <p style={{ fontSize:12, color:DANGER, margin:0 }}>{jsonError}</p>}
-              <button onClick={validateJSON} style={{ alignSelf:'flex-start', border:`1px solid ${BORDER}`, borderRadius:8, padding:'7px 16px', fontSize:13, color:TEXT, background:'white', cursor:'pointer' }}>
-                Validate JSON
-              </button>
+              <div style={{ display:'flex', alignItems:'center', gap:16, flexWrap:'wrap' }}>
+                <button onClick={validateJSON} style={{ alignSelf:'flex-start', border:`1px solid ${BORDER}`, borderRadius:8, padding:'7px 16px', fontSize:13, color:TEXT, background:'white', cursor:'pointer' }}>
+                  Validate JSON
+                </button>
+                <button
+                  type="button"
+                  onClick={() => downloadQuestionSample('json')}
+                  style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:12, color:PRIMARY, background:'none', border:'none', cursor:'pointer', textDecoration:'underline', padding:0 }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Download sample JSON
+                </button>
+              </div>
             </>
           )}
 

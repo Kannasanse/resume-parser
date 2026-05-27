@@ -48,6 +48,36 @@ function parseFile(filename, text) {
   return parseCSV(text);
 }
 
+// ── Sample file download ──────────────────────────────────────────────────────
+
+function downloadSample(type) {
+  let content, filename, mime;
+  if (type === 'csv') {
+    content = [
+      'name,slug,category,subcategory,aliases,description,is_active,is_trending',
+      'React,react,Frontend,JavaScript,"ReactJS|React.js",JavaScript UI library,true,true',
+      'Python,python,Programming,Backend,"Python3|py",General-purpose language,true,true',
+      'Docker,docker,DevOps,Containers,,Container platform,true,false',
+    ].join('\n');
+    filename = 'skills_sample.csv';
+    mime = 'text/csv';
+  } else {
+    content = JSON.stringify([
+      { name: 'React', slug: 'react', category: 'Frontend', subcategory: 'JavaScript', aliases: ['ReactJS', 'React.js'], description: 'JavaScript UI library', is_active: true, is_trending: true },
+      { name: 'Python', slug: 'python', category: 'Programming', subcategory: 'Backend', aliases: ['Python3', 'py'], description: 'General-purpose language', is_active: true, is_trending: true },
+      { name: 'Docker', slug: 'docker', category: 'DevOps', subcategory: 'Containers', aliases: [], description: 'Container platform', is_active: true, is_trending: false },
+    ], null, 2);
+    filename = 'skills_sample.json';
+    mime = 'application/json';
+  }
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ImportSkillsModal({ open, onClose, onImported }) {
@@ -162,6 +192,25 @@ export default function ImportSkillsModal({ open, onClose, onImported }) {
                 {' '}with the same fields
               </p>
               <p className="text-[var(--c-text-muted)] pt-1">* required — rows missing name are skipped</p>
+              <div className="flex items-center gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => downloadSample('csv')}
+                  className="inline-flex items-center gap-1.5 text-xs text-[#185FA5] dark:text-[#5B9FD4] hover:underline"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Download sample CSV
+                </button>
+                <span className="text-[var(--c-border)] dark:text-white/20">|</span>
+                <button
+                  type="button"
+                  onClick={() => downloadSample('json')}
+                  className="inline-flex items-center gap-1.5 text-xs text-[#185FA5] dark:text-[#5B9FD4] hover:underline"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Download sample JSON
+                </button>
+              </div>
             </div>
           )}
 
