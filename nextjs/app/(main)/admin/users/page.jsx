@@ -17,6 +17,13 @@ function fmtDate(iso) {
   return isNaN(d.getTime()) ? '—' : d.toLocaleDateString();
 }
 
+function fmtDateTime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
 function useDebounce(value, ms = 300) {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -152,6 +159,10 @@ export default function AdminUsersPage() {
                   onClick={() => toggleSort('created_at')}>
                   Joined <SortIcon col="created_at" />
                 </th>
+                <th className="hidden md:table-cell text-left px-4 py-3 text-xs font-semibold text-ds-textMuted uppercase tracking-wide cursor-pointer select-none"
+                  onClick={() => toggleSort('last_login_at')}>
+                  Last Login <SortIcon col="last_login_at" />
+                </th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -164,13 +175,14 @@ export default function AdminUsersPage() {
                       <td className="px-4 py-3"><Sk className="h-5 w-12 rounded-full" /></td>
                       <td className="px-4 py-3"><Sk className="h-5 w-16 rounded-full" /></td>
                       <td className="hidden sm:table-cell px-4 py-3"><Sk className="h-4 w-20" /></td>
+                      <td className="hidden md:table-cell px-4 py-3"><Sk className="h-4 w-28" /></td>
                       <td className="px-4 py-3"><Sk className="h-4 w-8" /></td>
                     </tr>
                   ))
                 : users.length === 0
                   ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-sm text-ds-textMuted">
+                      <td colSpan={7} className="px-4 py-8 text-center text-sm text-ds-textMuted">
                         No users found.
                       </td>
                     </tr>
@@ -191,6 +203,9 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="hidden sm:table-cell px-4 py-3 text-ds-textMuted text-xs">
                         {fmtDate(u.created_at)}
+                      </td>
+                      <td className="hidden md:table-cell px-4 py-3 text-ds-textMuted text-xs">
+                        {fmtDateTime(u.last_login_at)}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
