@@ -14,6 +14,7 @@ export async function fetchFromJSearch(query, options = {}) {
     headers: {
       'X-API-Key': process.env.JSEARCH_API_KEY,
     },
+    cache: 'no-store',
   });
 
   const rawText = await response.text();
