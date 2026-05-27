@@ -19,6 +19,5 @@ export async function checkQuota() {
 export async function logApiCall(query, resultCount) {
   await supabase
     .from('jsearch_quota_log')
-    .insert({ query, result_count: resultCount })
-    .catch(() => {});
+    .insert({ query, result_count: resultCount });
 }

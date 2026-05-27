@@ -9,7 +9,7 @@ const PUBLIC_PATHS     = [...MARKETING_PATHS, ...AUTH_PAGES];
 const ADMIN_ONLY_PATHS = ['/resumes', '/jobs', '/upload', '/admin', '/home/preview'];
 const ADMIN_ONLY_API   = ['/api/v1/resumes', '/api/v1/jobs', '/api/v1/admin', '/api/v1/organizations'];
 // Job recommendation routes under /api/v1/jobs/ that are user-facing (not admin-only)
-const USER_JOB_API     = ['/api/v1/jobs/recommendations', '/api/v1/jobs/interact', '/api/v1/jobs/saved'];
+const USER_JOB_API     = ['/api/v1/jobs/recommendations', '/api/v1/jobs/interact', '/api/v1/jobs/saved', '/api/v1/jobs/test'];
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
@@ -42,7 +42,7 @@ export async function middleware(request) {
   const isPublicApiAuth = pathname.startsWith('/api/v1/auth/');
 
   // Public test-taking pages and their API routes
-  const isPublicTest = pathname.startsWith('/test/') || pathname.startsWith('/api/v1/test/');
+  const isPublicTest = pathname.startsWith('/test/') || pathname.startsWith('/api/v1/test/') || pathname === '/api/v1/jobs/test';
 
   if (isPublicShare || isPublicApiAuth || isPublicTest) return supabaseResponse;
 

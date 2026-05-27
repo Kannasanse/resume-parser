@@ -1,47 +1,27 @@
 import { NextResponse } from 'next/server';
+import { getJobsWithCache } from '@/lib/jobs/jobsCache.js';
+import { buildJobQuery } from '@/lib/jobs/buildJobQuery.js';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const apiKey = process.env.JSEARCH_API_KEY;
-
-  if (!apiKey) {
-    return NextResponse.json({ error: 'JSEARCH_API_KEY not set in env' }, { status: 500 });
-  }
-
-  const params = new URLSearchParams({
-    query: 'Business Analyst in Chennai, India',
-    page: '1',
-    num_pages: '1',
-    date_posted: 'month',
-    country: 'in',
-    language: 'en',
-  });
-
   try {
-    const response = await fetch(
-      `https://api.openwebninja.com/jsearch/search?${params}`,
-      {
-        headers: { 'X-API-Key': apiKey },
-        cache: 'no-store',
-      }
-    );
+    const { query, jobTitle, city, country } = buildJobQuery({
+      headline: 'Business Analyst',
+      city: 'Chennai',
+      country: 'India',
+    });
 
-    const text = await response.text();
-
-    let data;
-    try { data = JSON.parse(text); } catch {
-      return NextResponse.json({ error: 'non-json', raw: text.slice(0, 500) });
-    }
+    const { jobs, fromCache, cachedAt, quotaExhausted } = await getJobsWithCache({ query, jobTitle, city, country });
 
     return NextResponse.json({
-      http_status:  response.status,
-      api_status:   data.status,
-      jobs_count:   (data.data ?? []).length,
-      first_job:    data.data?.[0] ? { job_id: data.data[0].job_id, title: data.data[0].job_title } : null,
-      key_preview:  apiKey.slice(0, 8) + '...',
+      jobs_count:       jobs.length,
+      from_cache:       fromCache,
+      cached_at:        cachedAt,
+      quota_exhausted:  quotaExhausted ?? false,
+      first_job_title:  jobs[0]?.title ?? null,
     });
   } catch (err) {
-    return NextResponse.json({ error: err.message });
+    return NextResponse.json({ error: err.message, stack: err.stack?.split('\n').slice(0, 6) });
   }
 }
