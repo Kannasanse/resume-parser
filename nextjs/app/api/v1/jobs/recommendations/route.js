@@ -1,23 +1,20 @@
 import { NextResponse } from 'next/server';
 import supabase from '@/lib/supabase.js';
-import { getAuthUser } from '@/lib/authUtils.js';
+import { requireUser } from '@/lib/auth-helpers.js';
 import { buildJobQuery } from '@/lib/jobs/buildJobQuery.js';
 import { getJobsWithCache } from '@/lib/jobs/jobsCache.js';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request) {
   try {
-    const user = await getAuthUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { user: effectiveUser } = await requireUser(request);
 
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile } = await supabase
       .from('profiles')
       .select('headline, city, country, skills')
-      .eq('id', user.id)
+      .eq('id', effectiveUser.id)
       .single();
-
-    console.log('[jobs/recommendations] profile:', JSON.stringify(profile), 'error:', profileError?.message);
 
     if (!profile?.headline || !profile?.city) {
       return NextResponse.json({
@@ -45,7 +42,7 @@ export async function GET() {
     const { data: dismissed } = await supabase
       .from('user_job_interactions')
       .select('job_id')
-      .eq('user_id', user.id)
+      .eq('user_id', effectiveUser.id)
       .eq('action', 'dismissed');
 
     const dismissedIds = new Set((dismissed ?? []).map(d => d.job_id));

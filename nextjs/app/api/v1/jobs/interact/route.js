@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import supabase from '@/lib/supabase.js';
-import { getAuthUser } from '@/lib/authUtils.js';
+import { requireUser } from '@/lib/auth-helpers.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,8 +8,7 @@ const VALID_ACTIONS = new Set(['viewed', 'applied', 'saved', 'dismissed']);
 
 export async function POST(request) {
   try {
-    const user = await getAuthUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { user: effectiveUser } = await requireUser(request);
     const body = await request.json().catch(() => ({}));
     const { job_id, job_title, company, action, cache_key } = body;
 
@@ -21,7 +20,7 @@ export async function POST(request) {
     }
 
     await supabase.from('user_job_interactions').insert({
-      user_id:   user.id,
+      user_id:   effectiveUser.id,
       job_id,
       job_title: job_title ?? '',
       company:   company ?? '',
