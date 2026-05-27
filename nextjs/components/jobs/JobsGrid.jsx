@@ -40,13 +40,32 @@ export default function JobsGrid() {
   const [filters, setFilters]         = useState({ type: '', date: '' });
   const [visibleCount, setVisibleCount] = useState(10);
 
-  // Load profile on mount (to display search context before triggering)
+  // On mount: load profile + silently check for cached jobs
   useEffect(() => {
     fetch('/api/v1/profile')
       .then(r => r.json())
       .then(d => setProfile(d.data ?? null))
       .catch(() => {})
       .finally(() => setProfileLoading(false));
+
+    // Auto-restore from cache if available — no spinner, silent
+    fetch('/api/v1/jobs/recommendations')
+      .then(r => r.json())
+      .then(d => {
+        if (d.jobs?.length > 0) {
+          setAllJobs(d.jobs);
+          setReason(d.reason ?? null);
+          setMessage(d.message ?? '');
+          setMeta({
+            city:           d.location?.city,
+            cachedAt:       d.cached_at,
+            query:          d.query_used,
+            quotaExhausted: d.quota_exhausted,
+          });
+          setTriggered(true);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const fetchJobs = useCallback(() => {
