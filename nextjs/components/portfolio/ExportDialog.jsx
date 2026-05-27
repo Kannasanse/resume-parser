@@ -126,7 +126,7 @@ export default function ExportDialog({ portfolioId, portfolio, isOpen, onClose }
             onClick={() => setSelectedCard('pdf')}
             className={`text-left p-4 rounded-lg border transition-colors ${
               selectedCard === 'pdf'
-                ? 'border-[#185FA5] bg-blue-50'
+                ? 'border-[#185FA5] bg-blue-50 dark:bg-[rgba(24,95,165,0.18)]'
                 : 'border-ds-border bg-ds-bg hover:border-[#185FA5]/50'
             }`}
           >
@@ -147,7 +147,7 @@ export default function ExportDialog({ portfolioId, portfolio, isOpen, onClose }
             onClick={() => setSelectedCard('share')}
             className={`text-left p-4 rounded-lg border transition-colors ${
               selectedCard === 'share'
-                ? 'border-[#185FA5] bg-blue-50'
+                ? 'border-[#185FA5] bg-blue-50 dark:bg-[rgba(24,95,165,0.18)]'
                 : 'border-ds-border bg-ds-bg hover:border-[#185FA5]/50'
             }`}
           >
@@ -262,7 +262,7 @@ export default function ExportDialog({ portfolioId, portfolio, isOpen, onClose }
               className={`w-full py-2.5 text-sm font-medium rounded-lg border transition-colors ${
                 copied
                   ? 'border-ds-success bg-ds-successLight text-ds-success'
-                  : 'border-[#185FA5] text-[#185FA5] hover:bg-blue-50'
+                  : 'border-[#185FA5] text-[#185FA5] hover:bg-blue-50 dark:hover:bg-[rgba(24,95,165,0.15)]'
               }`}
             >
               {copied ? 'Copied!' : 'Copy Link'}

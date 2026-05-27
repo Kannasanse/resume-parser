@@ -37,7 +37,7 @@ export default function LearningRoadmapDialog({ sessionId, roleId, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-[#111F35] rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--c-border)]">
           <div>
@@ -137,7 +137,7 @@ export default function LearningRoadmapDialog({ sessionId, roleId, onClose }) {
         <div className="px-6 py-4 border-t border-[var(--c-border)]">
           <button
             onClick={onClose}
-            className="w-full border border-[var(--c-border)] text-[var(--c-text)] text-sm font-medium py-2 rounded-lg hover:bg-gray-50 transition-colors"
+            className="w-full border border-[var(--c-border)] text-[var(--c-text)] text-sm font-medium py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
           >
             Close
           </button>
