@@ -60,6 +60,37 @@ const PDF_TOOLS = [
   },
 ];
 
+const IMAGE_TOOLS = [
+  {
+    href: '/utilities/images/compress',
+    name: 'Compress Image',
+    description: 'Reduce image file size while preserving visual quality.',
+    icon: <CompressImgIcon />,
+    gradient: 'from-[#D1FAE5] to-[#A7F3D0]',
+  },
+  {
+    href: '/utilities/images/resize',
+    name: 'Resize Image',
+    description: 'Change image dimensions by pixels, percentage, or preset.',
+    icon: <ResizeImgIcon />,
+    gradient: 'from-[#E6F1FB] to-[#D4E8F8]',
+  },
+  {
+    href: '/utilities/images/convert',
+    name: 'Convert Format',
+    description: 'Convert images between JPG, PNG, and WebP formats.',
+    icon: <ConvertImgIcon />,
+    gradient: 'from-[#FEF3C7] to-[#FDE68A]',
+  },
+  {
+    href: '/utilities/images/crop',
+    name: 'Crop Image',
+    description: 'Select and crop a region from any image.',
+    icon: <CropImgIcon />,
+    gradient: 'from-[#EDE9FE] to-[#DDD6FE]',
+  },
+];
+
 const DOC_TOOLS = [
   {
     href: '/utilities/documents/word-to-pdf',
@@ -124,6 +155,18 @@ function TextIcon() {
 function NotebookIcon() {
   return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>;
 }
+function CompressImgIcon() {
+  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/></svg>;
+}
+function ResizeImgIcon() {
+  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>;
+}
+function ConvertImgIcon() {
+  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>;
+}
+function CropImgIcon() {
+  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>;
+}
 
 export default function UtilitiesHubPage() {
   return (
@@ -144,6 +187,13 @@ export default function UtilitiesHubPage() {
         <p className="text-[10px] font-bold uppercase tracking-widest text-[#9CA3AF] dark:text-[#4A6380] mb-4">Document Tools</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {DOC_TOOLS.map(t => <ToolCard key={t.href} {...t} />)}
+        </div>
+      </section>
+
+      <section>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-[#9CA3AF] dark:text-[#4A6380] mb-4">Image Tools</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {IMAGE_TOOLS.map(t => <ToolCard key={t.href} {...t} />)}
         </div>
       </section>
     </div>
