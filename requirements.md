@@ -47,6 +47,12 @@ Proflect is a career-intelligence platform for job seekers and professionals. It
 | DOCX export | `docx` npm package |
 | PDF parsing | `pdfjs-dist` (coordinate-aware, multi-column aware) + `pdf-parse` fallback |
 | DOCX parsing | `mammoth` |
+| Utilities — PDF edit | `pdf-lib` (client-side: merge, split, rotate, crop, watermark, redact, sign, protect) |
+| Utilities — Spreadsheets | `xlsx` / SheetJS (server-side: PDF↔Excel conversion) |
+| Utilities — Markdown | `marked` (server-side: Markdown → HTML → PDF via Puppeteer) |
+| Utilities — Image compression | `browser-image-compression` (client-side) |
+| Utilities — Image crop | `react-image-crop` v11 (client-side) |
+| Utilities — ZIP bundling | `jszip` (client-side multi-file downloads) |
 | AI — Portfolio | Anthropic API (direct fetch, no SDK) |
 | AI — Resume/Test/Career | Groq SDK + OpenRouter (fallback chain) |
 | Deployment | Vercel |
@@ -394,6 +400,88 @@ TopBar detects UUID segments in career-map URLs and fetches real names from `/ap
 - `POST /api/v1/test/[token]/save` — save answers
 - `POST /api/v1/test/[token]/integrity` — log integrity events (tab-switch, focus-loss, copy-paste, etc.)
 
+### 5.13 Utilities
+
+**Page:** `app/(main)/utilities`  
+34 browser-native tools for PDF manipulation, document conversion, image processing, and PDF security. No authentication required; all processing is either fully client-side (no upload) or via anonymous server routes.
+
+**Hub structure** — 5 sections shown on `/utilities`:
+
+#### PDF Tools (14)
+
+| Tool | Route | Processing | Description |
+|---|---|---|---|
+| Merge PDF | `/utilities/pdf/merge` | Client (pdf-lib) | Combine multiple PDFs in order |
+| Split PDF | `/utilities/pdf/split` | Client (pdf-lib) | Extract pages or split into multiple files |
+| Compress PDF | `/utilities/pdf/compress` | Server | Reduce file size via re-serialisation |
+| Rotate Pages | `/utilities/pdf/rotate` | Client (pdf-lib + pdfjs) | Per-page or bulk rotation with pdfjs thumbnail preview |
+| Organise Pages | `/utilities/pdf/organise` | Client (pdf-lib + pdfjs) | Reorder/delete pages via drag-and-drop thumbnail grid |
+| Remove Pages | `/utilities/pdf/remove-pages` | Client (pdf-lib + pdfjs) | Click thumbnails to mark pages for removal |
+| Add Page Numbers | `/utilities/pdf/page-numbers` | Client (pdf-lib) | Stamp page numbers; configurable position and font size |
+| Add Watermark | `/utilities/pdf/watermark` | Client (pdf-lib) | Overlay diagonal text (e.g. DRAFT, CONFIDENTIAL) |
+| Crop PDF | `/utilities/pdf/crop` | Client (pdf-lib) | Set Top/Right/Bottom/Left margins in mm; `page.setCropBox()` |
+| Repair PDF | `/utilities/pdf/repair` | Server | Re-load and re-save with `ignoreEncryption: true, throwOnInvalidObject: false` |
+| Extract Images | `/utilities/pdf/extract-images` | Client (pdfjs) | Render pages to canvas at chosen DPI; download as ZIP |
+| Compare PDFs | `/utilities/pdf/compare` | Client (pdfjs) | Side-by-side view of two PDFs with shared page navigator |
+| Redact PDF | `/utilities/pdf/redact` | Client (pdfjs + pdf-lib) | Search text via `page.getTextContent()`; draw black rectangles over matches |
+| Flatten PDF | `/utilities/pdf/flatten` | Client (pdf-lib) | `doc.getForm().flatten()` — bakes form fields into static content |
+
+**Key implementation details — PDF tools:**
+- pdfjs thumbnails: rendered at scale 0.3–0.4 for previews; full DPI scale for exports (72 dpi = scale 1, 150 = 2.08, 300 = 4.17)
+- Redact coordinate system: pdfjs `item.transform[4/5]` is already in PDF user-space (bottom-left origin), directly matching pdf-lib coordinate system
+- Crop: mm to PDF points conversion = `mm * 2.8346`; applied via `page.setCropBox(x_left_pt, y_bottom_pt, width_pt, height_pt)`
+- Rotation: `page.setRotation(degrees(n))` from pdf-lib; existing page rotation is read via pdfjs to initialize CSS preview
+
+#### Convert to PDF (7)
+
+| Tool | Route | Processing | Description |
+|---|---|---|---|
+| Word to PDF | `/utilities/documents/word-to-pdf` | Server (Puppeteer) | mammoth → HTML → Puppeteer PDF |
+| Excel to PDF | `/utilities/documents/excel-to-pdf` | Server (SheetJS + Puppeteer) | SheetJS `sheet_to_html()` → styled HTML → Puppeteer landscape A4 PDF |
+| PowerPoint to PDF | `/utilities/documents/ppt-to-pdf` | — | Coming Soon placeholder; suggests Google Slides / LibreOffice |
+| Images to PDF | `/utilities/documents/images-to-pdf` | Client (pdf-lib) | Embeds JPG/PNG (`embedJpg`/`embedPng`); WebP converted via canvas → PNG first; A4/Letter/Auto page sizes |
+| HTML to PDF | `/utilities/documents/html-to-pdf` | Server (Puppeteer) | Accepts pasted HTML or `.html` file; auto-wraps fragments without `<!DOCTYPE` |
+| Text to PDF | `/utilities/documents/text-to-pdf` | Client (pdf-lib) | Wraps plain text into a styled PDF client-side |
+| Markdown to PDF | `/utilities/documents/markdown-to-pdf` | Server (marked + Puppeteer) | Write/Preview tabs; `marked()` → GitHub-styled HTML → Puppeteer PDF |
+
+#### Convert from PDF (5)
+
+| Tool | Route | Processing | Description |
+|---|---|---|---|
+| PDF to Word | `/utilities/pdf/to-word` | Server (pdfjs + docx) | Text extraction → DOCX via `docx` package |
+| PDF to Excel | `/utilities/pdf/to-excel` | Server (pdfjs + SheetJS) | Y-coordinate snapping (`Math.round(y/5)*5`) for row grouping; one sheet per page |
+| PDF to Images | `/utilities/pdf/to-images` | Client (pdfjs) | Renders each page to canvas; downloads as ZIP via JSZip |
+| PDF to Text | `/utilities/documents/pdf-to-text` | Client (pdfjs) | Extracts raw text; download as `.txt` |
+| PDF to HTML | `/utilities/pdf/to-html` | Server (pdfjs) | Text per page → `<section class="page">` HTML with stylesheet |
+
+#### Image Tools (4)
+
+| Tool | Route | Processing | Description |
+|---|---|---|---|
+| Compress Image | `/utilities/images/compress` | Client (browser-image-compression) | Quality slider 10–100%; `alwaysKeepResolution: true`; multi-file ZIP |
+| Resize Image | `/utilities/images/resize` | Client (Canvas API) | Pixel/percentage/preset resize; aspect lock toggle; JPG/PNG/WebP output |
+| Convert Format | `/utilities/images/convert` | Client (Canvas API) | Multi-file JPG↔PNG↔WebP; quality slider for lossy formats; ZIP download |
+| Crop Image | `/utilities/images/crop` | Client (react-image-crop + Canvas) | Aspect presets (Free/1:1/16:9/4:3/3:2); canvas crop using natural/display scale factor |
+
+**Key implementation details — image tools:**
+- react-image-crop v11: `centerCrop`, `makeAspectCrop`; `onChange((_, percentCrop) => setCrop(percentCrop))`; `onComplete(pixelCrop)` for pixel coordinates
+- Canvas crop scale: `scaleX = img.naturalWidth / img.width`; `drawImage(img, x*scaleX, y*scaleY, cw, ch, 0, 0, cw, ch)`
+
+#### Security & Other (4)
+
+| Tool | Route | Processing | Description |
+|---|---|---|---|
+| Password Protect | `/utilities/security/protect` | Client (pdf-lib) | User + owner password; permission checkboxes (Print, Copy, Edit) via `doc.encrypt()` |
+| Unlock PDF | `/utilities/security/unlock` | Client (pdf-lib) | `PDFDocument.load(bytes, { password })` → copy pages into new unencrypted PDF |
+| Sign PDF | `/utilities/security/sign` | Client (pdf-lib) | Three modes: Draw (canvas mouse/touch), Type (Georgia italic canvas preview), Upload PNG/JPG; placement (bottom-right/center/left), apply to last/all/first page |
+| Merge Word Docs | `/utilities/documents/merge-word` | Server | Combine multiple DOCX files into one |
+
+**Shared component notes:**
+- `FileDropZone` — `accept` prop must be a comma-separated string (e.g. `".pdf,application/pdf"`); calls `.split(',')` internally
+- `ToolPageLayout` — wraps all tool pages; accepts `icon` (JSX SVG), `title`, `description`, `parentHref`, `parentLabel`
+- `ProcessingState` — spinner shown during async operations
+- `ToolCard` — used on hub pages; `href`, `name`, `description`, `icon` (JSX), `gradient` (Tailwind `from-/to-` classes)
+
 ---
 
 ## 6. Block Editor
@@ -695,6 +783,23 @@ From `@tiptap/*` packages:
 | POST | `/api/v1/test/[token]/save` | Save answers |
 | POST | `/api/v1/test/[token]/integrity` | Log integrity event |
 
+### Utilities (server-side routes only — most tools are fully client-side)
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/v1/utilities/pdf/compress` | Compress PDF via re-serialisation |
+| POST | `/api/v1/utilities/pdf/repair` | Rebuild corrupted PDF (`ignoreEncryption`, `throwOnInvalidObject: false`) |
+| POST | `/api/v1/utilities/pdf/to-excel` | Extract PDF text → XLSX (pdfjs + SheetJS) |
+| POST | `/api/v1/utilities/pdf/to-html` | Extract PDF text → structured HTML (pdfjs) |
+| POST | `/api/v1/utilities/pdf/to-word` | Extract PDF text → DOCX (pdfjs + docx) |
+| POST | `/api/v1/utilities/documents/excel-to-pdf` | XLSX → PDF (SheetJS + Puppeteer, landscape A4) |
+| POST | `/api/v1/utilities/documents/html-to-pdf` | HTML → PDF (Puppeteer) |
+| POST | `/api/v1/utilities/documents/markdown-to-pdf` | Markdown → PDF (marked + Puppeteer) |
+| POST | `/api/v1/utilities/documents/word-to-pdf` | DOCX → PDF (mammoth + Puppeteer) |
+| POST | `/api/v1/utilities/documents/merge-word` | Merge multiple DOCX files into one |
+
+All utilities routes accept `multipart/form-data` with a `file` field (or `html`/`markdown` text fields where noted). No authentication required.
+
 ---
 
 ## 8. Database Tables
@@ -779,6 +884,7 @@ The following features were scoped in the block editor specification but not yet
 - **Self-test improvements:** Spaced repetition scheduling, history/trend charts, per-skill performance breakdown, leaderboard
 - **Career Map:** Video resource embedding per topic section, community notes on topics
 - **Notes:** Full-text search across all notes, sharing individual notes publicly
+- **Utilities — PowerPoint to PDF:** `/utilities/documents/ppt-to-pdf` is a Coming Soon placeholder; requires LibreOffice or a cloud conversion API on the server
 
 ---
 

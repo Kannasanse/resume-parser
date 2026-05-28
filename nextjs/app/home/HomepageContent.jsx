@@ -175,11 +175,15 @@ function HomeNavbar() {
 
 // ── Section 2: Hero ───────────────────────────────────────────────────────────
 const FEATURE_PILLS = [
-  { emoji: '📄', label: 'Resume Builder', href: '#resume-builder' },
+  { emoji: '✍️', label: 'Resume Builder', href: '#resume-builder' },
+  { emoji: '🎯', label: 'ATS Scoring', href: '#interview-prep' },
   { emoji: '🗺', label: 'Career Map', href: '#career-map' },
-  { emoji: '💼', label: 'Portfolio', href: '#portfolio' },
-  { emoji: '🎯', label: 'Interview Prep', href: '#interview-prep' },
   { emoji: '📚', label: 'Study Plans', href: '#study-plans' },
+  { emoji: '🎤', label: 'Interview Prep', href: '#interview-prep' },
+  { emoji: '🌐', label: 'Portfolio Builder', href: '#portfolio' },
+  { emoji: '📓', label: 'Block Editor Notes', href: '/notes' },
+  { emoji: '🔧', label: '34 PDF & Doc Tools', href: '/utilities' },
+  { emoji: '✦', label: 'Skill Courses', href: '/my-courses' },
 ];
 
 function HeroSection() {
@@ -233,8 +237,9 @@ function HeroSection() {
           className="animate-fade-in-up mt-5"
           style={{ fontSize: 18, lineHeight: 1.75, color: 'rgba(255,255,255,0.65)', maxWidth: 560, margin: '20px auto 0', animationDelay: '200ms' }}
         >
-          Build ATS-ready resumes. Showcase your work. Map your career path.<br />
-          Land the role you actually want — not just any role.
+          The all-in-one career platform. Build a resume, create a portfolio,
+          map your career path, prep for interviews, take Notion-style notes,
+          and process documents — all in one place.
         </p>
 
         {/* CTA buttons */}
@@ -313,8 +318,8 @@ function HeroSection() {
 const FEATURES = [
   {
     icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z',
-    title: 'Resume Builder', body: '20 ATS-optimised templates with a live preview. Export to PDF and Word. Smart page-break engine keeps your resume perfectly formatted.',
-    stat: '20 templates', link: 'Build your resume →', accent: '#185FA5', href: '/builder',
+    title: 'Resume Builder', body: '24 ATS-optimised templates with a live preview. Export to PDF and Word. Smart page-break engine keeps your resume perfectly formatted.',
+    stat: '24 templates', link: 'Build your resume →', accent: '#185FA5', href: '/builder',
   },
   {
     icon: 'M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10m6 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v14',
@@ -328,18 +333,33 @@ const FEATURES = [
   },
   {
     icon: 'M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 0 1 .665 6.479A11.952 11.952 0 0 0 12 20.055a11.952 11.952 0 0 0-6.824-2.998 12.078 12.078 0 0 1 .665-6.479L12 14zm-4 6v-7.5l4-2.222',
-    title: 'Interview Prep', body: 'Self-test by skill, by job description, or by your own content. Timed quizzes with instant feedback and readiness scoring.',
+    title: 'Interview Prep', body: 'Scenario-based questions for medium and hard difficulty. Shared question library gets smarter with every quiz taken.',
     stat: '3 assessment modes', link: 'Start a test →', accent: '#F59E0B', href: '/self-test',
   },
   {
     icon: 'M9 20l-5.447-2.724A1 1 0 0 1 3 16.382V5.618a1 1 0 0 1 1.447-.894L9 7m0 13l6-3m-6-3V7m6 10l4.553 2.276A1 1 0 0 0 21 18.382V7.618a1 1 0 0 0-1.447-.894L15 9m0 11V9m0 0L9 7',
-    title: 'AI Career Map', body: 'Upload your resume. Answer 7 questions. Get a visual career path graph showing vertical, horizontal, and diagonal paths to your target role.',
+    title: 'AI Career Map', body: 'Upload your resume. Answer an adaptive questionnaire. Get a visual career path graph with web-sourced or AI-generated content and auto-fetched YouTube tutorials.',
     stat: '3 path types', link: 'Map your career →', accent: '#1D9E75', href: '/career-map',
   },
   {
     icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
-    title: 'Personalised Study Plans', body: 'Close your skill gaps with AI-generated study plans. Phase-based (Beginner → Advanced), with embedded YouTube videos and on-demand content generation.',
-    stat: 'Phase-based learning', link: 'Start learning →', accent: '#185FA5', href: '/my-courses',
+    title: 'Personalised Study Plans', body: 'Create courses from any skill set. Phase-based learning with web-sourced or AI-generated content. YouTube tutorials auto-fetched per section.',
+    stat: 'Skill-based & role-based', link: 'Start learning →', accent: '#185FA5', href: '/my-courses',
+  },
+  {
+    icon: 'M9 12h6m-6 4h6M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zm0 0v6h6M9 8h1',
+    title: 'Block Editor Notes', body: 'A Notion-style block editor built into Proflect. 44 block types including code, tables, callouts, and math. Wikilinks, tags, full-text search, and public sharing.',
+    stat: '44 block types', link: 'Take better notes →', accent: '#7C3AED', href: '/notes',
+  },
+  {
+    icon: 'M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z',
+    title: '34 PDF & Document Tools', body: 'Merge, split, compress, convert, sign, and protect PDFs. Convert Word and Excel files to PDF. Compress images. All tools are free and process files privately.',
+    stat: '34 tools · free', link: 'Open tools →', accent: '#F59E0B', href: '/utilities',
+  },
+  {
+    icon: 'M22 10v6M2 10l10-5 10 5-10 5zM6 12v5c3 3 9 3 12 0v-5',
+    title: 'Skill-Based Courses', body: 'Pick any skill — React, SQL, Docker, anything — and generate a personalised study plan instantly. No career map needed. Learn exactly what you want, on your own terms.',
+    stat: '500+ skills', link: 'Start learning →', accent: '#1D9E75', href: '/my-courses',
   },
 ];
 
@@ -361,7 +381,7 @@ function FeatureShowcase() {
             Everything your career needs —<br />in one place
           </h2>
           <p className="mt-4 text-base text-[#6B7280] leading-relaxed">
-            Proflect combines six powerful tools that work together. Build your resume, showcase your work, understand your career path, and close your skill gaps — all from one platform.
+            Proflect combines nine powerful tools that work together. Build your resume, showcase your work, understand your career path, and close your skill gaps — all from one platform.
           </p>
         </div>
 
@@ -613,7 +633,7 @@ function DeepDiveCareerMap() {
               Know exactly where you&apos;re going —<br />and how to get there
             </h2>
             <p className="mt-4 text-base leading-relaxed" style={{ color: 'rgba(255,255,255,0.60)' }}>
-              Answer a few adaptive questions and Proflect maps your personalised career graph — showing vertical, horizontal, and diagonal paths from where you are to where you want to be. Then closes every skill gap with a phase-based study plan built around your schedule.
+              Answer a few adaptive questions and Proflect maps your personalised career graph — showing vertical, horizontal, and diagonal paths from where you are to where you want to be. Each section offers a choice: web-sourced content from trusted educational sites, or AI-generated explanations tailored to your level. YouTube tutorials are auto-fetched per section so you always have a video resource alongside the text.
             </p>
             <ul className="mt-6 space-y-3">
               {CAREER_MAP_FEATURES.map(f => (
@@ -623,6 +643,22 @@ function DeepDiveCareerMap() {
                 </li>
               ))}
             </ul>
+            {/* Create from skills callout */}
+            <div className="mt-6" style={{
+              background: 'rgba(24,95,165,0.04)',
+              border: '1px solid rgba(24,95,165,0.15)',
+              borderLeft: '4px solid #185FA5',
+              borderRadius: '0 16px 16px 0',
+              padding: '20px 24px',
+            }}>
+              <p className="text-[13px] font-bold" style={{ color: '#185FA5', marginBottom: 6 }}>✦  Don&apos;t need a full career map?</p>
+              <p className="text-[14px]" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                Create a study plan directly from any skill — React, Docker, System Design, anything. Get a full course in seconds.
+              </p>
+              <Link href="/my-courses" className="inline-block mt-2.5 text-[14px] font-semibold" style={{ color: '#185FA5' }}>
+                Create a skill course →
+              </Link>
+            </div>
             <Link href="/career-map" className="mt-8 inline-flex items-center gap-2 px-6 py-3 font-bold text-[15px] rounded-xl transition-all text-white"
               style={{ background: 'linear-gradient(135deg, #185FA5, #1D9E75)', boxShadow: '0 4px 20px rgba(24,95,165,0.35)' }}
               onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(24,95,165,0.45)'; }}
@@ -720,25 +756,99 @@ function DeepDivePortfolio() {
   );
 }
 
+// ── Section 7B: Utilities Spotlight ──────────────────────────────────────────
+const UTILITY_CHIPS = [
+  { icon: 'M8 6H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3M16 6h3a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-3M12 2v20', label: 'Merge PDF' },
+  { icon: 'M4 14 10 14 10 20M20 10 14 10 14 4M10 14 3 21M21 3 14 10', label: 'Compress PDF' },
+  { icon: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM9 15l2 2 4-4', label: 'PDF → Word' },
+  { icon: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM8 13h8M8 17h8M10 9h4', label: 'Word → PDF' },
+  { icon: 'M16 3h5v5M8 21H3v-5M3 21l7-7M21 3l-7 7M12 2v6M12 22v-6', label: 'Split PDF' },
+  { icon: 'M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z', label: 'Sign PDF' },
+  { icon: 'M3 11h18v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM7 11V7a5 5 0 0 1 10 0v4', label: 'Protect PDF' },
+  { icon: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM8 13h8M8 17h8M10 9h2', label: 'Excel → PDF' },
+  { icon: 'M4 14 10 14 10 20M20 10 14 10 14 4M10 14 3 21M21 3 14 10', label: 'Compress Image' },
+  { icon: 'M6 2v14a2 2 0 0 0 2 2h14M18 22V8a2 2 0 0 0-2-2H2', label: 'Crop Image' },
+];
+
+function UtilitiesSpotlight() {
+  const { ref, isVisible } = useScrollReveal();
+  return (
+    <section className="py-24 relative" style={{ background: '#F4F8FC' }}>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
+        <div ref={ref} className={`transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          <p className="text-xs font-bold uppercase tracking-widest mb-3 text-gradient-primary">Built-In Tools</p>
+          <h2 className="font-extrabold text-[#2C2C2A]" style={{ fontSize: 'clamp(28px,3.5vw,40px)', letterSpacing: '-0.03em' }}>
+            34 PDF and document tools.<br />Free, always.
+          </h2>
+          <p className="mt-4 text-base text-[#6B7280] leading-relaxed max-w-xl mx-auto">
+            No more switching tabs to ilovepdf or smallpdf. Everything you need to work with PDFs, Word files, and images is already here — and processes privately in your browser.
+          </p>
+
+          <div className="mt-10 space-y-3">
+            <div className="flex flex-wrap justify-center gap-2">
+              {UTILITY_CHIPS.slice(0, 5).map(c => (
+                <Link
+                  key={c.label}
+                  href="/utilities"
+                  className="inline-flex items-center gap-1.5 text-[13px] font-medium rounded-[10px] px-3.5 py-2 transition-all bg-white"
+                  style={{ border: '1px solid #D1DCE8', color: '#374151' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#185FA5'; e.currentTarget.style.boxShadow = '0 1px 4px rgba(12,68,124,0.10)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#D1DCE8'; e.currentTarget.style.boxShadow = 'none'; }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                    <path d={c.icon} />
+                  </svg>
+                  {c.label}
+                </Link>
+              ))}
+            </div>
+            <div className="flex flex-wrap justify-center gap-2">
+              {UTILITY_CHIPS.slice(5).map(c => (
+                <Link
+                  key={c.label}
+                  href="/utilities"
+                  className="inline-flex items-center gap-1.5 text-[13px] font-medium rounded-[10px] px-3.5 py-2 transition-all bg-white"
+                  style={{ border: '1px solid #D1DCE8', color: '#374151' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#185FA5'; e.currentTarget.style.boxShadow = '0 1px 4px rgba(12,68,124,0.10)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#D1DCE8'; e.currentTarget.style.boxShadow = 'none'; }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                    <path d={c.icon} />
+                  </svg>
+                  {c.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <Link href="/utilities" className="inline-block mt-8 text-[15px] font-semibold" style={{ color: '#185FA5' }}>
+            View all 34 tools →
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ── Section 8: How It Works ───────────────────────────────────────────────────
 const STEPS = [
   {
     num: '01',
     icon: 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM3 20a6 6 0 0 1 12 0v1H3v-1z',
-    title: 'Create your free account',
-    body: 'Sign up in seconds with email or Google. No credit card, no commitment. Your first resume is free — forever.',
+    title: 'Build your professional profile',
+    body: 'Create an ATS-optimised resume using 24 templates, build a portfolio website, and get instant ATS scoring against any job description.',
   },
   {
     num: '02',
     icon: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z',
-    title: 'Build with AI at your side',
-    body: 'Choose your tool — resume, portfolio, career map, or interview prep. AI guides you through every step, from content suggestions to ATS optimisation.',
+    title: 'Map and plan your career',
+    body: 'Generate a visual career map from your resume, or create a course from any skill. Get web-sourced or AI-generated content with YouTube tutorials per section.',
   },
   {
     num: '03',
     icon: 'M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z',
-    title: 'Apply with confidence',
-    body: 'Export your ATS-ready resume, share your portfolio URL, and walk into interviews knowing exactly what to expect. Your next role is closer than you think.',
+    title: 'Prepare and stay sharp',
+    body: 'Practice with scenario-based interview quizzes. Take Notion-style notes with a full block editor. Use 34 built-in tools to handle any document task. Everything in one place.',
   },
 ];
 
@@ -809,8 +919,8 @@ const DUAL_CARDS = [
   {
     icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
     title: 'Interview Prep',
-    body: 'Practice with questions generated from your skills, a job description, or your own content. Timed quizzes with instant scoring and a readiness breakdown by skill.',
-    stats: ['3 assessment modes', 'Configurable difficulty', 'Instant readiness score'],
+    body: 'Three assessment modes: by skill, by job description, or by your own content. Medium and hard difficulty uses real-world scenario questions. A shared question library gets smarter with every quiz — your questions help future users too.',
+    stats: ['3 assessment modes', 'Scenario-based questions', 'Shared question library'],
     cta: 'Start practising →',
     href: '/self-test',
   },
@@ -930,6 +1040,20 @@ function FinalCTA() {
           <span className="mx-3" style={{ color: 'rgba(255,255,255,0.15)' }}>·</span>
           5 min setup
         </p>
+        <div className="flex items-center justify-center gap-2 flex-wrap mt-8">
+          {[
+            'Resume Builder', 'ATS Scoring', 'Career Map', 'Study Plans',
+            'Interview Prep', 'Portfolio Builder', 'Notes', '34 Tools', 'Skill Courses',
+          ].map(label => (
+            <span
+              key={label}
+              className="text-[12px] font-medium rounded-full px-3 py-1"
+              style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.50)' }}
+            >
+              {label}
+            </span>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -944,6 +1068,8 @@ const FOOTER_LINKS = {
     { label: 'Interview Prep', href: '/self-test' },
     { label: 'Career Map', href: '/career-map' },
     { label: 'Study Plans', href: '/my-courses' },
+    { label: 'Notes', href: '/notes' },
+    { label: 'Utilities', href: '/utilities' },
   ],
   Company: [
     { label: 'About', href: '#' },
@@ -1037,6 +1163,7 @@ export default function HomepageContent({ sections, isPreview, userRole }) {
       <DeepDiveResume />
       <DeepDiveCareerMap />
       <DeepDivePortfolio />
+      <UtilitiesSpotlight />
       <HowItWorks />
       <ATSAndInterviewPrep />
       <FinalCTA />
