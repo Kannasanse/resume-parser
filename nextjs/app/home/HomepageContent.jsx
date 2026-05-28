@@ -184,6 +184,7 @@ const FEATURE_PILLS = [
   { emoji: '📓', label: 'Block Editor Notes', href: '/notes' },
   { emoji: '🔧', label: '34 PDF & Doc Tools', href: '/utilities' },
   { emoji: '✦', label: 'Skill Courses', href: '/my-courses' },
+  { emoji: '💼', label: 'Job Recommendations', href: '/jobs' },
 ];
 
 function HeroSection() {
@@ -361,6 +362,11 @@ const FEATURES = [
     title: 'Skill-Based Courses', body: 'Pick any skill — React, SQL, Docker, anything — and generate a personalised study plan instantly. No career map needed. Learn exactly what you want, on your own terms.',
     stat: '500+ skills', link: 'Start learning →', accent: '#1D9E75', href: '/my-courses',
   },
+  {
+    icon: 'M21 13.255A23.931 23.931 0 0 1 12 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2m4 6h.01M5 20h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2z',
+    title: 'Job Recommendations', body: 'See live job listings matched to your profile — based on your job title and location. Remote and on-site roles, updated regularly. Apply directly from Proflect.',
+    stat: 'Live listings', link: 'See jobs →', accent: '#185FA5', href: '/jobs',
+  },
 ];
 
 function FeatureShowcase() {
@@ -381,7 +387,7 @@ function FeatureShowcase() {
             Everything your career needs —<br />in one place
           </h2>
           <p className="mt-4 text-base text-[#6B7280] leading-relaxed">
-            Proflect combines nine powerful tools that work together. Build your resume, showcase your work, understand your career path, and close your skill gaps — all from one platform.
+            Proflect combines ten powerful tools that work together. Build your resume, showcase your work, understand your career path, and close your skill gaps — all from one platform.
           </p>
         </div>
 
@@ -830,6 +836,81 @@ function UtilitiesSpotlight() {
   );
 }
 
+// ── Section 7C: Job Recommendations Spotlight ────────────────────────────────
+const MOCK_JOBS = [
+  { company: 'Razorpay', title: 'Senior React Developer', location: 'Chennai', type: 'Full-time', source: 'LinkedIn', ago: '2 days ago', color: '#0C447C' },
+  { company: 'Freshworks', title: 'Frontend Engineer', location: 'Chennai', type: 'Full-time', source: 'Indeed', ago: '1 day ago', color: '#1D9E75' },
+  { company: 'Wipro', title: 'Full Stack Developer', location: 'Bangalore', type: 'Remote', source: 'Naukri', ago: '3 hours ago', color: '#7C3AED' },
+];
+
+function JobsSpotlight() {
+  const { ref, isVisible } = useScrollReveal();
+  return (
+    <section className="py-24 relative bg-white">
+      <div className="max-w-[860px] mx-auto px-4 sm:px-6 text-center">
+        <div ref={ref} className={`transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          <p className="text-xs font-bold uppercase tracking-widest mb-3 text-gradient-primary">Jobs For You</p>
+          <h2 className="font-extrabold text-[#2C2C2A]" style={{ fontSize: 'clamp(28px,3.5vw,40px)', letterSpacing: '-0.03em' }}>
+            See who&apos;s hiring for your skills — right now.
+          </h2>
+          <p className="mt-4 text-base text-[#6B7280] leading-relaxed max-w-xl mx-auto">
+            Proflect shows you live job listings matched to your profile. Based on your job title and location, updated every few hours. One less tab to keep open.
+          </p>
+
+          {/* Job cards row */}
+          <div className="mt-10 relative">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {MOCK_JOBS.map((job, i) => (
+                <div
+                  key={i}
+                  className="text-left rounded-[16px] p-5 bg-white transition-all"
+                  style={{
+                    border: '1px solid #D1DCE8',
+                    boxShadow: '0 1px 4px rgba(12,68,124,0.06)',
+                    opacity: i === 2 ? 0.55 : 1,
+                  }}
+                >
+                  {/* Company logo placeholder */}
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-9 h-9 rounded-[10px] flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0"
+                      style={{ background: job.color }}>
+                      {job.company.slice(0, 2).toUpperCase()}
+                    </div>
+                    <span className="text-[13px] font-semibold text-[#6B7280]">{job.company}</span>
+                  </div>
+                  <p className="text-[15px] font-bold text-[#2C2C2A] leading-tight mb-2">{job.title}</p>
+                  <p className="text-[12px] text-[#9CA3AF] mb-3">
+                    📍 {job.location} · {job.type} · via {job.source}
+                  </p>
+                  <p className="text-[11px] text-[#9CA3AF] mb-4">Posted {job.ago}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[12px] font-semibold px-3 py-1.5 rounded-lg text-white" style={{ background: '#185FA5' }}>
+                      Apply →
+                    </span>
+                    <span className="text-[12px] font-medium px-3 py-1.5 rounded-lg" style={{ border: '1px solid #D1DCE8', color: '#6B7280' }}>
+                      Save
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Fade mask on right for desktop */}
+            <div className="hidden sm:block absolute right-0 top-0 bottom-0 w-24 pointer-events-none rounded-r-[16px]"
+              style={{ background: 'linear-gradient(to right, transparent, white)' }} />
+          </div>
+
+          <Link href="/jobs" className="inline-block mt-8 text-[15px] font-semibold" style={{ color: '#185FA5' }}>
+            See jobs matching your profile →
+          </Link>
+          <p className="text-[12px] text-[#9CA3AF] mt-1.5">
+            Jobs matched to your saved job title and location. Powered by real-time job listings.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ── Section 8: How It Works ───────────────────────────────────────────────────
 const STEPS = [
   {
@@ -1043,7 +1124,7 @@ function FinalCTA() {
         <div className="flex items-center justify-center gap-2 flex-wrap mt-8">
           {[
             'Resume Builder', 'ATS Scoring', 'Career Map', 'Study Plans',
-            'Interview Prep', 'Portfolio Builder', 'Notes', '34 Tools', 'Skill Courses',
+            'Interview Prep', 'Portfolio Builder', 'Notes', '34 Tools', 'Skill Courses', 'Jobs',
           ].map(label => (
             <span
               key={label}
@@ -1164,6 +1245,7 @@ export default function HomepageContent({ sections, isPreview, userRole }) {
       <DeepDiveCareerMap />
       <DeepDivePortfolio />
       <UtilitiesSpotlight />
+      <JobsSpotlight />
       <HowItWorks />
       <ATSAndInterviewPrep />
       <FinalCTA />
