@@ -43,9 +43,44 @@ const CloseIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="n
 const GlobeIcon = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>);
 
 // ── Section 1: Navbar ─────────────────────────────────────────────────────────
+const FEATURES_NAV = [
+  { icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z', label: 'Resume Builder', desc: '20 templates · live preview · PDF & Word export', href: '/builder', accent: '#185FA5' },
+  { icon: 'M9 20l-5.447-2.724A1 1 0 0 1 3 16.382V5.618a1 1 0 0 1 1.447-.894L9 7m0 13l6-3m-6-3V7m6 10l4.553 2.276A1 1 0 0 0 21 18.382V7.618a1 1 0 0 0-1.447-.894L15 9m0 11V9m0 0L9 7', label: 'Career Map', desc: 'Visual career paths from your resume', href: '/career-map', accent: '#1D9E75' },
+  { icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253', label: 'Study Plans', desc: 'Phase-based AI learning with video tutorials', href: '/my-courses', accent: '#185FA5' },
+  { icon: 'M22 10v6M2 10l10-5 10 5-10 5zM6 12v5c3 3 9 3 12 0v-5', label: 'Interview Prep', desc: 'Scenario-based quizzes, 3 assessment modes', href: '/self-test', accent: '#F59E0B' },
+  { icon: 'M19 11H5m14 0a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2m14 0V9a2 2 0 0 0-2-2M5 11V9a2 2 0 0 1 2-2m0 0V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2h2m0-4h10M7 7h10', label: 'Portfolio Builder', desc: 'Publish your work to a custom URL', href: '/portfolios', accent: '#185FA5' },
+  { icon: 'M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10m6 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v14', label: 'ATS Score', desc: 'Match your resume against any job description', href: '/upload', accent: '#1D9E75' },
+  { icon: 'M9 12h6m-6 4h6M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z', label: 'Notes', desc: '44-block editor · wikilinks · tags · search', href: '/notes', accent: '#7C3AED' },
+  { icon: 'M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z', label: 'Utilities', desc: '34 PDF & document tools — free', href: '/utilities', accent: '#F59E0B' },
+  { icon: 'M9.663 17h4.673M12 3v1m6.364 1.636-.707.707M21 12h-1M4 12H3m3.343-5.657-.707-.707m2.828 9.9a5 5 0 1 1 7.072 0l-.548.547A3.374 3.374 0 0 0 14 18.469V19a2 2 0 1 1-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z', label: 'Skill Courses', desc: 'Create a course from any skill in seconds', href: '/my-courses', accent: '#1D9E75' },
+];
+
+const CATEGORY_NAV = [
+  {
+    emoji: '🎯', label: 'Job Seekers',
+    items: [{ label: 'Resume Builder', href: '/builder' }, { label: 'ATS Score', href: '/upload' }, { label: 'Portfolio Builder', href: '/portfolios' }, { label: 'Interview Prep', href: '/self-test' }],
+  },
+  {
+    emoji: '📈', label: 'Career Planners',
+    items: [{ label: 'Career Map', href: '/career-map' }, { label: 'Study Plans', href: '/my-courses' }, { label: 'Skill Courses', href: '/my-courses' }, { label: 'Interview Prep', href: '/self-test' }],
+  },
+  {
+    emoji: '🛠', label: 'Productivity Tools',
+    items: [{ label: 'Notes', href: '/notes' }, { label: 'Utilities (34 tools)', href: '/utilities' }, { label: 'Resume Builder', href: '/builder' }],
+  },
+  {
+    emoji: '📚', label: 'Learning Tools',
+    items: [{ label: 'Study Plans', href: '/my-courses' }, { label: 'Skill Courses', href: '/my-courses' }, { label: 'Career Map', href: '/career-map' }],
+  },
+];
+
 function HomeNavbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [openMenu, setOpenMenu] = useState(null);
+  const [mobileExpanded, setMobileExpanded] = useState(null);
+  const closeTimerRef = useRef(null);
+  const navRef = useRef(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 80);
@@ -53,16 +88,28 @@ function HomeNavbar() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const navLinks = [
-    { label: 'Features', href: '#features' },
-    { label: 'Career Map', href: '#career-map' },
-    { label: 'Blog', href: '#' },
-  ];
+  useEffect(() => {
+    function handleClick(e) {
+      if (navRef.current && !navRef.current.contains(e.target)) setOpenMenu(null);
+    }
+    function handleKey(e) { if (e.key === 'Escape') setOpenMenu(null); }
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleKey);
+    return () => { document.removeEventListener('mousedown', handleClick); document.removeEventListener('keydown', handleKey); };
+  }, []);
+
+  function openDropdown(name) { clearTimeout(closeTimerRef.current); setOpenMenu(name); }
+  function scheduleClose() { closeTimerRef.current = setTimeout(() => setOpenMenu(null), 200); }
+  function cancelClose() { clearTimeout(closeTimerRef.current); }
+
+  const linkColor = scrolled ? '#2C2C2A' : 'rgba(255,255,255,0.85)';
+  const hoverBg = scrolled ? 'rgba(24,95,165,0.06)' : 'rgba(255,255,255,0.10)';
 
   return (
     <>
       <nav
-        className="fixed top-0 left-0 right-0 z-50 transition-all"
+        ref={navRef}
+        className="fixed top-0 left-0 right-0 z-50"
         style={{
           background: scrolled ? 'rgba(255,255,255,0.88)' : 'transparent',
           backdropFilter: scrolled ? 'blur(20px)' : 'none',
@@ -73,88 +120,268 @@ function HomeNavbar() {
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/home" className="flex items-center">
+          {/* Logo */}
+          <Link href="/home" className="flex items-center flex-shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={scrolled ? '/logo.png' : '/logo-white.png'} alt="Proflect" height={40} width={118} style={{ height: '40px', width: '118px', minHeight: '40px', minWidth: '118px', maxHeight: '40px', objectFit: 'contain', display: 'block', flexShrink: 0 }} />
           </Link>
 
           {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-8">
-            {navLinks.map(l => (
-              <a
+          <div className="hidden md:flex items-center gap-1">
+            {/* Features dropdown */}
+            <div onMouseEnter={() => openDropdown('features')} onMouseLeave={scheduleClose}>
+              <button
+                onClick={() => openMenu === 'features' ? setOpenMenu(null) : openDropdown('features')}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm font-medium"
+                style={{ color: linkColor, transition: 'background 150ms' }}
+                onMouseEnter={e => e.currentTarget.style.background = hoverBg}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                Features
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ transition: 'transform 200ms', transform: openMenu === 'features' ? 'rotate(180deg)' : 'rotate(0deg)' }}><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+            </div>
+
+            {/* By Category dropdown */}
+            <div onMouseEnter={() => openDropdown('category')} onMouseLeave={scheduleClose}>
+              <button
+                onClick={() => openMenu === 'category' ? setOpenMenu(null) : openDropdown('category')}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm font-medium"
+                style={{ color: linkColor, transition: 'background 150ms' }}
+                onMouseEnter={e => e.currentTarget.style.background = hoverBg}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                By Category
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ transition: 'transform 200ms', transform: openMenu === 'category' ? 'rotate(180deg)' : 'rotate(0deg)' }}><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+            </div>
+
+            {/* Direct links */}
+            {[{ label: 'Utilities', href: '/utilities' }, { label: 'Blog', href: '#' }].map(l => (
+              <Link
                 key={l.label}
                 href={l.href}
-                className="text-sm font-medium transition-colors"
-                style={{ color: scrolled ? '#2C2C2A' : 'rgba(255,255,255,0.85)' }}
-                onMouseEnter={e => e.currentTarget.style.color = '#185FA5'}
-                onMouseLeave={e => e.currentTarget.style.color = scrolled ? '#2C2C2A' : 'rgba(255,255,255,0.85)'}
+                className="px-2.5 py-1.5 rounded-lg text-sm font-medium"
+                style={{ color: linkColor, transition: 'background 150ms' }}
+                onMouseEnter={e => e.currentTarget.style.background = hoverBg}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
                 {l.label}
-              </a>
+              </Link>
             ))}
           </div>
 
+          {/* Right buttons */}
           <div className="hidden md:flex items-center gap-3">
-            <Link
-              href="/login"
-              className="px-4 py-2 text-sm font-semibold rounded-lg border transition-all"
-              style={{
-                color: scrolled ? '#185FA5' : 'rgba(255,255,255,0.85)',
-                borderColor: scrolled ? '#185FA5' : 'rgba(255,255,255,0.35)',
-                background: 'transparent',
-              }}
-            >
+            <Link href="/login" className="px-4 py-2 text-sm font-semibold rounded-lg border transition-all"
+              style={{ color: scrolled ? '#185FA5' : 'rgba(255,255,255,0.85)', borderColor: scrolled ? '#185FA5' : 'rgba(255,255,255,0.35)', background: 'transparent' }}>
               Log in
             </Link>
-            <Link
-              href="/signup"
-              className="px-4 py-2 text-sm font-semibold rounded-lg transition-all"
-              style={{
-                background: scrolled ? '#185FA5' : 'white',
-                color: scrolled ? 'white' : '#185FA5',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-              }}
-            >
+            <Link href="/signup" className="px-4 py-2 text-sm font-semibold rounded-lg transition-all"
+              style={{ background: scrolled ? '#185FA5' : 'white', color: scrolled ? 'white' : '#185FA5', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
               Get started free
             </Link>
           </div>
 
           {/* Mobile hamburger */}
-          <button
-            onClick={() => setMenuOpen(true)}
-            className="md:hidden p-2"
-            style={{ color: scrolled ? '#2C2C2A' : 'white' }}
-          >
+          <button onClick={() => setMenuOpen(true)} className="md:hidden p-2" style={{ color: scrolled ? '#2C2C2A' : 'white' }}>
             <MenuIcon />
           </button>
         </div>
+
+        {/* Features mega menu */}
+        {openMenu === 'features' && (
+          <div
+            className="absolute z-50"
+            style={{ top: '100%', left: '50%', marginTop: 12 }}
+            onMouseEnter={cancelClose}
+            onMouseLeave={scheduleClose}
+          >
+            <div style={{
+              transform: 'translateX(-50%)',
+              width: 'min(780px, 95vw)',
+              background: 'white',
+              border: '1px solid #D1DCE8',
+              borderRadius: 20,
+              boxShadow: '0 24px 60px rgba(12,68,124,0.14), 0 4px 16px rgba(12,68,124,0.08)',
+              padding: 24,
+              animation: 'megaMenuIn 180ms cubic-bezier(0.16,1,0.3,1) both',
+            }}>
+              <p className="text-[11px] font-bold uppercase pb-3.5 mb-4" style={{ color: '#9CA3AF', letterSpacing: '0.08em', borderBottom: '1px solid #F4F8FC' }}>
+                Everything you need for your career
+              </p>
+              <div className="grid grid-cols-3 gap-1">
+                {FEATURES_NAV.map(item => (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    onClick={() => setOpenMenu(null)}
+                    className="flex items-start gap-3 p-2.5 rounded-xl group"
+                    style={{ transition: 'background 150ms' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#F4F8FC'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <div className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0" style={{ background: `${item.accent}20`, border: `1px solid ${item.accent}28` }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={item.accent} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d={item.icon} /></svg>
+                    </div>
+                    <div className="min-w-0 pt-0.5">
+                      <p className="text-[14px] font-semibold text-[#2C2C2A] leading-tight" style={{ transition: 'color 150ms' }}
+                        onMouseEnter={e => e.currentTarget.style.color = '#185FA5'} onMouseLeave={e => e.currentTarget.style.color = '#2C2C2A'}>
+                        {item.label}
+                      </p>
+                      <p className="text-[12px] text-[#9CA3AF] mt-0.5 truncate">{item.desc}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+              <div className="flex items-center justify-between pt-3.5 mt-3" style={{ borderTop: '1px solid #F4F8FC' }}>
+                <span className="text-[12px] text-[#6B7280]">✦ Start free — no credit card required</span>
+                <Link href="/signup" onClick={() => setOpenMenu(null)}
+                  className="text-[13px] font-semibold text-white px-3.5 py-1.5 rounded-lg"
+                  style={{ background: '#185FA5', transition: 'background 150ms' }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#1454a0'}
+                  onMouseLeave={e => e.currentTarget.style.background = '#185FA5'}>
+                  Get started →
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* By Category mega menu */}
+        {openMenu === 'category' && (
+          <div
+            className="absolute z-50"
+            style={{ top: '100%', left: '50%', marginTop: 12 }}
+            onMouseEnter={cancelClose}
+            onMouseLeave={scheduleClose}
+          >
+            <div style={{
+              transform: 'translateX(-50%)',
+              width: 'min(640px, 95vw)',
+              background: 'white',
+              border: '1px solid #D1DCE8',
+              borderRadius: 20,
+              boxShadow: '0 24px 60px rgba(12,68,124,0.14), 0 4px 16px rgba(12,68,124,0.08)',
+              padding: 24,
+              animation: 'megaMenuIn 180ms cubic-bezier(0.16,1,0.3,1) both',
+            }}>
+              <p className="text-[11px] font-bold uppercase pb-3.5 mb-4" style={{ color: '#9CA3AF', letterSpacing: '0.08em', borderBottom: '1px solid #F4F8FC' }}>
+                Find the right tools for you
+              </p>
+              <div className="grid grid-cols-2 gap-6">
+                {CATEGORY_NAV.map(cat => (
+                  <div key={cat.label}>
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <span style={{ fontSize: 16 }}>{cat.emoji}</span>
+                      <span className="text-[11px] font-bold uppercase tracking-widest text-[#6B7280]">{cat.label}</span>
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      {cat.items.map(item => (
+                        <Link
+                          key={item.label + item.href}
+                          href={item.href}
+                          onClick={() => setOpenMenu(null)}
+                          className="px-2.5 py-1.5 rounded-lg text-[14px] font-medium text-[#2C2C2A]"
+                          style={{ transition: 'all 150ms' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#F4F8FC'; e.currentTarget.style.color = '#185FA5'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#2C2C2A'; }}
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* Mobile drawer */}
       {menuOpen && (
         <div className="fixed inset-0 z-[100] flex justify-end">
           <div className="absolute inset-0 bg-black/60" onClick={() => setMenuOpen(false)} />
-          <div
-            className="relative w-72 h-full flex flex-col p-6"
-            style={{
-              background: 'rgba(15,26,46,0.97)',
-              backdropFilter: 'blur(20px)',
-            }}
-          >
-            <div className="flex items-center justify-between mb-8">
+          <div className="relative w-80 h-full flex flex-col overflow-y-auto" style={{ background: 'rgba(15,26,46,0.98)', backdropFilter: 'blur(20px)' }}>
+            {/* Drawer header */}
+            <div className="flex items-center justify-between p-5 pb-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/logo-white.png" alt="Proflect" height={40} width={118} style={{ height: '40px', width: '118px', minHeight: '40px', minWidth: '118px', maxHeight: '40px', objectFit: 'contain', display: 'block', flexShrink: 0 }} />
               <button onClick={() => setMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.6)' }}><CloseIcon /></button>
             </div>
-            <div className="flex flex-col gap-4 flex-1">
-              {navLinks.map(l => (
-                <a key={l.label} href={l.href} onClick={() => setMenuOpen(false)}
-                  className="text-base font-medium" style={{ color: 'rgba(255,255,255,0.80)' }}>
+
+            <div className="flex flex-col flex-1 px-4 pt-2">
+              {/* Features accordion */}
+              <button
+                onClick={() => setMobileExpanded(mobileExpanded === 'features' ? null : 'features')}
+                className="flex items-center justify-between py-3.5 text-[15px] font-medium"
+                style={{ color: 'rgba(255,255,255,0.85)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+              >
+                Features
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ transform: mobileExpanded === 'features' ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 200ms', flexShrink: 0 }}><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              {mobileExpanded === 'features' && (
+                <div className="py-2 flex flex-col gap-0.5">
+                  {FEATURES_NAV.map(item => (
+                    <Link key={item.label} href={item.href} onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-2 py-2.5 rounded-lg text-[14px] font-medium"
+                      style={{ color: 'rgba(255,255,255,0.75)', transition: 'background 150ms' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.07)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${item.accent}25` }}>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={item.accent} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d={item.icon} /></svg>
+                      </div>
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+
+              {/* By Category accordion */}
+              <button
+                onClick={() => setMobileExpanded(mobileExpanded === 'category' ? null : 'category')}
+                className="flex items-center justify-between py-3.5 text-[15px] font-medium"
+                style={{ color: 'rgba(255,255,255,0.85)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+              >
+                By Category
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ transform: mobileExpanded === 'category' ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 200ms', flexShrink: 0 }}><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              {mobileExpanded === 'category' && (
+                <div className="py-2 space-y-4">
+                  {CATEGORY_NAV.map(cat => (
+                    <div key={cat.label} className="px-1">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span style={{ fontSize: 14 }}>{cat.emoji}</span>
+                        <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.40)' }}>{cat.label}</span>
+                      </div>
+                      {cat.items.map(item => (
+                        <Link key={item.label + item.href} href={item.href} onClick={() => setMenuOpen(false)}
+                          className="block px-3 py-2 rounded-lg text-[14px] font-medium"
+                          style={{ color: 'rgba(255,255,255,0.70)', transition: 'color 150ms' }}
+                          onMouseEnter={e => e.currentTarget.style.color = 'white'}
+                          onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.70)'}
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Direct links */}
+              {[{ label: 'Utilities', href: '/utilities' }, { label: 'Blog', href: '#' }].map(l => (
+                <Link key={l.label} href={l.href} onClick={() => setMenuOpen(false)}
+                  className="block py-3.5 text-[15px] font-medium"
+                  style={{ color: 'rgba(255,255,255,0.80)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                   {l.label}
-                </a>
+                </Link>
               ))}
             </div>
-            <div className="flex flex-col gap-3 mt-8">
+
+            <div className="flex flex-col gap-3 p-4 mt-2">
               <Link href="/login" onClick={() => setMenuOpen(false)}
                 className="w-full text-center py-2.5 text-sm font-semibold rounded-lg border"
                 style={{ color: 'rgba(255,255,255,0.85)', borderColor: 'rgba(255,255,255,0.25)' }}>
@@ -169,6 +396,13 @@ function HomeNavbar() {
           </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes megaMenuIn {
+          from { opacity: 0; transform: translateX(-50%) translateY(-6px) scale(0.98); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+        }
+      `}</style>
     </>
   );
 }
