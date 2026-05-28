@@ -47,7 +47,7 @@ function DropPanel({ label, file, loading, onFiles }) {
         <ProcessingState message={`Loading ${label}…`} />
       ) : !file ? (
         <FileDropZone
-          accept={{ 'application/pdf': ['.pdf'] }}
+          accept=".pdf,application/pdf"
           multiple={false}
           maxSizeMB={100}
           onFiles={onFiles}

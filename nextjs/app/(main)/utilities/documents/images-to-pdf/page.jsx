@@ -103,7 +103,7 @@ export default function ImagesToPdfPage() {
 
   return (
     <ToolPageLayout
-      icon="🖼️"
+      icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="13" height="13" rx="2"/><circle cx="7.5" cy="7.5" r="1.5"/><path d="M16 13 13 10 5 18"/><path d="M20 8v9M20 17h-5"/></svg>}
       title="Images to PDF"
       description="Combine JPG, PNG, or WebP images into a single PDF document — entirely in your browser, nothing uploaded."
       parentHref="/utilities/documents"
@@ -114,7 +114,7 @@ export default function ImagesToPdfPage() {
       ) : (
         <div className="space-y-5">
           <FileDropZone
-            accept={{ 'image/jpeg': ['.jpg', '.jpeg'], 'image/png': ['.png'], 'image/webp': ['.webp'] }}
+            accept="image/jpeg,image/png,image/webp"
             multiple={true}
             maxSizeMB={50}
             onFiles={handleFiles}

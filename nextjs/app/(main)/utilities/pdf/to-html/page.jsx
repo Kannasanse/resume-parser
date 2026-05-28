@@ -45,7 +45,7 @@ export default function PdfToHtmlPage() {
 
   return (
     <ToolPageLayout
-      icon="🌐"
+      icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>}
       title="PDF to HTML"
       description="Extract the text content from a PDF and convert it to a structured HTML document, with one section per page."
       parentHref="/utilities/pdf"
@@ -70,7 +70,7 @@ export default function PdfToHtmlPage() {
             </div>
           ) : (
             <FileDropZone
-              accept={{ 'application/pdf': ['.pdf'] }}
+              accept=".pdf,application/pdf"
               multiple={false}
               maxSizeMB={100}
               onFiles={handleFiles}

@@ -63,7 +63,7 @@ export default function HtmlToPdfPage() {
 
   return (
     <ToolPageLayout
-      icon="🌐"
+      icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>}
       title="HTML to PDF"
       description="Convert an HTML page or fragment to a PDF document. Paste markup directly or upload an .html file."
       parentHref="/utilities/documents"
@@ -111,7 +111,7 @@ export default function HtmlToPdfPage() {
                 </div>
               ) : (
                 <FileDropZone
-                  accept={{ 'text/html': ['.html', '.htm'] }}
+                  accept=".html,.htm,text/html"
                   multiple={false}
                   maxSizeMB={10}
                   onFiles={handleFiles}

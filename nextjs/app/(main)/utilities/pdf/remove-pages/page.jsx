@@ -103,7 +103,7 @@ export default function RemovePagesPage() {
     >
       {!file && (
         <FileDropZone
-          accept={{ 'application/pdf': ['.pdf'] }}
+          accept=".pdf,application/pdf"
           multiple={false}
           maxSizeMB={100}
           onFiles={handleFiles}

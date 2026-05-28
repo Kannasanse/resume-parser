@@ -45,7 +45,7 @@ export default function PdfToExcelPage() {
 
   return (
     <ToolPageLayout
-      icon="📋"
+      icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="m8 13 2 2 4-4"/></svg>}
       title="PDF to Excel"
       description="Extract text from a PDF and output it as an Excel spreadsheet. Text extracted from PDF tables — layout and formatting may not be preserved."
       parentHref="/utilities/pdf"
@@ -70,7 +70,7 @@ export default function PdfToExcelPage() {
             </div>
           ) : (
             <FileDropZone
-              accept={{ 'application/pdf': ['.pdf'] }}
+              accept=".pdf,application/pdf"
               multiple={false}
               maxSizeMB={100}
               onFiles={handleFiles}

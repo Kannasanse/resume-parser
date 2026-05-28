@@ -53,7 +53,7 @@ export default function MarkdownToPdfPage() {
 
   return (
     <ToolPageLayout
-      icon="📝"
+      icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16v16H4z"/><polyline points="9 16 9 8 12 11 15 8 15 16"/></svg>}
       title="Markdown to PDF"
       description="Write or paste Markdown and export it as a styled PDF document."
       parentHref="/utilities/documents"
