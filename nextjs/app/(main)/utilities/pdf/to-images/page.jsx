@@ -23,7 +23,7 @@ export default function PDFToImagesPage() {
     setFile(f); setError('');
     try {
       const pdfjsLib = await import('pdfjs-dist');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
       const bytes = await f.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
       setPageCount(pdf.numPages);
@@ -35,7 +35,7 @@ export default function PDFToImagesPage() {
     setProcessing(true); setProgress(0); setError('');
     try {
       const pdfjsLib = await import('pdfjs-dist');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
       const JSZip = (await import('jszip')).default;
       const bytes = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
