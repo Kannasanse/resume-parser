@@ -42,6 +42,124 @@ const MenuIcon = () => (<svg width="22" height="22" viewBox="0 0 24 24" fill="no
 const CloseIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>);
 const GlobeIcon = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>);
 
+// ── Sidebar nav data (mirrors app USER_NAV_GROUPS) ───────────────────────────
+const HOME_NAV_GROUPS = [
+  {
+    id: 'workspace', label: 'WORKSPACE',
+    items: [
+      { label: 'Resume Builder', href: '/builder',           icon: 'fileText'  },
+      { label: 'Portfolios',     href: '/portfolios',        icon: 'portfolio' },
+      { label: 'Career Map',     href: '/career-map',        icon: 'map'       },
+    ],
+  },
+  {
+    id: 'learning', label: 'LEARNING',
+    items: [
+      { label: 'My Courses',     href: '/my-courses',        icon: 'bookOpen'  },
+      { label: 'Interview Prep', href: '/self-test',         icon: 'target'    },
+      { label: 'Notes',          href: '/notes',             icon: 'notebook'  },
+    ],
+  },
+  {
+    id: 'opportunities', label: 'OPPORTUNITIES',
+    items: [
+      { label: 'Find Jobs',      href: '/job-recommendations', icon: 'findJobs' },
+    ],
+  },
+  {
+    id: 'utilities', label: 'UTILITIES',
+    items: [
+      { label: 'Utilities',      href: '/utilities',         icon: 'wrench'    },
+    ],
+  },
+];
+
+function HomeNavIcon({ id, size = 16 }) {
+  const shapes = {
+    fileText:  <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="15" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></>,
+    portfolio: <><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></>,
+    map:       <><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21 3 6"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></>,
+    bookOpen:  <><path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2z"/><path d="M22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/></>,
+    target:    <><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/></>,
+    notebook:  <><path d="M4 4h13a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4z"/><line x1="4" y1="9" x2="8" y2="9"/><line x1="4" y1="14" x2="8" y2="14"/><line x1="4" y1="4" x2="8" y2="4"/></>,
+    findJobs:  <><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><circle cx="11" cy="14" r="2.5"/><path d="m21 21-1.5-1.5"/><path d="m14 17 2 2"/></>,
+    wrench:    <><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></>,
+  };
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      {shapes[id]}
+    </svg>
+  );
+}
+
+// ── Homepage vertical sidebar (desktop) ──────────────────────────────────────
+function HomeSidebar() {
+  return (
+    <aside
+      className="hidden lg:flex fixed left-0 top-0 bottom-0 z-40 flex-col"
+      style={{ width: 220, background: 'white', borderRight: '1px solid #D1DCE8', boxShadow: '2px 0 12px rgba(12,68,124,0.05)' }}
+    >
+      {/* Logo — same height as navbar (h-16 = 64px) */}
+      <div className="h-16 flex items-center px-5 flex-shrink-0" style={{ borderBottom: '1px solid #D1DCE8' }}>
+        <Link href="/home" className="opacity-100 hover:opacity-75 transition-opacity">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Proflect" style={{ height: 32, width: 100, objectFit: 'contain' }} />
+        </Link>
+      </div>
+
+      {/* Nav groups */}
+      <div className="flex-1 overflow-y-auto py-2">
+        {HOME_NAV_GROUPS.map((group, gi) => (
+          <div key={group.id}>
+            {gi > 0 && <div className="h-px bg-[#D1DCE8] mx-4 my-2" />}
+            <p className="text-[10px] font-[700] tracking-[0.08em] uppercase text-[#9CA3AF] px-5 mb-1 mt-3 select-none">
+              {group.label}
+            </p>
+            <div className="flex flex-col gap-0.5">
+              {group.items.map(item => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className="flex items-center gap-2.5 h-9 px-3 mx-2 rounded-[10px] text-[13px] font-medium transition-colors group"
+                  style={{ color: '#2C2C2A' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(24,95,165,0.06)'; e.currentTarget.style.color = '#185FA5'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#2C2C2A'; }}
+                >
+                  <span style={{ color: '#6B7280', flexShrink: 0 }}>
+                    <HomeNavIcon id={item.icon} />
+                  </span>
+                  <span className="flex-1 truncate">{item.label}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Bottom CTAs */}
+      <div className="flex-shrink-0 p-3 space-y-2" style={{ borderTop: '1px solid #D1DCE8' }}>
+        <Link href="/signup"
+          className="block w-full text-center py-2 text-[13px] font-semibold rounded-lg text-white transition-colors"
+          style={{ background: '#185FA5' }}
+          onMouseEnter={e => e.currentTarget.style.background = '#1454a0'}
+          onMouseLeave={e => e.currentTarget.style.background = '#185FA5'}
+        >
+          Get started free
+        </Link>
+        <Link href="/login"
+          className="block w-full text-center py-2 text-[13px] font-medium rounded-lg transition-colors"
+          style={{ color: '#6B7280' }}
+          onMouseEnter={e => e.currentTarget.style.color = '#185FA5'}
+          onMouseLeave={e => e.currentTarget.style.color = '#6B7280'}
+        >
+          Log in →
+        </Link>
+      </div>
+    </aside>
+  );
+}
+
 // ── Section 1: Navbar ─────────────────────────────────────────────────────────
 const FEATURES_NAV = [
   { icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z', label: 'Resume Builder', desc: '20 templates · live preview · PDF & Word export', href: '/builder', accent: '#185FA5' },
@@ -109,7 +227,7 @@ function HomeNavbar() {
     <>
       <nav
         ref={navRef}
-        className="fixed top-0 left-0 right-0 z-50"
+        className="fixed top-0 left-0 lg:left-[220px] right-0 z-50"
         style={{
           background: scrolled ? 'rgba(255,255,255,0.88)' : 'transparent',
           backdropFilter: scrolled ? 'blur(20px)' : 'none',
@@ -120,8 +238,8 @@ function HomeNavbar() {
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/home" className="flex items-center flex-shrink-0">
+          {/* Logo — hidden on desktop (sidebar owns it) */}
+          <Link href="/home" className="flex lg:hidden items-center flex-shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={scrolled ? '/logo.png' : '/logo-white.png'} alt="Proflect" height={40} width={118} style={{ height: '40px', width: '118px', minHeight: '40px', minWidth: '118px', maxHeight: '40px', objectFit: 'contain', display: 'block', flexShrink: 0 }} />
           </Link>
@@ -312,73 +430,50 @@ function HomeNavbar() {
             </div>
 
             <div className="flex flex-col flex-1 px-4 pt-2">
-              {/* Features accordion */}
-              <button
-                onClick={() => setMobileExpanded(mobileExpanded === 'features' ? null : 'features')}
-                className="flex items-center justify-between py-3.5 text-[15px] font-medium"
-                style={{ color: 'rgba(255,255,255,0.85)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
-              >
-                Features
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ transform: mobileExpanded === 'features' ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 200ms', flexShrink: 0 }}><polyline points="6 9 12 15 18 9"/></svg>
-              </button>
-              {mobileExpanded === 'features' && (
-                <div className="py-2 flex flex-col gap-0.5">
-                  {FEATURES_NAV.map(item => (
-                    <Link key={item.label} href={item.href} onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-3 px-2 py-2.5 rounded-lg text-[14px] font-medium"
-                      style={{ color: 'rgba(255,255,255,0.75)', transition: 'background 150ms' }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.07)'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                    >
-                      <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${item.accent}25` }}>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={item.accent} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d={item.icon} /></svg>
-                      </div>
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-
-              {/* By Category accordion */}
-              <button
-                onClick={() => setMobileExpanded(mobileExpanded === 'category' ? null : 'category')}
-                className="flex items-center justify-between py-3.5 text-[15px] font-medium"
-                style={{ color: 'rgba(255,255,255,0.85)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
-              >
-                By Category
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ transform: mobileExpanded === 'category' ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 200ms', flexShrink: 0 }}><polyline points="6 9 12 15 18 9"/></svg>
-              </button>
-              {mobileExpanded === 'category' && (
-                <div className="py-2 space-y-4">
-                  {CATEGORY_NAV.map(cat => (
-                    <div key={cat.label} className="px-1">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span style={{ fontSize: 14 }}>{cat.emoji}</span>
-                        <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.40)' }}>{cat.label}</span>
-                      </div>
-                      {cat.items.map(item => (
-                        <Link key={item.label + item.href} href={item.href} onClick={() => setMenuOpen(false)}
-                          className="block px-3 py-2 rounded-lg text-[14px] font-medium"
-                          style={{ color: 'rgba(255,255,255,0.70)', transition: 'color 150ms' }}
-                          onMouseEnter={e => e.currentTarget.style.color = 'white'}
-                          onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.70)'}
+              {HOME_NAV_GROUPS.map(group => (
+                <div key={group.id}>
+                  <button
+                    onClick={() => setMobileExpanded(mobileExpanded === group.id ? null : group.id)}
+                    className="flex items-center justify-between w-full py-3"
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+                  >
+                    <span className="text-[11px] font-[700] tracking-[0.08em] uppercase" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                      {group.label}
+                    </span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2.5" strokeLinecap="round"
+                      style={{ transform: mobileExpanded === group.id ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 200ms', flexShrink: 0 }}>
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </button>
+                  {mobileExpanded === group.id && (
+                    <div className="py-1.5 flex flex-col gap-0.5">
+                      {group.items.map(item => (
+                        <Link
+                          key={item.label}
+                          href={item.href}
+                          onClick={() => setMenuOpen(false)}
+                          className="flex items-center gap-3 px-2 py-2.5 rounded-lg text-[14px] font-medium transition-colors"
+                          style={{ color: 'rgba(255,255,255,0.75)' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'white'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.75)'; }}
                         >
+                          <span style={{ color: 'rgba(255,255,255,0.45)', flexShrink: 0 }}>
+                            <HomeNavIcon id={item.icon} size={16} />
+                          </span>
                           {item.label}
                         </Link>
                       ))}
                     </div>
-                  ))}
+                  )}
                 </div>
-              )}
-
-              {/* Direct links */}
-              {[{ label: 'Utilities', href: '/utilities' }, { label: 'Blog', href: '#' }].map(l => (
-                <Link key={l.label} href={l.href} onClick={() => setMenuOpen(false)}
-                  className="block py-3.5 text-[15px] font-medium"
-                  style={{ color: 'rgba(255,255,255,0.80)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                  {l.label}
-                </Link>
               ))}
+
+              {/* Blog */}
+              <Link href="#" onClick={() => setMenuOpen(false)}
+                className="block py-3 text-[13px] font-medium"
+                style={{ color: 'rgba(255,255,255,0.55)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                Blog
+              </Link>
             </div>
 
             <div className="flex flex-col gap-3 p-4 mt-2">
@@ -1470,7 +1565,12 @@ function HomeFooter() {
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function HomepageContent({ sections, isPreview, userRole }) {
   return (
-    <div className="overflow-x-hidden">
+    <>
+      {/* Vertical sidebar — desktop only */}
+      <HomeSidebar />
+
+      {/* Page content shifted right of sidebar on desktop */}
+      <div className="overflow-x-hidden lg:ml-[220px]">
       <HomeNavbar />
       <HeroSection />
 
@@ -1496,6 +1596,7 @@ export default function HomepageContent({ sections, isPreview, userRole }) {
           }
         }
       `}</style>
-    </div>
+      </div>
+    </>
   );
 }
