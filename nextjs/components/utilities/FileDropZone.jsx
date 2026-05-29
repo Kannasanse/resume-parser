@@ -1,5 +1,7 @@
 'use client';
 import { useRef, useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 
 function CloudUploadIcon() {
   return (
@@ -15,13 +17,30 @@ function CloudUploadIcon() {
 export function FileDropZone({ accept, multiple = false, maxSizeMB = 50, onFiles }) {
   const inputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  function guardAuth() {
+    if (!loading && !user) {
+      router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+      return true;
+    }
+    return false;
+  }
 
   function handleDrop(e) {
     e.preventDefault();
     setDragging(false);
+    if (guardAuth()) return;
     const files = Array.from(e.dataTransfer.files);
     const valid = files.filter(f => f.size <= maxSizeMB * 1024 * 1024);
     if (valid.length) onFiles(multiple ? valid : [valid[0]]);
+  }
+
+  function handleClick() {
+    if (guardAuth()) return;
+    inputRef.current?.click();
   }
 
   const acceptLabel = accept
@@ -34,7 +53,7 @@ export function FileDropZone({ accept, multiple = false, maxSizeMB = 50, onFiles
       onDrop={handleDrop}
       onDragOver={e => { e.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)}
-      onClick={() => inputRef.current?.click()}
+      onClick={handleClick}
       className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-200 group
         ${dragging
           ? 'border-[#185FA5] bg-[rgba(24,95,165,0.04)]'
@@ -51,6 +70,9 @@ export function FileDropZone({ accept, multiple = false, maxSizeMB = 50, onFiles
       <p className="text-sm text-[#9CA3AF] mt-1">
         {acceptLabel} · Max {maxSizeMB}MB{multiple ? ' per file' : ''}
       </p>
+      {!loading && !user && (
+        <p className="text-xs text-[#185FA5] mt-2 font-medium">Sign in to use this tool</p>
+      )}
       <input
         ref={inputRef}
         type="file"

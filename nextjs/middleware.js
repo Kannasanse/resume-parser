@@ -6,6 +6,8 @@ const MARKETING_PATHS  = ['/home'];
 // Auth pages — redirect away when authenticated
 const AUTH_PAGES       = ['/login', '/signup', '/verify-email', '/forgot-password', '/reset-password', '/join', '/access-denied'];
 const PUBLIC_PATHS     = [...MARKETING_PATHS, ...AUTH_PAGES];
+// Utility pages — publicly viewable; auth is enforced at the action/upload level
+const PUBLIC_UTILITY_PAGES = ['/utilities'];
 const ADMIN_ONLY_PATHS = ['/resumes', '/jobs', '/upload', '/admin', '/home/preview'];
 const ADMIN_ONLY_API   = ['/api/v1/resumes', '/api/v1/jobs', '/api/v1/admin', '/api/v1/organizations'];
 // Job recommendation routes under /api/v1/jobs/ that are user-facing (not admin-only)
@@ -47,8 +49,11 @@ export async function middleware(request) {
   if (isPublicShare || isPublicApiAuth || isPublicTest) return supabaseResponse;
 
   // ── Unauthenticated ────────────────────────────────────────────────────────
+  const isUtilityPage = PUBLIC_UTILITY_PAGES.some(p => pathname === p || pathname.startsWith(p + '/'))
+    && !pathname.startsWith('/api/');
+
   if (!user) {
-    if (isPublicPath || pathname.startsWith('/auth/')) return supabaseResponse;
+    if (isPublicPath || isUtilityPage || pathname.startsWith('/auth/')) return supabaseResponse;
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
