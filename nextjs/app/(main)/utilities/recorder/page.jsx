@@ -4,7 +4,6 @@ import { ToolPageLayout } from '@/components/utilities/ToolPageLayout';
 import { ScreenRecorder } from '@/components/recorder/ScreenRecorder';
 import { FileUploader } from '@/components/recorder/FileUploader';
 import { TranscriptOutput } from '@/components/recorder/TranscriptOutput';
-import { ExtensionBanner } from '@/components/recorder/ExtensionBanner';
 
 function MicIcon() {
   return (
@@ -56,8 +55,6 @@ export default function RecorderPage() {
         </div>
       )}
 
-      {/* Extension banner */}
-      <ExtensionBanner />
     </ToolPageLayout>
   );
 }

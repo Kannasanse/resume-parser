@@ -1,5 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 import Sidebar from '@/components/nav/Sidebar';
 import TopBar from '@/components/nav/TopBar';
 import ImpersonationBanner from '@/components/impersonation/ImpersonationBanner';
@@ -9,8 +11,12 @@ const WARN_AT   = 25 * 60 * 1000;
 const LOGOUT_AT = 30 * 60 * 1000;
 
 export default function MainLayout({ children }) {
-  const { signOut } = useAuth();
+  const { signOut, user, loading } = useAuth();
+  const pathname = usePathname();
   const [showWarning, setShowWarning] = useState(false);
+
+  // Unauthenticated users on /utilities get a sidebar-free layout
+  const isPublicUtilities = !loading && !user && pathname?.startsWith('/utilities');
   const idleTimer = useRef(null);
   const warnTimer = useRef(null);
 
@@ -33,6 +39,31 @@ export default function MainLayout({ children }) {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Public utilities layout (no sidebar, no auth required) ──────────────────
+  if (isPublicUtilities) {
+    return (
+      <div className="min-h-screen bg-[#F4F8FC] dark:bg-[#0A1628]">
+        {/* Slim top bar */}
+        <div className="flex items-center justify-between px-5 py-3 bg-white dark:bg-[#111F35] border-b border-[#D1DCE8] dark:border-white/10">
+          <Link href="/home" className="font-bold text-[#185FA5] text-sm tracking-tight">
+            Proflect
+          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/login"
+              className="text-xs font-medium text-[#6B7280] dark:text-[#8BA3C1] hover:text-[#185FA5] transition-colors">
+              Sign in
+            </Link>
+            <Link href="/signup"
+              className="px-3 py-1.5 text-xs font-semibold bg-[#185FA5] hover:bg-[#0C447C] text-white rounded-lg transition-colors">
+              Get started free
+            </Link>
+          </div>
+        </div>
+        <main>{children}</main>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex overflow-hidden bg-[#F4F8FC] dark:bg-[#0A1628]">
