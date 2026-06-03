@@ -93,73 +93,6 @@ function HomeNavIcon({ id, size = 16 }) {
   );
 }
 
-// ── Homepage vertical sidebar (desktop) ──────────────────────────────────────
-function HomeSidebar() {
-  return (
-    <aside
-      className="hidden lg:flex fixed left-0 top-0 bottom-0 z-40 flex-col"
-      style={{ width: 220, background: 'white', borderRight: '1px solid #D1DCE8', boxShadow: '2px 0 12px rgba(12,68,124,0.05)' }}
-    >
-      {/* Logo — same height as navbar (h-16 = 64px) */}
-      <div className="h-16 flex items-center px-5 flex-shrink-0" style={{ borderBottom: '1px solid #D1DCE8' }}>
-        <Link href="/home" className="opacity-100 hover:opacity-75 transition-opacity">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="Proflect" style={{ height: 32, width: 100, objectFit: 'contain' }} />
-        </Link>
-      </div>
-
-      {/* Nav groups */}
-      <div className="flex-1 overflow-y-auto py-2">
-        {HOME_NAV_GROUPS.map((group, gi) => (
-          <div key={group.id}>
-            {gi > 0 && <div className="h-px bg-[#D1DCE8] mx-4 my-2" />}
-            <p className="text-[10px] font-[700] tracking-[0.08em] uppercase text-[#9CA3AF] px-5 mb-1 mt-3 select-none">
-              {group.label}
-            </p>
-            <div className="flex flex-col gap-0.5">
-              {group.items.map(item => (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className="flex items-center gap-2.5 h-9 px-3 mx-2 rounded-[10px] text-[13px] font-medium transition-colors group"
-                  style={{ color: '#2C2C2A' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(24,95,165,0.06)'; e.currentTarget.style.color = '#185FA5'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#2C2C2A'; }}
-                >
-                  <span style={{ color: '#6B7280', flexShrink: 0 }}>
-                    <HomeNavIcon id={item.icon} />
-                  </span>
-                  <span className="flex-1 truncate">{item.label}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Bottom CTAs */}
-      <div className="flex-shrink-0 p-3 space-y-2" style={{ borderTop: '1px solid #D1DCE8' }}>
-        <Link href="/signup"
-          className="block w-full text-center py-2 text-[13px] font-semibold rounded-lg text-white transition-colors"
-          style={{ background: '#185FA5' }}
-          onMouseEnter={e => e.currentTarget.style.background = '#1454a0'}
-          onMouseLeave={e => e.currentTarget.style.background = '#185FA5'}
-        >
-          Get started free
-        </Link>
-        <Link href="/login"
-          className="block w-full text-center py-2 text-[13px] font-medium rounded-lg transition-colors"
-          style={{ color: '#6B7280' }}
-          onMouseEnter={e => e.currentTarget.style.color = '#185FA5'}
-          onMouseLeave={e => e.currentTarget.style.color = '#6B7280'}
-        >
-          Log in →
-        </Link>
-      </div>
-    </aside>
-  );
-}
-
 // ── Section 1: Navbar ─────────────────────────────────────────────────────────
 const FEATURES_NAV = [
   { icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z', label: 'Resume Builder', desc: '20 templates · live preview · PDF & Word export', href: '/builder', accent: '#185FA5' },
@@ -227,7 +160,7 @@ function HomeNavbar() {
     <>
       <nav
         ref={navRef}
-        className="fixed top-0 left-0 lg:left-[220px] right-0 z-50"
+        className="fixed top-0 left-0 right-0 z-50"
         style={{
           background: scrolled ? 'rgba(255,255,255,0.88)' : 'transparent',
           backdropFilter: scrolled ? 'blur(20px)' : 'none',
@@ -238,54 +171,70 @@ function HomeNavbar() {
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          {/* Logo — hidden on desktop (sidebar owns it) */}
-          <Link href="/home" className="flex lg:hidden items-center flex-shrink-0">
+          {/* Logo */}
+          <Link href="/home" className="flex items-center flex-shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={scrolled ? '/logo.png' : '/logo-white.png'} alt="Proflect" height={40} width={118} style={{ height: '40px', width: '118px', minHeight: '40px', minWidth: '118px', maxHeight: '40px', objectFit: 'contain', display: 'block', flexShrink: 0 }} />
           </Link>
 
-          {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-1">
-            {/* Features dropdown */}
-            <div onMouseEnter={() => openDropdown('features')} onMouseLeave={scheduleClose}>
-              <button
-                onClick={() => openMenu === 'features' ? setOpenMenu(null) : openDropdown('features')}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm font-medium"
-                style={{ color: linkColor, transition: 'background 150ms' }}
-                onMouseEnter={e => e.currentTarget.style.background = hoverBg}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-              >
-                Features
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ transition: 'transform 200ms', transform: openMenu === 'features' ? 'rotate(180deg)' : 'rotate(0deg)' }}><polyline points="6 9 12 15 18 9"/></svg>
-              </button>
-            </div>
+          {/* Desktop nav — 4 group dropdowns */}
+          <div className="hidden md:flex items-center gap-0.5">
+            {HOME_NAV_GROUPS.map(group => (
+              <div key={group.id} className="relative" onMouseEnter={() => openDropdown(group.id)} onMouseLeave={scheduleClose}>
+                <button
+                  onClick={() => openMenu === group.id ? setOpenMenu(null) : openDropdown(group.id)}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium"
+                  style={{ color: linkColor, transition: 'background 150ms' }}
+                  onMouseEnter={e => e.currentTarget.style.background = hoverBg}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  {group.label.charAt(0) + group.label.slice(1).toLowerCase()}
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+                    style={{ transition: 'transform 200ms', transform: openMenu === group.id ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}>
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </button>
 
-            {/* By Category dropdown */}
-            <div onMouseEnter={() => openDropdown('category')} onMouseLeave={scheduleClose}>
-              <button
-                onClick={() => openMenu === 'category' ? setOpenMenu(null) : openDropdown('category')}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm font-medium"
-                style={{ color: linkColor, transition: 'background 150ms' }}
-                onMouseEnter={e => e.currentTarget.style.background = hoverBg}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-              >
-                By Category
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ transition: 'transform 200ms', transform: openMenu === 'category' ? 'rotate(180deg)' : 'rotate(0deg)' }}><polyline points="6 9 12 15 18 9"/></svg>
-              </button>
-            </div>
-
-            {/* Direct links */}
-            {[{ label: 'Utilities', href: '/utilities' }, { label: 'Blog', href: '#' }].map(l => (
-              <Link
-                key={l.label}
-                href={l.href}
-                className="px-2.5 py-1.5 rounded-lg text-sm font-medium"
-                style={{ color: linkColor, transition: 'background 150ms' }}
-                onMouseEnter={e => e.currentTarget.style.background = hoverBg}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-              >
-                {l.label}
-              </Link>
+                {/* Per-group dropdown panel */}
+                {openMenu === group.id && (
+                  <div
+                    className="absolute z-50"
+                    style={{ top: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)' }}
+                    onMouseEnter={cancelClose}
+                    onMouseLeave={scheduleClose}
+                  >
+                    <div style={{
+                      minWidth: 200,
+                      background: 'white',
+                      border: '1px solid #D1DCE8',
+                      borderRadius: 14,
+                      boxShadow: '0 16px 40px rgba(12,68,124,0.13), 0 4px 12px rgba(12,68,124,0.07)',
+                      padding: '6px',
+                      animation: 'megaMenuIn 160ms cubic-bezier(0.16,1,0.3,1) both',
+                    }}>
+                      <p className="text-[10px] font-[700] uppercase tracking-[0.08em] px-3 pt-2 pb-1.5" style={{ color: '#9CA3AF' }}>
+                        {group.label}
+                      </p>
+                      {group.items.map(item => (
+                        <Link
+                          key={item.label}
+                          href={item.href}
+                          onClick={() => setOpenMenu(null)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] font-medium transition-colors"
+                          style={{ color: '#2C2C2A' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#F4F8FC'; e.currentTarget.style.color = '#185FA5'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#2C2C2A'; }}
+                        >
+                          <span style={{ color: '#6B7280', flexShrink: 0 }}>
+                            <HomeNavIcon id={item.icon} size={15} />
+                          </span>
+                          {item.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
 
@@ -307,114 +256,6 @@ function HomeNavbar() {
           </button>
         </div>
 
-        {/* Features mega menu */}
-        {openMenu === 'features' && (
-          <div
-            className="absolute z-50"
-            style={{ top: '100%', left: '50%', marginTop: 12 }}
-            onMouseEnter={cancelClose}
-            onMouseLeave={scheduleClose}
-          >
-            <div style={{
-              transform: 'translateX(-50%)',
-              width: 'min(780px, 95vw)',
-              background: 'white',
-              border: '1px solid #D1DCE8',
-              borderRadius: 20,
-              boxShadow: '0 24px 60px rgba(12,68,124,0.14), 0 4px 16px rgba(12,68,124,0.08)',
-              padding: 24,
-              animation: 'megaMenuIn 180ms cubic-bezier(0.16,1,0.3,1) both',
-            }}>
-              <p className="text-[11px] font-bold uppercase pb-3.5 mb-4" style={{ color: '#9CA3AF', letterSpacing: '0.08em', borderBottom: '1px solid #F4F8FC' }}>
-                Everything you need for your career
-              </p>
-              <div className="grid grid-cols-3 gap-1">
-                {FEATURES_NAV.map(item => (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    onClick={() => setOpenMenu(null)}
-                    className="flex items-start gap-3 p-2.5 rounded-xl group"
-                    style={{ transition: 'background 150ms' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#F4F8FC'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <div className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0" style={{ background: `${item.accent}20`, border: `1px solid ${item.accent}28` }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={item.accent} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d={item.icon} /></svg>
-                    </div>
-                    <div className="min-w-0 pt-0.5">
-                      <p className="text-[14px] font-semibold text-[#2C2C2A] leading-tight" style={{ transition: 'color 150ms' }}
-                        onMouseEnter={e => e.currentTarget.style.color = '#185FA5'} onMouseLeave={e => e.currentTarget.style.color = '#2C2C2A'}>
-                        {item.label}
-                      </p>
-                      <p className="text-[12px] text-[#9CA3AF] mt-0.5 truncate">{item.desc}</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-              <div className="flex items-center justify-between pt-3.5 mt-3" style={{ borderTop: '1px solid #F4F8FC' }}>
-                <span className="text-[12px] text-[#6B7280]">✦ Start free — no credit card required</span>
-                <Link href="/signup" onClick={() => setOpenMenu(null)}
-                  className="text-[13px] font-semibold text-white px-3.5 py-1.5 rounded-lg"
-                  style={{ background: '#185FA5', transition: 'background 150ms' }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#1454a0'}
-                  onMouseLeave={e => e.currentTarget.style.background = '#185FA5'}>
-                  Get started →
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* By Category mega menu */}
-        {openMenu === 'category' && (
-          <div
-            className="absolute z-50"
-            style={{ top: '100%', left: '50%', marginTop: 12 }}
-            onMouseEnter={cancelClose}
-            onMouseLeave={scheduleClose}
-          >
-            <div style={{
-              transform: 'translateX(-50%)',
-              width: 'min(640px, 95vw)',
-              background: 'white',
-              border: '1px solid #D1DCE8',
-              borderRadius: 20,
-              boxShadow: '0 24px 60px rgba(12,68,124,0.14), 0 4px 16px rgba(12,68,124,0.08)',
-              padding: 24,
-              animation: 'megaMenuIn 180ms cubic-bezier(0.16,1,0.3,1) both',
-            }}>
-              <p className="text-[11px] font-bold uppercase pb-3.5 mb-4" style={{ color: '#9CA3AF', letterSpacing: '0.08em', borderBottom: '1px solid #F4F8FC' }}>
-                Find the right tools for you
-              </p>
-              <div className="grid grid-cols-2 gap-6">
-                {CATEGORY_NAV.map(cat => (
-                  <div key={cat.label}>
-                    <div className="flex items-center gap-2 mb-2.5">
-                      <span style={{ fontSize: 16 }}>{cat.emoji}</span>
-                      <span className="text-[11px] font-bold uppercase tracking-widest text-[#6B7280]">{cat.label}</span>
-                    </div>
-                    <div className="flex flex-col gap-0.5">
-                      {cat.items.map(item => (
-                        <Link
-                          key={item.label + item.href}
-                          href={item.href}
-                          onClick={() => setOpenMenu(null)}
-                          className="px-2.5 py-1.5 rounded-lg text-[14px] font-medium text-[#2C2C2A]"
-                          style={{ transition: 'all 150ms' }}
-                          onMouseEnter={e => { e.currentTarget.style.background = '#F4F8FC'; e.currentTarget.style.color = '#185FA5'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#2C2C2A'; }}
-                        >
-                          {item.label}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
       </nav>
 
       {/* Mobile drawer */}
@@ -1565,12 +1406,7 @@ function HomeFooter() {
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function HomepageContent({ sections, isPreview, userRole }) {
   return (
-    <>
-      {/* Vertical sidebar — desktop only */}
-      <HomeSidebar />
-
-      {/* Page content shifted right of sidebar on desktop */}
-      <div className="overflow-x-hidden lg:ml-[220px]">
+    <div className="overflow-x-hidden">
       <HomeNavbar />
       <HeroSection />
 
@@ -1596,7 +1432,6 @@ export default function HomepageContent({ sections, isPreview, userRole }) {
           }
         }
       `}</style>
-      </div>
-    </>
+    </div>
   );
 }
