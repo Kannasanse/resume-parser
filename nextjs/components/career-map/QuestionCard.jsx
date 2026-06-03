@@ -16,7 +16,7 @@ export default function QuestionCard({
 }) {
   const { questionText, questionType, options, placeholder, maxLength } = question;
 
-  // Estimated total: known only >= 5
+  // Estimated total: unknown early on, tightens as we go
   const estTotal = questionNumber < 5
     ? null
     : Math.min(10, questionNumber + 2);
@@ -29,11 +29,9 @@ export default function QuestionCard({
     ? (answerValue || '').trim().length >= 1
     : !!answerValue;
 
-  const progressPct = estTotal ? Math.round((questionNumber / estTotal) * 100) : null;
-
   return (
     <div className="card shadow-2xl p-8 space-y-6 animate-fade-in-scale">
-      {/* Header row */}
+      {/* Header row: back button + progress label */}
       <div className="flex items-center justify-between">
         {questionNumber > 1 ? (
           <button
@@ -50,12 +48,23 @@ export default function QuestionCard({
         <p className="text-xs text-[#9CA3AF] dark:text-[#4A6380] font-medium">{progressLabel}</p>
       </div>
 
-      {/* Progress bar */}
-      {progressPct !== null && (
-        <div className="h-1 bg-[#E6F1FB] dark:bg-[rgba(24,95,165,0.15)] rounded-full overflow-hidden -mt-3">
-          <div className="progress-fill-gradient h-full rounded-full transition-all duration-500" style={{ width: `${progressPct}%` }} />
+      {/* Segmented dot progress bar */}
+      <div className="flex items-center gap-2 -mt-2">
+        <div className="flex gap-1 flex-1">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div
+              key={i}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                i < questionNumber - 1
+                  ? 'flex-1 bg-[#185FA5]'
+                  : i === questionNumber - 1
+                  ? 'flex-1 bg-[#185FA5] opacity-60'
+                  : 'w-3 flex-none bg-[#D1DCE8] dark:bg-[rgba(255,255,255,0.12)]'
+              }`}
+            />
+          ))}
         </div>
-      )}
+      </div>
 
       {/* Question text */}
       <h3 className="text-[20px] font-bold text-[#2C2C2A] dark:text-[#E8EFF7] leading-[1.4]">
@@ -82,7 +91,7 @@ export default function QuestionCard({
         />
       )}
 
-      {/* Next button */}
+      {/* Next / Submit button */}
       <button
         type="button"
         onClick={onNext}

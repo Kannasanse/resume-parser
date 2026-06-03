@@ -1,17 +1,9 @@
 'use client';
 
-const MESSAGES = {
-  1:  'Analysing your background…',
-  2:  'Learning more about you…',
-  3:  'Learning more about you…',
-  4:  'Learning more about you…',
-  final: 'Building your career map…',
-};
-
 function getMessage(questionNumber) {
-  if (questionNumber <= 1) return MESSAGES[1];
-  if (questionNumber >= 5) return MESSAGES.final;
-  return MESSAGES[questionNumber] || 'Personalising your next question…';
+  if (questionNumber <= 1) return 'Analysing your background…';
+  if (questionNumber <= 4) return 'Learning more about you…';
+  return 'Refining your career picture…';
 }
 
 export default function QuestionLoadingState({ questionNumber = 1 }) {
@@ -32,7 +24,9 @@ export default function QuestionLoadingState({ questionNumber = 1 }) {
           />
         ))}
       </div>
-      <p className="text-[13px] text-[#6B7280]">{getMessage(questionNumber)}</p>
+      <p className="text-[13px] text-[#6B7280] dark:text-[#8BA3C1]">
+        {getMessage(questionNumber)}
+      </p>
     </div>
   );
 }

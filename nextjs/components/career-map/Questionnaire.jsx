@@ -4,18 +4,25 @@ import QuestionCard from './QuestionCard';
 import QuestionLoadingState from './QuestionLoadingState';
 import QuestionnaireComplete from './QuestionnaireComplete';
 
-// State machine: loading | question | complete | error
+const EFFECTIVE_MAX = 11; // client-side guard matching server
+
+// State machine: idle | loading | question | complete | error
 export default function Questionnaire({ profile, sessionId, onSubmit, loading: profileLoading, mode = 'resume', selectedSkills = [] }) {
-  const [uiState, setUiState]         = useState('idle'); // idle | loading | question | complete | error
-  const [questions, setQuestions]     = useState([]);     // [{question, confidenceAfter, shouldContinue}]
-  const [answers, setAnswers]         = useState([]);     // [{questionNumber, answerValue, answerLabel}]
-  const [currentIdx, setCurrentIdx]   = useState(0);     // index into questions array
+  const [uiState, setUiState]         = useState('idle');
+  const [questions, setQuestions]     = useState([]);
+  const [answers, setAnswers]         = useState([]);
+  const [currentIdx, setCurrentIdx]   = useState(0);
   const [currentAnswer, setCurrentAnswer] = useState({ value: '', label: '' });
   const [errorMsg, setErrorMsg]       = useState('');
-  const [completing, setCompleting]   = useState(false);
 
   // Fetch question N from API
   const fetchQuestion = useCallback(async (questionNumber, prevAnswers) => {
+    // Client-side hard cap
+    if (questionNumber > EFFECTIVE_MAX) {
+      setUiState('complete');
+      return;
+    }
+
     setUiState('loading');
     setErrorMsg('');
     try {
@@ -24,7 +31,7 @@ export default function Questionnaire({ profile, sessionId, onSubmit, loading: p
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId,
-          extractedProfile: mode === 'skills' ? null : profile,
+          extractedProfile:  mode === 'skills' ? null : profile,
           previousQuestions: prevAnswers.map(a => ({
             questionNumber: a.questionNumber,
             questionText:   a.questionText,
@@ -61,7 +68,6 @@ export default function Questionnaire({ profile, sessionId, onSubmit, loading: p
     }
   }, [uiState, sessionId, fetchQuestion]);
 
-  // Kick off when ready — different trigger for skills vs resume mode
   if (mode === 'skills' && sessionId && uiState === 'idle') {
     start();
   } else if (mode === 'resume' && !profileLoading && profile && sessionId && uiState === 'idle') {
@@ -76,7 +82,6 @@ export default function Questionnaire({ profile, sessionId, onSubmit, loading: p
     const questionNumber = current.question.questionNumber;
     const { value, label } = currentAnswer;
 
-    // Save answer record
     const newAnswer = {
       questionNumber,
       questionText:   current.question.questionText,
@@ -88,30 +93,26 @@ export default function Questionnaire({ profile, sessionId, onSubmit, loading: p
     const updatedAnswers = answers.filter(a => a.questionNumber !== questionNumber).concat(newAnswer);
     setAnswers(updatedAnswers);
 
-    // Persist to API (fire-and-forget, non-blocking)
+    // Persist (fire-and-forget)
     fetch('/api/v1/career-map/submit-answer', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         sessionId,
         questionNumber,
-        answerValue:    value,
-        answerLabel:    label,
+        answerValue:     value,
+        answerLabel:     label,
         confidenceAfter: current.confidenceAfter,
         shouldContinue:  current.shouldContinue,
       }),
     }).catch(() => {});
 
     if (!current.shouldContinue) {
-      // Done — show completion card then call onSubmit
-      setCompleting(true);
       setUiState('complete');
     } else {
-      // Check if we already fetched this question (back navigation)
       const nextNum = questionNumber + 1;
       if (questions[nextNum - 1]) {
         setCurrentIdx(nextNum - 1);
-        // Pre-fill previous answer if going back and re-advancing
         const existingAns = updatedAnswers.find(a => a.questionNumber === nextNum);
         setCurrentAnswer({ value: existingAns?.answerValue || '', label: existingAns?.answerLabel || '' });
         setUiState('question');
@@ -125,7 +126,6 @@ export default function Questionnaire({ profile, sessionId, onSubmit, loading: p
     const current = questions[currentIdx];
     if (!current) return;
     setCurrentAnswer({ value: '', label: '(skipped)' });
-    // Treat skip as empty answer — let handleNext proceed
     setTimeout(() => handleNext(), 0);
   }
 
@@ -133,25 +133,42 @@ export default function Questionnaire({ profile, sessionId, onSubmit, loading: p
     if (currentIdx <= 0) return;
     const prevIdx = currentIdx - 1;
     setCurrentIdx(prevIdx);
-    const prev = questions[prevIdx];
-    const existingAns = answers.find(a => a.questionNumber === (prevIdx + 1));
+    const existingAns = answers.find(a => a.questionNumber === prevIdx + 1);
     setCurrentAnswer({ value: existingAns?.answerValue || '', label: existingAns?.answerLabel || '' });
     setUiState('question');
   }
 
+  // "Skip to results" — user-initiated early stop after Q5
+  function handleSkipToResults() {
+    fetch('/api/v1/career-map/submit-answer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId,
+        questionNumber: answers.length,
+        answerValue:    '',
+        answerLabel:    '(user skipped)',
+        confidenceAfter: questions[currentIdx]?.confidenceAfter || 0.7,
+        shouldContinue:  false,
+      }),
+    }).catch(() => {});
+    setUiState('complete');
+  }
+
   function handleContinue() {
-    // Called by QuestionnaireComplete after animation
     onSubmit(answers);
   }
 
-  // ── Profile loading state ──────────────────────────────────────────────────
-  if ((mode === 'resume' && (profileLoading || uiState === 'idle')) || (mode === 'skills' && uiState === 'idle' && !sessionId)) {
+  // ── Profile loading state ────────────────────────────────────────────────
+  if ((mode === 'resume' && (profileLoading || uiState === 'idle')) ||
+      (mode === 'skills' && uiState === 'idle' && !sessionId)) {
     return (
       <div className="max-w-2xl mx-auto">
         <div className="card p-10 text-center space-y-5">
           <div className="stat-icon mx-auto">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V9"/><path d="M9 3l6 6h6"/>
+              <path d="M9 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V9"/>
+              <path d="M9 3l6 6h6"/>
             </svg>
           </div>
           <div>
@@ -168,7 +185,7 @@ export default function Questionnaire({ profile, sessionId, onSubmit, loading: p
     );
   }
 
-  // ── Error state ────────────────────────────────────────────────────────────
+  // ── Error state ──────────────────────────────────────────────────────────
   if (uiState === 'error') {
     return (
       <div className="max-w-2xl mx-auto">
@@ -185,7 +202,7 @@ export default function Questionnaire({ profile, sessionId, onSubmit, loading: p
     );
   }
 
-  // ── Completion state ───────────────────────────────────────────────────────
+  // ── Completion state ─────────────────────────────────────────────────────
   if (uiState === 'complete') {
     const lastQ = questions[questions.length - 1];
     return (
@@ -199,7 +216,7 @@ export default function Questionnaire({ profile, sessionId, onSubmit, loading: p
     );
   }
 
-  // ── Loading next question ──────────────────────────────────────────────────
+  // ── Loading next question ────────────────────────────────────────────────
   if (uiState === 'loading') {
     const nextNum = (questions.length || 0) + 1;
     return (
@@ -211,12 +228,15 @@ export default function Questionnaire({ profile, sessionId, onSubmit, loading: p
     );
   }
 
-  // ── Active question ────────────────────────────────────────────────────────
+  // ── Active question ──────────────────────────────────────────────────────
   const current = questions[currentIdx];
   if (!current) return null;
 
+  const answeredCount = answers.filter(a => a.answerValue).length;
+  const showSkipToResults = answeredCount >= 5;
+
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto space-y-3">
       <QuestionCard
         question={current.question}
         questionNumber={current.question.questionNumber}
@@ -228,6 +248,15 @@ export default function Questionnaire({ profile, sessionId, onSubmit, loading: p
         confidence={current.confidenceAfter}
         isLast={!current.shouldContinue}
       />
+      {showSkipToResults && (
+        <button
+          type="button"
+          onClick={handleSkipToResults}
+          className="text-sm text-[#9CA3AF] hover:text-[#6B7280] dark:hover:text-[#8BA3C1] transition-colors mx-auto block"
+        >
+          Skip remaining questions and generate my career map →
+        </button>
+      )}
     </div>
   );
 }

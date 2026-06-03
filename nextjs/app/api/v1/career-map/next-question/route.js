@@ -2,15 +2,27 @@ import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth-helpers.js';
 import supabase from '@/lib/supabase.js';
 import Groq from 'groq-sdk';
+import { extractKnowledgeFromResume } from '@/lib/career-map/extractKnowledgeFromResume.js';
 
 export const dynamic = 'force-dynamic';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
+const HARD_MAX_QUESTIONS = 10;
+const EFFECTIVE_MAX      = 11; // safety net — never reached in normal flow
+const TIER3_INTENTS      = ['salary_priority', 'geographic_constraint', 'risk_tolerance', 'industry_preference'];
+
 export async function POST(request) {
   try {
     const { user } = await requireUser(request);
-    const { sessionId, extractedProfile, previousQuestions = [], questionNumber, mode = 'resume', selectedSkills = [] } = await request.json();
+    const {
+      sessionId,
+      extractedProfile,
+      previousQuestions = [],
+      questionNumber,
+      mode = 'resume',
+      selectedSkills = [],
+    } = await request.json();
 
     // Verify session ownership
     const { data: session } = await supabase
@@ -20,6 +32,16 @@ export async function POST(request) {
       .eq('user_id', user.id)
       .single();
     if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+
+    // Server-side hard cap — force stop before even calling AI
+    if (questionNumber > EFFECTIVE_MAX) {
+      return NextResponse.json({
+        question:        null,
+        shouldContinue:  false,
+        stopReason:      'max_questions',
+        confidenceAfter: 0.75,
+      });
+    }
 
     const prompt = mode === 'skills'
       ? buildSkillsPrompt(selectedSkills, previousQuestions, questionNumber)
@@ -40,19 +62,18 @@ export async function POST(request) {
 
     // Server-side duplicate intent detection — regenerate once if duplicate found
     if (previousQuestions.length > 0) {
-      const previousIntents = previousQuestions.map(q => q.questionIntent?.toLowerCase() || '');
-      const newIntent = (raw.questionIntent || raw.question_intent || '').toLowerCase();
-      const firstWord = newIntent.split(' ')[0];
-      const isDuplicate = previousIntents.some(intent =>
-        intent === newIntent ||
-        (firstWord.length > 3 && (intent.includes(firstWord) || newIntent.includes(intent.split(' ')[0])))
+      const prevIntents = previousQuestions.map(q => (q.questionIntent || '').toLowerCase());
+      const newIntent   = (raw.questionIntent || raw.question_intent || '').toLowerCase();
+      const firstWord   = newIntent.split('_')[0];
+      const isDuplicate = prevIntents.some(i =>
+        i === newIntent || (firstWord.length > 3 && (i.includes(firstWord) || newIntent.includes(i.split('_')[0])))
       );
       if (isDuplicate) {
-        console.warn('[Career Map] Duplicate question intent detected, regenerating:', newIntent);
-        const extraNote = `CRITICAL: You already asked about "${newIntent}". You MUST choose a completely different topic from the remaining intents list.`;
+        console.warn('[Career Map] Duplicate intent detected, regenerating:', newIntent);
+        const note = `CRITICAL: You already asked about "${newIntent}". Choose a completely different topic.`;
         const retryPrompt = mode === 'skills'
-          ? buildSkillsPrompt(selectedSkills, previousQuestions, questionNumber, extraNote)
-          : buildPrompt(extractedProfile, previousQuestions, questionNumber, extraNote);
+          ? buildSkillsPrompt(selectedSkills, previousQuestions, questionNumber, note)
+          : buildPrompt(extractedProfile, previousQuestions, questionNumber, note);
         const retry = await groq.chat.completions.create({
           model:           'llama-3.3-70b-versatile',
           temperature:     0.9,
@@ -73,38 +94,63 @@ export async function POST(request) {
       questionIntent: raw.questionIntent || raw.question_intent || '',
       options:        raw.options        || null,
       placeholder:    raw.placeholder    || null,
-      maxLength:      raw.maxLength      || raw.max_length      || (raw.questionType === 'free_text' ? 300 : null),
+      maxLength:      raw.maxLength      || raw.max_length
+                      || (raw.questionType === 'free_text' ? 300 : null),
     };
 
-    const confidenceAfter = Math.max(0, Math.min(1, parseFloat(raw.confidenceAfter ?? raw.confidence_after ?? 0)));
-    const shouldContinue  = raw.shouldContinue ?? raw.should_continue ?? true;
-    const stopReason      = raw.stopReason || raw.stop_reason || null;
+    const confidenceAfter = Math.max(0, Math.min(1,
+      parseFloat(raw.confidenceAfter ?? raw.confidence_after ?? 0)));
+    let shouldContinue  = raw.shouldContinue ?? raw.should_continue ?? true;
+    let stopReason      = raw.stopReason || raw.stop_reason || null;
+    const continueReason = raw.continueReason || raw.continue_reason || null;
 
-    // Enforce minimums: skills mode requires 3 questions, resume mode requires 5
+    // ── Server-side enforcement ──────────────────────────────────────────────
+
+    // Enforce minimums
     const minQuestions = mode === 'skills' ? 3 : 5;
-    const effectiveContinue = questionNumber < minQuestions ? true : shouldContinue;
+    if (questionNumber < minQuestions) shouldContinue = true;
 
-    // Save question row to DB (unanswered — answer saved by submit-answer)
+    // Force stop if AI says continue but gives no reason (past minimum)
+    if (shouldContinue && !continueReason && questionNumber >= minQuestions) {
+      console.warn('[Questionnaire] AI said continue but gave no continueReason — forcing stop');
+      shouldContinue = false;
+      stopReason     = 'no_reason_given';
+    }
+
+    // Block Tier 3 questions at Q8+ (resume mode)
+    if (shouldContinue && questionNumber >= 8 && mode === 'resume' && TIER3_INTENTS.includes(question.questionIntent)) {
+      console.warn(`[Questionnaire] Blocking Tier 3 intent "${question.questionIntent}" at Q${questionNumber}`);
+      shouldContinue = false;
+      stopReason     = 'tier3_blocked';
+    }
+
+    // Absolute hard ceiling
+    if (questionNumber >= HARD_MAX_QUESTIONS) {
+      shouldContinue = false;
+      stopReason     = stopReason || 'max_questions';
+    }
+
+    // Save question to DB (unanswered — answer saved by submit-answer)
     try {
       await supabase
         .from('career_map_questions')
         .upsert({
-          session_id:      sessionId,
-          question_number: questionNumber,
-          question_text:   question.questionText,
-          question_type:   question.questionType,
-          question_intent: question.questionIntent,
-          options:         question.options,
+          session_id:       sessionId,
+          question_number:  questionNumber,
+          question_text:    question.questionText,
+          question_type:    question.questionType,
+          question_intent:  question.questionIntent,
+          options:          question.options,
           confidence_after: confidenceAfter,
-          should_continue: effectiveContinue,
+          should_continue:  shouldContinue,
         }, { onConflict: 'session_id,question_number' });
     } catch (_) {}
 
     return NextResponse.json({
       question,
       confidenceAfter,
-      shouldContinue: effectiveContinue,
-      stopReason: effectiveContinue ? null : stopReason,
+      shouldContinue,
+      stopReason: shouldContinue ? null : stopReason,
     });
   } catch (err) {
     if (err instanceof Response) return err;
@@ -113,169 +159,176 @@ export async function POST(request) {
   }
 }
 
+// ── Resume-mode prompt ───────────────────────────────────────────────────────
+
 function buildPrompt(profile, previousQuestions, questionNumber, extraInstruction = '') {
+  const knowledge = extractKnowledgeFromResume(profile);
+
+  const knownLines = Object.entries(knowledge)
+    .filter(([, v]) => v)
+    .map(([k]) => `✓ ${k}`)
+    .join('\n') || 'Nothing definitive yet';
+
+  const unknownLines = Object.entries(knowledge)
+    .filter(([, v]) => !v)
+    .map(([k]) => `? ${k}`)
+    .join('\n') || 'Nothing critical missing — you should stop';
+
+  const coveredIntents = previousQuestions
+    .map(q => q.questionIntent).filter(Boolean).join(', ') || 'none';
+
   const prevText = previousQuestions.length === 0
-    ? 'None yet — this is the first question.'
+    ? 'None yet — this is Q1.'
     : previousQuestions.map(q =>
-        `Q${q.questionNumber} [${q.questionIntent}]: "${q.questionText}"\nAnswer: "${q.answerLabel || q.answerValue}"`
+        `Q${q.questionNumber} [${q.questionIntent}]: "${q.questionText}"\n→ ${q.answerLabel || q.answerValue}`
       ).join('\n\n');
 
-  const coveredIntents = previousQuestions.length > 0
-    ? previousQuestions.map(q => q.questionIntent).filter(Boolean).join(', ')
-    : 'none';
+  const phaseBlock = questionNumber >= 8
+    ? `⚠️ FINAL PHASE (Q${questionNumber}/10): You have ${HARD_MAX_QUESTIONS - questionNumber + 1} question(s) left.
+Set shouldContinue: false UNLESS there is a CRITICAL Tier 1 gap remaining.
+If in doubt → STOP. Do not ask nice-to-have questions.`
+    : questionNumber >= 5
+    ? `EVALUATION PHASE (Q${questionNumber}): Seriously consider stopping now.
+Stop if you know: career_direction + timeline + at least one constraint.
+Continue only if a genuine Tier 1 or Tier 2 gap exists — write it in continueReason.`
+    : `ESSENTIAL PHASE (Q${questionNumber}): Ask only the most important unknown.`;
 
-  const minRemaining = Math.max(0, 5 - questionNumber + 1);
-  const maxRemaining = 10 - questionNumber + 1;
+  return `You are a career advisor conducting a SHORT, FOCUSED career assessment.
 
-  return `You are an adaptive career advisor conducting a personalised career assessment.
+HARD CONSTRAINTS:
+1. STRICT budget of ${HARD_MAX_QUESTIONS} questions total — a hard ceiling, not a suggestion.
+2. You are generating question ${questionNumber} of maximum ${HARD_MAX_QUESTIONS}.
+3. ${phaseBlock}
 
-Your goal is to understand this professional's career goals, preferences, and constraints well enough to recommend the most relevant career paths for them.
-
-Candidate profile (from their resume):
+CANDIDATE PROFILE (already known — DO NOT ask about these):
 ${JSON.stringify(profile, null, 2)}
 
-Questions asked so far and their answers:
+WHAT THE RESUME ALREADY TELLS YOU:
+${knownLines}
+
+WHAT IS STILL UNKNOWN (potential question targets):
+${unknownLines}
+
+QUESTIONS AND ANSWERS SO FAR:
 ${prevText}
 
-Topics already covered — DO NOT ask about any of these again:
-${coveredIntents}
+INTENT COVERAGE — do not re-ask any of these: ${coveredIntents}
 
-${extraInstruction ? `⚠️  ${extraInstruction}\n` : ''}You need to generate question number ${questionNumber}.
+${extraInstruction ? `⚠️ ${extraInstruction}\n` : ''}
+AVAILABLE INTENTS — pick ONE most-critical unknown:
 
-Rules for question generation:
-1. Each question must reveal something NEW that you don't already know from the resume or previous answers
-2. STRICTLY DO NOT repeat any intent from the "Topics already covered" list above — if you find yourself writing a similar question, choose a completely different topic instead
-3. Your questionIntent field MUST NOT match or overlap with any intent already listed above
-4. Make questions specific to this person — reference their actual job titles, skills, or industries
-5. Alternate between preference questions (options) and exploratory questions (free text)
-6. Options questions: provide exactly 4 options that are meaningfully different, not just variations
-7. Free text questions: ask open-ended questions about aspirations, values, or context
-8. Questions must be conversational, not bureaucratic — avoid corporate jargon
-9. After question 5, evaluate if you have enough signal to make confident recommendations
+  TIER 1 — Critical (Q1–Q5 priority, ask if unknown):
+    career_direction      — growth, transition, leadership, or exploration?
+    target_role           — what specific role are they aiming for?
+    timeline              — how soon do they want to make a move?
 
-Question intents to cover (pick the most relevant ones based on what's missing):
-- Career direction (growth vs transition vs leadership vs exploration)
-- Timeline and urgency (how soon they want to move)
-- Work environment preferences (remote, team size, startup vs enterprise)
-- Salary expectations and priorities
-- Learning commitment (how much time for upskilling)
-- Geographic constraints (open to relocation or not)
-- Specific industries or domains they're drawn to
-- What they disliked about past roles (reveals what to avoid)
-- Their biggest strength they want to leverage
-- Risk tolerance (safe incremental move vs ambitious leap)
+  TIER 2 — Important (Q4–Q7 only, ask if unknown AND questions remain):
+    learning_commitment   — how many hours/week for upskilling?
+    work_environment      — remote/hybrid/onsite + team size preference?
+    blockers              — what's preventing the next move?
 
-Current confidence assessment:
-- Low (< 0.5): Ask more to understand basic direction
-- Medium (0.5–0.84): Getting clearer, 1–3 more questions useful
-- High (>= 0.85): Enough signal to generate good recommendations — consider stopping
+  TIER 3 — Nice to have (Q5–Q7 ONLY — NEVER ask at Q8+):
+    salary_priority       — is comp a primary driver?
+    geographic_constraint — open to relocation?
+    risk_tolerance        — safe incremental vs ambitious leap?
+    industry_preference   — specific sectors they want to move into?
 
-${questionNumber >= 5
-  ? `You have asked ${questionNumber - 1} questions. Evaluate your confidence honestly.
-If you have strong signal on direction, timeline, preferences, and constraints → set shouldContinue: false.
-If major gaps remain → continue (max ${maxRemaining} more question${maxRemaining !== 1 ? 's' : ''}).`
-  : `You must ask at least ${minRemaining} more question${minRemaining !== 1 ? 's' : ''} before stopping. Set shouldContinue: true.`
-}
+DECISION RULES:
+  • If ALL Tier 1 intents are covered → default to stopping
+  • If career_direction + timeline are known → confidence is likely ≥ 0.85
+  • If questionNumber ≥ 8 → stop unless a Tier 1 gap genuinely remains
+  • NEVER ask Tier 3 at Q8+ — set shouldContinue: false instead
 
-Return ONLY valid JSON with lowercase keys exactly as shown:
+Return ONLY valid JSON — no prose outside the JSON:
 {
-  "questionText": "The question to ask",
-  "questionType": "options",
-  "questionIntent": "one phrase describing what this reveals",
+  "questionText":    "specific to this person — reference their actual background",
+  "questionType":    "options" | "free_text",
+  "questionIntent":  "one intent name from the list above",
   "options": [
     { "id": "a", "label": "Display label", "value": "semantic_value" },
     { "id": "b", "label": "Display label", "value": "semantic_value" },
     { "id": "c", "label": "Display label", "value": "semantic_value" },
     { "id": "d", "label": "Display label", "value": "semantic_value" }
-  ],
-  "placeholder": null,
-  "maxLength": null,
-  "confidenceAfter": 0.0,
-  "shouldContinue": true,
-  "stopReason": null
+  ] | null,
+  "placeholder":     "string for free_text" | null,
+  "maxLength":       300 | null,
+  "confidenceAfter": 0.0–1.0,
+  "shouldContinue":  true | false,
+  "stopReason":      "confident" | "max_questions" | null,
+  "continueReason":  "one sentence: what critical gap still exists (required when shouldContinue=true)" | null
 }
 
-For free_text questions: set questionType to "free_text", options to null, provide a placeholder string, set maxLength to 300.
-For options questions: set placeholder and maxLength to null, provide exactly 4 options.
-shouldContinue must be false only if confidenceAfter >= 0.85 AND questionNumber >= 5, OR questionNumber = 10.
-stopReason: "confident" if stopping due to confidence, "max_questions" if at limit, null otherwise.`;
+For free_text: set options=null, provide placeholder, maxLength=300.
+For options: set placeholder=null, maxLength=null, provide exactly 4 options.
+shouldContinue=false when confidenceAfter >= 0.85 AND questionNumber >= 5, OR questionNumber = ${HARD_MAX_QUESTIONS}.
+continueReason is REQUIRED when shouldContinue=true — if you cannot write a genuine reason, set shouldContinue=false.`;
 }
+
+// ── Skills-mode prompt ───────────────────────────────────────────────────────
 
 function buildSkillsPrompt(selectedSkills, previousQuestions, questionNumber, extraInstruction = '') {
+  const coveredIntents = previousQuestions
+    .map(q => q.questionIntent).filter(Boolean).join(', ') || 'none';
+
   const prevText = previousQuestions.length === 0
-    ? 'None yet — this is the first question.'
+    ? 'None yet — this is Q1.'
     : previousQuestions.map(q =>
-        `Q${q.questionNumber} [${q.questionIntent}]: "${q.questionText}"\nAnswer: "${q.answerLabel || q.answerValue}"`
+        `Q${q.questionNumber} [${q.questionIntent}]: "${q.questionText}"\n→ ${q.answerLabel || q.answerValue}`
       ).join('\n\n');
 
-  const coveredIntents = previousQuestions.length > 0
-    ? previousQuestions.map(q => q.questionIntent).filter(Boolean).join(', ')
-    : 'none';
+  const minSkills = 3;
+  const maxSkills = 7;
 
-  const minRemaining = Math.max(0, 3 - questionNumber + 1);
-  const maxRemaining = 7 - questionNumber + 1;
+  const phaseBlock = questionNumber >= 6
+    ? `⚠️ FINAL PHASE: Only ${maxSkills - questionNumber + 1} question(s) left. Stop unless a critical learning gap remains.`
+    : questionNumber >= 3
+    ? `EVALUATION PHASE: Stop if you know experience level + goal + timeline. Continue only if a genuine gap exists.`
+    : `ESSENTIAL PHASE: Ask the most important unknown about their learning context.`;
 
-  return `You are a friendly course advisor personalising a study plan for someone who wants to learn specific skills.
+  return `You are a friendly course advisor personalising a study plan.
+
+HARD CONSTRAINTS:
+1. Maximum ${maxSkills} questions — hard ceiling.
+2. You are generating question ${questionNumber} of maximum ${maxSkills}.
+3. ${phaseBlock}
 
 Skills they want to learn: ${selectedSkills.join(', ')}
 
-Questions asked so far and their answers:
+QUESTIONS AND ANSWERS SO FAR:
 ${prevText}
 
-Topics already covered — DO NOT ask about any of these again:
-${coveredIntents}
+INTENT COVERAGE — do not re-ask any of these: ${coveredIntents}
 
-${extraInstruction ? `⚠️  ${extraInstruction}\n` : ''}You need to generate question number ${questionNumber}.
+${extraInstruction ? `⚠️ ${extraInstruction}\n` : ''}
+AVAILABLE INTENTS (pick ONE most-critical unknown):
+  prior_experience      — how much they already know
+  learning_goal         — get a job, build a project, freelance, or personal growth?
+  timeline              — how soon do they want to be proficient?
+  weekly_time           — hours per week available to study
+  practice_preference   — build projects, follow tutorials, or work on a real codebase?
+  focus_area            — specific sub-area within the skill set (if multiple skills)
 
-Rules for question generation:
-1. Each question must reveal something NEW about their learning context
-2. STRICTLY DO NOT repeat any intent from the "Topics already covered" list above
-3. Your questionIntent field MUST NOT match or overlap with any intent already listed above
-4. Make questions specific to their chosen skills (${selectedSkills.join(', ')})
-5. Alternate between preference questions (options) and exploratory questions (free text)
-6. Options questions: provide exactly 4 meaningfully different options
-7. Questions must be conversational and encouraging, not corporate jargon
-
-Question intents to cover (pick the most relevant ones based on what's missing):
-- Prior experience level (how much they already know about these skills)
-- Learning goal (get a job, build a project, freelance, personal growth, certification)
-- Timeline and urgency (how soon they want to be proficient)
-- Biggest challenge or blocker they anticipate
-- Specific area of focus within the skill set (if multiple skills)
-- Preferred way to practise (build projects, follow exercises, work on existing codebase)
-
-Current confidence assessment:
-- Low (< 0.5): Ask more to understand their context
-- Medium (0.5–0.84): Getting clearer, 1–2 more questions useful
-- High (>= 0.85): Enough to personalise the course — consider stopping
-
-${questionNumber >= 3
-  ? `You have asked ${questionNumber - 1} questions. Evaluate your confidence honestly.
-If you have strong signal on experience level, goals, and timeline → set shouldContinue: false.
-If major gaps remain → continue (max ${maxRemaining} more question${maxRemaining !== 1 ? 's' : ''}).`
-  : `You must ask at least ${minRemaining} more question${minRemaining !== 1 ? 's' : ''} before stopping. Set shouldContinue: true.`
-}
-
-Return ONLY valid JSON with lowercase keys exactly as shown:
+Return ONLY valid JSON:
 {
-  "questionText": "The question to ask",
-  "questionType": "options",
-  "questionIntent": "one phrase describing what this reveals",
+  "questionText":    "conversational, references their specific skills",
+  "questionType":    "options" | "free_text",
+  "questionIntent":  "one intent name above",
   "options": [
     { "id": "a", "label": "Display label", "value": "semantic_value" },
     { "id": "b", "label": "Display label", "value": "semantic_value" },
     { "id": "c", "label": "Display label", "value": "semantic_value" },
     { "id": "d", "label": "Display label", "value": "semantic_value" }
-  ],
-  "placeholder": null,
-  "maxLength": null,
-  "confidenceAfter": 0.0,
-  "shouldContinue": true,
-  "stopReason": null
+  ] | null,
+  "placeholder":     "string for free_text" | null,
+  "maxLength":       300 | null,
+  "confidenceAfter": 0.0–1.0,
+  "shouldContinue":  true | false,
+  "stopReason":      "confident" | "max_questions" | null,
+  "continueReason":  "one sentence reason to continue (required when shouldContinue=true)" | null
 }
 
-For free_text questions: set questionType to "free_text", options to null, provide a placeholder string, set maxLength to 300.
-For options questions: set placeholder and maxLength to null, provide exactly 4 options.
-shouldContinue must be false only if confidenceAfter >= 0.85 AND questionNumber >= 3, OR questionNumber = 7.
-stopReason: "confident" if stopping due to confidence, "max_questions" if at limit, null otherwise.`;
+For free_text: options=null, provide placeholder, maxLength=300.
+For options: placeholder=null, maxLength=null, exactly 4 options.
+shouldContinue=false when confidenceAfter >= 0.85 AND questionNumber >= ${minSkills}, OR questionNumber = ${maxSkills}.
+continueReason REQUIRED when shouldContinue=true.`;
 }
