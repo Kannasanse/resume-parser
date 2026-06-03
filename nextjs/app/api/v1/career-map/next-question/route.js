@@ -48,9 +48,9 @@ export async function POST(request) {
       : buildPrompt(extractedProfile, previousQuestions, questionNumber);
 
     const completion = await groq.chat.completions.create({
-      model:           'llama-3.3-70b-versatile',
-      temperature:     0.7,
-      max_tokens:      600,
+      model:           'llama-3.1-8b-instant',
+      temperature:     0.3,
+      max_tokens:      500,
       response_format: { type: 'json_object' },
       messages:        [{ role: 'user', content: prompt }],
     });
@@ -75,9 +75,9 @@ export async function POST(request) {
           ? buildSkillsPrompt(selectedSkills, previousQuestions, questionNumber, note)
           : buildPrompt(extractedProfile, previousQuestions, questionNumber, note);
         const retry = await groq.chat.completions.create({
-          model:           'llama-3.3-70b-versatile',
-          temperature:     0.9,
-          max_tokens:      600,
+          model:           'llama-3.1-8b-instant',
+          temperature:     0.4,
+          max_tokens:      500,
           response_format: { type: 'json_object' },
           messages:        [{ role: 'user', content: retryPrompt }],
         });
