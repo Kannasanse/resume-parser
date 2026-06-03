@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Proflect Transcript</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/>
+      </svg>
+      <span>Proflect</span>
+    </div>
+    <span class="header-sub">Transcript</span>
+  </header>
+
+  <!-- Not logged in -->
+  <div id="state-auth" class="state hidden">
+    <p class="muted center">Please log in to Proflect to use this extension.</p>
+    <a href="https://proflect-neo.vercel.app/login" target="_blank" class="btn btn-primary full-width">
+      Open Proflect →
+    </a>
+  </div>
+
+  <!-- Idle -->
+  <div id="state-idle" class="state hidden">
+    <div id="video-badge" class="badge badge-green hidden">
+      <span class="dot"></span>Video detected
+    </div>
+    <div id="no-video-badge" class="badge badge-gray hidden">
+      <span>No video detected on this tab</span>
+    </div>
+
+    <div class="field">
+      <label for="lang-select">Language</label>
+      <select id="lang-select">
+        <option value="auto">Detect language</option>
+        <option value="en">English</option>
+        <option value="hi">Hindi</option>
+        <option value="ta">Tamil</option>
+        <option value="es">Spanish</option>
+        <option value="fr">French</option>
+        <option value="de">German</option>
+        <option value="zh">Chinese</option>
+        <option value="ja">Japanese</option>
+        <option value="ko">Korean</option>
+        <option value="pt">Portuguese</option>
+      </select>
+    </div>
+
+    <button id="start-btn" class="btn btn-primary full-width">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg>
+      Start live transcript
+    </button>
+  </div>
+
+  <!-- Recording -->
+  <div id="state-recording" class="state hidden">
+    <div class="rec-bar">
+      <div class="rec-dot"></div>
+      <span class="rec-label">LIVE</span>
+      <span id="timer" class="timer">00:00</span>
+      <button id="stop-btn" class="btn btn-danger btn-sm ml-auto">Stop</button>
+    </div>
+
+    <div id="transcript-scroll" class="transcript-area">
+      <div id="transcript-lines"></div>
+      <div id="processing-dots" class="dots hidden">…</div>
+    </div>
+  </div>
+
+  <!-- Done -->
+  <div id="state-done" class="state hidden">
+    <p class="done-title">✓ Transcript complete</p>
+    <p id="done-stats" class="done-stats"></p>
+    <div class="btn-group">
+      <button id="copy-btn" class="btn btn-outline full-width">Copy transcript</button>
+      <a id="open-proflect-btn" href="https://proflect-neo.vercel.app/utilities/recorder" target="_blank" class="btn btn-primary full-width">
+        Open in Proflect →
+      </a>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

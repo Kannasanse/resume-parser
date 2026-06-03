@@ -95,6 +95,12 @@ const SECURITY_TOOLS = [
   { href: '/utilities/documents/merge-word', name: 'Merge Word Docs', description: 'Combine multiple DOCX files into one document.', icon: <MergeWordIcon />, gradient: 'from-[#E6F1FB] to-[#D4E8F8]' },
 ];
 
+function RecordIcon() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/></svg>; }
+
+const RECORDING_TOOLS = [
+  { href: '/utilities/recorder', name: 'Screen Recorder & Transcript', description: 'Record your screen or upload a video to get an instant timestamped transcript. Install the Chrome extension for live transcription.', icon: <RecordIcon />, gradient: 'from-[#E6F1FB] to-[#D4E8F8]' },
+];
+
 // ── Hub page ──────────────────────────────────────────────────────────────────
 const SECTION_LABEL = 'text-[10px] font-bold uppercase tracking-widest text-[#9CA3AF] dark:text-[#4A6380] mb-4';
 
@@ -103,7 +109,7 @@ export default function UtilitiesHubPage() {
     <div className="gradient-mesh-1 min-h-screen p-6 space-y-10">
       <div>
         <h1 className="text-2xl font-bold font-heading text-gradient-primary">Utilities</h1>
-        <p className="text-sm text-ds-textMuted mt-0.5">34 tools to work with PDFs, documents, and images — free, private, fast.</p>
+        <p className="text-sm text-ds-textMuted mt-0.5">35 tools to work with PDFs, documents, images, and recordings — free, private, fast.</p>
       </div>
 
       <section>
@@ -138,6 +144,13 @@ export default function UtilitiesHubPage() {
         <p className={SECTION_LABEL}>Security Tools</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {SECURITY_TOOLS.map(t => <ToolCard key={t.href} {...t} />)}
+        </div>
+      </section>
+
+      <section>
+        <p className={SECTION_LABEL}>Recording Tools</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {RECORDING_TOOLS.map(t => <ToolCard key={t.href} {...t} />)}
         </div>
       </section>
     </div>
