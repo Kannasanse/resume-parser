@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth-helpers.js';
 import supabase from '@/lib/supabase.js';
-import Groq from 'groq-sdk';
-import { generateFromWeb } from '@/lib/career-map/generateFromWeb.js';
+import { synthesiseContent } from '@/lib/career-map/synthesiseContent.js';
+import { needsWebSourcing, getSearchQuery } from '@/lib/career-map/sectionTypeRouter.js';
+import { searchWithTavily } from '@/lib/career-map/providers/tavily.js';
+import { searchWithExa } from '@/lib/career-map/providers/exa.js';
 import { fetchYouTubeVideo } from '@/lib/career-map/fetchYouTubeVideo.js';
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function POST(request) {
   let body;
@@ -26,7 +26,7 @@ export async function POST(request) {
       currentLevel,
       learningStyle,
       precedingSections,
-      source = 'ai',
+      source,
     } = body;
 
     // Verify ownership
@@ -47,44 +47,87 @@ export async function POST(request) {
 
     if (!plan) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
 
+    const sectionMeta = (topic.sections || []).find(s => s.id === sectionId) || {};
+    const sectionType = sectionMeta.section_type || 'concept';
+
     // Mark generating
     const sections = (topic.sections || []).map(s =>
       s.id === sectionId ? { ...s, generation_status: 'generating' } : s
     );
-    await supabase.from('study_plan_topics').update({ sections, updated_at: new Date().toISOString() }).eq('id', topicId);
+    await supabase
+      .from('study_plan_topics')
+      .update({ sections, updated_at: new Date().toISOString() })
+      .eq('id', topicId);
 
     let content;
     let sourceFields = { source_type: 'ai', source_url: null, source_title: null, source_domain: null, fetched_at: null };
 
-    if (source === 'web') {
-      const webResult = await generateFromWeb({ sectionHeading, skill, currentLevel });
+    // Route by section type; explicit 'ai' source overrides web search
+    if (needsWebSourcing(sectionType) && source !== 'ai') {
+      const query = getSearchQuery(sectionMeta, skill, currentLevel);
+      let webResult = query ? await searchWithTavily(query) : null;
+      if (!webResult || webResult.quality < 0.5) {
+        webResult = query ? await searchWithExa(query) : null;
+      }
+
       if (webResult) {
-        content = webResult.content;
+        content = await synthesiseContent({
+          sectionType,
+          sectionHeading,
+          topicTitle,
+          skill,
+          currentLevel,
+          learningStyle,
+          precedingSections,
+          webContent: webResult.content,
+          sourceTitle: webResult.title,
+          sourceUrl: webResult.url,
+        });
+        let sourceDomain = '';
+        try { sourceDomain = new URL(webResult.url).hostname.replace('www.', ''); } catch {}
         sourceFields = {
-          source_type: webResult.source_type,
-          source_url: webResult.source_url,
-          source_title: webResult.source_title,
-          source_domain: webResult.source_domain,
-          fetched_at: webResult.fetched_at,
+          source_type: 'web',
+          source_url: webResult.url,
+          source_title: webResult.title,
+          source_domain: sourceDomain,
+          fetched_at: new Date().toISOString(),
         };
       } else {
-        content = await generateWithAI({ groq, sectionHeading, topicTitle, skill, currentLevel, learningStyle, precedingSections });
-        sourceFields = { source_type: 'ai_fallback', source_url: null, source_title: null, source_domain: null, fetched_at: null };
+        // Web unavailable — fall back to pure AI
+        content = await synthesiseContent({
+          sectionType,
+          sectionHeading,
+          topicTitle,
+          skill,
+          currentLevel,
+          learningStyle,
+          precedingSections,
+        });
+        sourceFields.source_type = 'ai_fallback';
       }
     } else {
-      content = await generateWithAI({ groq, sectionHeading, topicTitle, skill, currentLevel, learningStyle, precedingSections });
+      // exercise, summary, video — AI-only, no web search
+      content = await synthesiseContent({
+        sectionType,
+        sectionHeading,
+        topicTitle,
+        skill,
+        currentLevel,
+        learningStyle,
+        precedingSections,
+      });
     }
 
-    // Auto-fetch video for text-with-video sections
-    const sectionMeta = (topic.sections || []).find(s => s.id === sectionId);
+    // Auto-fetch video for video-only / text-with-video sections
     let videoFields = {};
     let videoResult = null;
-    if (sectionMeta?.type === 'text-with-video') {
+    const legacyType = sectionMeta.type || 'text';
+    if (legacyType === 'text-with-video' || legacyType === 'video-only' || sectionType === 'video') {
       try {
         videoResult = await fetchYouTubeVideo({ skill, sectionTitle: sectionHeading, level: currentLevel });
         if (videoResult) {
           videoFields = {
-            youtube_video_id:       videoResult.videoId,
+            youtube_video_id: videoResult.videoId,
             youtube_video_fetched_at: new Date().toISOString(),
           };
         }
@@ -93,7 +136,7 @@ export async function POST(request) {
       }
     }
 
-    // Update section with generated content
+    // Persist
     const updatedSections = (topic.sections || []).map(s =>
       s.id === sectionId
         ? { ...s, content, is_generated: true, generation_status: 'done', content_type: 'generated', ...sourceFields, ...videoFields }
@@ -110,21 +153,20 @@ export async function POST(request) {
       section_id: sectionId,
       ...sourceFields,
       ...(videoResult ? {
-        video_id:          videoResult.videoId,
-        video_title:       videoResult.title,
-        video_channel:     videoResult.channelTitle,
-        video_thumbnail:   videoResult.thumbnailUrl,
-        video_duration:    videoResult.duration,
+        video_id:           videoResult.videoId,
+        video_title:        videoResult.title,
+        video_channel:      videoResult.channelTitle,
+        video_thumbnail:    videoResult.thumbnailUrl,
+        video_duration:     videoResult.duration,
         video_duration_sec: videoResult.durationSec,
-        video_fetched_at:  new Date().toISOString(),
-        video_score:       videoResult.score,
+        video_fetched_at:   new Date().toISOString(),
+        video_score:        videoResult.score,
       } : {}),
     });
   } catch (err) {
     if (err instanceof Response) return err;
     console.error('generate-section-content error:', err);
 
-    // Mark error state
     try {
       const { topicId, sectionId } = body || {};
       if (topicId && sectionId) {
@@ -140,37 +182,4 @@ export async function POST(request) {
 
     return NextResponse.json({ error: 'Content generation failed. Please try again.' }, { status: 500 });
   }
-}
-
-async function generateWithAI({ groq, sectionHeading, topicTitle, skill, currentLevel, learningStyle, precedingSections }) {
-  const prompt = `You are an expert technical educator writing study material for a professional learner.
-
-Topic: ${topicTitle}
-Skill: ${skill}
-Section heading: ${sectionHeading}
-Learner level: ${currentLevel}
-Learning style: ${Array.isArray(learningStyle) ? learningStyle.join(', ') : learningStyle}
-Context (previous sections covered): ${(precedingSections || []).join(', ') || 'None'}
-
-Write educational content for this section. Guidelines:
-- Write for a ${currentLevel} learner — adjust complexity accordingly
-- Length: 300–600 words (not too short, not overwhelming)
-- Structure with 2-3 sub-headings (use ### for h3)
-- Include a practical example or code snippet if relevant to the skill
-- If learning style includes "project-based": end with a mini exercise or challenge
-- Use clear, direct language — no fluff
-- Do NOT repeat content from previous sections
-- Do NOT include a title (the heading is already shown above)
-
-Return the content as clean markdown. No preamble, no "Here is the content:".
-Start directly with the first paragraph or sub-heading.`;
-
-  const completion = await groq.chat.completions.create({
-    model: 'llama-3.1-8b-instant',
-    temperature: 0.5,
-    max_tokens: 1024,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  return completion.choices[0].message.content || '';
 }

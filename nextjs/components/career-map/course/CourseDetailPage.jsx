@@ -8,6 +8,10 @@ import BottomNavBar from './BottomNavBar';
 import CompletionCelebration from '../roadmap/CompletionCelebration';
 import TopicNotesPanel from './TopicNotesPanel';
 import TestConfigModal from './TestConfigModal';
+import TopicPrerequisites from './TopicPrerequisites';
+import RealWorldCallout from './RealWorldCallout';
+import TopicProgressBreakdown from './TopicProgressBreakdown';
+import GenerateTopicButton from './GenerateTopicButton';
 
 function NotebookIcon() {
   return (
@@ -29,6 +33,7 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
   const [nextTopic, setNextTopic] = useState(null);
   const [notesOpen, setNotesOpen] = useState(false);
   const [testModalOpen, setTestModalOpen] = useState(false);
+  const [planPreferences, setPlanPreferences] = useState(null);
   const sectionRefs = useRef({});
 
   async function load() {
@@ -42,8 +47,8 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
       if (!t) throw new Error('Topic not found');
       setTopic(t);
       setCompletedSectionIds(new Set(t.completed_section_ids || []));
+      setPlanPreferences(data.plan?.preferences || null);
 
-      // Find next topic
       const idx = data.topics.findIndex(t => t.id === topicId);
       if (idx >= 0 && idx < data.topics.length - 1) setNextTopic(data.topics[idx + 1]);
     } catch (e) {
@@ -63,7 +68,6 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
     } : prev);
   }
 
-  // Deep-link: scroll to ?section= after load
   useEffect(() => {
     const sectionId = searchParams?.get('section');
     if (!sectionId || !topic) return;
@@ -79,13 +83,11 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
   }
 
   async function toggleSection(sectionId, completed) {
-    // Optimistic update
     setCompletedSectionIds(prev => {
       const next = new Set(prev);
       completed ? next.add(sectionId) : next.delete(sectionId);
       return next;
     });
-
     await fetch('/api/v1/career-map/complete-section', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -98,6 +100,30 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
       if (!prev) return prev;
       const sections = prev.sections.map(s =>
         s.id === sectionId ? { ...s, content, is_generated: true, generation_status: 'done' } : s
+      );
+      return { ...prev, sections };
+    });
+  }
+
+  function handleExercisesGenerated(data) {
+    const results = data.exercises || [];
+    setTopic(prev => {
+      if (!prev) return prev;
+      const map = Object.fromEntries(results.map(r => [r.section_id, r.content]));
+      const sections = prev.sections.map(s =>
+        map[s.id] ? { ...s, content: map[s.id], is_generated: true, generation_status: 'done' } : s
+      );
+      return { ...prev, sections };
+    });
+  }
+
+  function handleSummaryGenerated(data) {
+    const results = data.summaries || [];
+    setTopic(prev => {
+      if (!prev) return prev;
+      const map = Object.fromEntries(results.map(r => [r.section_id, r.content]));
+      const sections = prev.sections.map(s =>
+        map[s.id] ? { ...s, content: map[s.id], is_generated: true, generation_status: 'done' } : s
       );
       return { ...prev, sections };
     });
@@ -128,6 +154,12 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
   const totalSections = sections.length;
   const completedCount = completedSectionIds.size;
   const pct = totalSections > 0 ? Math.round((completedCount / totalSections) * 100) : 0;
+
+  const currentLevel = planPreferences?.currentLevel || 'intermediate';
+  const learningStyle = planPreferences?.learningStyle || ['mixed'];
+
+  const hasUngeneratedExercises = sections.some(s => s.section_type === 'exercise' && !s.is_generated);
+  const hasUngeneratedSummary  = sections.some(s => s.section_type === 'summary'  && !s.is_generated);
 
   return (
     <div className="flex flex-col h-screen bg-[var(--c-bg)]">
@@ -176,8 +208,6 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
       </div>
 
       <div className="flex flex-1 overflow-hidden pb-16">
-        {/* Sidebar */}
-        {/* sidebar glass wrapper applied inside SectionNavSidebar */}
         <SectionNavSidebar
           sections={sections}
           completedSectionIds={completedSectionIds}
@@ -188,7 +218,6 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
           totalSections={totalSections}
         />
 
-        {/* Notes panel */}
         {notesOpen && (
           <TopicNotesPanel
             topicId={topicId}
@@ -197,9 +226,20 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
           />
         )}
 
-        {/* Main content */}
         <div className="flex-1 overflow-y-auto px-6 py-6">
           <div className="max-w-3xl mx-auto space-y-10">
+            {/* Topic meta */}
+            <div className="space-y-3">
+              {topic.prerequisites?.length > 0 && (
+                <TopicPrerequisites prerequisites={topic.prerequisites} />
+              )}
+              {topic.real_world_application && (
+                <RealWorldCallout text={topic.real_world_application} />
+              )}
+              <TopicProgressBreakdown sections={sections} completedSectionIds={completedSectionIds} />
+            </div>
+
+            {/* Sections */}
             {sections.map((section, idx) => (
               <div key={section.id} ref={el => sectionRefs.current[idx] = el}>
                 <SectionBlock
@@ -215,14 +255,40 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
                   precedingSections={sections.slice(0, idx).map(s => s.heading)}
                   topicVideos={topic?.youtube_videos || []}
                   topicYoutubeQueries={topic?.youtube_queries || []}
+                  currentLevel={currentLevel}
+                  learningStyle={learningStyle}
                 />
               </div>
             ))}
+
+            {/* Topic-level generators */}
+            {(hasUngeneratedExercises || hasUngeneratedSummary) && (
+              <div className="space-y-3 pt-4 border-t border-[var(--c-border)]">
+                <p className="text-xs font-semibold uppercase tracking-widest text-[var(--c-text-muted)]">Generate all at once</p>
+                {hasUngeneratedExercises && (
+                  <GenerateTopicButton
+                    topicId={topicId}
+                    currentLevel={currentLevel}
+                    learningStyle={learningStyle}
+                    type="exercise"
+                    onDone={handleExercisesGenerated}
+                  />
+                )}
+                {hasUngeneratedSummary && (
+                  <GenerateTopicButton
+                    topicId={topicId}
+                    currentLevel={currentLevel}
+                    learningStyle={learningStyle}
+                    type="summary"
+                    onDone={handleSummaryGenerated}
+                  />
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Bottom nav */}
       <BottomNavBar
         currentIndex={activeSection}
         total={totalSections}

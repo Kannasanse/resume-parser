@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import HomeNavbar from '@/components/nav/HomeNavbar';
 
 // ── Scroll-reveal hook ────────────────────────────────────────────────────────
 function useScrollReveal(threshold = 0.12) {
@@ -41,307 +42,6 @@ const GithubIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="
 const MenuIcon = () => (<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>);
 const CloseIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>);
 const GlobeIcon = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>);
-
-// ── Sidebar nav data (mirrors app USER_NAV_GROUPS) ───────────────────────────
-const HOME_NAV_GROUPS = [
-  {
-    id: 'workspace', label: 'WORKSPACE',
-    items: [
-      { label: 'Resume Builder', href: '/builder',           icon: 'fileText'  },
-      { label: 'Portfolios',     href: '/portfolios',        icon: 'portfolio' },
-      { label: 'Career Map',     href: '/career-map',        icon: 'map'       },
-    ],
-  },
-  {
-    id: 'learning', label: 'LEARNING',
-    items: [
-      { label: 'My Courses',     href: '/my-courses',        icon: 'bookOpen'  },
-      { label: 'Interview Prep', href: '/self-test',         icon: 'target'    },
-      { label: 'Notes',          href: '/notes',             icon: 'notebook'  },
-    ],
-  },
-  {
-    id: 'opportunities', label: 'OPPORTUNITIES',
-    items: [
-      { label: 'Find Jobs',      href: '/job-recommendations', icon: 'findJobs' },
-    ],
-  },
-  {
-    id: 'utilities', label: 'UTILITIES',
-    items: [
-      { label: 'Utilities',      href: '/utilities',         icon: 'wrench'    },
-    ],
-  },
-];
-
-function HomeNavIcon({ id, size = 16 }) {
-  const shapes = {
-    fileText:  <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="15" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></>,
-    portfolio: <><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></>,
-    map:       <><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21 3 6"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></>,
-    bookOpen:  <><path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2z"/><path d="M22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/></>,
-    target:    <><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/></>,
-    notebook:  <><path d="M4 4h13a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4z"/><line x1="4" y1="9" x2="8" y2="9"/><line x1="4" y1="14" x2="8" y2="14"/><line x1="4" y1="4" x2="8" y2="4"/></>,
-    findJobs:  <><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><circle cx="11" cy="14" r="2.5"/><path d="m21 21-1.5-1.5"/><path d="m14 17 2 2"/></>,
-    wrench:    <><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></>,
-  };
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-      {shapes[id]}
-    </svg>
-  );
-}
-
-// ── Section 1: Navbar ─────────────────────────────────────────────────────────
-const FEATURES_NAV = [
-  { icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z', label: 'Resume Builder', desc: '20 templates · live preview · PDF & Word export', href: '/builder', accent: '#185FA5' },
-  { icon: 'M9 20l-5.447-2.724A1 1 0 0 1 3 16.382V5.618a1 1 0 0 1 1.447-.894L9 7m0 13l6-3m-6-3V7m6 10l4.553 2.276A1 1 0 0 0 21 18.382V7.618a1 1 0 0 0-1.447-.894L15 9m0 11V9m0 0L9 7', label: 'Career Map', desc: 'Visual career paths from your resume', href: '/career-map', accent: '#1D9E75' },
-  { icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253', label: 'Study Plans', desc: 'Phase-based AI learning with video tutorials', href: '/my-courses', accent: '#185FA5' },
-  { icon: 'M22 10v6M2 10l10-5 10 5-10 5zM6 12v5c3 3 9 3 12 0v-5', label: 'Interview Prep', desc: 'Scenario-based quizzes, 3 assessment modes', href: '/self-test', accent: '#F59E0B' },
-  { icon: 'M19 11H5m14 0a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2m14 0V9a2 2 0 0 0-2-2M5 11V9a2 2 0 0 1 2-2m0 0V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2h2m0-4h10M7 7h10', label: 'Portfolio Builder', desc: 'Publish your work to a custom URL', href: '/portfolios', accent: '#185FA5' },
-  { icon: 'M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10m6 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v14', label: 'ATS Score', desc: 'Match your resume against any job description', href: '/upload', accent: '#1D9E75' },
-  { icon: 'M9 12h6m-6 4h6M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z', label: 'Notes', desc: '44-block editor · wikilinks · tags · search', href: '/notes', accent: '#7C3AED' },
-  { icon: 'M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z', label: 'Utilities', desc: '34 PDF & document tools — free', href: '/utilities', accent: '#F59E0B' },
-  { icon: 'M9.663 17h4.673M12 3v1m6.364 1.636-.707.707M21 12h-1M4 12H3m3.343-5.657-.707-.707m2.828 9.9a5 5 0 1 1 7.072 0l-.548.547A3.374 3.374 0 0 0 14 18.469V19a2 2 0 1 1-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z', label: 'Skill Courses', desc: 'Create a course from any skill in seconds', href: '/my-courses', accent: '#1D9E75' },
-];
-
-const CATEGORY_NAV = [
-  {
-    emoji: '🎯', label: 'Job Seekers',
-    items: [{ label: 'Resume Builder', href: '/builder' }, { label: 'ATS Score', href: '/upload' }, { label: 'Portfolio Builder', href: '/portfolios' }, { label: 'Interview Prep', href: '/self-test' }],
-  },
-  {
-    emoji: '📈', label: 'Career Planners',
-    items: [{ label: 'Career Map', href: '/career-map' }, { label: 'Study Plans', href: '/my-courses' }, { label: 'Skill Courses', href: '/my-courses' }, { label: 'Interview Prep', href: '/self-test' }],
-  },
-  {
-    emoji: '🛠', label: 'Productivity Tools',
-    items: [{ label: 'Notes', href: '/notes' }, { label: 'Utilities (34 tools)', href: '/utilities' }, { label: 'Resume Builder', href: '/builder' }],
-  },
-  {
-    emoji: '📚', label: 'Learning Tools',
-    items: [{ label: 'Study Plans', href: '/my-courses' }, { label: 'Skill Courses', href: '/my-courses' }, { label: 'Career Map', href: '/career-map' }],
-  },
-];
-
-function HomeNavbar() {
-  const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [openMenu, setOpenMenu] = useState(null);
-  const [mobileExpanded, setMobileExpanded] = useState(null);
-  const closeTimerRef = useRef(null);
-  const navRef = useRef(null);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 80);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  useEffect(() => {
-    function handleClick(e) {
-      if (navRef.current && !navRef.current.contains(e.target)) setOpenMenu(null);
-    }
-    function handleKey(e) { if (e.key === 'Escape') setOpenMenu(null); }
-    document.addEventListener('mousedown', handleClick);
-    document.addEventListener('keydown', handleKey);
-    return () => { document.removeEventListener('mousedown', handleClick); document.removeEventListener('keydown', handleKey); };
-  }, []);
-
-  function openDropdown(name) { clearTimeout(closeTimerRef.current); setOpenMenu(name); }
-  function scheduleClose() { closeTimerRef.current = setTimeout(() => setOpenMenu(null), 200); }
-  function cancelClose() { clearTimeout(closeTimerRef.current); }
-
-  const linkColor = scrolled ? '#2C2C2A' : 'rgba(255,255,255,0.85)';
-  const hoverBg = scrolled ? 'rgba(24,95,165,0.06)' : 'rgba(255,255,255,0.10)';
-
-  return (
-    <>
-      <nav
-        ref={navRef}
-        className="fixed top-0 left-0 right-0 z-50"
-        style={{
-          background: scrolled ? 'rgba(255,255,255,0.88)' : 'transparent',
-          backdropFilter: scrolled ? 'blur(20px)' : 'none',
-          WebkitBackdropFilter: scrolled ? 'blur(20px)' : 'none',
-          borderBottom: scrolled ? '1px solid rgba(209,220,232,0.60)' : '1px solid transparent',
-          boxShadow: scrolled ? '0 2px 16px rgba(12,68,124,0.08)' : 'none',
-          transition: 'all 300ms cubic-bezier(0.16,1,0.3,1)',
-        }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/home" className="flex items-center flex-shrink-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={scrolled ? '/logo.png' : '/logo-white.png'} alt="Proflect" height={40} width={118} style={{ height: '40px', width: '118px', minHeight: '40px', minWidth: '118px', maxHeight: '40px', objectFit: 'contain', display: 'block', flexShrink: 0 }} />
-          </Link>
-
-          {/* Desktop nav — 4 group dropdowns */}
-          <div className="hidden md:flex items-center gap-0.5">
-            {HOME_NAV_GROUPS.map(group => (
-              <div key={group.id} className="relative" onMouseEnter={() => openDropdown(group.id)} onMouseLeave={scheduleClose}>
-                <button
-                  onClick={() => openMenu === group.id ? setOpenMenu(null) : openDropdown(group.id)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium"
-                  style={{ color: linkColor, transition: 'background 150ms' }}
-                  onMouseEnter={e => e.currentTarget.style.background = hoverBg}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  {group.label.charAt(0) + group.label.slice(1).toLowerCase()}
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
-                    style={{ transition: 'transform 200ms', transform: openMenu === group.id ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}>
-                    <polyline points="6 9 12 15 18 9"/>
-                  </svg>
-                </button>
-
-                {/* Per-group dropdown panel */}
-                {openMenu === group.id && (
-                  <div
-                    className="absolute z-50"
-                    style={{ top: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)' }}
-                    onMouseEnter={cancelClose}
-                    onMouseLeave={scheduleClose}
-                  >
-                    <div style={{
-                      minWidth: 200,
-                      background: 'white',
-                      border: '1px solid #D1DCE8',
-                      borderRadius: 14,
-                      boxShadow: '0 16px 40px rgba(12,68,124,0.13), 0 4px 12px rgba(12,68,124,0.07)',
-                      padding: '6px',
-                      animation: 'megaMenuIn 160ms cubic-bezier(0.16,1,0.3,1) both',
-                    }}>
-                      <p className="text-[10px] font-[700] uppercase tracking-[0.08em] px-3 pt-2 pb-1.5" style={{ color: '#9CA3AF' }}>
-                        {group.label}
-                      </p>
-                      {group.items.map(item => (
-                        <Link
-                          key={item.label}
-                          href={item.href}
-                          onClick={() => setOpenMenu(null)}
-                          className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] font-medium transition-colors"
-                          style={{ color: '#2C2C2A' }}
-                          onMouseEnter={e => { e.currentTarget.style.background = '#F4F8FC'; e.currentTarget.style.color = '#185FA5'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#2C2C2A'; }}
-                        >
-                          <span style={{ color: '#6B7280', flexShrink: 0 }}>
-                            <HomeNavIcon id={item.icon} size={15} />
-                          </span>
-                          {item.label}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Right buttons */}
-          <div className="hidden md:flex items-center gap-3">
-            <Link href="/login" className="px-4 py-2 text-sm font-semibold rounded-lg border transition-all"
-              style={{ color: scrolled ? '#185FA5' : 'rgba(255,255,255,0.85)', borderColor: scrolled ? '#185FA5' : 'rgba(255,255,255,0.35)', background: 'transparent' }}>
-              Log in
-            </Link>
-            <Link href="/signup" className="px-4 py-2 text-sm font-semibold rounded-lg transition-all"
-              style={{ background: scrolled ? '#185FA5' : 'white', color: scrolled ? 'white' : '#185FA5', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
-              Get started free
-            </Link>
-          </div>
-
-          {/* Mobile hamburger */}
-          <button onClick={() => setMenuOpen(true)} className="md:hidden p-2" style={{ color: scrolled ? '#2C2C2A' : 'white' }}>
-            <MenuIcon />
-          </button>
-        </div>
-
-      </nav>
-
-      {/* Mobile drawer */}
-      {menuOpen && (
-        <div className="fixed inset-0 z-[100] flex justify-end">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setMenuOpen(false)} />
-          <div className="relative w-80 h-full flex flex-col overflow-y-auto" style={{ background: 'rgba(15,26,46,0.98)', backdropFilter: 'blur(20px)' }}>
-            {/* Drawer header */}
-            <div className="flex items-center justify-between p-5 pb-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo-white.png" alt="Proflect" height={40} width={118} style={{ height: '40px', width: '118px', minHeight: '40px', minWidth: '118px', maxHeight: '40px', objectFit: 'contain', display: 'block', flexShrink: 0 }} />
-              <button onClick={() => setMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.6)' }}><CloseIcon /></button>
-            </div>
-
-            <div className="flex flex-col flex-1 px-4 pt-2">
-              {HOME_NAV_GROUPS.map(group => (
-                <div key={group.id}>
-                  <button
-                    onClick={() => setMobileExpanded(mobileExpanded === group.id ? null : group.id)}
-                    className="flex items-center justify-between w-full py-3"
-                    style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}
-                  >
-                    <span className="text-[11px] font-[700] tracking-[0.08em] uppercase" style={{ color: 'rgba(255,255,255,0.45)' }}>
-                      {group.label}
-                    </span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2.5" strokeLinecap="round"
-                      style={{ transform: mobileExpanded === group.id ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 200ms', flexShrink: 0 }}>
-                      <polyline points="6 9 12 15 18 9"/>
-                    </svg>
-                  </button>
-                  {mobileExpanded === group.id && (
-                    <div className="py-1.5 flex flex-col gap-0.5">
-                      {group.items.map(item => (
-                        <Link
-                          key={item.label}
-                          href={item.href}
-                          onClick={() => setMenuOpen(false)}
-                          className="flex items-center gap-3 px-2 py-2.5 rounded-lg text-[14px] font-medium transition-colors"
-                          style={{ color: 'rgba(255,255,255,0.75)' }}
-                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'white'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.75)'; }}
-                        >
-                          <span style={{ color: 'rgba(255,255,255,0.45)', flexShrink: 0 }}>
-                            <HomeNavIcon id={item.icon} size={16} />
-                          </span>
-                          {item.label}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              {/* Blog */}
-              <Link href="#" onClick={() => setMenuOpen(false)}
-                className="block py-3 text-[13px] font-medium"
-                style={{ color: 'rgba(255,255,255,0.55)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                Blog
-              </Link>
-            </div>
-
-            <div className="flex flex-col gap-3 p-4 mt-2">
-              <Link href="/login" onClick={() => setMenuOpen(false)}
-                className="w-full text-center py-2.5 text-sm font-semibold rounded-lg border"
-                style={{ color: 'rgba(255,255,255,0.85)', borderColor: 'rgba(255,255,255,0.25)' }}>
-                Log in
-              </Link>
-              <Link href="/signup" onClick={() => setMenuOpen(false)}
-                className="w-full text-center py-2.5 text-sm font-semibold rounded-lg"
-                style={{ background: 'white', color: '#185FA5' }}>
-                Get started free
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <style>{`
-        @keyframes megaMenuIn {
-          from { opacity: 0; transform: translateX(-50%) translateY(-6px) scale(0.98); }
-          to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
-        }
-      `}</style>
-    </>
-  );
-}
 
 // ── Section 2: Hero ───────────────────────────────────────────────────────────
 const FEATURE_PILLS = [
@@ -484,6 +184,36 @@ function HeroSection() {
 }
 
 // ── Section 3: Logo Strip ─────────────────────────────────────────────────────
+const LOGO_COMPANIES = ['Google', 'Microsoft', 'Amazon', 'Stripe', 'Shopify', 'Atlassian', 'Salesforce', 'Meta', 'Apple', 'Netflix', 'Spotify', 'Airbnb'];
+
+function LogoStrip() {
+  return (
+    <section style={{ background: 'white', borderTop: '1px solid #F0F4F8', borderBottom: '1px solid #F0F4F8', padding: '32px 0', overflow: 'hidden' }}>
+      <p className="text-center text-[11px] font-semibold tracking-widest uppercase mb-6" style={{ color: '#9CA3AF' }}>
+        Trusted by professionals from
+      </p>
+      <div className="relative">
+        <div className="absolute left-0 top-0 bottom-0 w-20 z-10 pointer-events-none"
+          style={{ background: 'linear-gradient(to right, white, transparent)' }} />
+        <div className="absolute right-0 top-0 bottom-0 w-20 z-10 pointer-events-none"
+          style={{ background: 'linear-gradient(to left, white, transparent)' }} />
+        <div style={{ display: 'flex', animation: 'marqueeScroll 28s linear infinite', width: 'max-content' }}>
+          {[...LOGO_COMPANIES, ...LOGO_COMPANIES].map((name, i) => (
+            <div key={i} style={{ padding: '0 40px', display: 'flex', alignItems: 'center' }}>
+              <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.02em', color: '#C4CDD6', whiteSpace: 'nowrap' }}>{name}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <style>{`
+        @keyframes marqueeScroll {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-50%); }
+        }
+      `}</style>
+    </section>
+  );
+}
 
 // ── Section 4: Feature Showcase ───────────────────────────────────────────────
 const FEATURES = [
@@ -517,26 +247,6 @@ const FEATURES = [
     title: 'Personalised Study Plans', body: 'Create courses from any skill set. Phase-based learning with web-sourced or AI-generated content. YouTube tutorials auto-fetched per section.',
     stat: 'Skill-based & role-based', link: 'Start learning →', accent: '#185FA5', href: '/my-courses',
   },
-  {
-    icon: 'M9 12h6m-6 4h6M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zm0 0v6h6M9 8h1',
-    title: 'Block Editor Notes', body: 'A Notion-style block editor built into Proflect. 44 block types including code, tables, callouts, and math. Wikilinks, tags, full-text search, and public sharing.',
-    stat: '44 block types', link: 'Take better notes →', accent: '#7C3AED', href: '/notes',
-  },
-  {
-    icon: 'M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z',
-    title: '34 PDF & Document Tools', body: 'Merge, split, compress, convert, sign, and protect PDFs. Convert Word and Excel files to PDF. Compress images. All tools are free and process files privately.',
-    stat: '34 tools · free', link: 'Open tools →', accent: '#F59E0B', href: '/utilities',
-  },
-  {
-    icon: 'M22 10v6M2 10l10-5 10 5-10 5zM6 12v5c3 3 9 3 12 0v-5',
-    title: 'Skill-Based Courses', body: 'Pick any skill — React, SQL, Docker, anything — and generate a personalised study plan instantly. No career map needed. Learn exactly what you want, on your own terms.',
-    stat: '500+ skills', link: 'Start learning →', accent: '#1D9E75', href: '/my-courses',
-  },
-  {
-    icon: 'M21 13.255A23.931 23.931 0 0 1 12 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2m4 6h.01M5 20h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2z',
-    title: 'Job Recommendations', body: 'See live job listings matched to your profile — based on your job title and location. Remote and on-site roles, updated regularly. Apply directly from Proflect.',
-    stat: 'Live listings', link: 'See jobs →', accent: '#185FA5', href: '/jobs',
-  },
 ];
 
 function FeatureShowcase() {
@@ -557,7 +267,7 @@ function FeatureShowcase() {
             Everything your career needs —<br />in one place
           </h2>
           <p className="mt-4 text-base text-[#6B7280] leading-relaxed">
-            Proflect combines ten powerful tools that work together. Build your resume, showcase your work, understand your career path, and close your skill gaps — all from one platform.
+            Proflect combines six powerful tools that work together. Build your resume, showcase your work, understand your career path, and close your skill gaps — all from one platform.
           </p>
         </div>
 
@@ -1409,6 +1119,7 @@ export default function HomepageContent({ sections, isPreview, userRole }) {
     <div className="overflow-x-hidden">
       <HomeNavbar />
       <HeroSection />
+      <LogoStrip />
 
       <FeatureShowcase />
       <DeepDiveResume />

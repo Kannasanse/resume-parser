@@ -5,6 +5,11 @@ import GeneratingState from './GeneratingState';
 import GeneratedContent from './GeneratedContent';
 import YouTubeEmbed from './YouTubeEmbed';
 import ContentSourceModal from '@/components/career-map/ContentSourceModal';
+import SectionTypeBadge from './SectionTypeBadge';
+import LearningObjectives from './LearningObjectives';
+import DifficultyNote from './DifficultyNote';
+import ExerciseSection from './ExerciseSection';
+import TopicSummary from './TopicSummary';
 
 function PlayVideoButton({ onClick, loading }) {
   return (
@@ -52,25 +57,34 @@ export default function SectionBlock({
   section, index, topicId, topicTitle, skill,
   isCompleted, onToggleComplete, onGenerated, onVideoFetched,
   precedingSections, topicVideos, topicYoutubeQueries,
+  currentLevel, learningStyle,
 }) {
   const [localSection, setLocalSection] = useState(section);
-  const [videoFetchState, setVideoFetchState] = useState('idle'); // idle | loading | done | error
+  const [videoFetchState, setVideoFetchState] = useState('idle');
   const [fetchedVideo, setFetchedVideo] = useState(null);
   const [showSourceModal, setShowSourceModal] = useState(false);
   const [pendingSource, setPendingSource] = useState('web');
 
-  const sectionType = localSection.type || 'text';
-  const isVideoOnly = sectionType === 'video-only';
-  const hasVideoSlot = isVideoOnly || sectionType === 'text-with-video';
+  const sectionType = localSection.section_type || 'concept';
+  const legacyType = localSection.type || 'text';
+  const isVideoOnly = legacyType === 'video-only' || sectionType === 'video';
+  const hasVideoSlot = isVideoOnly || legacyType === 'text-with-video';
+  const isExercise = sectionType === 'exercise';
+  const isSummary = sectionType === 'summary';
 
-  // Sync youtube_video_id if parent assigns it later
   useEffect(() => {
     if (section.youtube_video_id && !localSection.youtube_video_id) {
       setLocalSection(s => ({ ...s, youtube_video_id: section.youtube_video_id }));
     }
   }, [section.youtube_video_id]);
 
-  // Resolve video data: prefer fetchedVideo (just fetched), then topicVideos match
+  // Keep local state in sync when parent refreshes after generate-exercises / generate-summary
+  useEffect(() => {
+    if (section.is_generated && !localSection.is_generated) {
+      setLocalSection(section);
+    }
+  }, [section.is_generated, section.content]);
+
   const videoData = fetchedVideo
     || (localSection.youtube_video_id
       ? (topicVideos || []).find(v => v.videoId === localSection.youtube_video_id)
@@ -90,8 +104,6 @@ export default function SectionBlock({
 
       const videos = data.videos || [];
       const sections = data.sections || [];
-
-      // Find the video assigned to this specific section
       const updatedSection = sections.find(s => s.id === section.id);
       const assignedVideoId = updatedSection?.youtube_video_id;
       const video = assignedVideoId
@@ -105,9 +117,7 @@ export default function SectionBlock({
         setFetchedVideo(video);
       }
 
-      // Propagate to parent so other sections can use the fetched data
       if (onVideoFetched) onVideoFetched(videos, sections);
-
       setVideoFetchState('done');
     } catch {
       setVideoFetchState('error');
@@ -122,13 +132,20 @@ export default function SectionBlock({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          topicId, sectionId: section.id, sectionHeading: section.heading,
-          topicTitle, skill, currentLevel: 'intermediate',
-          learningStyle: ['mixed'], precedingSections, source,
+          topicId,
+          sectionId: section.id,
+          sectionHeading: section.heading,
+          topicTitle,
+          skill,
+          currentLevel: currentLevel || 'intermediate',
+          learningStyle: learningStyle || ['mixed'],
+          precedingSections,
+          source,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
+
       setLocalSection(s => ({
         ...s,
         content: data.content,
@@ -141,15 +158,16 @@ export default function SectionBlock({
         fetched_at: data.fetched_at,
         ...(data.video_id ? { youtube_video_id: data.video_id } : {}),
       }));
+
       if (data.video_id) {
         const vid = {
           videoId:      data.video_id,
-          title:        data.video_title       || '',
-          channelName:  data.video_channel     || '',
-          thumbnail:    data.video_thumbnail   || null,
+          title:        data.video_title     || '',
+          channelName:  data.video_channel   || '',
+          thumbnail:    data.video_thumbnail || null,
           duration:     data.video_duration_sec ? data.video_duration_sec / 60 : 0,
           viewCount:    0,
-          qualityScore: data.video_score       || 0,
+          qualityScore: data.video_score     || 0,
         };
         setFetchedVideo(vid);
         setVideoFetchState('done');
@@ -167,10 +185,44 @@ export default function SectionBlock({
   }
 
   const checkLabel = isVideoOnly ? 'Mark as watched' : 'Mark as read';
-
-  // Determine if we should show the play button for this section
   const needsVideoFetch = hasVideoSlot && !videoData && videoFetchState === 'idle';
   const videoLoading = videoFetchState === 'loading';
+
+  // Exercise sections rendered differently
+  if (isExercise) {
+    return (
+      <div className="space-y-4">
+        <SectionHeader index={index} section={section} sectionType={sectionType} isCompleted={isCompleted} onToggleComplete={onToggleComplete} checkLabel={checkLabel} />
+        {localSection.generation_status === 'generating' ? (
+          <GeneratingState />
+        ) : localSection.generation_status === 'error' ? (
+          <ErrorState onRetry={handleGenerate} />
+        ) : localSection.is_generated && localSection.content ? (
+          <ExerciseSection section={localSection} onRegenerate={handleRegenerate} />
+        ) : (
+          <PlaceholderState estimatedMinutes={section.estimated_minutes || section.estimatedReadMinutes} onGenerate={() => { setPendingSource('ai'); handleGenerate('ai'); }} />
+        )}
+      </div>
+    );
+  }
+
+  // Summary sections rendered differently
+  if (isSummary) {
+    return (
+      <div className="space-y-4">
+        <SectionHeader index={index} section={section} sectionType={sectionType} isCompleted={isCompleted} onToggleComplete={onToggleComplete} checkLabel={checkLabel} />
+        {localSection.generation_status === 'generating' ? (
+          <GeneratingState />
+        ) : localSection.generation_status === 'error' ? (
+          <ErrorState onRetry={handleGenerate} />
+        ) : localSection.is_generated && localSection.content ? (
+          <TopicSummary section={localSection} onRegenerate={handleRegenerate} />
+        ) : (
+          <PlaceholderState estimatedMinutes={section.estimated_minutes || section.estimatedReadMinutes} onGenerate={() => handleGenerate('ai')} />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -182,21 +234,18 @@ export default function SectionBlock({
           onClose={() => setShowSourceModal(false)}
         />
       )}
-      {/* Section header */}
-      <div className="flex items-center justify-between">
-        <span className="text-xs uppercase tracking-widest text-[var(--c-text-muted)] font-medium">Section {index + 1}</span>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" checked={isCompleted} onChange={e => onToggleComplete(e.target.checked)}
-            className="accent-[var(--c-primary)] w-4 h-4" />
-          <span className="text-xs text-[var(--c-text-muted)]">{checkLabel}</span>
-        </label>
-      </div>
 
-      {/* Heading */}
-      <h2 className="text-xl font-bold tracking-[-0.02em] text-[var(--c-text)] pb-2 border-b-2 border-[var(--c-primary-light)]">
-        {section.heading}
-      </h2>
-      <div className="w-10 h-0.5 mt-1 bg-gradient-to-r from-[#185FA5] to-[#1D9E75] rounded-full" />
+      <SectionHeader index={index} section={section} sectionType={sectionType} isCompleted={isCompleted} onToggleComplete={onToggleComplete} checkLabel={checkLabel} />
+
+      {/* Learning objectives */}
+      {section.learning_objectives?.length > 0 && !localSection.is_generated && (
+        <LearningObjectives objectives={section.learning_objectives} />
+      )}
+
+      {/* Difficulty note */}
+      {section.difficulty_note && !localSection.is_generated && (
+        <DifficultyNote note={section.difficulty_note} />
+      )}
 
       {/* Video-only section */}
       {isVideoOnly ? (
@@ -215,25 +264,20 @@ export default function SectionBlock({
         </div>
       ) : (
         <>
-          {/* Written content */}
           {localSection.generation_status === 'generating' ? (
             <GeneratingState />
           ) : localSection.generation_status === 'error' ? (
-            <div className="bg-red-50 border border-dashed border-red-300 rounded-xl p-6 text-center space-y-3">
-              <p className="text-sm text-red-600">Content generation failed. Please try again.</p>
-              <button onClick={handleGenerate}
-                className="border border-red-300 text-red-600 text-sm px-4 py-1.5 rounded-lg hover:bg-red-50 transition-colors mx-auto block">
-                Try again
-              </button>
-            </div>
+            <ErrorState onRetry={handleGenerate} />
           ) : localSection.is_generated && localSection.content ? (
             <GeneratedContent section={localSection} onRegenerate={handleRegenerate} />
           ) : (
-            <PlaceholderState estimatedMinutes={section.estimatedReadMinutes} onGenerate={() => { setPendingSource('web'); setShowSourceModal(true); }} />
+            <PlaceholderState
+              estimatedMinutes={section.estimated_minutes || section.estimatedReadMinutes}
+              onGenerate={() => { setPendingSource('web'); setShowSourceModal(true); }}
+            />
           )}
 
-          {/* Video slot for text-with-video sections */}
-          {sectionType === 'text-with-video' && (
+          {legacyType === 'text-with-video' && (
             <div className="mt-6 space-y-2">
               <p className="text-xs uppercase tracking-widest text-[var(--c-text-muted)] font-medium flex items-center gap-1.5">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -257,15 +301,48 @@ export default function SectionBlock({
             </div>
           )}
 
-          {/* Legacy text section with assigned video */}
-          {sectionType === 'text' && localSection.youtube_video_id && videoData && (
+          {legacyType === 'text' && localSection.youtube_video_id && videoData && (
             <div className="mt-6 space-y-2">
-              <p className="text-xs uppercase tracking-widest text-[var(--c-text-muted)] font-medium">🎬 Recommended video</p>
+              <p className="text-xs uppercase tracking-widest text-[var(--c-text-muted)] font-medium">Recommended video</p>
               <YouTubeEmbed {...videoData} />
             </div>
           )}
         </>
       )}
+    </div>
+  );
+}
+
+function SectionHeader({ index, section, sectionType, isCompleted, onToggleComplete, checkLabel }) {
+  return (
+    <>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-xs uppercase tracking-widest text-[var(--c-text-muted)] font-medium">Section {index + 1}</span>
+          {sectionType && <SectionTypeBadge sectionType={sectionType} />}
+        </div>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" checked={isCompleted} onChange={e => onToggleComplete(e.target.checked)}
+            className="accent-[var(--c-primary)] w-4 h-4" />
+          <span className="text-xs text-[var(--c-text-muted)]">{checkLabel}</span>
+        </label>
+      </div>
+      <h2 className="text-xl font-bold tracking-[-0.02em] text-[var(--c-text)] pb-2 border-b-2 border-[var(--c-primary-light)]">
+        {section.heading}
+      </h2>
+      <div className="w-10 h-0.5 mt-1 bg-gradient-to-r from-[#185FA5] to-[#1D9E75] rounded-full" />
+    </>
+  );
+}
+
+function ErrorState({ onRetry }) {
+  return (
+    <div className="bg-red-50 border border-dashed border-red-300 rounded-xl p-6 text-center space-y-3">
+      <p className="text-sm text-red-600">Content generation failed. Please try again.</p>
+      <button onClick={onRetry}
+        className="border border-red-300 text-red-600 text-sm px-4 py-1.5 rounded-lg hover:bg-red-50 transition-colors mx-auto block">
+        Try again
+      </button>
     </div>
   );
 }
