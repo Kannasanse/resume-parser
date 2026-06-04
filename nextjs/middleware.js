@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 
 // Marketing pages — accessible to everyone, no redirect when authenticated
-const MARKETING_PATHS  = ['/home'];
+const MARKETING_PATHS  = ['/home', '/features'];
 // Auth pages — redirect away when authenticated
 const AUTH_PAGES       = ['/login', '/signup', '/verify-email', '/forgot-password', '/reset-password', '/join', '/access-denied'];
 const PUBLIC_PATHS     = [...MARKETING_PATHS, ...AUTH_PAGES];
