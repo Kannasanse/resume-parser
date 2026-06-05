@@ -51,7 +51,7 @@ export default function PublicResumePage() {
       {/* Minimal branded header */}
       <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: 13, color: '#888' }}>
-          {resume.personal_info?.name || 'Resume'} &mdash; shared via resume.parse
+          {resume.personal_info?.name || 'Resume'} &mdash; shared via Proflect
         </span>
       </div>
 

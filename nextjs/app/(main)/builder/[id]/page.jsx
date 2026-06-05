@@ -770,8 +770,8 @@ export default function BuilderEditor() {
             onClick={() => setShowATS(true)}
             className="hidden sm:flex items-center gap-1.5 h-8 px-3 text-xs font-bold text-white rounded-md transition-all"
             style={{
-              background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
-              boxShadow: '0 0 12px rgba(139,92,246,0.5), 0 2px 6px rgba(99,102,241,0.3)',
+              background: 'linear-gradient(135deg, #185FA5, #1D9E75)',
+              boxShadow: '0 2px 8px rgba(24,95,165,0.35)',
             }}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
