@@ -2053,69 +2053,76 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
     );
   }
 
-  // ── Preview mode — single scrollable column with page-break indicators ─────────
+  // ── Preview mode — Fix A: windowed page cards ────────────────────────────────
   //
-  // Renders the full resume content in one continuous div (no per-page clipping).
-  // Visual blue lines are overlaid at every page-height boundary so the user can
-  // see where PDF page breaks will fall without experiencing content cuts or gaps.
+  // Each card is an overflow:hidden window of exact page dimensions.
+  // The full template (with sectionAdjustments applied) is rendered absolutely
+  // inside every card and shifted up by i * page.height * s so the correct
+  // page slice is visible through the window.
   //
-  // break-inside: avoid only works in @media print, not inside overflow:hidden
-  // divs — this approach eliminates the mid-item cut/gap bug entirely.
+  // Why this fixes cut / gap bugs:
+  //  • Content always renders at its natural flow position — no block is ever
+  //    clipped mid-line because items are never split across containers.
+  //  • sectionAdjustments (margin pushes from the pagination engine) are applied,
+  //    so page boundaries fall exactly where the engine computed them.
+  //  • No visibleBlockIds filtering — templates never need to render a partial
+  //    section starting from y=0 inside a card, which was the source of the
+  //    top-of-page gap (template paddingTop always applied even on page 2+).
   //
-  // pageSlices / sectionAdjustments are still computed by the pagination engine
-  // and used in printMode (Puppeteer PDF path) — that path is unchanged.
+  // numPages: uses pageSlices.length once the engine runs; falls back to a
+  // height-based estimate during the pre-measurement window.
 
-  const numPages    = contentHeight ? Math.ceil(contentHeight / page.height) : 1;
-  const pageBreakYs = Array.from({ length: numPages - 1 }, (_, i) => (i + 1) * page.height);
+  const numPages = pageSlices
+    ? pageSlices.length
+    : (contentHeight ? Math.ceil(contentHeight / page.height) : 1);
 
   return (
     <div ref={containerRef} className={`overflow-auto ${className}`} style={{ background: '#CBD5E1', position: 'relative' }}>
-      <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        {/* Hidden measurement container — unchanged from previous implementation */}
+      <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+        {/* Hidden measurement container — renders all content at fixed width.
+            transform:none + zoom:normal prevent scale inheritance from corrupting
+            getBoundingClientRect values used by computeGeometricAdjustments. */}
         <div style={{ position: 'absolute', top: -9999, left: -9999, width: page.width, height: 'auto', maxHeight: 'none', overflow: 'visible', visibility: 'hidden', pointerEvents: 'none', transform: 'none', zoom: 'normal', contain: 'none' }}>
           <div ref={contentRef} style={{ position: 'relative', transform: 'none', height: 'auto', overflow: 'visible' }}>
             <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
           </div>
         </div>
 
-        {/* Single resume card — full content, no clipping */}
-        <div style={{
-          position:   'relative',
-          width:      page.width * s,
-          // Use measured height once available so the container clips exactly at
-          // content end.  Fall back to one page height until fonts load.
-          ...(contentHeight
-            ? { height: contentHeight * s }
-            : { minHeight: page.height * s }
-          ),
-          overflow:   'hidden',
-          flexShrink: 0,
-          background: '#fff',
-          boxShadow:  '0 4px 24px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.08)',
-        }}>
-          <div style={{ width: page.width, transformOrigin: 'top left', transform: `scale(${s})` }}>
-            <TemplateComp
-              resume={resume || {}} ds={ds} ss={ss}
-              sectionAdjustments={{}}
-            />
-            {hasFooter && (
-              <div style={{ borderTop: '1px solid #e0e0e0', padding: '6px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8pt', color: '#888', background: '#fff' }}>
-                <span>{[fs.name && pi.name, fs.email && pi.email].filter(Boolean).join(' · ')}</span>
-                {fs.pageNumbers && <span>{numPages} page{numPages !== 1 ? 's' : ''}</span>}
-              </div>
-            )}
+        {/* One card per page.
+            The inner div is absolutely positioned with top = -(i * page.height * s)
+            so that page i's content slice is flush with the card's top edge.
+            overflow:hidden on the card clips everything outside the page window. */}
+        {Array.from({ length: numPages }, (_, i) => (
+          <div key={i} style={{
+            width:      page.width * s,
+            height:     page.height * s,
+            overflow:   'hidden',
+            position:   'relative',
+            flexShrink: 0,
+            background: '#fff',
+            boxShadow:  '0 4px 24px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.08)',
+          }}>
+            <div style={{
+              position:        'absolute',
+              top:             -(i * page.height * s),
+              left:            0,
+              width:           page.width,
+              transform:       `scale(${s})`,
+              transformOrigin: 'top left',
+            }}>
+              <TemplateComp
+                resume={resume || {}} ds={ds} ss={ss}
+                sectionAdjustments={sectionAdjustments}
+              />
+              {hasFooter && (
+                <div style={{ borderTop: '1px solid #e0e0e0', padding: '6px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8pt', color: '#888', background: '#fff' }}>
+                  <span>{[fs.name && pi.name, fs.email && pi.email].filter(Boolean).join(' · ')}</span>
+                  {fs.pageNumbers && <span>Page {i + 1} of {numPages}</span>}
+                </div>
+              )}
+            </div>
           </div>
-
-          {/* Visual page-break lines — purely decorative, never affect PDF output */}
-          {pageBreakYs.map((y, i) => (
-            <div
-              key={i}
-              className="resume-page-divider"
-              data-page={`p.${i + 2}`}
-              style={{ top: y * s }}
-            />
-          ))}
-        </div>
+        ))}
       </div>
     </div>
   );

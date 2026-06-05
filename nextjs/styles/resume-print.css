@@ -57,40 +57,6 @@
   page-break-before: page;
 }
 
-/* ─── Live preview page-break indicators ───────────────────── */
-
-/*
-  Absolutely-positioned lines overlaid on the single-column preview.
-  Each line marks where a PDF page boundary falls.
-  Hidden in print/PDF so they never appear in the final document.
-*/
-
-.resume-page-divider {
-  position:       absolute;
-  left:           0;
-  right:          0;
-  height:         2px;
-  background:     #93C5FD;
-  pointer-events: none;
-  z-index:        10;
-}
-
-.resume-page-divider::after {
-  content:        attr(data-page);
-  position:       absolute;
-  right:          6px;
-  top:            3px;
-  font-size:      9px;
-  color:          #93C5FD;
-  font-family:    system-ui, sans-serif;
-  font-weight:    500;
-  letter-spacing: 0.02em;
-}
-
-@media print {
-  .resume-page-divider { display: none !important; }
-}
-
 /* ─── @media print ──────────────────────────────────────────── */
 
 @media print {
