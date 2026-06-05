@@ -16,6 +16,7 @@ import SectionList from '@/components/builder/SectionList.jsx';
 import SectionEditor from '@/components/builder/SectionEditor.jsx';
 import DesignPanel from '@/components/builder/DesignPanel.jsx';
 import ResumePreview from '@/components/builder/ResumePreview.jsx';
+import ResumeCanvas from '@/components/builder/ResumeCanvas.jsx';
 import TemplateGallery from '@/components/builder/TemplateGallery.jsx';
 import ShareModal from '@/components/builder/ShareModal.jsx';
 import ATSPanel from '@/components/builder/ATSPanel.jsx';
@@ -364,7 +365,6 @@ export default function BuilderEditor() {
   const [importFile, setImportFile] = useState(null);
   const [toast, setToast] = useState(null);
   const [titleEditing, setTitleEditing] = useState(false);
-  const [zoom, setZoom] = useState(0.72);
   const [mobileTab, setMobileTab] = useState('edit'); // 'edit' | 'preview'
   const [panelMode, setPanelMode] = useState('content'); // 'content' | 'customize'
   const [customizeTab, setCustomizeTab] = useState('design'); // 'design' | 'spacing' | 'sections'
@@ -914,42 +914,22 @@ export default function BuilderEditor() {
         {/* Preview pane */}
         <div className={`${mobileTab === 'edit' ? 'hidden md:flex' : 'flex'} flex-col md:flex-1 flex-1 overflow-hidden preview-dot-grid`}>
           {/* Preview toolbar */}
-          <div className="flex items-center gap-1 px-2 py-1.5 bg-ds-card border-b border-ds-border text-xs flex-shrink-0 justify-center">
-            <button
-              onClick={() => setZoom(z => Math.max(0.35, parseFloat((z - 0.1).toFixed(1))))}
-              className="w-6 h-6 flex items-center justify-center rounded-full text-ds-textMuted hover:text-ds-text hover:bg-ds-bg transition-colors"
-              title="Zoom out"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/>
-              </svg>
-            </button>
-            <span className="font-semibold text-ds-text tabular-nums min-w-[38px] text-center">
-              {Math.round(zoom * 100)}%
-            </span>
-            <button
-              onClick={() => setZoom(z => Math.min(1.2, parseFloat((z + 0.1).toFixed(1))))}
-              className="w-6 h-6 flex items-center justify-center rounded-full text-ds-textMuted hover:text-ds-text hover:bg-ds-bg transition-colors"
-              title="Zoom in"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                <line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
-              </svg>
-            </button>
-            <div className="w-px h-3.5 bg-ds-border mx-1" />
+          <div className="flex items-center gap-2 px-2 py-1.5 bg-ds-card border-b border-ds-border text-xs flex-shrink-0 justify-center">
             <span className="font-semibold text-ds-text">{page.id === 'letter' ? 'Letter' : 'A4'}</span>
             <span className="text-ds-textMuted">·</span>
             <span className="text-ds-textMuted">{templateName}</span>
           </div>
 
-          {/* Resume preview — single render, correct page breaks, no slicing math */}
-          <ResumePreview
-            resume={previewData}
-            designSettings={previewData.design_settings || {}}
-            scale={zoom}
-            className="flex-1"
-          />
+          {/* Resume preview — auto-scales to fit the panel via ResumeCanvas */}
+          <ResumeCanvas className="flex-1">
+            {scale => (
+              <ResumePreview
+                resume={previewData}
+                designSettings={previewData.design_settings || {}}
+                scale={scale}
+              />
+            )}
+          </ResumeCanvas>
         </div>
 
       </div>

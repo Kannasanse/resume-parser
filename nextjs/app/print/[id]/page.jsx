@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import { getBuilderResume } from '@/lib/builderApi';
 import { resolveDesign } from '@/components/builder/templates.js';
 import ResumePreview from '@/components/builder/ResumePreview.jsx';
+import '@/styles/resume-print.css';
 
 export default function PrintPage() {
   const { id } = useParams();
@@ -124,10 +125,10 @@ export default function PrintPage() {
           }
         }
 
-        /* ── Print rules ── */
-        @media print {
-          .no-print { display: none !important; }
+        /* ── Print rules — static rules live in styles/resume-print.css ── */
+        /* (imported at top of file; only dynamic overrides remain here)  */
 
+        @media print {
           html, body {
             width: ${page.width}px;
             margin: 0;
@@ -138,74 +139,8 @@ export default function PrintPage() {
             width: ${page.width}px;
           }
 
-          /* Preserve all colors exactly */
-          .resume-print-root * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-
-          /* ── Section-aware page break rules ── */
-
-          /* 1. Section headers glue to their content — never orphaned at page bottom.
-                Covers both native h-tags and template heading divs (first child of section block). */
-          .resume-print-root h1,
-          .resume-print-root h2,
-          .resume-print-root h3,
-          .resume-print-root h4,
-          .resume-print-root h5,
-          .resume-print-root h6,
-          .resume-print-root .resume-section-block > *:first-child {
-            break-after: avoid;
-            page-break-after: avoid;
-          }
-
-          /* 2. Keep each full section together if it's reasonably sized.
-                Browsers honour this for blocks that fit within one page. */
-          .resume-section-block {
-            break-inside: auto;
-            page-break-inside: auto;
-          }
-
-          /* 3. Individual experience / education entries stay intact */
-          .resume-entry-block {
-            break-inside: avoid;
-            page-break-inside: avoid;
-          }
-
-          /* 4. Prevent a lone section heading at the bottom of a page.
-                margin-bottom: 0 + the next sibling having break-before pulls
-                the heading along with its first child. */
-          .resume-section-block + .resume-section-block {
-            break-before: auto;
-          }
-
-          /* 5. Skills, certifications, languages, projects — compact blocks
-                that should stay together if they fit on one page */
-          .resume-section-block[data-type="skills"],
-          .resume-section-block[data-type="certifications"],
-          .resume-section-block[data-type="languages"],
-          .resume-section-block[data-type="summary"] {
-            break-inside: avoid;
-            page-break-inside: avoid;
-          }
-
-          /* 6. If a table spans pages, repeat the header row */
-          thead {
-            display: table-header-group;
-          }
-
-          /* 7. Suppress browser-injected link underlines & colors in print */
+          /* Suppress browser link colour overrides */
           a { text-decoration: none !important; color: inherit !important; }
-
-          /* 8. Rich text body rendered from TipTap HTML */
-          .resume-rich-body p  { margin: 0; }
-          .resume-rich-body p + p { margin-top: 0.2em; }
-          .resume-rich-body ul { list-style-type: disc !important; padding-left: 1.2em; margin: 0.2em 0; }
-          .resume-rich-body ol { list-style-type: decimal !important; padding-left: 1.2em; margin: 0.2em 0; }
-          .resume-rich-body li { display: list-item !important; margin: 0; }
-          .resume-rich-body strong { font-weight: 700; }
-          .resume-rich-body em     { font-style: italic; }
-          .resume-rich-body u      { text-decoration: underline; }
         }
       `}</style>
 
