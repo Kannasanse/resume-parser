@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/hooks/useAuth';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const MenuIcon  = () => (<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>);
@@ -180,6 +181,7 @@ function UtilitiesMenuPanel({ onClose, onMouseEnter, onMouseLeave }) {
 // ── Main component ────────────────────────────────────────────────────────────
 // alwaysSolid: use on non-hero pages (utilities, etc.) — navbar is always white
 export default function HomeNavbar({ alwaysSolid = false }) {
+  const { user, loading: authLoading } = useAuth();
   const [scrolled, setScrolled] = useState(alwaysSolid);
   const [menuOpen, setMenuOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
@@ -292,14 +294,23 @@ export default function HomeNavbar({ alwaysSolid = false }) {
 
           {/* Right buttons */}
           <div className="hidden md:flex items-center gap-3">
-            <Link href="/login" className="px-4 py-2 text-sm font-semibold rounded-lg border transition-all"
-              style={{ color: scrolled ? '#185FA5' : 'rgba(255,255,255,0.85)', borderColor: scrolled ? '#185FA5' : 'rgba(255,255,255,0.35)', background: 'transparent' }}>
-              Log in
-            </Link>
-            <Link href="/signup" className="px-4 py-2 text-sm font-semibold rounded-lg transition-all"
-              style={{ background: scrolled ? '#185FA5' : 'white', color: scrolled ? 'white' : '#185FA5', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
-              Get started free
-            </Link>
+            {!authLoading && (user ? (
+              <Link href="/home" className="px-4 py-2 text-sm font-semibold rounded-lg transition-all"
+                style={{ background: scrolled ? '#185FA5' : 'white', color: scrolled ? 'white' : '#185FA5', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
+                Go to app →
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="px-4 py-2 text-sm font-semibold rounded-lg border transition-all"
+                  style={{ color: scrolled ? '#185FA5' : 'rgba(255,255,255,0.85)', borderColor: scrolled ? '#185FA5' : 'rgba(255,255,255,0.35)', background: 'transparent' }}>
+                  Log in
+                </Link>
+                <Link href="/signup" className="px-4 py-2 text-sm font-semibold rounded-lg transition-all"
+                  style={{ background: scrolled ? '#185FA5' : 'white', color: scrolled ? 'white' : '#185FA5', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
+                  Get started free
+                </Link>
+              </>
+            ))}
           </div>
 
           {/* Mobile hamburger */}
@@ -404,16 +415,26 @@ export default function HomeNavbar({ alwaysSolid = false }) {
             </div>
 
             <div className="flex flex-col gap-3 p-4 mt-2">
-              <Link href="/login" onClick={() => setMenuOpen(false)}
-                className="w-full text-center py-2.5 text-sm font-semibold rounded-lg border"
-                style={{ color: 'rgba(255,255,255,0.85)', borderColor: 'rgba(255,255,255,0.25)' }}>
-                Log in
-              </Link>
-              <Link href="/signup" onClick={() => setMenuOpen(false)}
-                className="w-full text-center py-2.5 text-sm font-semibold rounded-lg"
-                style={{ background: 'white', color: '#185FA5' }}>
-                Get started free
-              </Link>
+              {user ? (
+                <Link href="/home" onClick={() => setMenuOpen(false)}
+                  className="w-full text-center py-2.5 text-sm font-semibold rounded-lg"
+                  style={{ background: 'white', color: '#185FA5' }}>
+                  Go to app →
+                </Link>
+              ) : (
+                <>
+                  <Link href="/login" onClick={() => setMenuOpen(false)}
+                    className="w-full text-center py-2.5 text-sm font-semibold rounded-lg border"
+                    style={{ color: 'rgba(255,255,255,0.85)', borderColor: 'rgba(255,255,255,0.25)' }}>
+                    Log in
+                  </Link>
+                  <Link href="/signup" onClick={() => setMenuOpen(false)}
+                    className="w-full text-center py-2.5 text-sm font-semibold rounded-lg"
+                    style={{ background: 'white', color: '#185FA5' }}>
+                    Get started free
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

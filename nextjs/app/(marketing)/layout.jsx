@@ -4,7 +4,7 @@ export default function MarketingLayout({ children }) {
   return (
     <div style={{ background: 'linear-gradient(160deg, #0A1628 0%, #0D2137 100%)', minHeight: '100vh' }}>
       <HomeNavbar />
-      <main>{children}</main>
+      <main style={{ paddingTop: 64 }}>{children}</main>
       <footer style={{ borderTop: '1px solid rgba(255,255,255,0.08)', padding: '40px 24px', textAlign: 'center', marginTop: 40 }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
