@@ -1,3 +1,7 @@
+'use client';
+
+import { DEEP_DIVE_COMPONENT_MAP } from './FeatureDeepDiveScreenshots';
+
 function SparklesIcon({ size = 20, color }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -43,13 +47,23 @@ function ScreenshotPlaceholder({ label, accentColor }) {
   );
 }
 
-export default function FeatureDeepDive({ sections, accentColor = '#185FA5' }) {
+export default function FeatureDeepDive({ sections, accentColor = '#185FA5', featureSlug }) {
+  const screenshotComponents = featureSlug ? DEEP_DIVE_COMPONENT_MAP[featureSlug] : null;
+
   return (
     <section id="demo" style={{ padding: '0 24px 40px' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         {sections.map((s, i) => {
           const isReversed = i % 2 === 1;
-          const image = <ScreenshotPlaceholder label={s.imageLabel || 'Screenshot'} accentColor={accentColor} />;
+          const ScreenshotComponent = screenshotComponents?.[i];
+          const image = ScreenshotComponent
+            ? (
+              <div style={{ borderRadius: 16, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.40)' }}>
+                <ScreenshotComponent />
+              </div>
+            )
+            : <ScreenshotPlaceholder label={s.imageLabel || 'Screenshot'} accentColor={accentColor} />;
+
           const text = (
             <div>
               <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: '#5B9FD4', margin: 0 }}>

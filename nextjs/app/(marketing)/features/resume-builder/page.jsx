@@ -65,7 +65,7 @@ export default function ResumeBuilderPage() {
         featureSlug="resume-builder"
       />
       <FeatureBenefits benefits={BENEFITS} />
-      <FeatureDeepDive sections={DEEP_DIVE} accentColor={ACCENT} />
+      <FeatureDeepDive sections={DEEP_DIVE} accentColor={ACCENT} featureSlug="resume-builder" />
       <FeatureSocialProof />
       <FeatureCTABanner featureName="Resume Builder" appHref="/builder" />
     </FeaturePageLayout>

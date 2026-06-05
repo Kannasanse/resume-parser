@@ -65,7 +65,7 @@ export default function PortfolioPage() {
         featureSlug="portfolio"
       />
       <FeatureBenefits benefits={BENEFITS} />
-      <FeatureDeepDive sections={DEEP_DIVE} accentColor={ACCENT} />
+      <FeatureDeepDive sections={DEEP_DIVE} accentColor={ACCENT} featureSlug="portfolio" />
       <FeatureSocialProof />
       <FeatureCTABanner featureName="Portfolio" appHref="/portfolios" />
     </FeaturePageLayout>

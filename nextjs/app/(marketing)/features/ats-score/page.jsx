@@ -65,7 +65,7 @@ export default function ATSScorePage() {
         featureSlug="ats-score"
       />
       <FeatureBenefits benefits={BENEFITS} />
-      <FeatureDeepDive sections={DEEP_DIVE} accentColor={ACCENT} />
+      <FeatureDeepDive sections={DEEP_DIVE} accentColor={ACCENT} featureSlug="ats-score" />
       <FeatureSocialProof />
       <FeatureCTABanner featureName="ATS Score" appHref="/resumes" />
     </FeaturePageLayout>

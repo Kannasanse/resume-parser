@@ -65,7 +65,7 @@ export default function NotesPage() {
         featureSlug="notes"
       />
       <FeatureBenefits benefits={BENEFITS} />
-      <FeatureDeepDive sections={DEEP_DIVE} accentColor={ACCENT} />
+      <FeatureDeepDive sections={DEEP_DIVE} accentColor={ACCENT} featureSlug="notes" />
       <FeatureSocialProof />
       <FeatureCTABanner featureName="Notes" appHref="/notes" />
     </FeaturePageLayout>

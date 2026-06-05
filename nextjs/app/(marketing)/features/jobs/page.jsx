@@ -65,7 +65,7 @@ export default function JobsPage() {
         featureSlug="jobs"
       />
       <FeatureBenefits benefits={BENEFITS} />
-      <FeatureDeepDive sections={DEEP_DIVE} accentColor={ACCENT} />
+      <FeatureDeepDive sections={DEEP_DIVE} accentColor={ACCENT} featureSlug="jobs" />
       <FeatureSocialProof />
       <FeatureCTABanner featureName="Job Recommendations" appHref="/job-recommendations" />
     </FeaturePageLayout>

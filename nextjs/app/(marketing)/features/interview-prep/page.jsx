@@ -65,7 +65,7 @@ export default function InterviewPrepPage() {
         featureSlug="interview-prep"
       />
       <FeatureBenefits benefits={BENEFITS} />
-      <FeatureDeepDive sections={DEEP_DIVE} accentColor={ACCENT} />
+      <FeatureDeepDive sections={DEEP_DIVE} accentColor={ACCENT} featureSlug="interview-prep" />
       <FeatureSocialProof />
       <FeatureCTABanner featureName="Interview Prep" appHref="/self-test" />
     </FeaturePageLayout>

@@ -65,7 +65,7 @@ export default function CareerMapPage() {
         featureSlug="career-map"
       />
       <FeatureBenefits benefits={BENEFITS} />
-      <FeatureDeepDive sections={DEEP_DIVE} accentColor={ACCENT} />
+      <FeatureDeepDive sections={DEEP_DIVE} accentColor={ACCENT} featureSlug="career-map" />
       <FeatureSocialProof />
       <FeatureCTABanner featureName="Career Map" appHref="/career-map" />
     </FeaturePageLayout>

@@ -65,7 +65,7 @@ export default function CoursesPage() {
         featureSlug="courses"
       />
       <FeatureBenefits benefits={BENEFITS} />
-      <FeatureDeepDive sections={DEEP_DIVE} accentColor={ACCENT} />
+      <FeatureDeepDive sections={DEEP_DIVE} accentColor={ACCENT} featureSlug="courses" />
       <FeatureSocialProof />
       <FeatureCTABanner featureName="My Courses" appHref="/my-courses" />
     </FeaturePageLayout>

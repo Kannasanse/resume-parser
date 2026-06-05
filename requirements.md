@@ -1,8 +1,9 @@
 # Proflect — Requirements & Implementation Reference
 
-> **Status:** Living document. Reflects implementation as of May 2026.  
-> **Stack:** Next.js 15 App Router · Tiptap v3 · Supabase  · Groq · OpenRouter  
-> **Platform:** https://proflect-neo.vercel.app
+> **Status:** Living document. Reflects implementation as of June 2026.  
+> **Stack:** Next.js 15 App Router · MUI v9 · Tiptap v3 · Supabase · Groq · OpenRouter  
+> **Platform:** https://proflect-neo.vercel.app  
+> **Design Reference:** `design-brief` (MUI v9 + TailwindCSS component spec)
 
 ---
 
@@ -10,14 +11,16 @@
 
 1. [Product Overview](#1-product-overview)
 2. [Tech Stack](#2-tech-stack)
-3. [AI Model Usage](#3-ai-model-usage)
-4. [Credit System](#4-credit-system)
-5. [Feature Inventory by Surface](#5-feature-inventory-by-surface)
-6. [Block Editor](#6-block-editor)
-7. [API Route Inventory](#7-api-route-inventory)
-8. [Database Tables](#8-database-tables)
-9. [Environment Variables](#9-environment-variables)
-10. [Authentication & Authorization](#10-authentication--authorization)
+3. [Design System](#3-design-system)
+4. [AI Model Usage](#4-ai-model-usage)
+5. [Credit System](#5-credit-system)
+6. [Feature Inventory by Surface](#6-feature-inventory-by-surface)
+7. [Page Inventory](#7-page-inventory)
+8. [Block Editor](#8-block-editor)
+9. [API Route Inventory](#9-api-route-inventory)
+10. [Database Tables](#10-database-tables)
+11. [Environment Variables](#11-environment-variables)
+12. [Authentication & Authorization](#12-authentication--authorization)
 
 ---
 
@@ -38,7 +41,7 @@ Proflect is a career-intelligence platform for job seekers and professionals. It
 | Layer | Technology |
 |---|---|
 | Framework | Next.js 15, App Router, `'use client'` components |
-| UI | Tailwind CSS, dark-mode via `dark:` variant |
+| UI | MUI v9 + Tailwind CSS · light-first, dark-mode via `dark:` variant |
 | Rich Text | Tiptap v3 (`^3.23.6`) — ProseMirror-based block editor |
 | Auth | Supabase Auth (email/password + email verification) |
 | Database | Supabase (Postgres) with RLS + RPC functions |
@@ -59,7 +62,46 @@ Proflect is a career-intelligence platform for job seekers and professionals. It
 
 ---
 
-## 3. AI Model Usage
+## 3. Design System
+
+> Full component spec in `design-brief`. Summary below for quick reference.
+
+**Fonts:** `Inter` (all text) · `JetBrains Mono` (code/monospace)
+
+**Color tokens:**
+
+| Token | Value | Usage |
+|---|---|---|
+| Primary | `#185FA5` | Buttons, links, active states |
+| Primary Dark | `#0C447C` | Hover/pressed |
+| Primary Light bg | `#E6F1FB` | Selected rows, chips, active nav |
+| Success | `#1D9E75` | Positive scores, active status |
+| Error | `#D93025` | Errors, failed status, danger zone |
+| Warning | `#F59E0B` | Moderate scores, pending status |
+| Text | `#2C2C2A` | Primary body text |
+| Secondary Text | `#6B7280` | Subtitles, captions |
+| Disabled | `#9CA3AF` | Placeholder, muted |
+| Border | `#D1DCE8` | Card/input borders |
+| Surface | `#FFFFFF` | Card, modal backgrounds |
+| Page bg | `#F4F8FC` | App background |
+
+**Shape:** Inputs/buttons `8px` · Cards `12px` · Modals `16px` · Pills `9999px`  
+**Shadows:** Cards `0 2px 8px rgba(12,68,124,0.10)` · Modals `0 8px 32px rgba(12,68,124,0.16)`  
+**Spacing base:** 8px  
+**Theme:** Light-first; dark-mode toggle exists but is secondary.
+
+**Score band colors:**
+
+| Band | bg | color |
+|---|---|---|
+| Strong Match | `#D1FAE5` | `#1D9E75` |
+| Good Match | `#E6F1FB` | `#185FA5` |
+| Moderate Match | `#FEF3C7` | `#B45309` |
+| Weak Match | `#FEE2E2` | `#D93025` |
+
+---
+
+## 4. AI Model Usage
 
 ### 3.1 Model Reference
 
@@ -124,7 +166,7 @@ Groq input is limited to 14,000 chars (context window); OpenRouter accepts up to
 
 ---
 
-## 4. Credit System
+## 5. Credit System
 
 ### 4.1 Credit Costs
 
@@ -166,7 +208,7 @@ New users automatically receive **30 credits** on first login (inserted by `ensu
 
 ---
 
-## 5. Feature Inventory by Surface
+## 6. Feature Inventory by Surface
 
 ### 5.1 Resume Upload & Parsing
 
@@ -484,7 +526,56 @@ TopBar detects UUID segments in career-map URLs and fetches real names from `/ap
 
 ---
 
-## 6. Block Editor
+## 7. Page Inventory
+
+> Persona key: **Admin** = `profiles.role === 'admin'` · **User** = authenticated non-admin · **Public** = unauthenticated
+
+### Auth & Onboarding
+
+| Route | Page | Persona |
+|---|---|---|
+| `/login` | Login | All |
+| `/signup` | Sign Up | All |
+| `/verify-email` | Email Verification | All |
+| `/forgot-password` | Forgot Password | All |
+| `/reset-password` | Reset Password | All |
+| `/join` | Invite Acceptance | All (token-gated) |
+
+### Admin Surface
+
+| Route | Page | Description |
+|---|---|---|
+| `/resumes` | Profiles List | Grid/table of uploaded resumes; status filter; bulk delete |
+| `/resumes/upload` | Upload Resume | Drag-drop file queue; optional job profile link |
+| `/resumes/:id` | Resume Detail | Parsed data tabs + scoring panel; export JSON/CSV |
+| `/jobs` | Job Profiles List | Tile grid; candidate count per job |
+| `/jobs/new` | New Job Profile | Form: basic info, JD, AI skill extraction, scoring weights |
+| `/jobs/:id/edit` | Edit Job Profile | Same form pre-populated |
+| `/jobs/:id` | Job Detail + Candidates | Candidates tab with band filter; Overview + Settings tabs |
+| `/admin` | Dashboard | Stat cards (users, invitations, jobs) + quick actions |
+| `/admin/users` | User List | Search/filter table; role + status chips |
+| `/admin/users/:id` | User Detail + Edit | Role/status edit; danger zone with hold-to-delete |
+| `/admin/invite` | Invite Users | Email chip input; pending invitations panel |
+| `/admin/import` | Bulk CSV Import | 3-step: upload → preview → results |
+
+### User Surface
+
+| Route | Page | Description |
+|---|---|---|
+| `/builder` | Resume List | Resume cards with template swatch; create / upload |
+| `/builder/:id` | Resume Editor | Two-panel split: section editor left, live preview right |
+| `/builder/:id/review` | Review + Export | Full-page A4 preview; Download PDF button |
+
+### Public
+
+| Route | Page | Description |
+|---|---|---|
+| `/r/:token` | Public Share | Unauthenticated resume view in selected template |
+| `/access-denied` | Access Denied | Role-aware CTA (user → builder, admin → resumes) |
+
+---
+
+## 8. Block Editor
 
 Built on **Tiptap v3** with ProseMirror. The main component is `BlockEditor` (`components/editor/BlockEditor.jsx`).
 
@@ -631,7 +722,7 @@ From `@tiptap/*` packages:
 
 ---
 
-## 7. API Route Inventory
+## 9. API Route Inventory
 
 ### Resume
 
@@ -727,8 +818,11 @@ From `@tiptap/*` packages:
 | POST | `/api/v1/auth/login` | Login |
 | POST | `/api/v1/auth/signup` | Register |
 | POST | `/api/v1/auth/resend-verification` | Resend email verification |
+| POST | `/api/v1/auth/forgot-password` | Send password reset email |
+| POST | `/api/v1/auth/reset-password` | Set new password from reset token |
 | POST | `/api/v1/auth/invite` | Generate invite |
-| POST | `/api/v1/auth/accept-invite` | Accept invite token |
+| POST | `/api/v1/auth/accept-invite` | Accept invite token (`/join` page) |
+| GET | `/api/v1/auth/invite/[token]` | Validate invite token + pre-fill email/role |
 
 ### Credits
 
@@ -802,7 +896,7 @@ All utilities routes accept `multipart/form-data` with a `file` field (or `html`
 
 ---
 
-## 8. Database Tables
+## 10. Database Tables
 
 | Table | Purpose |
 |---|---|
@@ -841,7 +935,7 @@ All utilities routes accept `multipart/form-data` with a `file` field (or `html`
 
 ---
 
-## 9. Environment Variables
+## 11. Environment Variables
 
 All secrets in `.env.local` — **gitignored, never commit**.
 
@@ -858,7 +952,7 @@ All secrets in `.env.local` — **gitignored, never commit**.
 
 ---
 
-## 10. Authentication & Authorization
+## 12. Authentication & Authorization
 
 - Auth provider: Supabase Auth (email/password)
 - New accounts require email verification before login
@@ -888,4 +982,4 @@ The following features were scoped in the block editor specification but not yet
 
 ---
 
-*Last updated: May 2026*
+*Last updated: June 2026*
