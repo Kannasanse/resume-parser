@@ -1122,13 +1122,8 @@ export default function HomepageContent({ sections, isPreview, userRole }) {
       <LogoStrip />
 
       <FeatureShowcase />
-      <DeepDiveResume />
-      <DeepDiveCareerMap />
-      <DeepDivePortfolio />
       <UtilitiesSpotlight />
-      <JobsSpotlight />
       <HowItWorks />
-      <ATSAndInterviewPrep />
       <FinalCTA />
       <HomeFooter />
 

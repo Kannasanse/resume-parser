@@ -2,7 +2,6 @@ import FeaturePageLayout from '@/components/marketing/FeaturePageLayout';
 import FeatureHero from '@/components/marketing/FeatureHero';
 import FeatureBenefits from '@/components/marketing/FeatureBenefits';
 import FeatureDeepDive from '@/components/marketing/FeatureDeepDive';
-import FeatureSocialProof from '@/components/marketing/FeatureSocialProof';
 import FeatureCTABanner from '@/components/marketing/FeatureCTABanner';
 
 export const metadata = {
@@ -66,7 +65,6 @@ export default function NotesPage() {
       />
       <FeatureBenefits benefits={BENEFITS} />
       <FeatureDeepDive sections={DEEP_DIVE} accentColor={ACCENT} featureSlug="notes" />
-      <FeatureSocialProof />
       <FeatureCTABanner featureName="Notes" appHref="/notes" />
     </FeaturePageLayout>
   );
