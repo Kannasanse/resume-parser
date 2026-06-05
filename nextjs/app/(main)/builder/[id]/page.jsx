@@ -921,12 +921,13 @@ export default function BuilderEditor() {
           </div>
 
           {/* Resume preview — auto-scales to fit the panel via ResumeCanvas */}
-          <ResumeCanvas className="flex-1">
+          <ResumeCanvas className="flex flex-col flex-1 overflow-hidden">
             {scale => (
               <ResumePreview
                 resume={previewData}
                 designSettings={previewData.design_settings || {}}
                 scale={scale}
+                className="flex-1"
               />
             )}
           </ResumeCanvas>
