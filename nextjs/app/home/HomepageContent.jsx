@@ -1119,8 +1119,6 @@ export default function HomepageContent({ sections, isPreview, userRole }) {
     <div className="overflow-x-hidden">
       <HomeNavbar />
       <HeroSection />
-      <LogoStrip />
-
       <FeatureShowcase />
       <UtilitiesSpotlight />
       <HowItWorks />
