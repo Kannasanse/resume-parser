@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import RichTextEditor from './RichTextEditor.jsx';
 
 // ── Shared atoms ──────────────────────────────────────────────────────────────
@@ -149,14 +150,25 @@ function useSkillSearch(query) {
 function SkillNameInput({ value, onCommit }) {
   const [query, setQuery] = useState(value);
   const [open, setOpen] = useState(false);
-  const [focused, setFocused] = useState(false);
-  const wrapRef = useRef(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
+  const inputRef = useRef(null);
+  const listRef = useRef(null);
   const suggestions = useSkillSearch(query);
-  const showDropdown = open && focused && suggestions.length > 0;
+  const showDropdown = open && suggestions.length > 0;
 
-  // close on outside click
+  // Reposition dropdown to input coordinates
+  const updatePos = useCallback(() => {
+    if (!inputRef.current) return;
+    const r = inputRef.current.getBoundingClientRect();
+    setDropdownPos({ top: r.bottom + window.scrollY + 4, left: r.left + window.scrollX, width: r.width });
+  }, []);
+
+  // Close on outside click
   useEffect(() => {
-    const handler = e => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); };
+    const handler = e => {
+      if (inputRef.current?.contains(e.target) || listRef.current?.contains(e.target)) return;
+      setOpen(false);
+    };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
@@ -164,38 +176,43 @@ function SkillNameInput({ value, onCommit }) {
   // sync when parent value changes (e.g. initial load)
   useEffect(() => { setQuery(value); }, [value]);
 
+  const dropdown = showDropdown && typeof document !== 'undefined' && createPortal(
+    <ul
+      ref={listRef}
+      className="rounded-[10px] border border-ds-border bg-ds-card shadow-xl py-1 overflow-auto"
+      style={{ position: 'absolute', top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width, maxHeight: 220, zIndex: 9999 }}
+    >
+      {suggestions.map(name => (
+        <li
+          key={name}
+          onMouseDown={e => {
+            e.preventDefault();
+            setQuery(name);
+            onCommit(name);
+            setOpen(false);
+          }}
+          className="px-3 py-2 text-[13px] text-ds-text cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors"
+        >
+          {name}
+        </li>
+      ))}
+    </ul>,
+    document.body
+  );
+
   return (
-    <div ref={wrapRef} className="relative flex-1">
+    <div className="relative flex-1">
       <input
+        ref={inputRef}
         value={query}
-        onChange={e => { setQuery(e.target.value); setOpen(true); }}
-        onFocus={() => { setFocused(true); if (query.trim().length >= 2) setOpen(true); }}
-        onBlur={() => { setFocused(false); onCommit(query); setOpen(false); }}
+        onChange={e => { setQuery(e.target.value); setOpen(true); updatePos(); }}
+        onFocus={() => { updatePos(); if (query.trim().length >= 2) setOpen(true); }}
+        onBlur={() => { onCommit(query); setTimeout(() => setOpen(false), 150); }}
         onKeyDown={e => { if (e.key === 'Escape') setOpen(false); }}
         placeholder="Skill name (e.g. React)"
         className={inputCls + ' w-full'}
       />
-      {showDropdown && (
-        <ul
-          className="absolute left-0 top-full mt-1 w-full z-50 rounded-[10px] border border-ds-border bg-ds-card shadow-lg py-1 overflow-hidden"
-          style={{ maxHeight: 220, overflowY: 'auto' }}
-        >
-          {suggestions.map(name => (
-            <li
-              key={name}
-              onMouseDown={e => {
-                e.preventDefault();
-                setQuery(name);
-                onCommit(name);
-                setOpen(false);
-              }}
-              className="px-3 py-2 text-[13px] text-ds-text cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors"
-            >
-              {name}
-            </li>
-          ))}
-        </ul>
-      )}
+      {dropdown}
     </div>
   );
 }
@@ -214,7 +231,7 @@ function SkillsEditor({ content, onChange }) {
   return (
     <div className="flex flex-col gap-2">
       {entries.map((s, i) => (
-        <div key={i} className="border border-ds-border rounded-[9px] overflow-hidden bg-ds-card">
+        <div key={i} className="border border-ds-border rounded-[9px] bg-ds-card" style={{ overflow: 'visible' }}>
           {/* Skill header row */}
           <div className="flex items-center gap-2 px-3 py-2">
             <SkillNameInput

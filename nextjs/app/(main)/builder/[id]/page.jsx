@@ -287,7 +287,7 @@ function ExportShareButton({ resumeId, onShare, onError }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1.5 bg-ds-card border border-ds-border rounded-xl shadow-xl z-50 overflow-hidden min-w-[200px]">
+        <div className="absolute right-0 top-full mt-1.5 bg-ds-card border border-ds-border rounded-xl shadow-xl overflow-hidden min-w-[200px]" style={{ zIndex: 200 }}>
           {/* Share */}
           <button
             onClick={() => { onShare(); setOpen(false); }}
@@ -723,7 +723,7 @@ export default function BuilderEditor() {
     <div className="gradient-mesh-1 flex flex-col h-full">
 
       {/* ── Top bar ──────────────────────────────────────────────────────── */}
-      <div className="glass-light flex items-center gap-3 px-4 h-14 border-b border-ds-border flex-shrink-0">
+      <div className="glass-light flex items-center gap-3 px-4 h-14 border-b border-ds-border flex-shrink-0 overflow-visible" style={{ zIndex: 50 }}>
         {/* Back */}
         <Link href="/builder" className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded text-ds-textMuted hover:text-ds-text hover:bg-ds-bg transition-colors">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
