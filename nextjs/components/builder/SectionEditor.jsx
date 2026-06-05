@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import RichTextEditor from './RichTextEditor.jsx';
 
 // ── Shared atoms ──────────────────────────────────────────────────────────────
@@ -124,6 +124,82 @@ function SummaryEditor({ content, onChange, resumeId }) {
 
 const LEVEL_LABELS = ['', 'Beginner', 'Intermediate', 'Advanced'];
 
+function useSkillSearch(query) {
+  const [suggestions, setSuggestions] = useState([]);
+  const timer = useRef(null);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) { setSuggestions([]); return; }
+    clearTimeout(timer.current);
+    timer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/v1/skills/search?q=${encodeURIComponent(q)}&limit=8`);
+        if (!res.ok) return;
+        const data = await res.json();
+        setSuggestions((data.skills || []).map(s => s.name));
+      } catch { /* ignore */ }
+    }, 200);
+    return () => clearTimeout(timer.current);
+  }, [query]);
+
+  return suggestions;
+}
+
+function SkillNameInput({ value, onCommit }) {
+  const [query, setQuery] = useState(value);
+  const [open, setOpen] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const wrapRef = useRef(null);
+  const suggestions = useSkillSearch(query);
+  const showDropdown = open && focused && suggestions.length > 0;
+
+  // close on outside click
+  useEffect(() => {
+    const handler = e => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // sync when parent value changes (e.g. initial load)
+  useEffect(() => { setQuery(value); }, [value]);
+
+  return (
+    <div ref={wrapRef} className="relative flex-1">
+      <input
+        value={query}
+        onChange={e => { setQuery(e.target.value); setOpen(true); }}
+        onFocus={() => { setFocused(true); if (query.trim().length >= 2) setOpen(true); }}
+        onBlur={() => { setFocused(false); onCommit(query); setOpen(false); }}
+        onKeyDown={e => { if (e.key === 'Escape') setOpen(false); }}
+        placeholder="Skill name (e.g. React)"
+        className={inputCls + ' w-full'}
+      />
+      {showDropdown && (
+        <ul
+          className="absolute left-0 top-full mt-1 w-full z-50 rounded-[10px] border border-ds-border bg-ds-card shadow-lg py-1 overflow-hidden"
+          style={{ maxHeight: 220, overflowY: 'auto' }}
+        >
+          {suggestions.map(name => (
+            <li
+              key={name}
+              onMouseDown={e => {
+                e.preventDefault();
+                setQuery(name);
+                onCommit(name);
+                setOpen(false);
+              }}
+              className="px-3 py-2 text-[13px] text-ds-text cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors"
+            >
+              {name}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function SkillsEditor({ content, onChange }) {
   const entries = content.entries || [];
 
@@ -141,11 +217,9 @@ function SkillsEditor({ content, onChange }) {
         <div key={i} className="border border-ds-border rounded-[9px] overflow-hidden bg-ds-card">
           {/* Skill header row */}
           <div className="flex items-center gap-2 px-3 py-2">
-            <input
-              defaultValue={s.name}
-              onBlur={e => update(i, { name: e.target.value })}
-              placeholder="Skill name (e.g. Programming)"
-              className={inputCls + ' flex-1'}
+            <SkillNameInput
+              value={s.name}
+              onCommit={name => update(i, { name })}
             />
             {/* Proficiency dots */}
             <div className="flex gap-1 flex-shrink-0" title="Proficiency">
