@@ -22,6 +22,7 @@
 .resume-section-block {
   break-inside: auto;
   page-break-inside: auto;
+  overflow: hidden; /* BFC: prevents heading marginTop from leaking above section, keeping elTop measurements accurate */
 }
 
 /* Section headings always glue to first content line */
