@@ -310,18 +310,23 @@ export function computeGeometricAdjustments(contentEl, config) {
       && (elTop + sectionFullH) > (pageEnd - bottomBuffer);
 
     if (remaining - bottomBuffer < minStartSpace(el) || entryOverflows || sectionOverflows) {
-      // For section divs, the first child's marginTop leaks above the section
-      // via CSS parent-child margin collapsing (when the section has no border/
-      // padding-top). This causes the pushed section to land short of pageEnd by
-      // exactly that leaked margin. Compensate by adding it to the push amount.
+      // For section divs whose first child (heading) has a marginTop that leaks
+      // above the section via CSS parent-child margin collapsing, the push amount
+      // must be increased by the leaked margin so the section border box lands at
+      // exactly pageEnd. Measure the leak geometrically: if collapsing occurred
+      // the heading sits flush with the section top (internalGap ≈ 0), so
+      // leaked ≈ computedMarginTop. In flex/grid containers no collapsing occurs
+      // and internalGap == computedMarginTop, so leaked == 0.
       let pushAmount = remaining;
       if (el.dataset.sectionId) {
         const firstChild = el.firstElementChild;
         if (firstChild) {
-          const secCs = window.getComputedStyle(el);
-          if ((parseFloat(secCs.paddingTop) || 0) === 0 && (parseFloat(secCs.borderTopWidth) || 0) === 0) {
-            pushAmount += parseFloat(window.getComputedStyle(firstChild).marginTop) || 0;
-          }
+          const secRect   = el.getBoundingClientRect();
+          const childRect = firstChild.getBoundingClientRect();
+          const internalGap  = childRect.top - secRect.top;
+          const computedMT   = parseFloat(window.getComputedStyle(firstChild).marginTop) || 0;
+          const leakedMargin = Math.max(0, computedMT - internalGap);
+          pushAmount += leakedMargin;
         }
       }
       adj[key]    = pushAmount;
