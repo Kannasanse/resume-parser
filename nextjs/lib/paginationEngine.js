@@ -189,11 +189,14 @@ export function computeGeometricAdjustments(contentEl, config) {
   // is 0 (display:none or not yet laid out).
   const measureH = (el) => Math.max(1, el.scrollHeight || el.getBoundingClientRect().height);
 
-  /** Y position of the next page boundary after elTop (in content coordinates). */
+  // The windowed preview slices the continuous DOM into cards of exactly pageH
+  // pixels each: card 0 = y[0,pageH), card 1 = y[pageH,2*pageH), …
+  // pageBoundaryAfter and pageIdxFor must use the same pageH-based grid so
+  // push destinations align with card boundaries.
+
+  /** Physical boundary of the card that follows the card containing elTop. */
   function pageBoundaryAfter(elTop) {
-    if (elTop < pageH) return pageH;
-    const n = Math.floor((elTop - pageH) / effH);
-    return pageH + (n + 1) * effH;
+    return (Math.floor(elTop / pageH) + 1) * pageH;
   }
 
   /**
@@ -262,10 +265,9 @@ export function computeGeometricAdjustments(contentEl, config) {
   const adj      = {};
   let cumulative = 0;
 
-  /** 0-based index of the page that contains the given adjusted top position. */
+  /** 0-based index of the card that contains the given adjusted top position. */
   function pageIdxFor(adjustedTop) {
-    if (adjustedTop < pageH) return 0;
-    return 1 + Math.floor((adjustedTop - pageH) / effH);
+    return Math.floor(adjustedTop / pageH);
   }
 
   // blockPageIdx stores the page each block effectively lands on after all
@@ -301,9 +303,13 @@ export function computeGeometricAdjustments(contentEl, config) {
       && (elTop + fullH) > (pageEnd - bottomBuffer);
 
     if (remaining - bottomBuffer < minStartSpace(el) || entryOverflows) {
-      adj[key]    = remaining;
-      cumulative += remaining;
-      // Block now starts at the next page boundary (pageEnd).
+      // Push past the card boundary AND into the next card's top-margin zone
+      // so the block starts at the content area start of the next page.
+      // Without + marginTop the block lands at y = pageH * n (card edge) and
+      // the template has no CSS padding there — content would have zero top margin.
+      const push = remaining + config.page.marginTop;
+      adj[key]    = push;
+      cumulative += push;
       blockPageIdx[key] = pageIdxFor(pageEnd);
     } else {
       blockPageIdx[key] = pageIdxFor(elTop);
@@ -327,7 +333,7 @@ export function computeGeometricAdjustments(contentEl, config) {
     const pageEnd  = pageBoundaryAfter(elTop);
 
     if (elBottom > pageEnd - bottomBuffer && elTop < pageEnd) {
-      const push = pageEnd - elTop;
+      const push = pageEnd - elTop + config.page.marginTop;
       adj[key]    = push;
       cumulative += push;
       blockPageIdx[key] = pageIdxFor(pageEnd);
