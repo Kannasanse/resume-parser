@@ -2104,11 +2104,15 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
           }}>
             <div style={{
               position:        'absolute',
-              // Each page card is a non-overlapping window of exactly pageH pixels.
-              // The engine's bottomBuffer ensures content stops before the margin
-              // zone; the template's own paddingTop provides the top margin on
-              // subsequent pages — no need for a margin-adjusted offset here.
-              top:             -(i * page.height * s),
+              // Overlap window: page i shows content starting at
+              //   y = pageH + (i-1)*effH - marginTop
+              // so that:
+              //   • pushed content (at y = pageH + n*effH) appears marginTop px
+              //     from the card top — matching the template's page 1 paddingTop
+              //   • naturally-flowing content that crosses a page boundary also
+              //     gets the correct top margin automatically
+              // Page 0 uses y=0 (template paddingTop provides top margin there).
+              top:             -(i === 0 ? 0 : (page.height + (i - 1) * effectiveContentHeight(config) - page.marginTop) * s),
               left:            0,
               width:           page.width,
               transform:       `scale(${s})`,
