@@ -470,7 +470,7 @@ function ExperienceBody({ secs, util, variant }) {
   if (!allEntries.length) return null;
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
       {allEntries.map((e, i) => {
         const gap        = i < allEntries.length - 1 ? entryGapPx : 0;
         const titleFirst = e._order !== 'employer-first';
@@ -567,7 +567,7 @@ function EducationBody({ secs, util, variant }) {
   if (!allEntries.length) return null;
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
       {allEntries.map((e, i) => {
         const gap        = i < allEntries.length - 1 ? entryGapPx : 0;
         const schoolFirst = e._order !== 'degree-first';
@@ -669,7 +669,7 @@ function ProjectsBody({ sec, util }) {
   const entries = sec?.content?.entries || [];
   if (!entries.length) return null;
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
       {entries.map((p, i) => {
         const entryId = `${sec.id}-${i}`;
         const entryVisible = !visibleBlockIds || visibleBlockIds.includes(entryId) ||
