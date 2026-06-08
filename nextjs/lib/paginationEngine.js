@@ -254,6 +254,11 @@ export function computeGeometricAdjustments(contentEl, config) {
     return headingH;
   }
 
+  // Reserve bottom margin + safe buffer so content never runs to the physical
+  // page edge.  Blocks that would land past PAGE_CONTENT_END are pushed early.
+  const MARGIN_SAFE  = 16;
+  const bottomBuffer = (config.page.marginBottom || 0) + MARGIN_SAFE;
+
   const adj      = {};
   let cumulative = 0;
 
@@ -283,9 +288,9 @@ export function computeGeometricAdjustments(contentEl, config) {
       return;
     }
 
-    // Push only when the minimum start space (label/heading + first N children)
-    // does not fit in the remaining space on this page.
-    if (remaining < minStartSpace(el)) {
+    // Push when the minimum start space does not fit in the remaining space
+    // after reserving the bottom margin + safe buffer.
+    if (remaining - bottomBuffer < minStartSpace(el)) {
       adj[key]    = remaining;
       cumulative += remaining;
       // Block now starts at the next page boundary (pageEnd).
@@ -301,10 +306,6 @@ export function computeGeometricAdjustments(contentEl, config) {
   //
   // elBottom is computed as elTop + rect.height rather than rect.bottom -
   // containerRect.top to avoid any margin/overflow interference on rect.bottom.
-  // A 1px CLIP_TOLERANCE catches subpixel rendering clips where the bullet's
-  // bottom is fractionally inside the boundary but visually cut by overflow:hidden.
-  const CLIP_TOLERANCE = 1;
-
   contentEl.querySelectorAll('[data-bullet-id]').forEach((el) => {
     const rect     = el.getBoundingClientRect();
     // scrollHeight for the same reason as measureH — unaffected by overflow clipping
@@ -315,7 +316,7 @@ export function computeGeometricAdjustments(contentEl, config) {
 
     const pageEnd  = pageBoundaryAfter(elTop);
 
-    if (elBottom > pageEnd - CLIP_TOLERANCE && elTop < pageEnd) {
+    if (elBottom > pageEnd - bottomBuffer && elTop < pageEnd) {
       const push = pageEnd - elTop;
       adj[key]    = push;
       cumulative += push;

@@ -2104,7 +2104,11 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
           }}>
             <div style={{
               position:        'absolute',
-              top:             -(i * page.height * s),
+              // Page 0: window at y=0 (template paddingTop provides the top margin).
+              // Page i>0: shift up to (boundary_i - marginTop) so the empty
+              // bottom-margin area of the previous page appears as the top margin
+              // of this card.  boundary_i = pageH + (i-1) * effH.
+              top:             -(i === 0 ? 0 : (page.height + (i - 1) * effectiveContentHeight(config) - page.marginTop) * s),
               left:            0,
               width:           page.width,
               transform:       `scale(${s})`,
