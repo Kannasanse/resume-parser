@@ -310,8 +310,22 @@ export function computeGeometricAdjustments(contentEl, config) {
       && (elTop + sectionFullH) > (pageEnd - bottomBuffer);
 
     if (remaining - bottomBuffer < minStartSpace(el) || entryOverflows || sectionOverflows) {
-      adj[key]    = remaining;
-      cumulative += remaining;
+      // For section divs, the first child's marginTop leaks above the section
+      // via CSS parent-child margin collapsing (when the section has no border/
+      // padding-top). This causes the pushed section to land short of pageEnd by
+      // exactly that leaked margin. Compensate by adding it to the push amount.
+      let pushAmount = remaining;
+      if (el.dataset.sectionId) {
+        const firstChild = el.firstElementChild;
+        if (firstChild) {
+          const secCs = window.getComputedStyle(el);
+          if ((parseFloat(secCs.paddingTop) || 0) === 0 && (parseFloat(secCs.borderTopWidth) || 0) === 0) {
+            pushAmount += parseFloat(window.getComputedStyle(firstChild).marginTop) || 0;
+          }
+        }
+      }
+      adj[key]    = pushAmount;
+      cumulative += pushAmount;
       blockPageIdx[key] = pageIdxFor(pageEnd);
     } else {
       blockPageIdx[key] = pageIdxFor(elTop);
