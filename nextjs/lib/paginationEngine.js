@@ -291,12 +291,14 @@ export function computeGeometricAdjustments(contentEl, config) {
     // Push when the minimum start space does not fit in the remaining space
     // after reserving the bottom margin + safe buffer.
     //
-    // Also push entries whose full height overflows the safe content zone when
-    // the entry fits entirely on one page — this prevents individual bullets
-    // from landing in the margin overlap zone (which is visible in both the
-    // current-page and next-page windows in the windowed preview).
-    const fullH = el.dataset.entryId ? measureH(el) : 0;
+    // Push bullet-free entries (education rows, references) when their full height
+    // would land in the overlap zone.  Entries with bullets are NOT pushed here —
+    // the bullet pass below handles them individually, which produces less whitespace
+    // than pushing the whole entry block.
+    const hasBullets = el.dataset.entryId && !!el.querySelector('[data-bullet-id]');
+    const fullH = el.dataset.entryId && !hasBullets ? measureH(el) : 0;
     const entryOverflows = el.dataset.entryId
+      && !hasBullets
       && fullH <= effH
       && (elTop + fullH) > (pageEnd - bottomBuffer);
 
