@@ -300,7 +300,16 @@ export function computeGeometricAdjustments(contentEl, config) {
       && fullH <= effH
       && (elTop + fullH) > (pageEnd - bottomBuffer);
 
-    if (remaining - bottomBuffer < minStartSpace(el) || entryOverflows) {
+    // Compact sections (skills, languages, summary, etc.) have no per-row IDs.
+    // If the section fits on one page but its bottom edge would cross into the
+    // overlap zone, push the whole section to the next page.
+    const COMPACT_TYPES = new Set(['skills', 'certifications', 'languages', 'summary', 'hobbies', 'references', 'custom']);
+    const sectionFullH = el.dataset.sectionId && COMPACT_TYPES.has(el.dataset.type) ? measureH(el) : 0;
+    const sectionOverflows = sectionFullH > 0
+      && sectionFullH <= effH
+      && (elTop + sectionFullH) > (pageEnd - bottomBuffer);
+
+    if (remaining - bottomBuffer < minStartSpace(el) || entryOverflows || sectionOverflows) {
       adj[key]    = remaining;
       cumulative += remaining;
       blockPageIdx[key] = pageIdxFor(pageEnd);
