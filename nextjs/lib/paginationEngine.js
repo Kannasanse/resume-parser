@@ -290,7 +290,17 @@ export function computeGeometricAdjustments(contentEl, config) {
 
     // Push when the minimum start space does not fit in the remaining space
     // after reserving the bottom margin + safe buffer.
-    if (remaining - bottomBuffer < minStartSpace(el)) {
+    //
+    // Also push entries whose full height overflows the safe content zone when
+    // the entry fits entirely on one page — this prevents individual bullets
+    // from landing in the margin overlap zone (which is visible in both the
+    // current-page and next-page windows in the windowed preview).
+    const fullH = el.dataset.entryId ? measureH(el) : 0;
+    const entryOverflows = el.dataset.entryId
+      && fullH <= effH
+      && (elTop + fullH) > (pageEnd - bottomBuffer);
+
+    if (remaining - bottomBuffer < minStartSpace(el) || entryOverflows) {
       adj[key]    = remaining;
       cumulative += remaining;
       // Block now starts at the next page boundary (pageEnd).
