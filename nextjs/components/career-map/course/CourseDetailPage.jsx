@@ -12,12 +12,33 @@ import TopicPrerequisites from './TopicPrerequisites';
 import RealWorldCallout from './RealWorldCallout';
 import TopicProgressBreakdown from './TopicProgressBreakdown';
 import GenerateTopicButton from './GenerateTopicButton';
+import SourcesPanel from './SourcesPanel';
+import CourseRightPanel from './CourseRightPanel';
 
 function NotebookIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
       <path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/>
       <rect x="6" y="4" width="16" height="16" rx="2"/>
+    </svg>
+  );
+}
+
+function SourcesIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="16" y1="13" x2="8" y2="13"/>
+      <line x1="16" y1="17" x2="8" y2="17"/>
+    </svg>
+  );
+}
+
+function ChatIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
     </svg>
   );
 }
@@ -32,6 +53,8 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
   const [showCelebration, setShowCelebration] = useState(false);
   const [nextTopic, setNextTopic] = useState(null);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [rightPanelTab, setRightPanelTab] = useState(null); // 'chat' | 'guide' | null
   const [testModalOpen, setTestModalOpen] = useState(false);
   const [planPreferences, setPlanPreferences] = useState(null);
   const sectionRefs = useRef({});
@@ -172,11 +195,45 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
             Back to study plan
           </Link>
           <h4 className="text-sm font-semibold text-[var(--c-text)] hidden sm:block line-clamp-1 max-w-md">{topic.title}</h4>
-          <div className="flex items-center gap-3">
-            <span className="text-xs bg-[var(--c-primary-light)] text-[var(--c-primary)] px-2 py-1 rounded-full font-medium">{topic.skill}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs bg-[var(--c-primary-light)] text-[var(--c-primary)] px-2 py-1 rounded-full font-medium hidden sm:block">{topic.skill}</span>
+
+            {/* Sources toggle */}
             <button
-              onClick={() => setNotesOpen(v => !v)}
-              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
+              onClick={() => setSourcesOpen(v => !v)}
+              className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border transition-colors ${
+                sourcesOpen
+                  ? 'bg-[var(--c-primary-light)] text-[var(--c-primary)] border-[var(--c-primary)]'
+                  : 'border-[#D1DCE8] dark:border-white/10 text-[#6B7280] dark:text-[#8BA3C1] hover:bg-[var(--c-primary-light)] hover:text-[var(--c-primary)]'
+              }`}
+              title="Sources"
+            >
+              <SourcesIcon /> Sources
+            </button>
+
+            {/* Chat toggle */}
+            <button
+              onClick={() => {
+                setNotesOpen(false);
+                setRightPanelTab(prev => prev === 'chat' ? null : 'chat');
+              }}
+              className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border transition-colors ${
+                rightPanelTab === 'chat'
+                  ? 'bg-[var(--c-primary-light)] text-[var(--c-primary)] border-[var(--c-primary)]'
+                  : 'border-[#D1DCE8] dark:border-white/10 text-[#6B7280] dark:text-[#8BA3C1] hover:bg-[var(--c-primary-light)] hover:text-[var(--c-primary)]'
+              }`}
+              title="Chat with sources"
+            >
+              <ChatIcon /> Chat
+            </button>
+
+            {/* Notes toggle */}
+            <button
+              onClick={() => {
+                setRightPanelTab(null);
+                setNotesOpen(v => !v);
+              }}
+              className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border transition-colors ${
                 notesOpen
                   ? 'bg-[var(--c-primary-light)] text-[var(--c-primary)] border-[var(--c-primary)]'
                   : 'border-[#D1DCE8] dark:border-white/10 text-[#6B7280] dark:text-[#8BA3C1] hover:bg-[var(--c-primary-light)] hover:text-[var(--c-primary)]'
@@ -184,14 +241,15 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
             >
               <NotebookIcon /> Notes
             </button>
+
             <button
               onClick={() => setTestModalOpen(true)}
-              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-[#D1DCE8] dark:border-white/10 text-[#6B7280] dark:text-[#8BA3C1] hover:bg-[var(--c-primary-light)] hover:text-[var(--c-primary)] transition-colors"
+              className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[#D1DCE8] dark:border-white/10 text-[#6B7280] dark:text-[#8BA3C1] hover:bg-[var(--c-primary-light)] hover:text-[var(--c-primary)] transition-colors"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/>
               </svg>
-              Test yourself
+              Test
             </button>
             <div className="flex items-center gap-1.5">
               <div className="relative w-9 h-9">
@@ -208,6 +266,10 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
       </div>
 
       <div className="flex flex-1 overflow-hidden pb-16">
+        {sourcesOpen && (
+          <SourcesPanel courseId={studyPlanId} />
+        )}
+
         <SectionNavSidebar
           sections={sections}
           completedSectionIds={completedSectionIds}
@@ -217,14 +279,6 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
           completedCount={completedCount}
           totalSections={totalSections}
         />
-
-        {notesOpen && (
-          <TopicNotesPanel
-            topicId={topicId}
-            topicTitle={topic.title}
-            onClose={() => setNotesOpen(false)}
-          />
-        )}
 
         <div className="flex-1 overflow-y-auto px-6 py-6">
           <div className="max-w-3xl mx-auto space-y-10">
@@ -287,6 +341,24 @@ export default function CourseDetailPage({ studyPlanId, topicId }) {
             )}
           </div>
         </div>
+
+        {notesOpen && (
+          <TopicNotesPanel
+            topicId={topicId}
+            topicTitle={topic.title}
+            onClose={() => setNotesOpen(false)}
+          />
+        )}
+
+        {rightPanelTab && (
+          <CourseRightPanel
+            courseId={studyPlanId}
+            skillName={topic.skill}
+            activeTab={rightPanelTab}
+            onTabChange={setRightPanelTab}
+            onClose={() => setRightPanelTab(null)}
+          />
+        )}
       </div>
 
       <BottomNavBar

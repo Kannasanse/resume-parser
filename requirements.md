@@ -26,7 +26,7 @@
 
 ## 1. Product Overview
 
-Proflect is a career-intelligence platform for job seekers and professionals. It combines AI-powered resume analysis, a visual resume builder, a portfolio website builder, a Notion-style block editor for notes, a self-assessment test engine, and an AI-guided career-map learning roadmap — all in one product.
+Proflect is a career-intelligence platform for job seekers and professionals. It combines AI-powered resume analysis, a visual resume builder, a portfolio website builder, a Notion-style block editor for notes, a self-assessment test engine, an AI-guided career-map learning roadmap, and an AI-powered interview preparation kit generator — all in one product.
 
 **Primary users:**
 - Job seekers preparing resumes and portfolios
@@ -135,6 +135,7 @@ Proflect is a career-intelligence platform for job seekers and professionals. It
 | **Career Map: Section content generation** | Groq | `llama-3.3-70b-versatile` | — | Free |
 | **Jobs: Skill extraction from JD** | Groq | `llama-3.3-70b-versatile` | — | Free |
 | **Admin: Question library generation** | Groq | `llama-4-scout-17b-16e-instruct` | — | Admin only |
+| **Interview Buddy: Kit generation** | OpenRouter | `llama-3.3-70b-instruct:free` | Groq `llama-4-scout` | Free |
 
 ### 3.3 Portfolio AI Rate Limit
 
@@ -355,7 +356,72 @@ Portfolio AI endpoints — all use **Anthropic `claude-sonnet-4-6`**, shared 5/m
 - POSTs to `/api/v1/self-test` with `input_type: 'content'`
 - Redirects to `/self-test/[sessionId]` on success
 
-### 5.8 Career Map
+### 5.8 My Courses — Knowledge Workspace
+
+**Course topic view** (`/career-map/study-plan/[id]/topic/[topicId]`) is a **3-panel workspace**:
+
+```
+[Sources 240px] | [Section nav + content] | [Chat / Study Guide 320px]
+```
+
+All existing functionality (section generation, progress tracking, phases, YouTube, Notes) is preserved. Three new toggleable panels are added via top-bar buttons:
+
+#### Left Panel — Sources
+
+Button: **Sources** in top bar (toggles 240px left panel)
+
+User can add material to ground the AI chat and study guide:
+- 📄 **PDF** — upload up to 25 MB; text extracted with `pdf-parse`; file stored in Supabase Storage `course-sources` bucket
+- 🔗 **URL** — fetches and strips HTML to plain text
+- 📝 **Text** — free-text paste
+
+Existing AI-generated sections and web-sourced content are surfaced as `ai` / `web` source types (future enhancement).
+
+#### Right Panel — Chat & Study Guide
+
+Button: **Chat** in top bar (toggles 320px right panel, Chat tab active)
+
+**Chat tab** — grounded Q&A against course sources:
+- Model: Groq `llama-3.1-8b-instant`, temperature 0.2, max 800 tokens
+- Sources injected into system prompt (up to ~12k chars of context)
+- If no sources: falls back to general knowledge with a prompt to add material
+- Chat history persisted in `course_chat_messages`; last 100 messages loaded on open
+- Suggested prompts shown when history is empty
+
+**Study Guide tab** — auto-generated structured guide:
+- Model: Groq `llama-3.1-8b-instant`, temperature 0.3, max 1500 tokens
+- Sections: Key Concepts, Key Differences, Common Patterns, Quick Quiz (5–7 Q&A pairs), Sources Used
+- Cached in `course_study_guides` (upsert by course_id); regenerate on demand
+- Export to PDF via existing `/api/v1/utilities/documents/markdown-to-pdf`
+- "Send to Notes" saves to `/api/v1/notes`
+
+**Notes** button still opens `TopicNotesPanel` (unchanged). Notes and Chat/Guide panels are mutually exclusive.
+
+#### New API Routes
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/v1/courses/[id]/sources` | List course sources |
+| POST | `/api/v1/courses/[id]/sources` | Add source (multipart for PDF, JSON for url/text) |
+| DELETE | `/api/v1/courses/[id]/sources/[sourceId]` | Remove source |
+| GET | `/api/v1/courses/[id]/chat` | Load chat history (100 messages) |
+| POST | `/api/v1/courses/[id]/chat` | Send message, get grounded reply |
+| GET | `/api/v1/courses/[id]/study-guide/generate` | Load cached guide |
+| POST | `/api/v1/courses/[id]/study-guide/generate` | Generate/regenerate guide |
+
+#### New Database Tables
+
+| Table | Purpose |
+|---|---|
+| `course_sources` | User-added source material (PDF/URL/text) per course; `extracted_text`, `token_count`, `file_path` |
+| `course_chat_messages` | Persisted chat history per course; `role` (user/assistant) |
+| `course_study_guides` | Cached study guide per course (upserted); `source_ids[]`, `generated_at` |
+
+**Migration:** `nextjs/supabase/migrations/20260609_course_workspace.sql`
+
+---
+
+### 5.9 Career Map
 
 **Pages:**
 - `app/(main)/career-map` — search and select target role
@@ -387,7 +453,7 @@ TopBar detects UUID segments in career-map URLs and fetches real names from `/ap
 - `POST /api/v1/my-courses/[id]/status` — update enrollment status
 - `POST /api/v1/my-courses/[id]/reset-progress` — reset all section/topic progress
 
-### 5.9 Jobs
+### 5.10 Jobs
 
 **Routes:** `GET/POST /api/v1/jobs`, `GET/PUT/DELETE /api/v1/jobs/[id]`  
 `GET /api/v1/jobs/[id]/candidates` — list resumes scored for this job  
@@ -397,7 +463,7 @@ TopBar detects UUID segments in career-map URLs and fetches real names from `/ap
 - `POST /api/v1/jobs/parse-skills` — extract skills from raw JD text
 - Model: Groq `llama-3.3-70b-versatile`
 
-### 5.10 Admin Surface
+### 5.11 Admin Surface
 
 **Users:**
 - `GET/POST /api/v1/admin/users` — list / create users
@@ -431,18 +497,47 @@ TopBar detects UUID segments in career-map URLs and fetches real names from `/ap
 **Import:**
 - `POST /api/v1/admin/import` — bulk user import
 
-### 5.11 Profile
+### 5.12 Interview Buddy
+
+**Routes:**  
+`POST /api/v1/interview-buddy/generate` — create kit  
+`GET /api/v1/interview-buddy` — list user's kits (20 most recent)  
+`GET /api/v1/interview-buddy/[kitId]` — fetch kit detail (updates `last_viewed_at`)  
+`DELETE /api/v1/interview-buddy/[kitId]` — delete kit (RLS owner-only)
+
+**Pages:** `app/(main)/interview-buddy` · `app/(main)/interview-buddy/[kitId]`
+
+**Inputs:** Job description text (min 100 chars), role level (entry/mid/senior/lead/exec), depth (quick/standard/deep)
+
+**AI output per kit:**
+- Categorised behavioural interview questions
+- Per-question difficulty chip: `core` (blue), `probing` (orange), `red-flag` (red)
+- Expandable answer coaching with Strong answer / Weak answer guidance (inline colour-formatted)
+- Follow-up probes per question
+- `jdSignal` — which part of the JD triggered the question
+
+**Frontend features:** Category filter pills (All + per-category), expand-all toggle, "Practice with self-test" action, "Print/Save PDF" action, previous kits list on landing page
+
+**AI model:** OpenRouter `llama-3.3-70b-instruct:free` → Groq `llama-4-scout-17b-16e-instruct` fallback; `response_format: { type: 'json_object' }`, temperature 0.4
+
+**Database:** `interview_kits` table — RLS via `auth.uid() = user_id`; stores `title`, `company`, `role_level`, `depth`, `jd_text`, `categories` (text[]), `questions` (JSONB), `question_count`, `last_viewed_at`
+
+**Migration:** `nextjs/supabase/migrations/20260609_interview_buddy.sql` — run in prod ✓ (2026-06-09)
+
+---
+
+### 5.13 Profile
 
 - `GET/PUT /api/v1/profile` — user profile (name, headline, bio, location, etc.)
 - `POST /api/v1/profile/avatar` — upload avatar to Supabase Storage
 
-### 5.12 Proctored Test (Candidate)
+### 5.14 Proctored Test (Candidate)
 
 - `GET /api/v1/test/[token]` — load test by share link token (no auth)
 - `POST /api/v1/test/[token]/save` — save answers
 - `POST /api/v1/test/[token]/integrity` — log integrity events (tab-switch, focus-loss, copy-paste, etc.)
 
-### 5.13 Utilities
+### 5.15 Utilities
 
 **Page:** `app/(main)/utilities`  
 34 browser-native tools for PDF manipulation, document conversion, image processing, and PDF security. No authentication required; all processing is either fully client-side (no upload) or via anonymous server routes.
@@ -565,6 +660,8 @@ TopBar detects UUID segments in career-map URLs and fetches real names from `/ap
 | `/builder` | Resume List | Resume cards with template swatch; create / upload |
 | `/builder/:id` | Resume Editor | Two-panel split: section editor left, live preview right |
 | `/builder/:id/review` | Review + Export | Full-page A4 preview; Download PDF button |
+| `/interview-buddy` | Interview Buddy — Create | JD paste, role level + depth selectors, previous kits list |
+| `/interview-buddy/:kitId` | Interview Buddy — Kit View | Category filter pills, question cards with expandable coaching, follow-ups |
 
 ### Public
 
@@ -869,6 +966,15 @@ From `@tiptap/*` packages:
 | GET/POST | `/api/v1/admin/templates` | Resume templates |
 | GET/POST | `/api/v1/admin/skills` | Skills taxonomy management |
 
+### Interview Buddy
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/v1/interview-buddy/generate` | Generate interview kit from JD (OpenRouter → Groq) |
+| GET | `/api/v1/interview-buddy` | List user's kits (20 most recent) |
+| GET | `/api/v1/interview-buddy/[kitId]` | Get kit detail; updates `last_viewed_at` |
+| DELETE | `/api/v1/interview-buddy/[kitId]` | Delete kit (owner-only via RLS) |
+
 ### Proctored Test (Candidate)
 
 | Method | Path | Description |
@@ -925,6 +1031,10 @@ All utilities routes accept `multipart/form-data` with a `file` field (or `html`
 | `organizations` | Multi-tenant organization support |
 | `profiles` | User profile data (name, headline, avatar URL, bio, location) |
 | `skills` | Global skills taxonomy with pending approval queue |
+| `interview_kits` | Interview Buddy kits; `questions` (JSONB), `categories` (text[]), `jd_text`, `last_viewed_at` |
+| `course_sources` | User-added source material per course (PDF/URL/text); `extracted_text`, `token_count`, `file_path` |
+| `course_chat_messages` | Grounded chat history per course; `role` (user/assistant) |
+| `course_study_guides` | Cached AI study guide per course (upserted); `source_ids[]`, `generated_at` |
 
 **Supabase RPCs:**
 
