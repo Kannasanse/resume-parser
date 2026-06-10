@@ -440,31 +440,72 @@ export function computeFlowAdjustments(contentEl, config) {
   const mb      = page.marginBottom;
   const pageEnd = page.height - mb - SAFE;
 
-  // Distance from template top to first section = header height (includes paddingTop)
-  const containerTop  = contentEl.getBoundingClientRect().top;
-  const firstSection  = contentEl.querySelector('[data-section-id]');
-  const headerH       = firstSection
+  // Distance from template top to first section = header height (includes paddingTop).
+  const containerTop = contentEl.getBoundingClientRect().top;
+  const firstSection = contentEl.querySelector('[data-section-id]');
+  const headerH      = firstSection
     ? Math.max(mt, firstSection.getBoundingClientRect().top - containerTop)
     : mt;
 
-  const blockEls = contentEl.querySelectorAll('[data-section-id], [data-entry-id], [data-bullet-id]');
+  // Build a flat ordered list of fine-grained flow blocks.
+  //
+  // DO NOT measure [data-section-id] or [data-entry-id] container heights — they
+  // are nested and would triple-count content.  Instead decompose each section into:
+  //   • section heading  → id = sec.id,   height = section.top → first entry.top
+  //   • entry heading    → id = entryId,  height = [data-entry-heading] element
+  //   • bullets          → id = bulletId, height = [data-bullet-id] element
+  // Compact sections (no entries: Skills, Summary, etc.) use full section height.
+  const blocks = [];
 
-  const pages   = [];
-  let curPage   = [];
-  let curY      = headerH; // page 1: budget already used by header
+  contentEl.querySelectorAll('[data-section-id]').forEach(secEl => {
+    const secId      = secEl.dataset.sectionId;
+    const secTop     = secEl.getBoundingClientRect().top;
+    const firstEntry = secEl.querySelector('[data-entry-id]');
 
-  blockEls.forEach(el => {
-    const id     = el.dataset.sectionId || el.dataset.entryId || el.dataset.bulletId;
-    const blockH = el.getBoundingClientRect().height;
+    if (!firstEntry) {
+      // Compact section — no entries, render as one undivided block.
+      blocks.push({ id: secId, height: secEl.getBoundingClientRect().height });
+      return;
+    }
 
-    if (curY + blockH > pageEnd && curPage.length > 0) {
+    // Section heading = gap between section container top and first entry top.
+    const headingH = Math.max(0, firstEntry.getBoundingClientRect().top - secTop);
+    if (headingH > 0) blocks.push({ id: secId, height: headingH });
+
+    secEl.querySelectorAll('[data-entry-id]').forEach(entryEl => {
+      const entryId        = entryEl.dataset.entryId;
+      const entryHeadingEl = entryEl.querySelector('[data-entry-heading]');
+
+      if (!entryHeadingEl) {
+        // Entry without fine-grained heading (Education, etc.) — one block.
+        blocks.push({ id: entryId, height: entryEl.getBoundingClientRect().height });
+        return;
+      }
+
+      const headH = entryHeadingEl.getBoundingClientRect().height;
+      if (headH > 0) blocks.push({ id: entryId, height: headH });
+
+      entryEl.querySelectorAll('[data-bullet-id]').forEach(bulletEl => {
+        const h = bulletEl.getBoundingClientRect().height;
+        if (h > 0) blocks.push({ id: bulletEl.dataset.bulletId, height: h });
+      });
+    });
+  });
+
+  // Flow blocks onto pages.
+  const pages = [];
+  let curPage = [];
+  let curY    = headerH;
+
+  for (const block of blocks) {
+    if (curY + block.height > pageEnd && curPage.length > 0) {
       pages.push(curPage);
       curPage = [];
-      curY    = mt; // page 2+: start after top margin, no header
+      curY    = mt;
     }
-    curPage.push(id);
-    curY += blockH;
-  });
+    curPage.push(block.id);
+    curY += block.height;
+  }
   if (curPage.length > 0 || pages.length === 0) pages.push(curPage);
 
   return { adj: {}, pageSlices: pages };
