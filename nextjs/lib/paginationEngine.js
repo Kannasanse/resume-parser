@@ -420,6 +420,56 @@ export function computeGeometricAdjustments(contentEl, config) {
   return { adj, pageSlices: deduplicatedSlices };
 }
 
+// ── Flow-based pagination (simple, no overlap-zone issues) ───────────────────
+//
+// Instead of the windowed approach (full template shifted per card), each page
+// card renders only its assigned blocks via visibleBlockIds.  No marginTop
+// pushes — blocks just flow naturally within their page container.
+//
+// Algorithm: iterate DOM blocks in order, place each on the current page if it
+// fits, otherwise start a new page.  Header height on page 1 is measured from
+// the container top to the first section, so the name/contact block is counted
+// in the available space budget.
+
+export function computeFlowAdjustments(contentEl, config) {
+  if (!contentEl) return { adj: {}, pageSlices: [[]] };
+
+  const { page } = config;
+  const SAFE    = 16;
+  const mt      = page.marginTop;
+  const mb      = page.marginBottom;
+  const pageEnd = page.height - mb - SAFE;
+
+  // Distance from template top to first section = header height (includes paddingTop)
+  const containerTop  = contentEl.getBoundingClientRect().top;
+  const firstSection  = contentEl.querySelector('[data-section-id]');
+  const headerH       = firstSection
+    ? Math.max(mt, firstSection.getBoundingClientRect().top - containerTop)
+    : mt;
+
+  const blockEls = contentEl.querySelectorAll('[data-section-id], [data-entry-id], [data-bullet-id]');
+
+  const pages   = [];
+  let curPage   = [];
+  let curY      = headerH; // page 1: budget already used by header
+
+  blockEls.forEach(el => {
+    const id     = el.dataset.sectionId || el.dataset.entryId || el.dataset.bulletId;
+    const blockH = el.getBoundingClientRect().height;
+
+    if (curY + blockH > pageEnd && curPage.length > 0) {
+      pages.push(curPage);
+      curPage = [];
+      curY    = mt; // page 2+: start after top margin, no header
+    }
+    curPage.push(id);
+    curY += blockH;
+  });
+  if (curPage.length > 0 || pages.length === 0) pages.push(curPage);
+
+  return { adj: {}, pageSlices: pages };
+}
+
 // ── Word-export block builder (server-side) ───────────────────────────────────
 
 /**

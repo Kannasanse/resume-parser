@@ -1,7 +1,7 @@
 'use client';
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { buildLayoutConfig, effectiveContentHeight } from '@/lib/layoutConfig.js';
-import { computeGeometricAdjustments } from '@/lib/paginationEngine.js';
+import { computeFlowAdjustments } from '@/lib/paginationEngine.js';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -1883,7 +1883,7 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
 
   const [computedScale,      setComputedScale]      = useState(scale || 0.6);
   const [contentHeight,      setContentHeight]      = useState(0);
-  // sectionAdjustments: print-mode margin pushes (adj map from computeGeometricAdjustments)
+  // sectionAdjustments: print-mode margin pushes (adj map from pagination engine)
   const [sectionAdjustments, setSectionAdjustments] = useState({});
   // pageSlices: discrete per-page block ID arrays for preview mode.
   // null = pre-first-measurement (show all content on a single card).
@@ -1930,7 +1930,7 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
         const contentEl = contentRef.current;
         if (!contentEl || !fontsReady.current) return;
         // Fresh adj object — never reuse previous run (Fix 3)
-        const { adj: newAdj, pageSlices: newSlices } = computeGeometricAdjustments(contentEl, config);
+        const { adj: newAdj, pageSlices: newSlices } = computeFlowAdjustments(contentEl, config);
         // Always replace entirely — never merge (Fix 3)
         setSectionAdjustments(prev =>
           JSON.stringify(newAdj) === JSON.stringify(prev) ? prev : newAdj,
@@ -2057,21 +2057,11 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
     );
   }
 
-  // ── Preview mode — Fix A: windowed page cards ────────────────────────────────
+  // ── Preview mode — flow-based page cards ─────────────────────────────────────
   //
-  // Each card is an overflow:hidden window of exact page dimensions.
-  // The full template (with sectionAdjustments applied) is rendered absolutely
-  // inside every card and shifted up by i * page.height * s so the correct
-  // page slice is visible through the window.
-  //
-  // Why this fixes cut / gap bugs:
-  //  • Content always renders at its natural flow position — no block is ever
-  //    clipped mid-line because items are never split across containers.
-  //  • sectionAdjustments (margin pushes from the pagination engine) are applied,
-  //    so page boundaries fall exactly where the engine computed them.
-  //  • No visibleBlockIds filtering — templates never need to render a partial
-  //    section starting from y=0 inside a card, which was the source of the
-  //    top-of-page gap (template paddingTop always applied even on page 2+).
+  // Each card renders only its assigned blocks via visibleBlockIds (flow approach).
+  // No windowed offsets — no marginTop pushes — no overlap zone bugs.
+  // showHeader=false hides the name/contact header on continuation pages.
   //
   // numPages: uses pageSlices.length once the engine runs; falls back to a
   // height-based estimate during the pre-measurement window.
@@ -2085,17 +2075,18 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
       <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
         {/* Hidden measurement container — renders all content at fixed width.
             transform:none + zoom:normal prevent scale inheritance from corrupting
-            getBoundingClientRect values used by computeGeometricAdjustments. */}
+            getBoundingClientRect values used by computeFlowAdjustments. */}
         <div style={{ position: 'absolute', top: -9999, left: -9999, width: page.width, height: 'auto', maxHeight: 'none', overflow: 'visible', visibility: 'hidden', pointerEvents: 'none', transform: 'none', zoom: 'normal', contain: 'none' }}>
           <div ref={contentRef} style={{ position: 'relative', transform: 'none', height: 'auto', overflow: 'visible' }}>
             <TemplateComp resume={resume || {}} ds={ds} ss={ss} />
           </div>
         </div>
 
-        {/* One card per page.
-            The inner div is absolutely positioned with top = -(i * page.height * s)
-            so that page i's content slice is flush with the card's top edge.
-            overflow:hidden on the card clips everything outside the page window. */}
+        {/* One card per page — flow-based rendering.
+            Each card renders only its assigned blocks via visibleBlockIds.
+            No windowed offset — each page is a fresh template render with
+            overflow:hidden providing the clip. showHeader hides the name/
+            contact header on continuation pages. */}
         {Array.from({ length: numPages }, (_, i) => (
           <div key={i} style={{
             width:      page.width * s,
@@ -2108,15 +2099,7 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
           }}>
             <div style={{
               position:        'absolute',
-              // Overlap window: page i shows content starting at
-              //   y = pageH + (i-1)*effH - marginTop
-              // so that:
-              //   • pushed content (at y = pageH + n*effH) appears marginTop px
-              //     from the card top — matching the template's page 1 paddingTop
-              //   • naturally-flowing content that crosses a page boundary also
-              //     gets the correct top margin automatically
-              // Page 0 uses y=0 (template paddingTop provides top margin there).
-              top:             -(i === 0 ? 0 : (page.height + (i - 1) * effectiveContentHeight(config) - page.marginTop) * s),
+              top:             0,
               left:            0,
               width:           page.width,
               transform:       `scale(${s})`,
@@ -2124,7 +2107,9 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
             }}>
               <TemplateComp
                 resume={resume || {}} ds={ds} ss={ss}
-                sectionAdjustments={sectionAdjustments}
+                sectionAdjustments={{}}
+                visibleBlockIds={pageSlices ? pageSlices[i] : null}
+                showHeader={i === 0}
               />
               {hasFooter && (
                 <div style={{ borderTop: '1px solid #e0e0e0', padding: '6px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8pt', color: '#888', background: '#fff' }}>
