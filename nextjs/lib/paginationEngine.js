@@ -311,10 +311,27 @@ export function computeGeometricAdjustments(contentEl, config) {
       && sectionFullH <= effH
       && (elTop + sectionFullH) > (pageEnd - bottomBuffer);
 
+    // Detect compact sections landing just PAST a page boundary (elTop > B_n by a
+    // small float amount due to cumulative pushes). pageBoundaryAfter returns B_{n+2}
+    // in this case, so sectionOverflows never fires. If elTop is within marginTop pts
+    // past a boundary, the section is in the "start overlap zone" and appears in both
+    // the previous page's bottom margin and the current page's top — push it clear.
+    const recentBoundary = elTop > pageH
+      ? pageH + Math.floor((elTop - pageH) / effH) * effH
+      : pageH;
+    const inStartOverlapZone = sectionFullH > 0
+      && elTop > recentBoundary
+      && elTop < recentBoundary + config.page.marginTop;
+
     if (remaining - bottomBuffer < minStartSpace(el) || entryOverflows || sectionOverflows) {
       adj[key]    = remaining;
       cumulative += remaining;
       blockPageIdx[key] = pageIdxFor(pageEnd);
+    } else if (inStartOverlapZone) {
+      const push = recentBoundary + config.page.marginTop - elTop;
+      adj[key]    = push;
+      cumulative += push;
+      blockPageIdx[key] = pageIdxFor(recentBoundary + config.page.marginTop);
     } else {
       blockPageIdx[key] = pageIdxFor(elTop);
     }
