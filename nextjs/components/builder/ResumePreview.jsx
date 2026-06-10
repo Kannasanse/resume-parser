@@ -307,7 +307,7 @@ function parseBodyBlocks(html) {
   return blocks.filter(b => b.html.replace(/<[^>]+>/g, '').trim().length > 0 || b.html.includes('<img'));
 }
 
-function RichBody({ entry, listStyle, style, entryId, visibleBlockIds }) {
+function RichBody({ entry, listStyle, style, entryId, visibleBlockIds, blockAdj }) {
   // ── New: HTML body stored by RichTextEditor ──────────────────────────────────
   if (entry.body) {
     const blocks = parseBodyBlocks(entry.body);
@@ -353,11 +353,12 @@ function RichBody({ entry, listStyle, style, entryId, visibleBlockIds }) {
         >
           {liBuffer.map(({ j, html }) => {
             const bulletId = entryId ? `${entryId}-bullet-${j}` : undefined;
+            const bulletAdj = blockAdj?.[bulletId];
             return (
               <li
                 key={j}
                 data-bullet-id={bulletId}
-                style={{ marginBottom: 1, display: 'list-item' }}
+                style={{ marginBottom: 1, display: 'list-item', ...(bulletAdj ? { marginTop: bulletAdj } : {}) }}
                 dangerouslySetInnerHTML={{ __html: html }}
               />
             );
@@ -379,13 +380,14 @@ function RichBody({ entry, listStyle, style, entryId, visibleBlockIds }) {
         liBuffer.push({ j, html: block.html });
       } else {
         flushLiBuffer();
+        const bulletAdj = blockAdj?.[bulletId];
         // Hyphen style for non-li blocks that look like bullets
         if (listStyle === 'hyphen' && block.tag === 'p') {
           rendered.push(
             <div
               key={j}
               data-bullet-id={bulletId}
-              style={{ display: 'flex', gap: 6, marginBottom: 1 }}
+              style={{ display: 'flex', gap: 6, marginBottom: 1, ...(bulletAdj ? { marginTop: bulletAdj } : {}) }}
             >
               <span style={{ flexShrink: 0, color: '#6B7280' }}>–</span>
               <span dangerouslySetInnerHTML={{ __html: block.html }} />
@@ -396,7 +398,7 @@ function RichBody({ entry, listStyle, style, entryId, visibleBlockIds }) {
             <div
               key={j}
               data-bullet-id={bulletId}
-              style={{ marginBottom: 1 }}
+              style={{ marginBottom: 1, ...(bulletAdj ? { marginTop: bulletAdj } : {}) }}
               dangerouslySetInnerHTML={{ __html: block.html }}
             />
           );
@@ -435,8 +437,9 @@ function RichBody({ entry, listStyle, style, entryId, visibleBlockIds }) {
         {allBullets.map((b, j) => {
           if (!isBulletVisible(j)) return null;
           const bulletId = entryId ? `${entryId}-bullet-${j}` : undefined;
+          const bulletAdj = blockAdj?.[bulletId];
           return (
-            <div key={j} data-bullet-id={bulletId} style={{ display: 'flex', gap: 6, marginBottom: 1 }}>
+            <div key={j} data-bullet-id={bulletId} style={{ display: 'flex', gap: 6, marginBottom: 1, ...(bulletAdj ? { marginTop: bulletAdj } : {}) }}>
               <span style={{ flexShrink: 0, color: '#6B7280' }}>–</span>
               <span>{b}</span>
             </div>
@@ -450,7 +453,8 @@ function RichBody({ entry, listStyle, style, entryId, visibleBlockIds }) {
       {allBullets.map((b, j) => {
         if (!isBulletVisible(j)) return null;
         const bulletId = entryId ? `${entryId}-bullet-${j}` : undefined;
-        return <li key={j} data-bullet-id={bulletId} style={{ marginBottom: 1, display: 'list-item' }}>{b}</li>;
+        const bulletAdj = blockAdj?.[bulletId];
+        return <li key={j} data-bullet-id={bulletId} style={{ marginBottom: 1, display: 'list-item', ...(bulletAdj ? { marginTop: bulletAdj } : {}) }}>{b}</li>;
       })}
     </ul>
   );
@@ -498,7 +502,7 @@ function ExperienceBody({ secs, util, variant }) {
                     <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</div>
                   </div>
                 )}
-                <RichBody entry={e} listStyle={listStyle} entryId={entryId} visibleBlockIds={visibleBlockIds} />
+                <RichBody entry={e} listStyle={listStyle} entryId={entryId} visibleBlockIds={visibleBlockIds} blockAdj={blockAdj} />
               </div>
             </div>
           );
@@ -513,7 +517,7 @@ function ExperienceBody({ secs, util, variant }) {
                   <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280', marginBottom: 3 }}>{e.dates}{e.location ? ` | ${e.location}` : ''}</div>
                 </div>
               )}
-              <RichBody entry={e} listStyle={listStyle} entryId={entryId} visibleBlockIds={visibleBlockIds} />
+              <RichBody entry={e} listStyle={listStyle} entryId={entryId} visibleBlockIds={visibleBlockIds} blockAdj={blockAdj} />
             </div>
           );
         }
@@ -530,7 +534,7 @@ function ExperienceBody({ secs, util, variant }) {
                     <div><strong>{primary},</strong> <em style={{ color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</em></div>
                   </div>
                 )}
-                <RichBody entry={e} listStyle={listStyle} entryId={entryId} visibleBlockIds={visibleBlockIds} />
+                <RichBody entry={e} listStyle={listStyle} entryId={entryId} visibleBlockIds={visibleBlockIds} blockAdj={blockAdj} />
               </div>
             </div>
           );
@@ -550,7 +554,7 @@ function ExperienceBody({ secs, util, variant }) {
                 </div>
               </div>
             )}
-            <RichBody entry={e} listStyle={listStyle} entryId={entryId} visibleBlockIds={visibleBlockIds} />
+            <RichBody entry={e} listStyle={listStyle} entryId={entryId} visibleBlockIds={visibleBlockIds} blockAdj={blockAdj} />
           </div>
         );
       })}
@@ -690,7 +694,7 @@ function ProjectsBody({ sec, util }) {
                 {p.link && <div style={{ fontSize: '0.85em', color: '#6B7280' }}>{p.link}</div>}
               </div>
             )}
-            <RichBody entry={p} listStyle={listStyle} entryId={entryId} visibleBlockIds={visibleBlockIds} />
+            <RichBody entry={p} listStyle={listStyle} entryId={entryId} visibleBlockIds={visibleBlockIds} blockAdj={blockAdj} />
           </div>
         );
       })}
