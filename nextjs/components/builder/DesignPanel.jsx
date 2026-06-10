@@ -159,48 +159,181 @@ function HexInput({ value, onChange }) {
   );
 }
 
-// ── ArrangementGlyph (matches prototype) ─────────────────────────────────────
-function ArrangementGlyph({ n }) {
-  const dot = <span className="w-[4px] h-[4px] bg-ds-textMuted/60 rounded-sm" />;
-  if (n === 1) return <div className="flex gap-[3px]">{dot}{dot}{dot}{dot}</div>;
-  if (n === 2) return (
-    <div className="grid gap-[3px]">
-      <div className="flex gap-[3px]">{dot}{dot}</div>
-      <div className="flex gap-[3px]">{dot}{dot}</div>
-    </div>
+// ── ArrangementPreview — SVG previews for each details arrangement ────────────
+function ArrangementPreview({ n, active }) {
+  const s = active ? 'var(--primary, #185FA5)' : 'rgba(255,255,255,0.45)';
+  const dim = active ? 'rgba(91,159,212,0.25)' : 'rgba(255,255,255,0.13)';
+
+  if (n === 1) return (
+    // Single inline row — four short pills side by side
+    <svg viewBox="0 0 60 60" width="44" height="44">
+      <rect x="8" y="12" width="36" height="4" rx="1" fill={s} opacity="0.7" />
+      <rect x="8"  y="22" width="8"  height="2.5" rx="1" fill={s} />
+      <rect x="19" y="22" width="8"  height="2.5" rx="1" fill={s} />
+      <rect x="30" y="22" width="8"  height="2.5" rx="1" fill={s} />
+      <rect x="41" y="22" width="7"  height="2.5" rx="1" fill={s} />
+      <rect x="8" y="34" width="40" height="1.5" rx="0.5" fill={s} opacity="0.22" />
+      <rect x="8" y="39" width="30" height="1.5" rx="0.5" fill={s} opacity="0.22" />
+      <rect x="8" y="44" width="38" height="1.5" rx="0.5" fill={s} opacity="0.22" />
+    </svg>
   );
-  return <div className="grid gap-[3px]">{dot}{dot}{dot}{dot}</div>;
+
+  if (n === 2) return (
+    // Two-column 2×2 grid
+    <svg viewBox="0 0 60 60" width="44" height="44">
+      <rect x="8" y="12" width="36" height="4" rx="1" fill={s} opacity="0.7" />
+      <rect x="8"  y="22" width="16" height="2.5" rx="1" fill={s} />
+      <rect x="30" y="22" width="16" height="2.5" rx="1" fill={s} />
+      <rect x="8"  y="28" width="16" height="2.5" rx="1" fill={s} />
+      <rect x="30" y="28" width="16" height="2.5" rx="1" fill={s} />
+      <rect x="8" y="38" width="40" height="1.5" rx="0.5" fill={s} opacity="0.22" />
+      <rect x="8" y="43" width="30" height="1.5" rx="0.5" fill={s} opacity="0.22" />
+      <rect x="8" y="48" width="38" height="1.5" rx="0.5" fill={s} opacity="0.22" />
+    </svg>
+  );
+
+  // n === 3: stacked one-per-line
+  return (
+    <svg viewBox="0 0 60 60" width="44" height="44">
+      <rect x="8" y="12" width="36" height="4" rx="1" fill={s} opacity="0.7" />
+      <rect x="8" y="22" width="22" height="2.5" rx="1" fill={s} />
+      <rect x="8" y="27" width="22" height="2.5" rx="1" fill={s} />
+      <rect x="8" y="32" width="22" height="2.5" rx="1" fill={s} />
+      <rect x="8" y="37" width="22" height="2.5" rx="1" fill={s} />
+      <rect x="35" y="22" width="13" height="1.5" rx="0.5" fill={s} opacity="0.22" />
+      <rect x="35" y="27" width="13" height="1.5" rx="0.5" fill={s} opacity="0.22" />
+      <rect x="35" y="32" width="13" height="1.5" rx="0.5" fill={s} opacity="0.22" />
+      <rect x="8"  y="46" width="40" height="1.5" rx="0.5" fill={s} opacity="0.22" />
+    </svg>
+  );
 }
 
-// ── SkillsLayoutGlyph ─────────────────────────────────────────────────────────
-function SkillsGlyph({ layout }) {
-  const c = 'var(--c-muted, #9CA3AF)';
+// ── SkillsLayoutPreview — SVG previews for each skills layout ─────────────────
+function SkillsPreview({ layout, active }) {
+  const s   = active ? 'var(--primary, #185FA5)' : 'rgba(255,255,255,0.45)';
+  const dim = active ? 'rgba(91,159,212,0.30)' : 'rgba(255,255,255,0.18)';
+
   if (layout === 'grid') return (
-    <div className="grid gap-[2px]" style={{ gridTemplateColumns: '1fr 1fr', width: 20, height: 14 }}>
-      {[0,1,2,3].map(i => <span key={i} className="bg-ds-textMuted/50 rounded-[1px]" />)}
-    </div>
+    // Categorised grid: category label + rows of pills
+    <svg viewBox="0 0 50 50" width="40" height="40">
+      <rect x="5" y="9"  width="12" height="2"   rx="0.5" fill={s} opacity="0.7" />
+      <rect x="5" y="14" width="9"  height="3.5" rx="1.5" fill={dim} />
+      <rect x="16" y="14" width="12" height="3.5" rx="1.5" fill={dim} />
+      <rect x="30" y="14" width="9"  height="3.5" rx="1.5" fill={dim} />
+      <rect x="5" y="23" width="12" height="2"   rx="0.5" fill={s} opacity="0.7" />
+      <rect x="5" y="28" width="12" height="3.5" rx="1.5" fill={dim} />
+      <rect x="19" y="28" width="9"  height="3.5" rx="1.5" fill={dim} />
+      <rect x="30" y="28" width="13" height="3.5" rx="1.5" fill={dim} />
+    </svg>
   );
+
   if (layout === 'rows') return (
-    <div className="grid gap-[3px]" style={{ width: 22 }}>
-      <span className="h-[3px] bg-ds-textMuted/50 rounded-[1px]" />
-      <span className="h-[3px] bg-ds-textMuted/50 rounded-[1px]" style={{ width: '70%' }} />
-      <span className="h-[3px] bg-ds-textMuted/50 rounded-[1px]" style={{ width: '85%' }} />
-    </div>
+    // Rows: skill name lines, varying widths
+    <svg viewBox="0 0 50 50" width="40" height="40">
+      <rect x="5" y="12" width="20" height="2.5" rx="0.5" fill={s} opacity="0.75" />
+      <rect x="5" y="20" width="24" height="2.5" rx="0.5" fill={s} opacity="0.75" />
+      <rect x="5" y="28" width="17" height="2.5" rx="0.5" fill={s} opacity="0.75" />
+      <rect x="5" y="36" width="22" height="2.5" rx="0.5" fill={s} opacity="0.75" />
+    </svg>
   );
-  if (layout === 'compact') return <span className="text-[8px] text-ds-textMuted/70">A·B·C</span>;
+
+  if (layout === 'compact') return (
+    // A·B·C inline text
+    <svg viewBox="0 0 50 50" width="40" height="40">
+      <text x="25" y="29" textAnchor="middle" fill={s} fontSize="11"
+        fontFamily="system-ui, sans-serif" fontWeight="500" letterSpacing="0.04em">
+        A·B·C
+      </text>
+    </svg>
+  );
+
   if (layout === 'bubble') return (
-    <div className="flex gap-[2px] flex-wrap" style={{ width: 26 }}>
-      {[6, 8, 5, 7].map((w, i) => <span key={i} style={{ width: w, height: 5 }} className="bg-ds-textMuted/50 rounded-full" />)}
-    </div>
+    // Rounded pill badges
+    <svg viewBox="0 0 50 50" width="40" height="40">
+      <rect x="5"  y="13" width="15" height="6" rx="3" fill={dim} />
+      <rect x="22" y="13" width="20" height="6" rx="3" fill={dim} />
+      <rect x="5"  y="23" width="22" height="6" rx="3" fill={dim} />
+      <rect x="29" y="23" width="13" height="6" rx="3" fill={dim} />
+      <rect x="5"  y="33" width="18" height="6" rx="3" fill={dim} />
+    </svg>
   );
+
   if (layout === 'level') return (
-    <div className="grid gap-[2px]">
-      {[[3,0],[2,1],[3,0]].map(([n,_], i) => (
-        <div key={i} className="flex gap-[2px]">
-          {[1,2,3].map(d => <span key={d} style={{ width: 3, height: 3 }} className={`rounded-full ${d <= n ? 'bg-ds-textMuted/60' : 'bg-ds-border'}`} />)}
-        </div>
-      ))}
-    </div>
+    // Skill name + dot rating
+    <svg viewBox="0 0 50 50" width="40" height="40">
+      <rect x="5" y="12" width="18" height="2" rx="0.5" fill={s} opacity="0.7" />
+      <circle cx="27" cy="13" r="1.3" fill={s} /><circle cx="31" cy="13" r="1.3" fill={s} /><circle cx="35" cy="13" r="1.3" fill={s} /><circle cx="39" cy="13" r="1.3" fill={s} /><circle cx="43" cy="13" r="1.3" fill="rgba(255,255,255,0.15)" />
+      <rect x="5" y="21" width="18" height="2" rx="0.5" fill={s} opacity="0.7" />
+      <circle cx="27" cy="22" r="1.3" fill={s} /><circle cx="31" cy="22" r="1.3" fill={s} /><circle cx="35" cy="22" r="1.3" fill={s} /><circle cx="39" cy="22" r="1.3" fill="rgba(255,255,255,0.15)" /><circle cx="43" cy="22" r="1.3" fill="rgba(255,255,255,0.15)" />
+      <rect x="5" y="30" width="18" height="2" rx="0.5" fill={s} opacity="0.7" />
+      <circle cx="27" cy="31" r="1.3" fill={s} /><circle cx="31" cy="31" r="1.3" fill={s} /><circle cx="35" cy="31" r="1.3" fill={s} /><circle cx="39" cy="31" r="1.3" fill={s} /><circle cx="43" cy="31" r="1.3" fill={s} />
+      <rect x="5" y="39" width="18" height="2" rx="0.5" fill={s} opacity="0.7" />
+      <circle cx="27" cy="40" r="1.3" fill={s} /><circle cx="31" cy="40" r="1.3" fill={s} /><circle cx="35" cy="40" r="1.3" fill="rgba(255,255,255,0.15)" /><circle cx="39" cy="40" r="1.3" fill="rgba(255,255,255,0.15)" /><circle cx="43" cy="40" r="1.3" fill="rgba(255,255,255,0.15)" />
+    </svg>
+  );
+
+  return null;
+}
+
+// ── IconStylePreview — shows a mail icon rendered in each of the 7 icon styles ─
+// Each style changes how the icon badge is presented (plain, circle outline,
+// rounded square, filled circle, filled square, underline, no badge).
+function IconStylePreview({ n, active }) {
+  const ic  = active ? 'var(--primary, #185FA5)' : 'rgba(255,255,255,0.55)';
+  const bg  = active ? 'rgba(91,159,212,0.22)'   : 'rgba(255,255,255,0.10)';
+
+  // Mail envelope SVG path (24px viewBox)
+  const MailPath = () => (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="1.5" stroke={ic} strokeWidth="1.6" fill="none"/>
+      <polyline points="3,7 12,13 21,7" stroke={ic} strokeWidth="1.6" fill="none" strokeLinecap="round"/>
+    </>
+  );
+
+  if (n === 1) return (
+    // Plain — no badge, just icon
+    <svg viewBox="0 0 24 24" width="20" height="20"><MailPath /></svg>
+  );
+  if (n === 2) return (
+    // Circle outline badge
+    <svg viewBox="-3 -3 30 30" width="22" height="22">
+      <circle cx="12" cy="12" r="14" fill="none" stroke={ic} strokeWidth="1.4" />
+      <MailPath />
+    </svg>
+  );
+  if (n === 3) return (
+    // Rounded square outline badge
+    <svg viewBox="-3 -3 30 30" width="22" height="22">
+      <rect x="-2" y="-2" width="28" height="28" rx="5" fill="none" stroke={ic} strokeWidth="1.4" />
+      <MailPath />
+    </svg>
+  );
+  if (n === 4) return (
+    // Filled circle badge
+    <svg viewBox="-3 -3 30 30" width="22" height="22">
+      <circle cx="12" cy="12" r="14" fill={bg} />
+      <circle cx="12" cy="12" r="14" fill="none" stroke={ic} strokeWidth="1.2" />
+      <MailPath />
+    </svg>
+  );
+  if (n === 5) return (
+    // Filled rounded square badge
+    <svg viewBox="-3 -3 30 30" width="22" height="22">
+      <rect x="-2" y="-2" width="28" height="28" rx="5" fill={bg} />
+      <rect x="-2" y="-2" width="28" height="28" rx="5" fill="none" stroke={ic} strokeWidth="1.2" />
+      <MailPath />
+    </svg>
+  );
+  if (n === 6) return (
+    // Underline accent
+    <svg viewBox="0 -2 24 28" width="20" height="22">
+      <MailPath />
+      <line x1="3" y1="22" x2="21" y2="22" stroke={ic} strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+  if (n === 7) return (
+    // No extra badge — same as plain (style 7 is "bare" in the codebase)
+    <svg viewBox="0 0 24 24" width="20" height="20"><MailPath /></svg>
   );
   return null;
 }
@@ -331,13 +464,35 @@ export default function DesignPanel({
 
       {/* Details Arrangement */}
       <PanelSection title="Details Arrangement">
-        <TileGrid cols={3}>
-          {[1, 2, 3].map(n => (
-            <Tile key={n} active={(d.detailsArrangement || 1) === n} onClick={() => set('detailsArrangement', n)}>
-              <ArrangementGlyph n={n} />
-            </Tile>
-          ))}
-        </TileGrid>
+        <div className="flex gap-[8px]">
+          {[1, 2, 3].map(n => {
+            const active = (d.detailsArrangement || 1) === n;
+            return (
+              <button
+                key={n}
+                onClick={() => set('detailsArrangement', n)}
+                style={{
+                  width: 72, height: 72,
+                  background: '#0F1929',
+                  border: `2px solid ${active ? 'var(--primary, #185FA5)' : 'rgba(255,255,255,0.10)'}`,
+                  borderRadius: 12,
+                  padding: 0,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'border-color 150ms',
+                  flexShrink: 0,
+                }}
+                onMouseEnter={e => !active && (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
+                onMouseLeave={e => !active && (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)')}
+                aria-pressed={active}
+              >
+                <ArrangementPreview n={n} active={active} />
+              </button>
+            );
+          })}
+        </div>
         <p className="text-[11px] text-ds-textMuted">
           {(d.detailsArrangement || 1) === 1 && 'Single inline row'}
           {(d.detailsArrangement || 1) === 2 && 'Wrap across two lines'}
@@ -356,13 +511,39 @@ export default function DesignPanel({
 
       {/* Icon Style */}
       <PanelSection title="Icon Style">
-        <TileGrid cols={7}>
-          {[1, 2, 3, 4, 5, 6, 7].map(n => (
-            <Tile key={n} active={(d.headerIconStyle || 1) === n} onClick={() => set('headerIconStyle', n)}>
-              <span className="text-[9px] font-semibold">{n}</span>
-            </Tile>
-          ))}
-        </TileGrid>
+        <div className="flex flex-wrap gap-[7px]">
+          {[1, 2, 3, 4, 5, 6, 7].map(n => {
+            const active = (d.headerIconStyle || 1) === n;
+            return (
+              <button
+                key={n}
+                onClick={() => set('headerIconStyle', n)}
+                style={{
+                  width: 48, height: 48,
+                  background: '#0F1929',
+                  border: `2px solid ${active ? 'var(--primary, #185FA5)' : 'rgba(255,255,255,0.10)'}`,
+                  borderRadius: 10,
+                  padding: 0,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'border-color 150ms',
+                  flexShrink: 0,
+                }}
+                onMouseEnter={e => !active && (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
+                onMouseLeave={e => !active && (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)')}
+                aria-pressed={active}
+                title={['Plain', 'Circle outline', 'Square outline', 'Filled circle', 'Filled square', 'Underline', 'Bare'][n - 1]}
+              >
+                <IconStylePreview n={n} active={active} />
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-[11px] text-ds-textMuted mt-1">
+          {['Plain', 'Circle outline', 'Square outline', 'Filled circle', 'Filled square', 'Underline', 'Bare'][(d.headerIconStyle || 1) - 1]}
+        </p>
       </PanelSection>
 
       {/* Page Size */}
@@ -545,13 +726,35 @@ export default function DesignPanel({
         <PanelSection title="Skills">
           <div>
             <p className="text-xs font-medium text-ds-text mb-2">Layout</p>
-            <TileGrid cols={5}>
-              {['grid', 'rows', 'compact', 'bubble', 'level'].map(l => (
-                <Tile key={l} active={skillsLayout === l} onClick={() => setSkillsDs({ layout: l })} style={{ aspectRatio: '1' }}>
-                  <SkillsGlyph layout={l} />
-                </Tile>
-              ))}
-            </TileGrid>
+            <div className="flex gap-[7px] flex-wrap">
+              {['grid', 'rows', 'compact', 'bubble', 'level'].map(l => {
+                const active = skillsLayout === l;
+                return (
+                  <button
+                    key={l}
+                    onClick={() => setSkillsDs({ layout: l })}
+                    style={{
+                      width: 56, height: 56,
+                      background: '#0F1929',
+                      border: `2px solid ${active ? 'var(--primary, #185FA5)' : 'rgba(255,255,255,0.10)'}`,
+                      borderRadius: 11,
+                      padding: 0,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'border-color 150ms',
+                      flexShrink: 0,
+                    }}
+                    onMouseEnter={e => !active && (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
+                    onMouseLeave={e => !active && (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)')}
+                    aria-pressed={active}
+                  >
+                    <SkillsPreview layout={l} active={active} />
+                  </button>
+                );
+              })}
+            </div>
             <p className="text-[11px] text-ds-textMuted mt-1.5 capitalize">{skillsLayout}</p>
           </div>
 
