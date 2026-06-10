@@ -324,9 +324,17 @@ export function computeGeometricAdjustments(contentEl, config) {
       && elTop < recentBoundary + config.page.marginTop;
 
     if (remaining - bottomBuffer < minStartSpace(el) || entryOverflows || sectionOverflows) {
-      adj[key]    = remaining;
-      cumulative += remaining;
-      blockPageIdx[key] = pageIdxFor(pageEnd);
+      // For compact sections pushed to a boundary beyond the first (pageEnd > pageH),
+      // the destination B_n sits inside the previous page's overlap zone — the heading
+      // appears at the bottom of that page AND the top of the next page.  Push an extra
+      // marginTop so the section clears the overlap zone entirely.
+      const dest = sectionFullH > 0 && pageEnd > pageH
+        ? pageEnd + config.page.marginTop
+        : pageEnd;
+      const push = dest - elTop;
+      adj[key]    = push;
+      cumulative += push;
+      blockPageIdx[key] = pageIdxFor(dest);
     } else if (inStartOverlapZone) {
       const push = recentBoundary + config.page.marginTop - elTop;
       adj[key]    = push;
