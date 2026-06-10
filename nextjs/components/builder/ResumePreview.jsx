@@ -358,6 +358,7 @@ function RichBody({ entry, listStyle, style, entryId, visibleBlockIds, blockAdj 
               <li
                 key={j}
                 data-bullet-id={bulletId}
+                data-block-id={bulletId}
                 style={{ marginBottom: 1, display: 'list-item', ...(bulletAdj ? { marginTop: bulletAdj } : {}) }}
                 dangerouslySetInnerHTML={{ __html: html }}
               />
@@ -387,6 +388,7 @@ function RichBody({ entry, listStyle, style, entryId, visibleBlockIds, blockAdj 
             <div
               key={j}
               data-bullet-id={bulletId}
+              data-block-id={bulletId}
               style={{ display: 'flex', gap: 6, marginBottom: 1, ...(bulletAdj ? { marginTop: bulletAdj } : {}) }}
             >
               <span style={{ flexShrink: 0, color: '#6B7280' }}>–</span>
@@ -398,6 +400,7 @@ function RichBody({ entry, listStyle, style, entryId, visibleBlockIds, blockAdj 
             <div
               key={j}
               data-bullet-id={bulletId}
+              data-block-id={bulletId}
               style={{ marginBottom: 1, ...(bulletAdj ? { marginTop: bulletAdj } : {}) }}
               dangerouslySetInnerHTML={{ __html: block.html }}
             />
@@ -439,7 +442,7 @@ function RichBody({ entry, listStyle, style, entryId, visibleBlockIds, blockAdj 
           const bulletId = entryId ? `${entryId}-bullet-${j}` : undefined;
           const bulletAdj = blockAdj?.[bulletId];
           return (
-            <div key={j} data-bullet-id={bulletId} style={{ display: 'flex', gap: 6, marginBottom: 1, ...(bulletAdj ? { marginTop: bulletAdj } : {}) }}>
+            <div key={j} data-bullet-id={bulletId} data-block-id={bulletId} style={{ display: 'flex', gap: 6, marginBottom: 1, ...(bulletAdj ? { marginTop: bulletAdj } : {}) }}>
               <span style={{ flexShrink: 0, color: '#6B7280' }}>–</span>
               <span>{b}</span>
             </div>
@@ -454,7 +457,7 @@ function RichBody({ entry, listStyle, style, entryId, visibleBlockIds, blockAdj 
         if (!isBulletVisible(j)) return null;
         const bulletId = entryId ? `${entryId}-bullet-${j}` : undefined;
         const bulletAdj = blockAdj?.[bulletId];
-        return <li key={j} data-bullet-id={bulletId} style={{ marginBottom: 1, display: 'list-item', ...(bulletAdj ? { marginTop: bulletAdj } : {}) }}>{b}</li>;
+        return <li key={j} data-bullet-id={bulletId} data-block-id={bulletId} style={{ marginBottom: 1, display: 'list-item', ...(bulletAdj ? { marginTop: bulletAdj } : {}) }}>{b}</li>;
       })}
     </ul>
   );
@@ -497,7 +500,7 @@ function ExperienceBody({ secs, util, variant }) {
               </div>}
               <div style={showHeading ? {} : { gridColumn: '1 / -1' }}>
                 {showHeading && (
-                  <div data-entry-heading>
+                  <div data-entry-heading data-block-id={entryId}>
                     <div style={{ fontWeight: 700 }}>{primary}</div>
                     <div style={{ fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</div>
                   </div>
@@ -511,7 +514,7 @@ function ExperienceBody({ secs, util, variant }) {
           return (
             <div key={i} className="resume-entry-block" data-entry-id={entryId} style={{ marginBottom: gap, ...(adjTop ? { marginTop: adjTop } : {}) }}>
               {showHeading && (
-                <div data-entry-heading>
+                <div data-entry-heading data-block-id={entryId}>
                   <div style={{ fontWeight: 700 }}>{primary}</div>
                   <div style={{ fontStyle: 'italic', fontSize: '0.92em', color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</div>
                   <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280', marginBottom: 3 }}>{e.dates}{e.location ? ` | ${e.location}` : ''}</div>
@@ -530,7 +533,7 @@ function ExperienceBody({ secs, util, variant }) {
               </div>}
               <div style={showHeading ? {} : { gridColumn: '1 / -1' }}>
                 {showHeading && (
-                  <div data-entry-heading>
+                  <div data-entry-heading data-block-id={entryId}>
                     <div><strong>{primary},</strong> <em style={{ color: colIf(t.entrySubtitle) || '#6B7280' }}>{secondary}</em></div>
                   </div>
                 )}
@@ -543,7 +546,7 @@ function ExperienceBody({ secs, util, variant }) {
         return (
           <div key={i} className="resume-entry-block" data-entry-id={entryId} style={{ marginBottom: gap, ...(adjTop ? { marginTop: adjTop } : {}) }}>
             {showHeading && (
-              <div data-entry-heading>
+              <div data-entry-heading data-block-id={entryId}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
                   <div style={{ fontWeight: 700 }}>{primary}</div>
                   <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280', whiteSpace: 'nowrap' }}>{e.dates}</div>
@@ -685,7 +688,7 @@ function ProjectsBody({ sec, util }) {
         return (
           <div key={i} className="resume-entry-block" data-entry-id={entryId} style={{ marginBottom: i < entries.length - 1 ? entryGapPx * 0.75 : 0, ...(adjTop ? { marginTop: adjTop } : {}) }}>
             {showHeading && (
-              <div data-entry-heading>
+              <div data-entry-heading data-block-id={entryId}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <div style={{ fontWeight: 700 }}>{p.title}</div>
                   {p.dates && <div style={{ fontSize: '0.85em', color: colIf(t.dates) || '#6B7280' }}>{p.dates}</div>}

@@ -472,21 +472,39 @@ export function computeFlowAdjustments(contentEl, config) {
     const headingH = Math.max(0, firstEntry.getBoundingClientRect().top - secTop);
     if (headingH > 0) blocks.push({ id: secId, height: headingH, isSectionHeading: true });
 
-    secEl.querySelectorAll('[data-entry-id]').forEach(entryEl => {
+    const entryEls = Array.from(secEl.querySelectorAll('[data-entry-id]'));
+    entryEls.forEach((entryEl, ei) => {
       const entryId        = entryEl.dataset.entryId;
       const entryHeadingEl = entryEl.querySelector('[data-entry-heading]');
 
       if (!entryHeadingEl) {
         // Entry without fine-grained heading (Education, etc.) — one block.
-        blocks.push({ id: entryId, height: entryEl.getBoundingClientRect().height });
+        // Include the CSS marginBottom gap (not captured by getBoundingClientRect).
+        let h = entryEl.getBoundingClientRect().height;
+        const nextEntry = entryEls[ei + 1];
+        if (nextEntry) {
+          const gap = nextEntry.getBoundingClientRect().top - entryEl.getBoundingClientRect().bottom;
+          if (gap > 0) h += gap;
+        }
+        blocks.push({ id: entryId, height: h });
         return;
       }
 
       const headH = entryHeadingEl.getBoundingClientRect().height;
       if (headH > 0) blocks.push({ id: entryId, height: headH });
 
-      entryEl.querySelectorAll('[data-bullet-id]').forEach(bulletEl => {
-        const h = bulletEl.getBoundingClientRect().height;
+      const bulletEls = Array.from(entryEl.querySelectorAll('[data-bullet-id]'));
+      bulletEls.forEach((bulletEl, bi) => {
+        let h = bulletEl.getBoundingClientRect().height;
+        // For the last bullet of an entry, fold in the CSS marginBottom gap so the
+        // flow budget matches what actually renders (getBoundingClientRect excludes margins).
+        if (bi === bulletEls.length - 1) {
+          const nextEntry = entryEls[ei + 1];
+          if (nextEntry) {
+            const gap = nextEntry.getBoundingClientRect().top - entryEl.getBoundingClientRect().bottom;
+            if (gap > 0) h += gap;
+          }
+        }
         if (h > 0) blocks.push({ id: bulletEl.dataset.bulletId, height: h });
       });
     });
