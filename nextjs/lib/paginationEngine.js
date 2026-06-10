@@ -470,7 +470,7 @@ export function computeFlowAdjustments(contentEl, config) {
 
     // Section heading = gap between section container top and first entry top.
     const headingH = Math.max(0, firstEntry.getBoundingClientRect().top - secTop);
-    if (headingH > 0) blocks.push({ id: secId, height: headingH });
+    if (headingH > 0) blocks.push({ id: secId, height: headingH, isSectionHeading: true });
 
     secEl.querySelectorAll('[data-entry-id]').forEach(entryEl => {
       const entryId        = entryEl.dataset.entryId;
@@ -493,18 +493,27 @@ export function computeFlowAdjustments(contentEl, config) {
   });
 
   // Flow blocks onto pages.
+  // ONE look-ahead rule: section headings must travel with their first content
+  // block. Use effectiveH = headingH + nextBlockH for the fit check only;
+  // advance curY by headingH alone after placement.
   const pages = [];
   let curPage = [];
   let curY    = headerH;
 
-  for (const block of blocks) {
-    if (curY + block.height > pageEnd && curPage.length > 0) {
+  for (let i = 0; i < blocks.length; i++) {
+    const block      = blocks[i];
+    const next       = blocks[i + 1];
+    const effectiveH = block.isSectionHeading && next
+      ? block.height + next.height
+      : block.height;
+
+    if (curY + effectiveH > pageEnd && curPage.length > 0) {
       pages.push(curPage);
       curPage = [];
       curY    = mt;
     }
     curPage.push(block.id);
-    curY += block.height;
+    curY += block.height; // advance by own height, not effectiveH
   }
   if (curPage.length > 0 || pages.length === 0) pages.push(curPage);
 
