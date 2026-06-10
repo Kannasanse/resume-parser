@@ -361,11 +361,28 @@ export function computeGeometricAdjustments(contentEl, config) {
 
     const pageEnd  = pageBoundaryAfter(elTop);
 
+    // Bullet naturally in the start overlap zone (just past a boundary within marginTop).
+    // pageBoundaryAfter returns B_{n+2} in this case so the overflow check misses it.
+    const bulletRecentBoundary = elTop > pageH
+      ? pageH + Math.floor((elTop - pageH) / effH) * effH
+      : pageH;
+    const bulletInStartOverlapZone = elTop > bulletRecentBoundary
+      && elTop < bulletRecentBoundary + config.page.marginTop;
+
     if (elBottom > pageEnd - bottomBuffer && elTop < pageEnd) {
-      const push = pageEnd - elTop;
+      // Same overlap-zone fix as the section pass: for non-first boundaries, the push
+      // destination B_n is inside the overlap zone — push past it.
+      const dest = pageEnd > pageH ? pageEnd + config.page.marginTop : pageEnd;
+      const push = dest - elTop;
       adj[key]    = push;
       cumulative += push;
-      blockPageIdx[key] = pageIdxFor(pageEnd);
+      blockPageIdx[key] = pageIdxFor(dest);
+    } else if (bulletInStartOverlapZone) {
+      const dest = bulletRecentBoundary + config.page.marginTop;
+      const push = dest - elTop;
+      adj[key]    = push;
+      cumulative += push;
+      blockPageIdx[key] = pageIdxFor(dest);
     } else {
       blockPageIdx[key] = pageIdxFor(elTop);
     }
