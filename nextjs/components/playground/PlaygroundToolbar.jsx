@@ -66,7 +66,7 @@ export function PlaygroundToolbar({
         <span style={{ fontSize: 11, color: '#FBBF24' }}>⟳ Loading Python...</span>
       )}
       {javaRunning && (
-        <span style={{ fontSize: 11, color: '#FCA5A5' }}>⟳ Running on Piston...</span>
+        <span style={{ fontSize: 11, color: '#FCA5A5' }}>⟳ Compiling Java...</span>
       )}
 
       <button onClick={onRun} disabled={running} style={{
