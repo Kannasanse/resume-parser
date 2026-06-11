@@ -770,7 +770,6 @@ export function PortfolioScreenshot() {
 // ─── Component map (used by FeatureHero) ─────────────────────────────────────
 export const FEATURE_SCREENSHOT_COMPONENTS = {
   "resume-builder": ResumeBuilderScreenshot,
-  "portfolio":      PortfolioScreenshot,
   "career-map":     CareerMapScreenshot,
   "courses":        CoursesScreenshot,
   "interview-prep": InterviewPrepScreenshot,

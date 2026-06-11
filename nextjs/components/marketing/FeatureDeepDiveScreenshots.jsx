@@ -1151,7 +1151,6 @@ export function ATSImprove() {
 // Arrays are ordered to match the DEEP_DIVE sections array in each feature page.
 export const DEEP_DIVE_COMPONENT_MAP = {
   "resume-builder": [ResumeEditor, ResumeATS, ResumeExport],
-  "portfolio":      [PortfolioEditor, PortfolioThemes, PortfolioPublic],
   "career-map":     [CareerMapUpload, CareerMapGraph, CareerMapStudyPlan],
   "courses":        [CoursesStructure, CoursesContent, CoursesProgress],
   "interview-prep": [InterviewModes, InterviewVoice, InterviewResults],

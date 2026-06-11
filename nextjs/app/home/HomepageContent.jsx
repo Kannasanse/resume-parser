@@ -41,7 +41,7 @@ const XIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="curre
 const GithubIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>);
 const MenuIcon = () => (<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>);
 const CloseIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>);
-const GlobeIcon = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>);
+
 
 // ── Section 2: Hero ───────────────────────────────────────────────────────────
 const FEATURE_PILLS = [
@@ -50,7 +50,6 @@ const FEATURE_PILLS = [
   { emoji: '🗺', label: 'Career Map', href: '#career-map' },
   { emoji: '📚', label: 'Study Plans', href: '#study-plans' },
   { emoji: '🎤', label: 'Interview Prep', href: '#interview-prep' },
-  { emoji: '🌐', label: 'Portfolio Builder', href: '#portfolio' },
   { emoji: '📓', label: 'Block Editor Notes', href: '/notes' },
   { emoji: '🔧', label: '34 PDF & Doc Tools', href: '/utilities' },
   { emoji: '✦', label: 'Skill Courses', href: '/my-courses' },
@@ -226,11 +225,6 @@ const FEATURES = [
     icon: 'M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10m6 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v14',
     title: 'ATS Score & Analysis', body: 'Instant ATS scoring with or without a job description. Know exactly which skills are missing and what to fix before you apply.',
     stat: '20+ checks', link: 'Check your score →', accent: '#1D9E75', href: '/upload',
-  },
-  {
-    icon: 'M19 11H5m14 0a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2m14 0V9a2 2 0 0 0-2-2M5 11V9a2 2 0 0 1 2-2m0 0V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2h2m0-4h10M7 7h10',
-    title: 'Portfolio Builder', body: 'Turn your experience into a stunning public portfolio. Add projects, case studies, and testimonials. One-click publish to your own URL.',
-    stat: '5 templates', link: 'Build your portfolio →', accent: '#185FA5', href: '/portfolios',
   },
   {
     icon: 'M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 0 1 .665 6.479A11.952 11.952 0 0 0 12 20.055a11.952 11.952 0 0 0-6.824-2.998 12.078 12.078 0 0 1 .665-6.479L12 14zm-4 6v-7.5l4-2.222',
@@ -558,90 +552,6 @@ function DeepDiveCareerMap() {
   );
 }
 
-// ── Section 7: Deep Dive — Portfolio Builder ──────────────────────────────────
-const PORTFOLIO_FEATURES = [
-  '5 professionally designed portfolio templates',
-  'Custom URL at proflect-neo.vercel.app/p/you',
-  'Projects with case studies, outcomes, and media',
-  'AI-generated bio, tagline, and project descriptions',
-  'Contact form built in',
-  'Analytics — see who views your portfolio',
-  'One-click publish',
-];
-
-function DeepDivePortfolio() {
-  const { ref, isVisible } = useScrollReveal();
-  return (
-    <section id="portfolio" className="py-28 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div ref={ref} className={`grid grid-cols-1 lg:grid-cols-2 gap-20 items-center transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          {/* Text */}
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest mb-4 text-gradient-primary">Portfolio Builder</p>
-            <h2 className="font-extrabold text-[#2C2C2A] leading-tight" style={{ fontSize: 'clamp(28px,3.5vw,40px)', letterSpacing: '-0.03em' }}>
-              Your work deserves<br />to be seen
-            </h2>
-            <p className="mt-4 text-base text-[#6B7280] leading-relaxed">
-              A resume tells employers what you&apos;ve done. A portfolio shows them. Proflect&apos;s portfolio builder gives you a shareable URL, beautiful templates, and AI tools to make every project shine.
-            </p>
-            <ul className="mt-6 space-y-3">
-              {PORTFOLIO_FEATURES.map(f => (
-                <li key={f} className="flex items-start gap-2.5">
-                  <span className="flex-shrink-0 mt-0.5"><CheckCircle /></span>
-                  <span className="text-[15px] font-medium text-[#2C2C2A]">{f}</span>
-                </li>
-              ))}
-            </ul>
-            <Link href="/portfolios" className="btn-primary mt-8 inline-flex items-center gap-2">
-              Build your portfolio <ArrowRight size={16} />
-            </Link>
-          </div>
-
-          {/* Visual mockup */}
-          <div className="relative">
-            <div
-              className="rounded-[20px] overflow-hidden"
-              style={{
-                boxShadow: '0 24px 64px rgba(12,68,124,0.16), 0 8px 24px rgba(12,68,124,0.08)',
-                border: '1px solid rgba(209,220,232,0.5)',
-                transform: 'perspective(1200px) rotateY(6deg) rotateX(2deg)',
-                transition: 'transform 500ms cubic-bezier(0.16,1,0.3,1)',
-              }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'perspective(1200px) rotateY(2deg) rotateX(0deg)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'perspective(1200px) rotateY(6deg) rotateX(2deg)'}
-            >
-              {/* Hero header */}
-              <div className="h-20 px-5 py-4 flex items-center gap-3" style={{ background: 'linear-gradient(135deg, #0C447C, #185FA5)' }}>
-                <div className="w-10 h-10 rounded-full bg-white/20 flex-shrink-0" />
-                <div>
-                  <div className="h-2.5 w-24 bg-white/80 rounded mb-1.5" />
-                  <div className="h-2 w-32 bg-white/40 rounded" />
-                </div>
-              </div>
-              {/* Project cards */}
-              <div className="p-4 bg-[#F9FAFB] grid grid-cols-2 gap-3">
-                {[1,2,3,4].map(i => (
-                  <div key={i} className="rounded-lg bg-white border border-gray-100 p-3">
-                    <div className="h-14 rounded-md mb-2" style={{ background: `hsl(${i * 60},60%,90%)` }} />
-                    <div className="h-2 w-16 bg-gray-200 rounded mb-1" />
-                    <div className="h-1.5 w-20 bg-gray-100 rounded" />
-                  </div>
-                ))}
-              </div>
-            </div>
-            {/* Floating badge */}
-            <div className="animate-float absolute -bottom-4 -right-4 flex items-center gap-2 px-4 py-2.5 rounded-[14px] text-white text-[13px] font-bold"
-              style={{ background: 'linear-gradient(135deg, #185FA5, #1D9E75)', boxShadow: '0 8px 24px rgba(24,95,165,0.30)', animationDuration: '4s', animationDelay: '500ms' }}>
-              <GlobeIcon />
-              Published ✓
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 // ── Section 7B: Utilities Spotlight ──────────────────────────────────────────
 const UTILITY_CHIPS = [
   { icon: 'M8 6H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3M16 6h3a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-3M12 2v20', label: 'Merge PDF' },
@@ -797,7 +707,7 @@ const STEPS = [
     num: '01',
     icon: 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM3 20a6 6 0 0 1 12 0v1H3v-1z',
     title: 'Build your professional profile',
-    body: 'Create an ATS-optimised resume using 24 templates, build a portfolio website, and get instant ATS scoring against any job description.',
+    body: 'Create an ATS-optimised resume using 24 templates and get instant ATS scoring against any job description.',
   },
   {
     num: '02',
@@ -1004,7 +914,7 @@ function FinalCTA() {
         <div className="flex items-center justify-center gap-2 flex-wrap mt-8">
           {[
             'Resume Builder', 'ATS Scoring', 'Career Map', 'Study Plans',
-            'Interview Prep', 'Portfolio Builder', 'Notes', '34 Tools', 'Skill Courses', 'Jobs',
+            'Interview Prep', 'Notes', '34 Tools', 'Skill Courses', 'Jobs',
           ].map(label => (
             <span
               key={label}
@@ -1024,7 +934,6 @@ function FinalCTA() {
 const FOOTER_LINKS = {
   Product: [
     { label: 'Resume Builder', href: '/builder' },
-    { label: 'Portfolio Builder', href: '/portfolios' },
     { label: 'ATS Score', href: '/upload' },
     { label: 'Interview Prep', href: '/self-test' },
     { label: 'Career Map', href: '/career-map' },
@@ -1120,6 +1029,8 @@ export default function HomepageContent({ sections, isPreview, userRole }) {
       <HomeNavbar />
       <HeroSection />
       <FeatureShowcase />
+      <DeepDiveResume />
+      <DeepDiveCareerMap />
       <UtilitiesSpotlight />
       <HowItWorks />
       <FinalCTA />
