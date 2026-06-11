@@ -96,6 +96,11 @@ const SECURITY_TOOLS = [
 ];
 
 function RecordIcon() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/></svg>; }
+function PlaygroundIcon() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="12" y1="2" x2="12" y2="22" opacity=".4"/></svg>; }
+
+const DEV_TOOLS = [
+  { href: '/utilities/playground',         name: 'Code Playground',              description: 'Write and run HTML/CSS/JS, Python, or SQL directly in your browser — no setup required.', icon: <PlaygroundIcon />, gradient: 'from-[#EDE9FE] to-[#DDD6FE]' },
+];
 
 const RECORDING_TOOLS = [
   { href: '/utilities/recorder', name: 'Screen Recorder & Transcript', description: 'Record your screen or upload a video to get an instant timestamped transcript. Install the Chrome extension for live transcription.', icon: <RecordIcon />, gradient: 'from-[#E6F1FB] to-[#D4E8F8]' },
@@ -144,6 +149,13 @@ export default function UtilitiesHubPage() {
         <p className={SECTION_LABEL}>Security Tools</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {SECURITY_TOOLS.map(t => <ToolCard key={t.href} {...t} />)}
+        </div>
+      </section>
+
+      <section>
+        <p className={SECTION_LABEL}>Developer Tools</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {DEV_TOOLS.map(t => <ToolCard key={t.href} {...t} />)}
         </div>
       </section>
 
