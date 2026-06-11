@@ -517,6 +517,20 @@ export default function SelfTestPage() {
       return entries.length >= 2 ? entries : null;
     })();
 
+    // Per-type breakdown
+    const perType = (() => {
+      const map = { mcq: { correct: 0, total: 0 }, true_false: { correct: 0, total: 0 }, short_answer: { correct: 0, total: 0 } };
+      (results.questions || []).forEach((q, i) => {
+        const t = q.type;
+        if (!map[t]) return;
+        map[t].total++;
+        if (t !== 'short_answer' && localResults[i]?.correct) map[t].correct++;
+      });
+      return Object.entries(map)
+        .filter(([, v]) => v.total > 0)
+        .map(([type, v]) => ({ type, ...v, pct: v.total > 0 && type !== 'short_answer' ? Math.round((v.correct / v.total) * 100) : null }));
+    })();
+
     const handleRetake = () => {
       if (session?.jd_skills) {
         try { sessionStorage.setItem('jd_retake', JSON.stringify({ skills: session.jd_skills, jdText: session.input_data || '' })); } catch {}
@@ -627,6 +641,42 @@ export default function SelfTestPage() {
           </div>
         )}
 
+        {perType.length > 1 && (
+          <div className="bg-ds-card border border-ds-border rounded-lg p-5">
+            <h2 className="text-sm font-semibold text-ds-text mb-3">By Question Type</h2>
+            <div className="space-y-2.5">
+              {perType.map(({ type, correct, total, pct }) => {
+                const META = {
+                  mcq:          { label: 'MCQ',          color: '#185FA5', bg: 'rgba(24,95,165,0.10)' },
+                  true_false:   { label: 'True / False', color: '#1D9E75', bg: 'rgba(29,158,117,0.10)' },
+                  short_answer: { label: 'Short Answer', color: '#B45309', bg: 'rgba(245,158,11,0.10)' },
+                };
+                const m = META[type] || META.mcq;
+                return (
+                  <div key={type} className="flex items-center gap-3">
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
+                      style={{ background: m.bg, color: m.color, minWidth: 88, textAlign: 'center' }}>
+                      {m.label}
+                    </span>
+                    {pct !== null ? (
+                      <>
+                        <div className="flex-1 h-1.5 bg-ds-border rounded-full overflow-hidden">
+                          <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: m.color }} />
+                        </div>
+                        <span className="text-xs text-ds-textMuted flex-shrink-0 w-20 text-right">
+                          {correct}/{total} · {pct}%
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-xs text-ds-textMuted flex-shrink-0">{total} question{total !== 1 ? 's' : ''} · not scored</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="space-y-3">
           {(results.questions || []).map((q, i) => (
             <div key={i} className="bg-ds-card border border-ds-border rounded-lg p-4">
@@ -637,8 +687,17 @@ export default function SelfTestPage() {
                   {q.topic && <p className="text-[10px] text-ds-textMuted">{q.topic}</p>}
                 </div>
               )}
+              {q.type === 'true_false' && (
+                <span className="inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded mb-2"
+                  style={{ background: 'rgba(29,158,117,0.12)', color: '#1D9E75', border: '1px solid rgba(29,158,117,0.25)' }}>
+                  True/False
+                </span>
+              )}
               {q.type === 'short_answer' && (
-                <span className="inline-block text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/50 px-1.5 py-0.5 rounded mb-2">Short Answer</span>
+                <span className="inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded mb-2"
+                  style={{ background: 'rgba(245,158,11,0.12)', color: '#B45309', border: '1px solid rgba(245,158,11,0.25)' }}>
+                  Short Answer
+                </span>
               )}
               <QuestionView
                 question={q} index={i}
@@ -761,6 +820,18 @@ export default function SelfTestPage() {
                     style={{ background: diffChip.bg, color: diffChip.color }}>
                     {session?.difficulty}
                   </span>
+                  {q?.type === 'true_false' && (
+                    <span className="text-[11px] px-2 py-0.5 rounded-full font-medium"
+                      style={{ background: 'rgba(29,158,117,0.12)', color: '#1D9E75', border: '1px solid rgba(29,158,117,0.25)' }}>
+                      True/False
+                    </span>
+                  )}
+                  {q?.type === 'short_answer' && (
+                    <span className="text-[11px] px-2 py-0.5 rounded-full font-medium"
+                      style={{ background: 'rgba(245,158,11,0.12)', color: '#B45309', border: '1px solid rgba(245,158,11,0.25)' }}>
+                      Short Answer
+                    </span>
+                  )}
                 </div>
 
                 {/* Right: per-question timer + flag */}

@@ -42,6 +42,9 @@ export default function TestConfigModal({ topic, onClose }) {
       const mcqCount = isMixed ? Math.round(questionCount * 0.7) : questionCount;
       const saCount = isMixed ? questionCount - mcqCount : 0;
       const timerMinutes = Math.max(10, questionCount * 2);
+      const qtypes = isMixed ? ['mcq', 'true_false', 'short_answer']
+                   : questionType === 'true_false' ? ['true_false']
+                   : ['mcq'];
 
       const res = await fetch('/api/v1/self-test', {
         method: 'POST',
@@ -51,7 +54,7 @@ export default function TestConfigModal({ topic, onClose }) {
           input_data: content,
           difficulty,
           timer_minutes: timerMinutes,
-          question_types: isMixed ? ['mcq', 'short_answer'] : ['mcq'],
+          question_types: qtypes,
           mcq_count: mcqCount,
           short_answer_count: saCount,
         }),
@@ -147,8 +150,9 @@ export default function TestConfigModal({ topic, onClose }) {
             <p className="text-xs font-semibold text-[#6B7280] dark:text-[#8BA3C1] uppercase tracking-wider mb-2">Question Type</p>
             <div className="flex flex-col gap-2">
               {[
-                { value: 'mcq',   label: 'Multiple Choice', desc: 'MCQ + True/False questions' },
-                { value: 'mixed', label: 'Mixed',           desc: 'MCQ/True-False + Short Answer' },
+                { value: 'mcq',        label: 'Multiple Choice', desc: 'MCQ + True/False questions' },
+                { value: 'true_false', label: 'True / False',    desc: 'Binary True or False only' },
+                { value: 'mixed',      label: 'Mixed',           desc: 'MCQ/True-False + Short Answer' },
               ].map(t => (
                 <button
                   key={t.value}
