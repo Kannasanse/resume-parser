@@ -5,8 +5,7 @@ let db  = null;
 
 async function init() {
   SQL = await initSqlJs({
-    locateFile: file =>
-      `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/${file}`,
+    locateFile: () => '/sql-wasm.wasm',
   });
   db = new SQL.Database();
   db.run(`
