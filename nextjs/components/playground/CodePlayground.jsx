@@ -6,6 +6,7 @@ import { ConsolePanel } from './ConsolePanel';
 import { SQLResultTable } from './SQLResultTable';
 import { buildHTML } from '@/lib/playground/htmlBuilder';
 import { runSQL } from '@/lib/playground/sqlRunner';
+import { runJava } from '@/lib/playground/javaRunner';
 
 // Monaco must be client-only (no SSR)
 const Editor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
@@ -37,6 +38,21 @@ for i in range(10):
 
 print(f"\\nπ ≈ {math.pi:.10f}")`,
 
+  java: `public class Main {
+    public static void main(String[] args) {
+        System.out.println("Hello from Java!");
+
+        // Fibonacci example
+        int n = 10;
+        int a = 0, b = 1;
+        System.out.print("Fibonacci: ");
+        for (int i = 0; i < n; i++) {
+            System.out.print(a + (i < n - 1 ? ", " : "\\n"));
+            int tmp = a + b; a = b; b = tmp;
+        }
+    }
+}`,
+
   sql: `-- Sample tables: employees, departments
 -- Try writing your own queries!
 
@@ -58,12 +74,14 @@ export function CodePlayground({
   const [cssCode,        setCssCode]        = useState(initialCode?.css    || DEFAULT_CODE.css);
   const [jsCode,         setJsCode]         = useState(initialCode?.js     || DEFAULT_CODE.js);
   const [pythonCode,     setPythonCode]     = useState(initialCode?.python || DEFAULT_CODE.python);
+  const [javaCode,       setJavaCode]       = useState(initialCode?.java   || DEFAULT_CODE.java);
   const [sqlCode,        setSqlCode]        = useState(initialCode?.sql    || DEFAULT_CODE.sql);
   const [previewHTML,    setPreviewHTML]    = useState('');
   const [consoleEntries, setConsoleEntries] = useState([]);
   const [sqlResults,     setSqlResults]     = useState([]);
   const [running,        setRunning]        = useState(false);
   const [pyodideLoading, setPyodideLoading] = useState(false);
+  const [javaRunning,    setJavaRunning]    = useState(false);
   const [fullscreen,     setFullscreen]     = useState(false);
   const workerRef = useRef(null);
 
@@ -127,6 +145,17 @@ export function CodePlayground({
         }
         workerRef.current.postMessage({ type: 'run', code: pythonCode });
         return; // running=false set by worker
+      } else if (language === 'java') {
+        setJavaRunning(true);
+        try {
+          const { stdout, stderr } = await runJava(javaCode);
+          stdout.forEach(line => addEntry('log',   line));
+          stderr.forEach(line => addEntry('error', line));
+        } catch (err) {
+          addEntry('error', err.message);
+        } finally {
+          setJavaRunning(false);
+        }
       } else if (language === 'sql') {
         const { results, errors } = await runSQL(sqlCode);
         setSqlResults(results);
@@ -137,7 +166,7 @@ export function CodePlayground({
     } catch (err) {
       addEntry('error', err.message);
     } finally {
-      if (language !== 'python') setRunning(false);
+      if (language !== 'python' && language !== 'java') setRunning(false);
     }
   }
 
@@ -148,6 +177,8 @@ export function CodePlayground({
       setJsCode(DEFAULT_CODE.js);
     } else if (language === 'python') {
       setPythonCode(DEFAULT_CODE.python);
+    } else if (language === 'java') {
+      setJavaCode(DEFAULT_CODE.java);
     } else {
       setSqlCode(DEFAULT_CODE.sql);
     }
@@ -158,6 +189,7 @@ export function CodePlayground({
   // Derive current editor code/setter
   let currentCode, setCurrentCode;
   if (language === 'python') { currentCode = pythonCode; setCurrentCode = setPythonCode; }
+  else if (language === 'java')   { currentCode = javaCode;   setCurrentCode = setJavaCode; }
   else if (language === 'sql')    { currentCode = sqlCode;    setCurrentCode = setSqlCode; }
   else if (activeTab === 'CSS')   { currentCode = cssCode;    setCurrentCode = setCssCode; }
   else if (activeTab === 'JS')    { currentCode = jsCode;     setCurrentCode = setJsCode; }
@@ -165,12 +197,14 @@ export function CodePlayground({
 
   const monacoLanguage =
     language === 'python' ? 'python' :
+    language === 'java'   ? 'java'   :
     language === 'sql'    ? 'sql'    :
     activeTab === 'CSS'   ? 'css'    :
     activeTab === 'JS'    ? 'javascript' : 'html';
 
   const showPreview  = language === 'web';
   const showSQL      = language === 'sql' && sqlResults.length > 0;
+  const showIdleMsg  = (language === 'python' || language === 'java') && !running && !javaRunning && consoleEntries.length === 0;
   const consoleFlex  = showPreview ? undefined : '1';
   const consoleH     = showPreview ? 160 : undefined;
 
@@ -221,7 +255,7 @@ export function CodePlayground({
         activeTab={activeTab}  setActiveTab={setActiveTab}
         onRun={runCode}        onReset={resetCode}
         onFullscreen={() => setFullscreen(f => !f)}
-        running={running}      pyodideLoading={pyodideLoading}
+        running={running}      pyodideLoading={pyodideLoading}  javaRunning={javaRunning}
       />
 
       {/* Main split */}
@@ -272,12 +306,12 @@ export function CodePlayground({
             </div>
           )}
 
-          {language === 'python' && !running && consoleEntries.length === 0 && (
+          {showIdleMsg && (
             <div style={{
               flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: 'rgba(255,255,255,0.25)', fontSize: 12, fontStyle: 'italic',
             }}>
-              Press Run ▶ to execute your Python code
+              Press Run ▶ to execute your {language === 'java' ? 'Java' : 'Python'} code
             </div>
           )}
 

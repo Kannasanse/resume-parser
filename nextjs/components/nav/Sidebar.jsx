@@ -81,6 +81,7 @@ const USER_NAV_GROUPS = [
       { id: 'my-courses', icon: 'bookOpen', label: 'My Courses', href: '/my-courses' },
       { id: 'self-test', icon: 'target', label: 'Interview Prep', href: '/self-test' },
       { id: 'interview-buddy', icon: 'mic', label: 'Interview Buddy', href: '/interview-buddy' },
+      { id: 'playground', icon: 'code', label: 'Code Playground', href: '/utilities/playground' },
       { id: 'notes', icon: 'notebook', label: 'Notes', href: '/notes' },
     ],
   },

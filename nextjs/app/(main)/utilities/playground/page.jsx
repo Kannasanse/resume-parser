@@ -6,7 +6,7 @@ import { CodePlayground } from '@/components/playground/CodePlayground';
 function PlaygroundPage() {
   const params   = useSearchParams();
   const lang     = params.get('lang') || 'web';
-  const language = ['web', 'python', 'sql'].includes(lang) ? lang : 'web';
+  const language = ['web', 'python', 'java', 'sql'].includes(lang) ? lang : 'web';
 
   return (
     <div style={{ padding: '24px', height: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -15,7 +15,7 @@ function PlaygroundPage() {
           Code Playground
         </h1>
         <p style={{ fontSize: 13, color: 'var(--c-text-muted, #6B7280)', margin: '4px 0 0' }}>
-          HTML/CSS/JS · Python · SQL — runs entirely in your browser
+          HTML/CSS/JS · Python · Java · SQL — runs in your browser
         </p>
       </div>
       <div style={{ flex: 1, minHeight: 0 }}>

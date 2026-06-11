@@ -3,6 +3,7 @@
 const LANGS = [
   { id: 'web',    label: 'HTML/CSS/JS', color: '#F59E0B' },
   { id: 'python', label: 'Python',      color: '#3B82F6' },
+  { id: 'java',   label: 'Java',        color: '#EF4444' },
   { id: 'sql',    label: 'SQL',         color: '#8B5CF6' },
 ];
 
@@ -10,7 +11,7 @@ export function PlaygroundToolbar({
   language, setLanguage,
   activeTab, setActiveTab,
   onRun, onReset, onFullscreen,
-  running, pyodideLoading,
+  running, pyodideLoading, javaRunning,
 }) {
   return (
     <div style={{
@@ -63,6 +64,9 @@ export function PlaygroundToolbar({
 
       {pyodideLoading && (
         <span style={{ fontSize: 11, color: '#FBBF24' }}>⟳ Loading Python...</span>
+      )}
+      {javaRunning && (
+        <span style={{ fontSize: 11, color: '#FCA5A5' }}>⟳ Running on Piston...</span>
       )}
 
       <button onClick={onRun} disabled={running} style={{
