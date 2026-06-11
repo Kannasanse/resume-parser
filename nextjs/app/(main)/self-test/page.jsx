@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import SkillLookupInput from '@/components/skills/SkillLookupInput';
+import { QuestionTypeSelector } from '@/components/quiz/QuestionTypeSelector';
 
 const DIFF_COLORS = {
   easy:   'border-green-400 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400',
@@ -137,33 +138,6 @@ function JdChip({ skill, onRemove }) {
         ×
       </button>
     </span>
-  );
-}
-
-// ─── Question type selector ───────────────────────────────────────────────────
-function QuestionTypeSelector({ questionType, setQuestionType }) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-ds-text mb-1.5">Question Types</label>
-      <div className="grid grid-cols-3 gap-2">
-        {[['mcq', 'MCQ Only'], ['short_answer', 'Short Answer'], ['mixed', 'Mixed']].map(([v, l]) => (
-          <button key={v} type="button" onClick={() => setQuestionType(v)}
-            className={`py-2 text-xs rounded border font-medium transition-colors ${
-              questionType === v
-                ? 'border-[var(--c-primary)] bg-primary/10 text-[var(--c-primary)]'
-                : 'border-ds-border text-ds-textMuted hover:bg-ds-bg'
-            }`}>
-            {l}
-          </button>
-        ))}
-      </div>
-      {questionType === 'mixed' && (
-        <p className="text-xs text-ds-textMuted mt-1.5">~70% MCQ / ~30% Short Answer</p>
-      )}
-      {questionType === 'short_answer' && (
-        <p className="text-xs text-ds-textMuted mt-1.5">Written responses — compare with model answers</p>
-      )}
-    </div>
   );
 }
 
@@ -581,7 +555,7 @@ export default function SelfTestCreate() {
   const [topicSuggestions, setTopicSuggestions] = useState({}); // { [skillName]: [{ id, name }] }
   const [categories, setCategories] = useState([]);
   const [content, setContent] = useState('');
-  const [questionType, setQuestionType] = useState('mcq');
+  const [questionType, setQuestionType] = useState({ type: 'mcq' });
   const [difficulty, setDifficulty] = useState(null);
   const [timer, setTimer]           = useState(30);
   const [timerError, setTimerError] = useState('');
@@ -730,7 +704,15 @@ export default function SelfTestCreate() {
   const generate = async () => {
     setError('');
     if (!validateTimer(timer)) return;
-    const qtypes = questionType === 'mixed' ? ['mcq', 'short_answer'] : [questionType];
+    const qt = questionType;
+    let qtypes;
+    if (qt.type === 'mixed') {
+      const mix = qt.mix ?? { mcq: 60, true_false: 20, short_answer: 20 };
+      qtypes = ['mcq', 'true_false', 'short_answer'].filter(t => (mix[t] ?? 0) > 0);
+      if (!qtypes.length) qtypes = ['mcq', 'true_false', 'short_answer'];
+    } else {
+      qtypes = [qt.type];
+    }
     let body;
     if (mode === 'skills') {
       body = {
@@ -906,7 +888,7 @@ export default function SelfTestCreate() {
                 </div>
               </div>
             )}
-            <QuestionTypeSelector questionType={questionType} setQuestionType={setQuestionType} />
+            <QuestionTypeSelector value={questionType} onChange={setQuestionType} />
             <DifficultyTimer difficulty={difficulty} setDifficulty={setDifficulty}
               timer={timer} setTimer={setTimer} timerError={timerError} validateTimer={validateTimer}
               estimatedCount={estimatedCount} mode={mode} />
@@ -1025,7 +1007,7 @@ export default function SelfTestCreate() {
               )}
             </div>
 
-            <QuestionTypeSelector questionType={questionType} setQuestionType={setQuestionType} />
+            <QuestionTypeSelector value={questionType} onChange={setQuestionType} />
             <DifficultyTimer difficulty={difficulty} setDifficulty={setDifficulty}
               timer={timer} setTimer={setTimer} timerError={timerError} validateTimer={validateTimer}
               estimatedCount={estimatedCount} mode={mode} />

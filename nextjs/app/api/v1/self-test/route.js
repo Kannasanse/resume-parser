@@ -149,8 +149,10 @@ export async function POST(request) {
     } = body;
 
     // Derive whether short answer is included
-    const wantsMCQ = question_types.includes('mcq') || question_types.includes('mixed');
+    const wantsMCQ = question_types.includes('mcq') || question_types.includes('true_false') || question_types.includes('mixed');
     const wantsSA  = question_types.includes('short_answer') || question_types.includes('mixed');
+    const tfOnly   = question_types.length === 1 && question_types[0] === 'true_false';
+    const mcqOnly  = question_types.length === 1 && question_types[0] === 'mcq';
 
     // Validation
     if (!['skills', 'content', 'jd'].includes(input_type)) {
@@ -304,7 +306,11 @@ export async function POST(request) {
         ? `${aiMcqNeeded} MCQ/True-False questions and ${aiSaNeeded} Short Answer questions`
         : aiSaNeeded > 0
           ? `${aiSaNeeded} Short Answer questions only`
-          : `${aiMcqNeeded} MCQ/True-False questions (distribute evenly between MCQ and True/False)`;
+          : tfOnly
+            ? `${aiMcqNeeded} True/False questions ONLY — every question must be a true_false type statement`
+            : mcqOnly
+              ? `${aiMcqNeeded} MCQ questions ONLY — every question must be a mcq type with 4 options`
+              : `${aiMcqNeeded} MCQ/True-False questions (distribute evenly between MCQ and True/False)`;
 
       let userPrompt, systemPrompt;
 
