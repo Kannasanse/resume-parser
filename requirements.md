@@ -1,7 +1,7 @@
 # Proflect — Requirements & Implementation Reference
 
 > **Status:** Living document. Reflects implementation as of June 2026.  
-> **Stack:** Next.js 15 App Router · MUI v9 · Tiptap v3 · Supabase · Groq · OpenRouter  
+> **Stack:** Next.js 15 App Router · MUI v9 · Tiptap v3 · Supabase · Gemini 3.5 Flash  
 > **Platform:** https://proflect-neo.vercel.app  
 > **Design Reference:** `design-brief` (MUI v9 + TailwindCSS component spec)
 
@@ -56,8 +56,7 @@ Proflect is a career-intelligence platform for job seekers and professionals. It
 | Utilities — Image compression | `browser-image-compression` (client-side) |
 | Utilities — Image crop | `react-image-crop` v11 (client-side) |
 | Utilities — ZIP bundling | `jszip` (client-side multi-file downloads) |
-| AI — Portfolio | Anthropic API (direct fetch, no SDK) |
-| AI — Resume/Test/Career | Groq SDK + OpenRouter (fallback chain) |
+| AI — All features | Google Gemini 3.5 Flash (`@google/genai` SDK) |
 | Deployment | Vercel |
 
 ---
@@ -107,62 +106,46 @@ Proflect is a career-intelligence platform for job seekers and professionals. It
 
 | Provider | Model ID | Notes |
 |---|---|---|
-| Anthropic | `claude-sonnet-4-6` | Latest Claude Sonnet; used for portfolio AI |
-| Groq | `meta-llama/llama-4-scout-17b-16e-instruct` | Fast inference; primary Groq model |
-| Groq | `llama-3.3-70b-versatile` | Higher-quality Groq model; used for content generation |
-| OpenRouter | `meta-llama/llama-3.3-70b-instruct:free` | Free tier; primary for parsing/scoring |
+| Google Gemini | `gemini-3.5-flash` | Single model used across all AI features; via `@google/genai` SDK |
 
 ### 3.2 Feature → Model Map
 
-| Feature | Provider | Primary Model | Fallback | Cost |
-|---|---|---|---|---|
-| **Portfolio: Bio generation** | Anthropic | `claude-sonnet-4-6` | — | Free, 5/month |
-| **Portfolio: Tagline generation** | Anthropic | `claude-sonnet-4-6` | — | Free, 5/month |
-| **Portfolio: Project description** | Anthropic | `claude-sonnet-4-6` | — | Free, 5/month |
-| **Portfolio: SEO metadata** | Anthropic | `claude-sonnet-4-6` | — | Free, 5/month |
-| **Portfolio: Skills gap analysis** | Anthropic | `claude-sonnet-4-6` | — | Free, 5/month |
-| **Resume parsing (file upload)** | OpenRouter | `llama-3.3-70b-instruct:free` | Groq `llama-4-scout` | Free |
-| **Resume parsing (builder import)** | Groq only | `llama-4-scout-17b-16e-instruct` | Regex fallback | 5 credits |
-| **Resume reparse** | OpenRouter | `llama-3.3-70b-instruct:free` | Groq `llama-4-scout` | Free |
-| **ATS score analysis** | Groq | `llama-4-scout-17b-16e-instruct` | — | 3 credits |
-| **ATS score narrative summary** | OpenRouter | `llama-3.3-70b-instruct:free` | Groq `llama-4-scout` | Included in ATS |
-| **Writing assistant** | Groq | `llama-4-scout-17b-16e-instruct` | — | 1 credit |
-| **Self-test: Question generation (skills/content)** | OpenRouter | `llama-3.3-70b-instruct:free` | Groq `llama-4-scout` | Free |
-| **Self-test: Question generation (JD-based)** | OpenRouter | `llama-3.3-70b-instruct:free` | Groq `llama-4-scout` | Free |
-| **Self-test: JD skill extraction** | OpenRouter | `llama-3.3-70b-instruct:free` | — | Free |
-| **Self-test: Short-answer grading** | Groq | `llama-4-scout-17b-16e-instruct` | — | Free |
-| **Career Map: Learning roadmap generation** | Groq | `llama-4-scout-17b-16e-instruct` | — | Free |
-| **Career Map: Section content generation** | Groq | `llama-3.3-70b-versatile` | — | Free |
-| **Jobs: Skill extraction from JD** | Groq | `llama-3.3-70b-versatile` | — | Free |
-| **Admin: Question library generation** | Groq | `llama-4-scout-17b-16e-instruct` | — | Admin only |
-| **Interview Buddy: Kit generation** | OpenRouter | `llama-3.3-70b-instruct:free` | Groq `llama-4-scout` | Free |
+All AI features now use **Gemini 3.5 Flash** via the `callGemini()` wrapper. No provider fallback chain.
 
-### 3.3 Portfolio AI Rate Limit
+| Feature | Cost |
+|---|---|
+| Resume parsing (file upload) | Free |
+| Resume parsing (builder import) | 5 credits |
+| Resume reparse | Free |
+| ATS score analysis | 3 credits |
+| ATS score narrative summary | Included in ATS |
+| Writing assistant | 1 credit |
+| Self-test: Question generation (all input types) | Free |
+| Self-test: JD skill extraction | Free |
+| Self-test: Short-answer grading | Free |
+| Career Map: Learning roadmap generation | Free |
+| Career Map: Section content generation | Free |
+| Jobs: Skill extraction from JD | Free |
+| Admin: Question library generation | Admin only |
+| Interview Buddy: Kit generation | Free |
+| Course workspace: Chat (grounded Q&A) | Free |
+| Course workspace: Study guide generation | Free |
 
-Portfolio AI features (bio, tagline, project description, SEO, skills gap) share a **5 uses/month** free quota per user tracked in the `ai_usage` table. The `checkAiUsage()` helper counts rows in `ai_usage` for the current calendar month. There is no credit cost — the limit is a monthly quota check only.
+### 3.3 JSON Reliability
 
-### 3.4 OpenRouter → Groq Fallback Pattern
+`callGemini()` in `lib/gemini.js` applies a 3-stage JSON parse fallback for all `json: true` calls:
+1. Direct `JSON.parse(text)`
+2. Strip markdown fences (` ```json … ``` `) then parse
+3. Apply `jsonrepair` (npm) to fix unescaped newlines, trailing commas, etc.
 
-The resume parser and ATS scorer use a shared fallback chain:
-
-```
-OpenRouter (llama-3.3-70b-instruct:free)
-  → 429 / rate-limit → wait 5s, retry
-  → 429 again        → wait 15s, retry
-  → still failing    → Groq (llama-4-scout-17b-16e-instruct)
-```
-
-Groq input is limited to 14,000 chars (context window); OpenRouter accepts up to 60,000 chars.
-
-### 3.5 AI Wrapper Functions
+### 3.4 AI Wrapper Functions
 
 | Function | File | Purpose |
 |---|---|---|
-| `callClaude(prompt, maxTokens)` | `lib/aiHelpers.js` | Anthropic API fetch wrapper; uses `claude-sonnet-4-6` |
-| `checkAiUsage(userId, supabase)` | `lib/aiHelpers.js` | Count portfolio AI uses this calendar month |
-| `recordAiUsage(userId, feature, supabase)` | `lib/aiHelpers.js` | Insert row into `ai_usage` |
-| `parseResume(buffer, mimeType)` | `lib/parser.js` | OpenRouter → Groq chain; returns `{ rawText, structured }` |
-| `parseResumeWithGroq(buffer, mimeType)` | `lib/parser.js` | Groq-only parsing (builder import) |
+| `callGemini(contents, opts)` | `lib/gemini.js` | Gemini 3.5 Flash wrapper; supports `system`, `json`, `temperature`, `maxTokens` |
+| `checkAiUsage(userId, supabase)` | `lib/gemini.js` | Count AI uses this calendar month from `ai_usage` table |
+| `recordAiUsage(userId, feature, supabase)` | `lib/gemini.js` | Insert row into `ai_usage` |
+| `parseResume(buffer, mimeType)` | `lib/parser.js` | Gemini-powered parse; returns `{ rawText, structured }` |
 | `extractResumeText(buffer, mimeType)` | `lib/parser.js` | Text extraction only (no AI) |
 
 ---
@@ -281,30 +264,6 @@ New users automatically receive **30 credits** on first login (inserted by `ensu
 - `GET /api/v1/templates` — list available resume templates
 - Admin: `GET/POST /api/v1/admin/templates`
 
-### 5.5 Portfolio Builder
-
-**Routes:** `GET/POST /api/v1/portfolios`, `GET/PUT/DELETE /api/v1/portfolios/[id]`
-
-**Sections:** `GET/POST /api/v1/portfolios/[id]/sections`, reorder, delete  
-**Projects:** `GET/POST/PUT/DELETE /api/v1/portfolios/[id]/projects`  
-**Publish:** `POST /api/v1/portfolios/[id]/publish`  
-**Public:** `GET /api/v1/portfolios/public/[slug]`  
-**Analytics:** `GET /api/v1/portfolios/analytics`
-
-Portfolio AI endpoints — all use **Anthropic `claude-sonnet-4-6`**, shared 5/month limit:
-
-| Endpoint | Feature | Max Tokens |
-|---|---|---|
-| `POST /api/v1/portfolios/ai/bio` | Generate About/bio text | 300 |
-| `POST /api/v1/portfolios/ai/tagline` | Generate headline tagline | 100 |
-| `POST /api/v1/portfolios/ai/project-description` | Generate project description | 256 |
-| `POST /api/v1/portfolios/ai/seo` | Generate SEO title + meta description | 200 |
-| `POST /api/v1/portfolios/ai/skills-gap` | Identify skill gaps vs target role | 512 |
-
-- Portfolio has a custom URL slug (checked for uniqueness via `GET /api/v1/portfolios/check-slug`)
-- Public portfolios served with Next.js ISR; revalidated via `POST /api/v1/portfolios/revalidate`
-- Analytics: track views per portfolio
-
 ### 5.6 Notes (Block Editor)
 
 **Routes:** `GET/POST /api/v1/notes`, `GET/PUT/DELETE /api/v1/notes/[id]`  
@@ -345,10 +304,7 @@ Portfolio AI endpoints — all use **Anthropic `claude-sonnet-4-6`**, shared 5/m
 - Timer: optional per-session countdown (minutes)
 - Question type: MCQ only / Mixed (MCQ + Short Answer)
 
-**AI models:**
-- Question generation: OpenRouter `llama-3.3-70b-instruct:free` → Groq `llama-4-scout` fallback
-- JD skill extraction: OpenRouter `llama-3.3-70b-instruct:free`
-- Short-answer grading: Groq `llama-4-scout-17b-16e-instruct`
+**AI model:** Gemini 3.5 Flash (`callGemini`) for question generation, JD skill extraction, and short-answer grading.
 
 **Self-test from topic (Career Map integration):**
 - "Test yourself" button on `CourseDetailPage` opens `TestConfigModal`
@@ -382,14 +338,14 @@ Existing AI-generated sections and web-sourced content are surfaced as `ai` / `w
 Button: **Chat** in top bar (toggles 320px right panel, Chat tab active)
 
 **Chat tab** — grounded Q&A against course sources:
-- Model: Groq `llama-3.1-8b-instant`, temperature 0.2, max 800 tokens
+- Model: Gemini 3.5 Flash, temperature 0.2, max 800 tokens
 - Sources injected into system prompt (up to ~12k chars of context)
 - If no sources: falls back to general knowledge with a prompt to add material
 - Chat history persisted in `course_chat_messages`; last 100 messages loaded on open
 - Suggested prompts shown when history is empty
 
 **Study Guide tab** — auto-generated structured guide:
-- Model: Groq `llama-3.1-8b-instant`, temperature 0.3, max 1500 tokens
+- Model: Gemini 3.5 Flash, temperature 0.3, max 1500 tokens
 - Sections: Key Concepts, Key Differences, Common Patterns, Quick Quiz (5–7 Q&A pairs), Sources Used
 - Cached in `course_study_guides` (upsert by course_id); regenerate on demand
 - Export to PDF via existing `/api/v1/utilities/documents/markdown-to-pdf`
@@ -436,12 +392,9 @@ Button: **Chat** in top bar (toggles 320px right panel, Chat tab active)
 - `GET /api/v1/career-map/study-plan/[id]` — fetch plan + all topics
 - `POST /api/v1/career-map/update-study-plan` — update plan metadata
 
-**AI models:**
-- Roadmap generation: Groq `llama-4-scout-17b-16e-instruct` (max 1500 tokens)
-- Section content generation: Groq `llama-3.3-70b-versatile` (max 1024 tokens)
-  - Prompt adapts to learner level and learning style
-  - Content is 300–600 words, structured with `###` sub-headings
-  - Includes code examples or exercises when relevant
+**AI model:** Gemini 3.5 Flash for roadmap generation and section content generation.
+- Roadmap generation: max 1500 tokens
+- Section content generation: max 1024 tokens; prompt adapts to learner level and learning style; content is 300–600 words structured with `###` sub-headings; includes code examples or exercises when relevant
 
 **Breadcrumb resolution:**  
 TopBar detects UUID segments in career-map URLs and fetches real names from `/api/v1/career-map/study-plan/[planId]` to show human-readable breadcrumbs (e.g., "Career Map > Frontend Developer > React Hooks") instead of raw UUIDs.
@@ -466,11 +419,15 @@ TopBar detects UUID segments in career-map URLs and fetches real names from `/ap
 ### 5.11 Admin Surface
 
 **Users:**
-- `GET/POST /api/v1/admin/users` — list / create users
+- `GET/POST /api/v1/admin/users` — list / create users (sortable by `last_login_at`)
 - `GET/PUT/DELETE /api/v1/admin/users/[id]` — user management
 - `POST /api/v1/admin/users/[id]/actions` — suspend, activate, reset password
 - `GET /api/v1/admin/users/[id]/resumes/[resumeId]` — view any user's resume
 - `GET /api/v1/admin/users/[id]/self-tests` — view user's test history
+- `POST /api/v1/admin/impersonate` — start impersonation session (sets `proxy_uid` cookie; redirects admin to `/builder` as the target user)
+
+**Last Login tracking:**  
+`profiles.last_login_at` is kept in sync automatically via a Postgres trigger on `auth.users` (`on_auth_user_sign_in`). Fires on every sign-in method (password, magic link, OAuth, invite accept). Migration: `nextjs/supabase/migrations/20260612_sync_last_login.sql`.
 
 **Proctored Test Engine (admin):**
 - Create / edit tests: `GET/POST/PUT /api/v1/admin/tests/[id]`
@@ -482,8 +439,7 @@ TopBar detects UUID segments in career-map URLs and fetches real names from `/ap
 **Question Library:**
 - `GET/POST /api/v1/admin/question-library` — browse / create questions
 - `PUT/DELETE /api/v1/admin/question-library/[qid]` — edit / delete
-- `POST /api/v1/admin/question-library/generate` — AI-generate questions
-  - Model: Groq `llama-4-scout-17b-16e-instruct`
+- `POST /api/v1/admin/question-library/generate` — AI-generate questions (Gemini 3.5 Flash)
 - `POST /api/v1/admin/tests/[id]/questions/from-library` — add library questions to a test
 
 **Homepage CMS:**
@@ -518,7 +474,7 @@ TopBar detects UUID segments in career-map URLs and fetches real names from `/ap
 
 **Frontend features:** Category filter pills (All + per-category), expand-all toggle, "Practice with self-test" action, "Print/Save PDF" action, previous kits list on landing page
 
-**AI model:** OpenRouter `llama-3.3-70b-instruct:free` → Groq `llama-4-scout-17b-16e-instruct` fallback; `response_format: { type: 'json_object' }`, temperature 0.4
+**AI model:** Gemini 3.5 Flash (`callGemini` with `json: true`), temperature 0.4
 
 **Database:** `interview_kits` table — RLS via `auth.uid() = user_id`; stores `title`, `company`, `role_level`, `depth`, `jd_text`, `categories` (text[]), `questions` (JSONB), `question_count`, `last_viewed_at`
 
@@ -619,6 +575,21 @@ TopBar detects UUID segments in career-map URLs and fetches real names from `/ap
 - `ProcessingState` — spinner shown during async operations
 - `ToolCard` — used on hub pages; `href`, `name`, `description`, `icon` (JSX), `gradient` (Tailwind `from-/to-` classes)
 
+#### Code Playground
+
+**Page:** `app/(main)/utilities/playground?lang=web|python|java|sql`  
+**Component:** `components/playground/CodePlayground.jsx`  
+**Sidebar location:** Learning → Code Playground
+
+| Language | Execution | Notes |
+|---|---|---|
+| HTML/CSS/JS (`web`) | Client — sandboxed `<iframe>` with `srcdoc` | Live preview; full DOM access |
+| Python | Client — Pyodide WASM via `lib/playground/pythonWorker.js` | Runs in a Web Worker; no install needed |
+| SQL | Client — sql.js WASM served from `/public/sql-wasm.wasm` | In-memory SQLite; create tables, run queries |
+| Java | Server — Wandbox API via `POST /api/v1/playground/run-java` | Proxied server-side to avoid CORS; dynamic compiler resolved from Wandbox `/api/list.json` |
+
+`?lang=<language>` query param sets the initial tab. `CodePlayground` component exposes a language tab switcher.
+
 ---
 
 ## 7. Page Inventory
@@ -662,6 +633,7 @@ TopBar detects UUID segments in career-map URLs and fetches real names from `/ap
 | `/builder/:id/review` | Review + Export | Full-page A4 preview; Download PDF button |
 | `/interview-buddy` | Interview Buddy — Create | JD paste, role level + depth selectors, previous kits list |
 | `/interview-buddy/:kitId` | Interview Buddy — Kit View | Category filter pills, question cards with expandable coaching, follow-ups |
+| `/utilities/playground` | Code Playground | HTML/CSS/JS · Python · Java · SQL multi-tab editor; `?lang=` param sets initial tab |
 
 ### Public
 
@@ -852,27 +824,6 @@ From `@tiptap/*` packages:
 | POST | `/api/v1/builder/[id]/export/pdf` | Export PDF (Puppeteer) |
 | POST | `/api/v1/builder/[id]/export/word` | Export DOCX |
 
-### Portfolio
-
-| Method | Path | Description |
-|---|---|---|
-| GET/POST | `/api/v1/portfolios` | List / create portfolios |
-| GET/PUT/DELETE | `/api/v1/portfolios/[id]` | Get / update / delete |
-| GET/POST | `/api/v1/portfolios/[id]/sections` | Sections CRUD |
-| POST | `/api/v1/portfolios/[id]/sections/reorder` | Reorder sections |
-| GET/POST | `/api/v1/portfolios/[id]/projects` | Projects CRUD |
-| PUT/DELETE | `/api/v1/portfolios/[id]/projects/[projectId]` | Update/delete project |
-| POST | `/api/v1/portfolios/[id]/publish` | Publish / unpublish |
-| GET | `/api/v1/portfolios/public/[slug]` | Public portfolio data |
-| GET | `/api/v1/portfolios/check-slug` | Check slug availability |
-| GET | `/api/v1/portfolios/analytics` | View analytics |
-| POST | `/api/v1/portfolios/revalidate` | ISR revalidation |
-| POST | `/api/v1/portfolios/ai/bio` | AI bio — Claude `claude-sonnet-4-6` |
-| POST | `/api/v1/portfolios/ai/tagline` | AI tagline — Claude |
-| POST | `/api/v1/portfolios/ai/project-description` | AI project description — Claude |
-| POST | `/api/v1/portfolios/ai/seo` | AI SEO metadata — Claude |
-| POST | `/api/v1/portfolios/ai/skills-gap` | AI skills gap analysis — Claude |
-
 ### Jobs
 
 | Method | Path | Description |
@@ -954,9 +905,13 @@ From `@tiptap/*` packages:
 | GET | `/api/v1/admin/tests/[id]/attempts` | All attempts |
 | GET/PUT | `/api/v1/admin/tests/[id]/attempts/[aid]` | Attempt detail / score |
 | GET/POST | `/api/v1/admin/question-library` | Question library |
-| PUT/DELETE | `/api/v1/admin/question-library/[qid]` | Edit / delete question |
-| POST | `/api/v1/admin/question-library/generate` | AI-generate questions (Groq llama-4-scout) |
+| PATCH/DELETE | `/api/v1/admin/question-library/[qid]` | Edit / approve / suppress / delete question |
+| DELETE | `/api/v1/admin/question-library/bulk` | Bulk delete questions |
+| POST | `/api/v1/admin/question-library/generate` | AI-generate questions (Gemini 3.5 Flash) |
+| POST | `/api/v1/admin/question-library/import` | Bulk import questions from CSV or JSON |
+| GET | `/api/v1/admin/question-library/facets` | Skill and topic facets for filter dropdowns |
 | POST | `/api/v1/admin/tests/[id]/questions/from-library` | Add from library |
+| POST | `/api/v1/admin/impersonate` | Start impersonation session as a user |
 | GET | `/api/v1/admin/credits` | Credit overview |
 | POST | `/api/v1/admin/credits` | Grant credits |
 | GET | `/api/v1/admin/credits/requests` | Pending credit requests |
@@ -1000,6 +955,12 @@ From `@tiptap/*` packages:
 
 All utilities routes accept `multipart/form-data` with a `file` field (or `html`/`markdown` text fields where noted). No authentication required.
 
+### Code Playground
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/v1/playground/run-java` | Proxy Java code to Wandbox API (avoids CORS); resolves compiler from `/api/list.json` dynamically |
+
 ---
 
 ## 10. Database Tables
@@ -1008,9 +969,6 @@ All utilities routes accept `multipart/form-data` with a `file` field (or `html`
 |---|---|
 | `resumes` | Uploaded resume files; `parsed_data` (JSONB), `raw_text` |
 | `builder_sections` | Resume builder section data |
-| `portfolios` | Portfolio metadata, slug, publish state |
-| `portfolio_sections` | Portfolio section blocks |
-| `portfolio_projects` | Portfolio project items |
 | `notes` | Block editor notes; `content` (Tiptap JSON JSONB), `parent_id` for hierarchy |
 | `study_plans` | Career map study plans |
 | `study_plan_topics` | Topics within a plan; `sections` (JSONB array with `generation_status`) |
@@ -1029,9 +987,10 @@ All utilities routes accept `multipart/form-data` with a `file` field (or `html`
 | `jobs` | Job profiles (title, JD text, required skills) |
 | `job_skills` | Normalized skills per job |
 | `organizations` | Multi-tenant organization support |
-| `profiles` | User profile data (name, headline, avatar URL, bio, location) |
+| `profiles` | User profile data (name, headline, avatar URL, bio, location); `last_login_at` synced from `auth.users.last_sign_in_at` via trigger |
 | `skills` | Global skills taxonomy with pending approval queue |
 | `interview_kits` | Interview Buddy kits; `questions` (JSONB), `categories` (text[]), `jd_text`, `last_viewed_at` |
+| `question_library` entries have `is_approved`, `ai_generated`, `generated_for`, `source`, `skill_tag`, `topic`, `difficulty`, `points` | — |
 | `course_sources` | User-added source material per course (PDF/URL/text); `extracted_text`, `token_count`, `file_path` |
 | `course_chat_messages` | Grounded chat history per course; `role` (user/assistant) |
 | `course_study_guides` | Cached AI study guide per course (upserted); `source_ids[]`, `generated_at` |
@@ -1053,12 +1012,16 @@ All secrets in `.env.local` — **gitignored, never commit**.
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase client (browser) | Yes |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase client (browser) | Yes |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase server-side (admin, bypasses RLS) | Yes |
-| `ANTHROPIC_API_KEY` | Portfolio AI — Claude `claude-sonnet-4-6` | Yes |
-| `GROQ_API_KEY` | Groq SDK — `llama-4-scout` and `llama-3.3-70b-versatile` | Yes |
-| `OPENROUTER_API_KEY` | OpenRouter — `llama-3.3-70b-instruct:free` | Yes |
-| `YOUTUBE_API_KEY` | YouTube Data API | Optional |
+| `SUPABASE_URL` | Supabase server-side client (`lib/supabase.js`) | Yes |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase server-side — bypasses RLS (preferred) | Yes |
+| `GEMINI_API_KEY` | All AI features — Gemini 3.5 Flash via `@google/genai` | Yes |
+| `YOUTUBE_API_KEY` | YouTube Data API (career map video suggestions) | Optional |
+| `TAVILY_API_KEY` | Tavily web search (career map content generation) | Optional |
+| `EXA_API_KEY` | Exa search (career map content generation) | Optional |
+| `JSEARCH_API_KEY` | JSearch API (job recommendations) | Optional |
 | `NEXT_PUBLIC_APP_URL` | Base URL for share links and public routes | Yes |
+
+> **Note:** `SUPABASE_SECRET_KEY` (legacy name) is accepted as a fallback for `SUPABASE_SERVICE_ROLE_KEY` in `lib/supabase.js`, but must be set to the actual service role key value — not the anon key.
 
 ---
 
@@ -1080,16 +1043,16 @@ All secrets in `.env.local` — **gitignored, never commit**.
 
 ## Appendix: Planned / Not Yet Implemented
 
-The following features were scoped in the block editor specification but not yet built:
+The following features were scoped but not yet built:
 
 - **Block editor — additional block types:** Math/KaTeX, Mermaid diagrams, Wikilinks, @mentions, tags, YAML frontmatter, footnotes, columns layout, synced blocks, template blocks, TOC block, bookmark/URL embed block, database/properties block
 - **Builder → BlockEditor migration:** Replace textarea-based section editors in the resume builder with the block editor
-- **Portfolio → BlockEditor migration:** Replace portfolio section text inputs with the block editor
 - **Self-test improvements:** Spaced repetition scheduling, history/trend charts, per-skill performance breakdown, leaderboard
 - **Career Map:** Video resource embedding per topic section, community notes on topics
 - **Notes:** Full-text search across all notes, sharing individual notes publicly
 - **Utilities — PowerPoint to PDF:** `/utilities/documents/ppt-to-pdf` is a Coming Soon placeholder; requires LibreOffice or a cloud conversion API on the server
+- **Code Playground:** Expand to additional languages (Go, Rust, C++) via Wandbox; add file persistence and share links
 
 ---
 
-*Last updated: June 2026*
+*Last updated: 2026-06-12*
