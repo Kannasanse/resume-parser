@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { jsonrepair } from 'jsonrepair';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -12,7 +13,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
  * @param {number}  opts.maxTokens   - Defaults to 2048.
  */
 export async function callGemini(contents, opts = {}) {
-  const { system, json = false, temperature = 0.7, maxTokens = 2048 } = opts;
+  const { system, json = false, temperature = 0.7, maxTokens = 8192 } = opts;
 
   const config = {
     temperature,
@@ -35,7 +36,17 @@ export async function callGemini(contents, opts = {}) {
     } catch {
       // Strip markdown fences if model wrapped the JSON
       const stripped = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
-      return JSON.parse(stripped);
+      try {
+        return JSON.parse(stripped);
+      } catch {
+        // Last resort: use jsonrepair to fix unescaped newlines, trailing commas, etc.
+        try {
+          return JSON.parse(jsonrepair(stripped));
+        } catch (e) {
+          console.error('[callGemini] JSON parse failed after repair. Raw output (last 200 chars):', text.slice(-200));
+          throw e;
+        }
+      }
     }
   }
 
