@@ -713,6 +713,7 @@ export default function SelfTestCreate() {
     } else {
       qtypes = [qt.type];
     }
+    const mixRatios = qt.type === 'mixed' ? (qt.mix ?? { mcq: 60, true_false: 20, short_answer: 20 }) : undefined;
     let body;
     if (mode === 'skills') {
       body = {
@@ -721,11 +722,18 @@ export default function SelfTestCreate() {
         skills,           // send { id, name } objects for server-side resolution
         topic_hints: topicHints,
         difficulty, timer_minutes: timer, question_types: qtypes,
+        ...(mixRatios ? { mix_ratios: mixRatios } : {}),
       };
     } else if (mode === 'content') {
-      body = { input_type: 'content', input_data: content, difficulty, timer_minutes: timer, question_types: qtypes };
+      body = {
+        input_type: 'content', input_data: content, difficulty, timer_minutes: timer, question_types: qtypes,
+        ...(mixRatios ? { mix_ratios: mixRatios } : {}),
+      };
     } else {
-      body = { input_type: 'jd', input_data: jdText, jd_skills: jdSkills, difficulty, timer_minutes: timer, question_types: qtypes };
+      body = {
+        input_type: 'jd', input_data: jdText, jd_skills: jdSkills, difficulty, timer_minutes: timer, question_types: qtypes,
+        ...(mixRatios ? { mix_ratios: mixRatios } : {}),
+      };
     }
     setStep('generating');
     try {

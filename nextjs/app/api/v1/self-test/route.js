@@ -145,6 +145,7 @@ export async function POST(request) {
       question_types = ['mcq'],
       mcq_count: rawMcq,
       short_answer_count: rawSa,
+      mix_ratios,          // { mcq: %, true_false: %, short_answer: % } — from Mixed mode
       // New: array of { id, name } from SkillLookupInput (optional, backward compat)
       skills: skillObjects,
     } = body;
@@ -303,35 +304,53 @@ export async function POST(request) {
       const aiSaNeeded  = Math.max(0, saCount  - libSaCount);
       const aiTotal     = aiMcqNeeded + aiSaNeeded;
 
-      const typeDescription = aiMcqNeeded > 0 && aiSaNeeded > 0
-        ? `${aiMcqNeeded} MCQ/True-False questions and ${aiSaNeeded} Short Answer questions`
-        : aiSaNeeded > 0
-          ? `${aiSaNeeded} Short Answer questions only`
-          : tfOnly
-            ? `${aiMcqNeeded} True/False questions ONLY — every question must be a true_false type statement`
-            : mcqOnly
-              ? `${aiMcqNeeded} MCQ questions ONLY — every question must be a mcq type with 4 options`
-              : `${aiMcqNeeded} MCQ/True-False questions (distribute evenly between MCQ and True/False)`;
+      // Split aiMcqNeeded into exact MCQ vs TF counts using mix_ratios when available
+      const wantsMcqType = question_types.includes('mcq');
+      const wantsTfType  = question_types.includes('true_false');
+      let aiMcqOnly, aiTfOnly;
+      if (mcqOnly) {
+        aiMcqOnly = aiMcqNeeded; aiTfOnly = 0;
+      } else if (tfOnly) {
+        aiMcqOnly = 0; aiTfOnly = aiMcqNeeded;
+      } else if (wantsMcqType && wantsTfType && mix_ratios) {
+        const mcqPct = mix_ratios.mcq ?? 0;
+        const tfPct  = mix_ratios.true_false ?? 0;
+        const total  = mcqPct + tfPct;
+        aiMcqOnly = total > 0 ? Math.round(aiMcqNeeded * mcqPct / total) : Math.ceil(aiMcqNeeded / 2);
+        aiTfOnly  = aiMcqNeeded - aiMcqOnly;
+      } else if (wantsMcqType && !wantsTfType) {
+        aiMcqOnly = aiMcqNeeded; aiTfOnly = 0;
+      } else if (!wantsMcqType && wantsTfType) {
+        aiMcqOnly = 0; aiTfOnly = aiMcqNeeded;
+      } else {
+        aiMcqOnly = Math.ceil(aiMcqNeeded / 2); aiTfOnly = aiMcqNeeded - aiMcqOnly;
+      }
+
+      // Build a precise type distribution string for the prompt
+      const typeParts = [];
+      if (aiMcqOnly > 0) typeParts.push(`${aiMcqOnly} MCQ question${aiMcqOnly > 1 ? 's' : ''} — type must be "mcq", exactly 4 options, one correct`);
+      if (aiTfOnly  > 0) typeParts.push(`${aiTfOnly} True/False question${aiTfOnly > 1 ? 's' : ''} — type must be "true_false", a definitively true or false statement`);
+      if (aiSaNeeded > 0) typeParts.push(`${aiSaNeeded} Short Answer question${aiSaNeeded > 1 ? 's' : ''} — type must be "short_answer", requires a 2-6 sentence written response`);
+      const typeDescription = typeParts.join('\n- ');
 
       let userPrompt, systemPrompt;
 
       if (input_type === 'skills') {
         const scenarioBlock = buildScenarioInstruction(difficulty);
         systemPrompt = SYSTEM_PROMPT;
-        // Build skill list with optional topic hints: "React (focus: hooks lifecycle), Python"
         const skillContext = skills.map(s => {
           const hint = topicHintsMap[s]?.trim();
           return hint ? `${s} (focus: ${hint})` : s;
         }).join(', ');
-        userPrompt = `Generate exactly ${aiTotal} ${diffLabel} questions about these skills/topics: ${skillContext}\n\nDistribution: ${typeDescription}\nFor MCQ/TF: distribute evenly between MCQ and True/False.\nFor Short Answer: require 2-6 sentence written responses.\n\n${scenarioBlock}${dedupeNote}`;
+        userPrompt = `Generate exactly ${aiTotal} ${diffLabel} questions about these skills/topics: ${skillContext}\n\nRequired type breakdown (MUST follow exactly):\n- ${typeDescription}\n\n${scenarioBlock}${dedupeNote}`;
       } else if (input_type === 'content') {
         systemPrompt = SYSTEM_PROMPT;
-        userPrompt = `Generate exactly ${aiTotal} ${diffLabel} questions based on this content:\n\n${input_data.trim()}\n\nDistribution: ${typeDescription}`;
+        userPrompt = `Generate exactly ${aiTotal} ${diffLabel} questions based on this content:\n\n${input_data.trim()}\n\nRequired type breakdown (MUST follow exactly):\n- ${typeDescription}`;
       } else {
         systemPrompt = SYSTEM_PROMPT_JD;
         const skillList = jd_skills.map(s => `- ${s.name} (${s.type})`).join('\n');
         const scenarioBlock = buildScenarioInstruction(difficulty);
-        userPrompt = `Generate exactly ${aiTotal} ${diffLabel} questions for this job role.\n\nSkills (distribute evenly):\n${skillList}\n\nDistribution: ${typeDescription}\nEach question must include the "skill" field.\n\n${scenarioBlock}${dedupeNote}`;
+        userPrompt = `Generate exactly ${aiTotal} ${diffLabel} questions for this job role.\n\nSkills (distribute evenly):\n${skillList}\n\nRequired type breakdown (MUST follow exactly):\n- ${typeDescription}\nEach question must include the "skill" field.\n\n${scenarioBlock}${dedupeNote}`;
       }
 
       const generated = await callAI(userPrompt, systemPrompt);
