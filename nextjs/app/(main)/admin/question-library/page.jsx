@@ -1150,6 +1150,10 @@ export default function QuestionLibrary() {
 
         /* Dots button */
         .dark .ql-dots-btn:hover { background: rgba(255,255,255,0.08) !important; }
+
+        /* Skeleton rows */
+        .dark .ql-skeleton-row { border-bottom-color: rgba(255,255,255,0.06) !important; }
+        .dark .ql-skeleton-bar { background: rgba(255,255,255,0.08) !important; }
       `}</style>
 
       {/* Toast */}
@@ -1290,11 +1294,11 @@ export default function QuestionLibrary() {
       {loading ? (
         <div className="ql-table-wrap" style={{ background:'white', border:`1px solid ${BORDER}`, borderRadius:16, overflow:'hidden' }}>
           {Array.from({length:6}).map((_,i) => (
-            <div key={i} style={{ display:'flex', gap:12, padding:'14px 16px', borderBottom: i<5 ? `1px solid rgba(209,220,232,0.5)` : 'none', alignItems:'center' }}>
-              <div style={{ width:16, height:16, borderRadius:4, background:'#E5E7EB', flexShrink:0 }} />
-              <div style={{ flex:1, height:14, borderRadius:6, background:'#E5E7EB' }} />
-              <div style={{ width:60, height:22, borderRadius:9999, background:'#E5E7EB' }} />
-              <div style={{ width:80, height:22, borderRadius:9999, background:'#E5E7EB' }} />
+            <div key={i} className="ql-skeleton-row" style={{ display:'flex', gap:12, padding:'14px 16px', borderBottom: i<5 ? `1px solid rgba(209,220,232,0.5)` : 'none', alignItems:'center' }}>
+              <div className="ql-skeleton-bar" style={{ width:16, height:16, borderRadius:4, background:'#E5E7EB', flexShrink:0 }} />
+              <div className="ql-skeleton-bar" style={{ flex:1, height:14, borderRadius:6, background:'#E5E7EB' }} />
+              <div className="ql-skeleton-bar" style={{ width:60, height:22, borderRadius:9999, background:'#E5E7EB' }} />
+              <div className="ql-skeleton-bar" style={{ width:80, height:22, borderRadius:9999, background:'#E5E7EB' }} />
             </div>
           ))}
         </div>
