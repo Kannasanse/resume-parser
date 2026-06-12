@@ -1,4 +1,5 @@
 import { requireUser } from '@/lib/auth-helpers.js';
+import { callGemini } from '@/lib/gemini';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,57 +42,8 @@ function validateSkills(raw) {
 }
 
 async function callExtract(jdText) {
-  const messages = [
-    { role: 'system', content: SYSTEM_PROMPT },
-    { role: 'user', content: `Extract skills from this job description:\n\n${jdText}` },
-  ];
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
-
-  try {
-    try {
-      const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'meta-llama/llama-3.3-70b-instruct:free',
-          messages,
-          temperature: 0.3,
-          response_format: { type: 'json_object' },
-        }),
-        signal: controller.signal,
-      });
-      if (resp.ok) {
-        const data = await resp.json();
-        const text = data.choices?.[0]?.message?.content;
-        if (text) {
-          const valid = validateSkills(JSON.parse(text)?.skills);
-          if (valid.length) return valid;
-        }
-      }
-    } catch (e) {
-      if (e.name === 'AbortError') throw new Error('timeout');
-    }
-
-    // Groq fallback
-    const { Groq } = await import('groq-sdk');
-    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-    const completion = await groq.chat.completions.create({
-      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-      messages,
-      temperature: 0.3,
-      response_format: { type: 'json_object' },
-    });
-    const text = completion.choices?.[0]?.message?.content;
-    if (!text) return [];
-    return validateSkills(JSON.parse(text)?.skills);
-  } finally {
-    clearTimeout(timeout);
-  }
+  const result = await callGemini(`Extract skills from this job description:\n\n${jdText}`, { system: SYSTEM_PROMPT, json: true, temperature: 0.7 });
+  return validateSkills(result?.skills);
 }
 
 export async function POST(request) {

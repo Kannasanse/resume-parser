@@ -1,17 +1,10 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth-helpers.js';
 import supabase from '@/lib/supabase.js';
-import Groq from 'groq-sdk';
+import { callGemini } from '@/lib/gemini';
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
-async function callGroq(prompt, maxTokens = 1500) {
-  const res = await groq.chat.completions.create({
-    model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-    max_tokens: maxTokens,
-    messages: [{ role: 'user', content: prompt }],
-  });
-  return res.choices?.[0]?.message?.content ?? '';
+async function callGroq(prompt) {
+  return callGemini(prompt, { json: true, temperature: 0.7 });
 }
 
 export async function POST(request) {
@@ -71,11 +64,10 @@ Return ONLY valid JSON (no markdown) with this shape:
   "job_readiness_tips": ["tip1", "tip2", "tip3"]
 }`;
 
-    const raw = await callGroq(prompt, 1500);
     let roadmap;
     try {
-      const match = raw.match(/\{[\s\S]*\}/);
-      roadmap = JSON.parse(match ? match[0] : raw);
+      roadmap = await callGroq(prompt);
+      if (!roadmap || typeof roadmap !== 'object') throw new Error('invalid');
     } catch {
       roadmap = {
         target_role: role.title,

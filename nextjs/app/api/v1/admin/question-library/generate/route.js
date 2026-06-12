@@ -1,4 +1,5 @@
 import { requireAdmin } from '@/lib/auth-helpers.js';
+import { callGemini } from '@/lib/gemini';
 
 export const dynamic = 'force-dynamic';
 
@@ -154,42 +155,5 @@ async function runGeneration(input_type, input, count, types, difficulty) {
 }
 
 async function callAI(userContent) {
-  const messages = [
-    { role: 'system', content: SYSTEM_PROMPT },
-    { role: 'user',   content: userContent },
-  ];
-
-  // Try OpenRouter first
-  try {
-    const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'meta-llama/llama-3.3-70b-instruct:free',
-        messages,
-        temperature: 0.7,
-        response_format: { type: 'json_object' },
-      }),
-    });
-    if (resp.ok) {
-      const data = await resp.json();
-      const text = data.choices?.[0]?.message?.content;
-      if (text) return JSON.parse(text);
-    }
-  } catch (_) {}
-
-  // Groq fallback
-  const { Groq } = await import('groq-sdk');
-  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-  const completion = await groq.chat.completions.create({
-    model: 'llama-3.1-8b-instant',
-    messages,
-    temperature: 0.7,
-    response_format: { type: 'json_object' },
-  });
-  const text = completion.choices?.[0]?.message?.content;
-  return JSON.parse(text);
+  return callGemini(userContent, { system: SYSTEM_PROMPT, json: true, temperature: 0.7 });
 }

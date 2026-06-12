@@ -1,17 +1,10 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth-helpers.js';
 import supabase from '@/lib/supabase.js';
-import Groq from 'groq-sdk';
+import { callGemini } from '@/lib/gemini';
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
-async function callGroq(prompt, maxTokens = 800) {
-  const res = await groq.chat.completions.create({
-    model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-    max_tokens: maxTokens,
-    messages: [{ role: 'user', content: prompt }],
-  });
-  return res.choices?.[0]?.message?.content ?? '';
+async function callGroq(prompt) {
+  return callGemini(prompt, { json: true, temperature: 0.7 });
 }
 
 function flattenResumeToText(resume, sections) {
@@ -116,11 +109,10 @@ Extract and return ONLY a JSON object matching this schema:
 Be conservative with seniority inference. If unclear, use the most common seniority for the title.
 Return ONLY the JSON, no preamble.`;
 
-    const raw = await callGroq(prompt, 800);
     let profile;
     try {
-      const jsonMatch = raw.match(/\{[\s\S]*\}/);
-      profile = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+      profile = await callGroq(prompt);
+      if (!profile || typeof profile !== 'object') throw new Error('invalid');
     } catch {
       profile = {
         currentTitle: 'Unknown',

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth-helpers.js';
 import supabase from '@/lib/supabase.js';
+import { callGemini } from '@/lib/gemini';
 
 function buildSourceContext(sources, maxChars = 48000) {
   let context = '';
@@ -57,33 +58,7 @@ At the end of your answer, cite which source(s) you drew from: [Source: <title>]
 SOURCES:${context}`
       : `You are a study assistant helping the user learn ${skillName}. No sources have been added to this course yet — answer based on your general knowledge, and suggest the user add relevant sources for grounded answers.`;
 
-    const messages = [
-      { role: 'system', content: systemPrompt },
-      ...history.slice(-6),
-      { role: 'user', content: message },
-    ];
-
-    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',
-        temperature: 0.2,
-        max_tokens: 800,
-        messages,
-      }),
-    });
-
-    if (!groqRes.ok) {
-      const errText = await groqRes.text();
-      throw new Error(`Groq error: ${errText}`);
-    }
-
-    const groqData = await groqRes.json();
-    const reply = groqData.choices?.[0]?.message?.content || 'Sorry, I could not generate a response.';
+    const reply = await callGemini(message, { system: systemPrompt, json: false, temperature: 0.7 }) || 'Sorry, I could not generate a response.';
 
     // Persist to DB
     await supabase.from('course_chat_messages').insert([

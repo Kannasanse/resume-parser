@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth-helpers.js';
 import supabase from '@/lib/supabase.js';
-import Groq from 'groq-sdk';
+import { callGemini } from '@/lib/gemini';
 
 export const dynamic = 'force-dynamic';
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function POST(request) {
   try {
@@ -160,18 +158,10 @@ Return ONLY a JSON object:
 No preamble.`;
     }
 
-    const res = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      temperature: 0.4,
-      max_tokens: 1200,
-      response_format: { type: 'json_object' },
-      messages: [{ role: 'user', content: prompt }],
-    });
-
-    const raw = res.choices?.[0]?.message?.content ?? '{}';
     let parsed;
     try {
-      parsed = JSON.parse(raw);
+      parsed = await callGemini(prompt, { json: true, temperature: 0.7 });
+      if (!parsed || typeof parsed !== 'object') throw new Error('invalid');
     } catch {
       parsed = {};
     }

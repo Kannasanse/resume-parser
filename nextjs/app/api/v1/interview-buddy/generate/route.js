@@ -1,5 +1,6 @@
 import supabase from '@/lib/supabase.js';
 import { requireUser } from '@/lib/auth-helpers.js';
+import { callGemini } from '@/lib/gemini';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,45 +66,7 @@ Total questions must be in range: ${DEPTH_COUNTS[depth] || '10-15'} questions`;
 }
 
 async function callAI(prompt) {
-  const messages = [
-    { role: 'system', content: 'You are an expert interviewer and hiring coach. Return ONLY valid JSON.' },
-    { role: 'user',   content: prompt },
-  ];
-
-  try {
-    const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'meta-llama/llama-3.3-70b-instruct:free',
-        messages,
-        temperature: 0.4,
-        response_format: { type: 'json_object' },
-      }),
-    });
-    if (resp.ok) {
-      const data = await resp.json();
-      const text = data.choices?.[0]?.message?.content;
-      if (text) return JSON.parse(text);
-    } else {
-      console.error('OpenRouter failed:', resp.status);
-    }
-  } catch (e) { console.error('OpenRouter error:', e.message); }
-
-  // Fallback to Groq
-  const { Groq } = await import('groq-sdk');
-  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-  const completion = await groq.chat.completions.create({
-    model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-    messages,
-    temperature: 0.4,
-    response_format: { type: 'json_object' },
-  });
-  const text = completion.choices?.[0]?.message?.content;
-  return JSON.parse(text);
+  return callGemini(prompt, { system: 'You are an expert interviewer and hiring coach. Return ONLY valid JSON.', json: true, temperature: 0.7 });
 }
 
 export async function POST(request) {

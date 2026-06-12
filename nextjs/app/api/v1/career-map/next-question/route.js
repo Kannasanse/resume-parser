@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth-helpers.js';
 import supabase from '@/lib/supabase.js';
-import Groq from 'groq-sdk';
+import { callGemini } from '@/lib/gemini';
 import { extractKnowledgeFromResume } from '@/lib/career-map/extractKnowledgeFromResume.js';
 
 export const dynamic = 'force-dynamic';
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const HARD_MAX_QUESTIONS = 10;
 const EFFECTIVE_MAX      = 11; // safety net — never reached in normal flow
@@ -47,18 +45,8 @@ export async function POST(request) {
       ? buildSkillsPrompt(selectedSkills, previousQuestions, questionNumber)
       : buildPrompt(extractedProfile, previousQuestions, questionNumber);
 
-    const completion = await groq.chat.completions.create({
-      model:           'llama-3.1-8b-instant',
-      temperature:     0.3,
-      max_tokens:      500,
-      response_format: { type: 'json_object' },
-      messages:        [{ role: 'user', content: prompt }],
-    });
-
-    const text = completion.choices?.[0]?.message?.content;
-    if (!text) throw new Error('Empty response from AI');
-
-    let raw = JSON.parse(text);
+    let raw = await callGemini(prompt, { json: true, temperature: 0.7 });
+    if (!raw) throw new Error('Empty response from AI');
 
     // Server-side duplicate intent detection — regenerate once if duplicate found
     if (previousQuestions.length > 0) {
@@ -74,15 +62,8 @@ export async function POST(request) {
         const retryPrompt = mode === 'skills'
           ? buildSkillsPrompt(selectedSkills, previousQuestions, questionNumber, note)
           : buildPrompt(extractedProfile, previousQuestions, questionNumber, note);
-        const retry = await groq.chat.completions.create({
-          model:           'llama-3.1-8b-instant',
-          temperature:     0.4,
-          max_tokens:      500,
-          response_format: { type: 'json_object' },
-          messages:        [{ role: 'user', content: retryPrompt }],
-        });
-        const retryText = retry.choices?.[0]?.message?.content;
-        if (retryText) raw = JSON.parse(retryText);
+        const retryRaw = await callGemini(retryPrompt, { json: true, temperature: 0.7 });
+        if (retryRaw) raw = retryRaw;
       }
     }
 

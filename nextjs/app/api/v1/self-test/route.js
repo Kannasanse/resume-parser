@@ -1,5 +1,6 @@
 import supabase from '@/lib/supabase.js';
 import { requireUser } from '@/lib/auth-helpers.js';
+import { callGemini } from '@/lib/gemini';
 import { fetchFromLibrary, saveQuestionsToLibrary } from '@/lib/self-test/questionLibrary.js';
 import { METADATA_INSTRUCTION } from '@/lib/self-test/prompts/metadataInstruction.js';
 import { resolveSkill } from '@/lib/skills/resolveSkill.js';
@@ -520,43 +521,5 @@ function normalizeQuestion(q) {
 // ── callAI ────────────────────────────────────────────────────────────────────
 
 async function callAI(userContent, systemPrompt = SYSTEM_PROMPT) {
-  const messages = [
-    { role: 'system', content: systemPrompt },
-    { role: 'user',   content: userContent },
-  ];
-
-  try {
-    const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'meta-llama/llama-3.3-70b-instruct:free',
-        messages,
-        temperature: 0.7,
-        response_format: { type: 'json_object' },
-      }),
-    });
-    if (resp.ok) {
-      const data = await resp.json();
-      const text = data.choices?.[0]?.message?.content;
-      if (text) return JSON.parse(text);
-    } else {
-      console.error('OpenRouter failed:', resp.status, await resp.text().catch(() => ''));
-    }
-  } catch (e) { console.error('OpenRouter error:', e.message); }
-
-  console.log('Falling back to Groq...');
-  const { Groq } = await import('groq-sdk');
-  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-  const completion = await groq.chat.completions.create({
-    model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-    messages,
-    temperature: 0.7,
-    response_format: { type: 'json_object' },
-  });
-  const text = completion.choices?.[0]?.message?.content;
-  return JSON.parse(text);
+  return callGemini(userContent, { system: systemPrompt, json: true, temperature: 0.7 });
 }

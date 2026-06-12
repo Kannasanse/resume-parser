@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth-helpers.js';
 import supabase from '@/lib/supabase.js';
-import Groq from 'groq-sdk';
+import { callGemini } from '@/lib/gemini';
 import { randomUUID } from 'crypto';
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function POST(request) {
   try {
@@ -110,17 +108,10 @@ Return ONLY a valid JSON object (no markdown fences):
   ]
 }`;
 
-    const completion = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      temperature: 0.4,
-      max_tokens: 6000,
-      response_format: { type: 'json_object' },
-      messages: [{ role: 'user', content: prompt }],
-    });
-
     let plan;
     try {
-      plan = JSON.parse(completion.choices[0].message.content);
+      plan = await callGemini(prompt, { json: true, temperature: 0.7 });
+      if (!plan || typeof plan !== 'object') throw new Error('invalid');
     } catch {
       return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 });
     }

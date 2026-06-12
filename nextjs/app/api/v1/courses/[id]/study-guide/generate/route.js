@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth-helpers.js';
 import supabase from '@/lib/supabase.js';
+import { callGemini } from '@/lib/gemini';
 
 function buildSourceContext(sources, maxChars = 56000) {
   let context = '';
@@ -51,27 +52,7 @@ ${context.trim()
   : `No sources have been added yet. Generate a general study guide for ${skillName} covering:\n\n## Key Concepts\n## Common Patterns\n## Quick Quiz\n\nKeep it concise and practical.`
 }`;
 
-    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',
-        temperature: 0.3,
-        max_tokens: 1500,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
-
-    if (!groqRes.ok) {
-      const errText = await groqRes.text();
-      throw new Error(`Groq error: ${errText}`);
-    }
-
-    const groqData = await groqRes.json();
-    const guide = groqData.choices?.[0]?.message?.content || '';
+    const guide = await callGemini(prompt, { json: false, temperature: 0.7 }) || '';
 
     // Cache in DB (upsert by course_id)
     await supabase.from('course_study_guides').upsert({

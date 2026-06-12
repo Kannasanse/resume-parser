@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import Groq from 'groq-sdk';
 import { deductCredits, getBalance } from '@/lib/credits.js';
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+import { callGemini } from '@/lib/gemini';
 
 function resumeToText(resume) {
   const lines = [];
@@ -191,53 +189,13 @@ export async function POST(request, { params }) {
       ? `Analyze this resume:\n\n${resumeText}\n\n---\nJOB DESCRIPTION:\n${jobDescription}`
       : `Analyze this resume:\n\n${resumeText}`;
 
-    const messages = [
-      { role: 'system', content: buildSystemPrompt(mode, jobDescription) },
-      { role: 'user', content: userContent },
-    ];
-
     let result = null;
 
-    const withTimeout = (promise, ms) =>
-      Promise.race([promise, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
-
-    // Try Groq first
     try {
-      const res = await withTimeout(
-        groq.chat.completions.create({
-          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-          messages,
-          max_tokens: 1800,
-          temperature: 0.2,
-        }),
-        timeoutMs
-      );
-      result = tryParse(res.choices?.[0]?.message?.content || '');
+      const raw = await callGemini(userContent, { system: buildSystemPrompt(mode, jobDescription), json: true, temperature: 0.7 });
+      result = raw;
     } catch (err) {
-      if (err.message === 'timeout') {
-        return NextResponse.json({ error: 'Scoring is taking longer than expected. Please try again.', code: 'timeout' }, { status: 504 });
-      }
-      console.warn('[ats-score] Groq failed:', err.message);
-    }
-
-    // Fallback to OpenRouter
-    if (!result && process.env.OPENROUTER_API_KEY) {
-      try {
-        const res = await withTimeout(
-          fetch('https://openrouter.ai/api/v1/chat/completions', {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model: 'meta-llama/llama-3.3-70b-instruct:free', messages, max_tokens: 1800, temperature: 0.2 }),
-          }),
-          timeoutMs
-        );
-        if (res.ok) result = tryParse((await res.json()).choices?.[0]?.message?.content || '');
-      } catch (err) {
-        if (err.message === 'timeout') {
-          return NextResponse.json({ error: 'Scoring is taking longer than expected. Please try again.', code: 'timeout' }, { status: 504 });
-        }
-        console.warn('[ats-score] OpenRouter failed:', err.message);
-      }
+      console.warn('[ats-score] Gemini failed:', err.message);
     }
 
     if (!result) return NextResponse.json({ error: "We couldn't generate your score right now. Please try again in a moment.", code: 'scoring_failed' }, { status: 502 });
