@@ -811,8 +811,7 @@ export default function SelfTestPage() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[13px] font-semibold text-[#9CA3AF]">Q {current + 1}</span>
                   {q.skill && (
-                    <span className="text-[12px] px-2.5 py-0.5 rounded-full"
-                      style={{ background: '#E6F1FB', color: '#185FA5', border: '1px solid rgba(24,95,165,0.20)' }}>
+                    <span className="text-[12px] px-2.5 py-0.5 rounded-full bg-[#E6F1FB] dark:bg-[#185FA5]/20 text-[#185FA5] dark:text-[#5B9FD4] border border-[#185FA5]/20 dark:border-[#185FA5]/30">
                       {q.skill}
                     </span>
                   )}
@@ -837,11 +836,11 @@ export default function SelfTestPage() {
                 {/* Right: per-question timer + flag */}
                 <div className="flex items-center gap-2">
                   <div
-                    className="flex items-center gap-1.5 rounded-full px-3 py-1"
-                    style={{
-                      background: qTimeLeft < 30 ? 'rgba(217,48,37,0.10)' : '#FEF3C7',
-                      border: `1px solid ${qTimeLeft < 30 ? 'rgba(217,48,37,0.30)' : 'rgba(245,158,11,0.30)'}`,
-                    }}
+                    className={`flex items-center gap-1.5 rounded-full px-3 py-1 border ${
+                      qTimeLeft < 30
+                        ? 'bg-red-100 dark:bg-red-900/20 border-red-300 dark:border-red-500/40'
+                        : 'bg-amber-100 dark:bg-amber-900/20 border-amber-300 dark:border-amber-500/40'
+                    }`}
                   >
                     <AlarmIcon color={qTimeLeft < 30 ? '#D93025' : '#B45309'} />
                     <span
@@ -853,14 +852,13 @@ export default function SelfTestPage() {
                   </div>
                   <button
                     onClick={() => toggleFlag(current)}
-                    className="flex items-center gap-1.5 text-[12px] rounded-full px-3 py-1 transition-colors"
-                    style={{
-                      background: flagged.has(current) ? '#FEF3C7' : 'white',
-                      border: `1px solid ${flagged.has(current) ? '#F59E0B' : '#D1DCE8'}`,
-                      color: flagged.has(current) ? '#B45309' : '#6B7280',
-                    }}
+                    className={`flex items-center gap-1.5 text-[12px] rounded-full px-3 py-1 transition-colors border ${
+                      flagged.has(current)
+                        ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-400 dark:border-amber-500/50 text-amber-700 dark:text-amber-400'
+                        : 'bg-white dark:bg-white/5 border-[#D1DCE8] dark:border-white/15 text-[#6B7280] dark:text-[#8BA3C1]'
+                    }`}
                   >
-                    <span style={{ color: flagged.has(current) ? '#F59E0B' : '#9CA3AF' }}>
+                    <span className={flagged.has(current) ? 'text-amber-500' : 'text-[#9CA3AF]'}>
                       <FlagIcon filled={flagged.has(current)} />
                     </span>
                     {flagged.has(current) ? 'Flagged' : 'Flag for review'}
@@ -891,29 +889,21 @@ export default function SelfTestPage() {
                         <button
                           key={i}
                           onClick={() => setAnswer(current, String(i))}
-                          className="w-full text-left flex items-center gap-3.5 rounded-[12px] transition-all duration-180 group"
-                          style={{
-                            border: isSelected ? '2px solid #185FA5' : '1.5px solid #D1DCE8',
-                            padding: '14px 16px',
-                            background: isSelected
-                              ? 'linear-gradient(135deg, #E6F1FB, #F4F8FC)'
-                              : 'white',
-                          }}
-                          onMouseOver={e => { if (!isSelected) { e.currentTarget.style.borderColor = 'rgba(24,95,165,0.40)'; e.currentTarget.style.background = 'rgba(24,95,165,0.03)'; }}}
-                          onMouseOut={e => { if (!isSelected) { e.currentTarget.style.borderColor = '#D1DCE8'; e.currentTarget.style.background = 'white'; }}}
+                          className={`w-full text-left flex items-center gap-3.5 rounded-[12px] transition-all duration-180 ${
+                            isSelected
+                              ? 'border-2 border-[#185FA5] bg-gradient-to-br from-[#E6F1FB] to-[#F4F8FC] dark:from-[#185FA5]/20 dark:to-[#111F35]'
+                              : 'border border-[#D1DCE8] dark:border-white/10 bg-white dark:bg-[#0F1A2E] hover:border-[#185FA5]/40 hover:bg-[#185FA5]/[0.03] dark:hover:border-[#185FA5]/50 dark:hover:bg-[#185FA5]/10'
+                          }`}
+                          style={{ padding: '14px 16px' }}
                         >
-                          <div style={{
-                            width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-                            background: isSelected ? '#185FA5' : '#F4F8FC',
-                            border: `1px solid ${isSelected ? '#185FA5' : '#D1DCE8'}`,
-                            display: 'grid', placeItems: 'center',
-                            fontSize: 13, fontWeight: 700,
-                            color: isSelected ? 'white' : '#6B7280',
-                          }}>
+                          <div className={`w-7 h-7 rounded-lg flex-shrink-0 grid place-items-center text-[13px] font-bold border ${
+                            isSelected
+                              ? 'bg-[#185FA5] border-[#185FA5] text-white'
+                              : 'bg-[#F4F8FC] dark:bg-white/8 border-[#D1DCE8] dark:border-white/15 text-[#6B7280] dark:text-[#8BA3C1]'
+                          }`}>
                             {letter}
                           </div>
-                          <span className="flex-1 text-[15px] leading-relaxed text-[#2C2C2A] dark:text-[#E8EFF7]"
-                            style={{ fontWeight: isSelected ? 500 : 400 }}>
+                          <span className={`flex-1 text-[15px] leading-relaxed text-[#2C2C2A] dark:text-[#E8EFF7] ${isSelected ? 'font-medium' : 'font-normal'}`}>
                             {opt.option_text}
                           </span>
                           {isSelected && <CheckIcon />}
@@ -926,33 +916,27 @@ export default function SelfTestPage() {
                 {/* True/False */}
                 {q.type === 'true_false' && (
                   <div className="flex gap-2.5">
-                    {['true', 'false'].map((v, i) => {
+                    {['true', 'false'].map((v) => {
                       const isSelected = answers[String(current)] === v;
                       return (
                         <button
                           key={v}
                           onClick={() => setAnswer(current, v)}
-                          className="flex-1 flex items-center gap-3.5 rounded-[12px] transition-all duration-180"
-                          style={{
-                            border: isSelected ? '2px solid #185FA5' : '1.5px solid #D1DCE8',
-                            padding: '14px 16px',
-                            background: isSelected ? 'linear-gradient(135deg, #E6F1FB, #F4F8FC)' : 'white',
-                          }}
-                          onMouseOver={e => { if (!isSelected) { e.currentTarget.style.borderColor = 'rgba(24,95,165,0.40)'; e.currentTarget.style.background = 'rgba(24,95,165,0.03)'; }}}
-                          onMouseOut={e => { if (!isSelected) { e.currentTarget.style.borderColor = '#D1DCE8'; e.currentTarget.style.background = 'white'; }}}
+                          className={`flex-1 flex items-center gap-3.5 rounded-[12px] transition-all duration-180 ${
+                            isSelected
+                              ? 'border-2 border-[#185FA5] bg-gradient-to-br from-[#E6F1FB] to-[#F4F8FC] dark:from-[#185FA5]/20 dark:to-[#111F35]'
+                              : 'border border-[#D1DCE8] dark:border-white/10 bg-white dark:bg-[#0F1A2E] hover:border-[#185FA5]/40 hover:bg-[#185FA5]/[0.03] dark:hover:border-[#185FA5]/50 dark:hover:bg-[#185FA5]/10'
+                          }`}
+                          style={{ padding: '14px 16px' }}
                         >
-                          <div style={{
-                            width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-                            background: isSelected ? '#185FA5' : '#F4F8FC',
-                            border: `1px solid ${isSelected ? '#185FA5' : '#D1DCE8'}`,
-                            display: 'grid', placeItems: 'center',
-                            fontSize: 13, fontWeight: 700,
-                            color: isSelected ? 'white' : '#6B7280',
-                          }}>
+                          <div className={`w-7 h-7 rounded-lg flex-shrink-0 grid place-items-center text-[13px] font-bold border ${
+                            isSelected
+                              ? 'bg-[#185FA5] border-[#185FA5] text-white'
+                              : 'bg-[#F4F8FC] dark:bg-white/8 border-[#D1DCE8] dark:border-white/15 text-[#6B7280] dark:text-[#8BA3C1]'
+                          }`}>
                             {v === 'true' ? 'T' : 'F'}
                           </div>
-                          <span className="text-[15px] capitalize text-[#2C2C2A] dark:text-[#E8EFF7]"
-                            style={{ fontWeight: isSelected ? 500 : 400 }}>
+                          <span className={`text-[15px] capitalize text-[#2C2C2A] dark:text-[#E8EFF7] ${isSelected ? 'font-medium' : 'font-normal'}`}>
                             {v}
                           </span>
                           {isSelected && <CheckIcon />}
@@ -969,13 +953,13 @@ export default function SelfTestPage() {
                       value={shortAnswerTexts[String(current)] || ''}
                       onChange={e => setSAText(current, e.target.value)}
                       placeholder="Write your answer here..."
-                      className="w-full text-[15px] text-[#2C2C2A] dark:text-[#E8EFF7] bg-white dark:bg-[#0F1A2E] outline-none resize-vertical leading-[1.7] placeholder-[#9CA3AF]"
+                      className="w-full text-[15px] text-[#2C2C2A] dark:text-[#E8EFF7] bg-white dark:bg-[#0F1A2E] outline-none resize-vertical leading-[1.7] placeholder-[#9CA3AF] border border-[#D1DCE8] dark:border-white/15"
                       style={{
-                        minHeight: 120, border: '1.5px solid #D1DCE8', borderRadius: 12,
+                        minHeight: 120, borderRadius: 12,
                         padding: '14px 16px', boxSizing: 'border-box', fontFamily: 'inherit',
                       }}
                       onFocus={e => { e.target.style.borderColor = '#185FA5'; e.target.style.boxShadow = '0 0 0 3px rgba(24,95,165,0.10)'; }}
-                      onBlur={e => { e.target.style.borderColor = '#D1DCE8'; e.target.style.boxShadow = 'none'; }}
+                      onBlur={e => { e.target.style.borderColor = ''; e.target.style.boxShadow = ''; }}
                     />
                     <div className="flex items-center justify-end">
                       <span className="text-[12px] text-[#9CA3AF]">
@@ -1028,29 +1012,25 @@ export default function SelfTestPage() {
           const isCurrent  = i === current;
           const isVisited  = visited.has(i);
 
-          let bg = 'white', color = '#9CA3AF', borderStyle = '1.5px solid #D1DCE8', shadow = '';
-
-          if (isCurrent) {
-            bg = '#185FA5'; color = 'white'; borderStyle = '1.5px solid #185FA5';
-            shadow = '0 0 0 3px rgba(24,95,165,0.20)';
-          } else if (isAnswered) {
-            bg = isSAQ ? '#8B5CF6' : '#1D9E75';
-            color = 'white';
-            borderStyle = `1.5px solid ${isSAQ ? '#8B5CF6' : '#1D9E75'}`;
-          } else if (isVisited) {
-            bg = 'white'; color = '#D93025'; borderStyle = '2px dashed #D93025';
-          }
+          const dotCls = isCurrent
+            ? 'bg-[#185FA5] text-white border border-[#185FA5]'
+            : isAnswered
+              ? (isSAQ
+                  ? 'bg-[#8B5CF6] text-white border border-[#8B5CF6]'
+                  : 'bg-[#1D9E75] text-white border border-[#1D9E75]')
+              : isVisited
+                ? 'bg-white dark:bg-[#1A2C45] text-[#D93025] border-2 border-dashed border-[#D93025]'
+                : 'bg-white dark:bg-[#1A2C45] text-[#9CA3AF] dark:text-[#4A6380] border border-[#D1DCE8] dark:border-white/15';
 
           return (
             <button
               key={i}
               onClick={() => navigateTo(i)}
               title={isFlagged ? 'Flagged' : isAnswered ? 'Answered' : isVisited ? 'Skipped' : 'Not visited'}
-              className="relative transition-all duration-150"
+              className={`relative transition-all duration-150 rounded-full text-[12px] font-[600] cursor-pointer ${dotCls}`}
               style={{
-                width: 32, height: 32, borderRadius: '9999px',
-                fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                background: bg, color, border: borderStyle, boxShadow: shadow,
+                width: 32, height: 32,
+                ...(isCurrent ? { boxShadow: '0 0 0 3px rgba(24,95,165,0.20)' } : {}),
               }}
             >
               {i + 1}

@@ -31,22 +31,16 @@ export function MixedRatioPicker({ mix, onChange }) {
   }
 
   return (
-    <div style={{
-      marginTop: 14,
-      background: 'rgba(124,58,237,0.08)',
-      border: '1px solid rgba(124,58,237,0.25)',
-      borderRadius: 12,
-      padding: '16px 18px',
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
-        <span style={{ fontSize: 11, fontWeight: 700, color: '#A78BFA', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+    <div className="mt-3.5 bg-violet-50 dark:bg-[rgba(124,58,237,0.08)] border border-violet-200 dark:border-[rgba(124,58,237,0.25)] rounded-xl p-4">
+      <div className="flex justify-between mb-3.5">
+        <span className="text-[11px] font-bold text-violet-600 dark:text-[#A78BFA] tracking-[0.08em] uppercase">
           Set your mix
         </span>
-        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>Must total 100%</span>
+        <span className="text-[11px] text-ds-textMuted">Must total 100%</span>
       </div>
 
       {/* Ratio bar */}
-      <div style={{ height: 8, borderRadius: 9999, overflow: 'hidden', display: 'flex', marginBottom: 18 }}>
+      <div className="h-2 rounded-full overflow-hidden flex mb-4">
         {ROWS.map(r => (
           <div key={r.key} style={{ width: `${mix[r.key]}%`, background: r.color, transition: 'width 200ms' }} />
         ))}
@@ -54,13 +48,13 @@ export function MixedRatioPicker({ mix, onChange }) {
 
       {/* Sliders */}
       {ROWS.map(r => (
-        <div key={r.key} style={{ marginBottom: 14 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: r.color }} />
-              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)' }}>{r.label}</span>
+        <div key={r.key} className="mb-3.5">
+          <div className="flex justify-between items-center mb-1.5">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full" style={{ background: r.color }} />
+              <span className="text-[12px] text-ds-text">{r.label}</span>
             </div>
-            <span style={{ fontSize: 13, fontWeight: 700, color: r.color, minWidth: 36, textAlign: 'right' }}>
+            <span className="text-[13px] font-bold min-w-[36px] text-right" style={{ color: r.color }}>
               {mix[r.key]}%
             </span>
           </div>
@@ -73,15 +67,15 @@ export function MixedRatioPicker({ mix, onChange }) {
       ))}
 
       {/* Presets */}
-      <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 12 }}>
-        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginBottom: 6 }}>Quick presets:</div>
-        <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
+      <div className="border-t border-ds-border pt-3">
+        <div className="text-[10px] text-ds-textMuted mb-1.5">Quick presets:</div>
+        <div className="flex gap-1.5 flex-wrap">
           {PRESETS.map(p => (
-            <button key={p.label} onClick={() => onChange(p.v)} style={{
-              padding: '4px 10px', borderRadius: 7,
-              background: 'transparent', border: '1px solid rgba(255,255,255,0.15)',
-              color: 'rgba(255,255,255,0.60)', fontSize: 11, cursor: 'pointer',
-            }}>
+            <button
+              key={p.label}
+              onClick={() => onChange(p.v)}
+              className="px-2.5 py-1 rounded-lg border border-ds-border text-[11px] text-ds-textMuted hover:bg-ds-bg transition-colors"
+            >
               {p.label}
             </button>
           ))}

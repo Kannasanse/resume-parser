@@ -2,17 +2,15 @@
 import { MixedRatioPicker } from './MixedRatioPicker';
 
 const TYPES = [
-  { id: 'mcq',          label: 'MCQ',           desc: '4-option multiple choice',     color: '#185FA5', icon: '☑' },
-  { id: 'true_false',   label: 'True / False',  desc: 'Binary True or False',         color: '#1D9E75', icon: '⇄' },
-  { id: 'short_answer', label: 'Short Answer',  desc: 'Type your answer · AI scored', color: '#F59E0B', icon: '≡' },
-  { id: 'mixed',        label: 'Mixed',         desc: 'Your own combination',         color: '#7C3AED', icon: '⇌' },
+  { id: 'mcq',          label: 'MCQ',           desc: '4-option multiple choice',     color: '#185FA5', darkColor: '#5B9FD4', activeBg: 'rgba(24,95,165,0.12)',   darkActiveBg: 'rgba(91,159,212,0.15)' },
+  { id: 'true_false',   label: 'True / False',  desc: 'Binary True or False',         color: '#1D9E75', darkColor: '#34D399', activeBg: 'rgba(29,158,117,0.12)',  darkActiveBg: 'rgba(52,211,153,0.15)' },
+  { id: 'short_answer', label: 'Short Answer',  desc: 'Type your answer · AI scored', color: '#B45309', darkColor: '#FBBF24', activeBg: 'rgba(245,158,11,0.12)',  darkActiveBg: 'rgba(251,191,36,0.15)' },
+  { id: 'mixed',        label: 'Mixed',         desc: 'Your own combination',         color: '#7C3AED', darkColor: '#A78BFA', activeBg: 'rgba(124,58,237,0.12)',  darkActiveBg: 'rgba(167,139,250,0.15)' },
 ];
 
 const DEFAULT_MIX = { mcq: 60, true_false: 20, short_answer: 20 };
 
 export function QuestionTypeSelector({ value, onChange }) {
-  // value: { type: 'mcq' | 'true_false' | 'short_answer' | 'mixed', mix?: { mcq, true_false, short_answer } }
-
   function handleTypeClick(typeId) {
     if (typeId === 'mixed') {
       onChange({ type: 'mixed', mix: value?.mix ?? DEFAULT_MIX });
@@ -22,37 +20,46 @@ export function QuestionTypeSelector({ value, onChange }) {
   }
 
   return (
-    <div style={{ marginBottom: 24 }}>
-      <div style={{
-        fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.50)',
-        letterSpacing: '.09em', textTransform: 'uppercase', marginBottom: 12,
-      }}>
+    <div className="mb-6">
+      <div className="text-[11px] font-bold text-ds-textMuted dark:text-[rgba(255,255,255,0.50)] tracking-[0.09em] uppercase mb-3">
         Question Type
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         {TYPES.map(t => {
           const active = value?.type === t.id;
           return (
-            <button key={t.id} onClick={() => handleTypeClick(t.id)} style={{
-              background:    active ? `${t.color}18` : 'rgba(255,255,255,0.04)',
-              border:        `${active ? 2 : 1}px solid ${active ? t.color : 'rgba(255,255,255,0.10)'}`,
-              borderRadius:  12, padding: '14px 12px', cursor: 'pointer',
-              textAlign:     'left', display: 'flex', flexDirection: 'column', gap: 8,
-              transition:    'all 160ms',
-            }}>
-              <div style={{
-                width: 34, height: 34, borderRadius: 9,
-                background: active ? `${t.color}25` : 'rgba(255,255,255,0.08)',
-                display: 'grid', placeItems: 'center',
-                fontSize: 18, lineHeight: 1,
-              }}>
-                {t.icon}
+            <button
+              key={t.id}
+              onClick={() => handleTypeClick(t.id)}
+              className={`rounded-xl p-3.5 cursor-pointer text-left flex flex-col gap-2 transition-all border ${
+                active
+                  ? 'border-2'
+                  : 'border border-ds-border hover:border-ds-inputBorder'
+              }`}
+              style={{
+                background: active ? t.activeBg : 'transparent',
+                borderColor: active ? t.color : undefined,
+              }}
+            >
+              <div
+                className="w-[34px] h-[34px] rounded-[9px] grid place-items-center text-[18px] leading-none"
+                style={{ background: active ? `${t.color}25` : undefined }}
+                // fallback bg via className when not active
+              >
+                <span className={!active ? 'opacity-60' : ''}>
+                  {t.id === 'mcq'          ? '☑' :
+                   t.id === 'true_false'   ? '⇄' :
+                   t.id === 'short_answer' ? '≡' : '⇌'}
+                </span>
               </div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: active ? 'white' : 'rgba(255,255,255,0.75)' }}>
-                {t.label}
+              <div
+                className="text-[13px] font-bold"
+                style={{ color: active ? t.color : undefined }}
+              >
+                <span className={!active ? 'text-ds-text' : ''}>{t.label}</span>
               </div>
-              <div style={{ fontSize: 11, color: active ? 'rgba(255,255,255,0.58)' : 'rgba(255,255,255,0.35)', lineHeight: 1.4 }}>
+              <div className="text-[11px] text-ds-textMuted leading-snug">
                 {t.desc}
               </div>
             </button>
