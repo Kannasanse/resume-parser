@@ -5,8 +5,8 @@ let _client = null;
 function getClient() {
   if (!_client) {
     _client = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SECRET_KEY
+      process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY
     );
   }
   return _client;
