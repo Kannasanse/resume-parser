@@ -158,6 +158,37 @@ function splitColumns(sections, sectionColumns, defaultLeftSet) {
   };
 }
 
+// Renders a mix-mode grid with explicit row assignments so left+right sections
+// share a row instead of leaving gaps when DOM order doesn't interleave them.
+function renderMixGrid(sections, sc, gridStyle, renderSec) {
+  let gridRow = 0;
+  const leftFilled  = new Set();
+  const rightFilled = new Set();
+  const rowAssign = sections.map(sec => {
+    const col = sc[sec.id] || 'full';
+    if (col === 'full') {
+      gridRow++;
+      return { sec, col, row: gridRow };
+    }
+    let r = gridRow + 1;
+    while (true) {
+      if (col === 'left'  && !leftFilled.has(r))  { leftFilled.add(r);  return { sec, col, row: r }; }
+      if (col === 'right' && !rightFilled.has(r)) { rightFilled.add(r); return { sec, col, row: r }; }
+      r++;
+    }
+  });
+  return (
+    <div style={gridStyle}>
+      {rowAssign.map(({ sec, col, row }) => {
+        const rendered = renderSec(sec);
+        if (!rendered) return null;
+        const gridColumn = col === 'full' ? '1 / span 2' : col === 'left' ? '1' : '2';
+        return <div key={sec.id} style={{ gridColumn, gridRow: row }}>{rendered}</div>;
+      })}
+    </div>
+  );
+}
+
 // Wraps section list with one/two/mix column layout for single-column templates.
 function applyColumnLayout(sections, ls, padX, renderSection) {
   const colLayout = ls?.columnLayout || 'one';
@@ -177,17 +208,9 @@ function applyColumnLayout(sections, ls, padX, renderSection) {
   }
 
   if (colLayout === 'mix') {
-    return (
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: `0 ${Math.round(padX * 0.5)}mm`, alignItems: 'start' }}>
-        {sections.map(sec => {
-          const rendered = renderSection(sec);
-          if (!rendered) return null;
-          const col = sc[sec.id] || 'full';
-          const gridColumn = col === 'full' ? '1 / span 2' : col === 'left' ? '1' : '2';
-          return <div key={sec.id} style={{ gridColumn }}>{rendered}</div>;
-        })}
-      </div>
-    );
+    return renderMixGrid(sections, sc,
+      { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: `0 ${Math.round(padX * 0.5)}mm`, alignItems: 'start' },
+      renderSection);
   }
 
   return sections.map(renderSection);
@@ -1226,16 +1249,8 @@ function TemplateAtlanticCrest({ resume, ds, ss, sectionAdjustments, visibleBloc
             );
           };
           if (colLayout === 'one') return sections.map(renderSec);
-          if (colLayout === 'mix') return (
-            <div style={{ display: 'grid', gridTemplateColumns: '38% 1fr', gap: 18, alignItems: 'start' }}>
-              {sections.map(sec => {
-                const rendered = renderSec(sec);
-                if (!rendered) return null;
-                const col = sc[sec.id] || 'full';
-                return <div key={sec.id} style={{ gridColumn: col === 'full' ? '1 / span 2' : col === 'left' ? '1' : '2' }}>{rendered}</div>;
-              })}
-            </div>
-          );
+          if (colLayout === 'mix') return renderMixGrid(sections, sc,
+            { display: 'grid', gridTemplateColumns: '38% 1fr', gap: 18, alignItems: 'start' }, renderSec);
           const left  = sections.filter(s => sc[s.id] ? sc[s.id] === 'left' : CREST_LEFT_TYPES.has(s.type));
           const right = sections.filter(s => sc[s.id] ? sc[s.id] === 'right' : !CREST_LEFT_TYPES.has(s.type));
           return (
@@ -1496,16 +1511,8 @@ function TemplateAzureWave({ resume, ds, ss, sectionAdjustments, visibleBlockIds
             );
           };
           if (colLayout === 'one') return <>{sections.map(renderSec)}</>;
-          if (colLayout === 'mix') return (
-            <div style={{ display: 'grid', gridTemplateColumns: '38% 1fr', gap: 22, alignItems: 'start' }}>
-              {sections.map(sec => {
-                const rendered = renderSec(sec);
-                if (!rendered) return null;
-                const col = sc[sec.id] || 'full';
-                return <div key={sec.id} style={{ gridColumn: col === 'full' ? '1 / span 2' : col === 'left' ? '1' : '2' }}>{rendered}</div>;
-              })}
-            </div>
-          );
+          if (colLayout === 'mix') return renderMixGrid(sections, sc,
+            { display: 'grid', gridTemplateColumns: '38% 1fr', gap: 22, alignItems: 'start' }, renderSec);
           const left  = sections.filter(s => sc[s.id] ? sc[s.id] === 'left' : WAVE_LEFT_TYPES.has(s.type));
           const right = sections.filter(s => sc[s.id] ? sc[s.id] === 'right' : !WAVE_LEFT_TYPES.has(s.type));
           return (
@@ -1649,16 +1656,8 @@ function TemplateNoirFlash({ resume, ds, ss, sectionAdjustments, visibleBlockIds
             );
           };
           if (colLayout === 'one') return <>{sections.map(renderSec)}</>;
-          if (colLayout === 'mix') return (
-            <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 24, alignItems: 'start' }}>
-              {sections.map(sec => {
-                const rendered = renderSec(sec);
-                if (!rendered) return null;
-                const col = sc[sec.id] || 'full';
-                return <div key={sec.id} style={{ gridColumn: col === 'full' ? '1 / span 2' : col === 'left' ? '1' : '2' }}>{rendered}</div>;
-              })}
-            </div>
-          );
+          if (colLayout === 'mix') return renderMixGrid(sections, sc,
+            { display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 24, alignItems: 'start' }, renderSec);
           const left  = sections.filter(s => sc[s.id] ? sc[s.id] === 'left' : NOIR_LEFT_TYPES.has(s.type));
           const right = sections.filter(s => sc[s.id] ? sc[s.id] === 'right' : !NOIR_LEFT_TYPES.has(s.type));
           return (
@@ -1821,16 +1820,8 @@ function TemplateVerdantCrest({ resume, ds, ss, sectionAdjustments, visibleBlock
         if (colLayout === 'one') return (
           <div style={{ padding: `${padY * 0.4}mm ${padX}mm ${padY}mm` }}>{sections.map(renderSec)}</div>
         );
-        if (colLayout === 'mix') return (
-          <div style={{ padding: `${padY * 0.4}mm ${padX}mm ${padY}mm`, display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 26, alignItems: 'start' }}>
-            {sections.map(sec => {
-              const rendered = renderSec(sec);
-              if (!rendered) return null;
-              const col = sc[sec.id] || 'full';
-              return <div key={sec.id} style={{ gridColumn: col === 'full' ? '1 / span 2' : col === 'left' ? '1' : '2' }}>{rendered}</div>;
-            })}
-          </div>
-        );
+        if (colLayout === 'mix') return renderMixGrid(sections, sc,
+          { padding: `${padY * 0.4}mm ${padX}mm ${padY}mm`, display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 26, alignItems: 'start' }, renderSec);
         const left  = sections.filter(s => sc[s.id] ? sc[s.id] === 'left' : !VERDANT_RIGHT_TYPES.has(s.type));
         const right = sections.filter(s => sc[s.id] ? sc[s.id] === 'right' : VERDANT_RIGHT_TYPES.has(s.type));
         return (
@@ -1923,16 +1914,8 @@ function TemplateConfetti({ resume, ds, ss, sectionAdjustments, visibleBlockIds 
             );
           };
           if (colLayout === 'one') return <>{sections.map(renderSec)}</>;
-          if (colLayout === 'mix') return (
-            <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 22, alignItems: 'start' }}>
-              {sections.map(sec => {
-                const rendered = renderSec(sec);
-                if (!rendered) return null;
-                const col = sc[sec.id] || 'full';
-                return <div key={sec.id} style={{ gridColumn: col === 'full' ? '1 / span 2' : col === 'left' ? '1' : '2' }}>{rendered}</div>;
-              })}
-            </div>
-          );
+          if (colLayout === 'mix') return renderMixGrid(sections, sc,
+            { display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 22, alignItems: 'start' }, renderSec);
           const left  = sections.filter(s => sc[s.id] ? sc[s.id] === 'left' : CONFETTI_LEFT_TYPES.has(s.type));
           const right = sections.filter(s => sc[s.id] ? sc[s.id] === 'right' : !CONFETTI_LEFT_TYPES.has(s.type));
           return (
