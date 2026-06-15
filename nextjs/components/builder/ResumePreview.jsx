@@ -177,19 +177,16 @@ function applyColumnLayout(sections, ls, padX, renderSection) {
   }
 
   if (colLayout === 'mix') {
-    const full  = sections.filter(s => !sc[s.id] || sc[s.id] === 'full');
-    const left  = sections.filter(s => sc[s.id] === 'left');
-    const right = sections.filter(s => sc[s.id] === 'right');
     return (
-      <>
-        {full.map(renderSection)}
-        {(left.length > 0 || right.length > 0) && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: `0 ${Math.round(padX * 0.5)}mm`, alignItems: 'start' }}>
-            <div>{left.map(renderSection)}</div>
-            <div>{right.map(renderSection)}</div>
-          </div>
-        )}
-      </>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: `0 ${Math.round(padX * 0.5)}mm`, alignItems: 'start' }}>
+        {sections.map(sec => {
+          const rendered = renderSection(sec);
+          if (!rendered) return null;
+          const col = sc[sec.id] || 'full';
+          const gridColumn = col === 'full' ? '1 / span 2' : col === 'left' ? '1' : '2';
+          return <div key={sec.id} style={{ gridColumn }}>{rendered}</div>;
+        })}
+      </div>
     );
   }
 
