@@ -255,7 +255,7 @@ function SkillSubSkills({ subSkills, dotColor }) {
 }
 
 function SkillsBody({ sec, util, variantCols }) {
-  const { accent, t, colIf } = util;
+  const { accent, t, colIf, colFor } = util;
   const entries  = sec?.content?.entries || [];
   if (!entries.length) return null;
   const dss      = sec.display_settings || {};
@@ -549,7 +549,7 @@ function BulletList({ bullets, listStyle }) {
 }
 
 function ExperienceBody({ secs, util, variant }) {
-  const { entryGapPx, t, colIf, listStyle, blockAdj, visibleBlockIds } = util;
+  const { entryGapPx, t, colIf, colFor, listStyle, blockAdj, visibleBlockIds } = util;
   const allEntries = secs.flatMap(sec => {
     const order = sec.display_settings?.workOrder || sec.display_settings?.order || 'title-first';
     return (sec.content?.entries || []).map((e, idx) => ({ ...e, _order: order, _secId: sec.id, _idx: idx }));
@@ -646,7 +646,7 @@ function ExperienceBody({ secs, util, variant }) {
 }
 
 function EducationBody({ secs, util, variant }) {
-  const { entryGapPx, t, colIf, blockAdj, visibleBlockIds } = util;
+  const { entryGapPx, t, colIf, colFor, blockAdj, visibleBlockIds } = util;
   const allEntries = secs.flatMap(sec => {
     const order = sec.display_settings?.eduOrder || sec.display_settings?.order || 'school-first';
     return (sec.content?.entries || []).map((e, idx) => ({ ...e, _order: order, _secId: sec.id, _idx: idx }));
@@ -696,7 +696,7 @@ function EducationBody({ secs, util, variant }) {
 }
 
 function LanguagesBody({ sec, util, defaultLayout }) {
-  const { t, colIf, accent } = util;
+  const { t, colIf, colFor, accent } = util;
   const entries = sec?.content?.entries || [];
   if (!entries.length) return null;
   const layout = sec.display_settings?.layout || defaultLayout || 'rows';
@@ -761,7 +761,7 @@ function LanguagesBody({ sec, util, defaultLayout }) {
 }
 
 function CertsBody({ sec, util, variant }) {
-  const { entryGapPx, t, colIf } = util;
+  const { entryGapPx, t, colIf, colFor } = util;
   const entries = sec?.content?.entries || [];
   if (!entries.length) return null;
 
@@ -795,7 +795,7 @@ function CertsBody({ sec, util, variant }) {
 }
 
 function ProjectsBody({ sec, util }) {
-  const { entryGapPx, t, colIf, listStyle, blockAdj, visibleBlockIds } = util;
+  const { entryGapPx, t, colIf, colFor, listStyle, blockAdj, visibleBlockIds } = util;
   const entries = sec?.content?.entries || [];
   if (!entries.length) return null;
   return (
@@ -851,7 +851,7 @@ function renderSectionBody(sec, util, opts = {}) {
     if (style === 'chips') {
       const items = text.split(/[,;·•|]+/).map(s => s.trim()).filter(Boolean);
       if (!items.length) return <div style={{ fontSize: '0.95em' }}>{text}</div>;
-      const { t, colIf, accent } = util;
+      const { t, colIf, colFor, accent } = util;
       const chipColor = colFor('dotsBarsBubbles') || accent;
       return (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -930,7 +930,7 @@ function showSectionHeading(sec, vids) {
 // opts.iconColor overrides the icon color entirely (ignores accentTargets)
 function buildDetailsBlock(pi, ds, util, opts = {}) {
   const { textColor = '#6B7280', iconColor: iconColorOpt = null } = opts;
-  const { fontSize, t, colIf } = util;
+  const { fontSize, t, colIf, colFor } = util;
   const details = [
     { kind: 'mail',  val: pi.email },
     { kind: 'phone', val: pi.phone },
