@@ -4,18 +4,37 @@ import { TEMPLATES, TEMPLATE_CATEGORIES } from './templates.js';
 import { TemplateThumbnail } from './ResumePreview.jsx';
 import { TEMPLATE_PREVIEWS } from './ResumeTemplatePreviews.jsx';
 
-function PreviewThumb({ templateId, active, label, style, plan, large = false }) {
+function PreviewThumb({ templateId, active, label, style, plan, featured = false, large = false }) {
   const entry = TEMPLATE_PREVIEWS[templateId];
   if (entry) {
     const Comp = entry.component;
     return (
-      <div className={`rounded-lg overflow-hidden border-2 transition-colors ${active ? 'border-primary' : 'border-ds-border'}`}
-        style={{ aspectRatio: '210/297' }}>
-        <Comp />
+      <div className={`rounded-lg overflow-hidden border-2 transition-colors ${active ? 'border-primary' : 'border-ds-border'}`}>
+        <div style={{ aspectRatio: '210/297', overflow: 'hidden' }}>
+          <Comp />
+        </div>
+        <div className="bg-ds-card px-2 py-1.5 border-t border-ds-border flex items-center justify-between gap-1">
+          <p className="text-xs font-medium text-ds-text truncate">{label}</p>
+          {featured && <StarBadge />}
+        </div>
       </div>
     );
   }
-  return <TemplateThumbnail templateId={templateId} active={active} label={label} style={style} plan={plan} />;
+  return <TemplateThumbnailWithBadge templateId={templateId} active={active} label={label} style={style} plan={plan} featured={featured} />;
+}
+
+function TemplateThumbnailWithBadge({ templateId, active, label, style, plan, featured }) {
+  // TemplateThumbnail already shows the name; we just need to inject the featured badge.
+  return (
+    <div className="relative">
+      <TemplateThumbnail templateId={templateId} active={active} label={label} style={style} plan={plan} />
+      {featured && (
+        <div className="absolute bottom-[2.2rem] right-1.5 z-10">
+          <StarBadge />
+        </div>
+      )}
+    </div>
+  );
 }
 
 function StarBadge({ small = false }) {
@@ -119,23 +138,15 @@ export default function TemplateGallery({ currentTemplateId, onSelect, onClose }
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {filtered.map(t => (
-                <div key={t.id} className="cursor-pointer group" onClick={() => setPreview(t.id)}>
-                  <div className="relative">
-                    <PreviewThumb
-                      templateId={t.id}
-                      active={t.id === currentTemplateId}
-                      label={t.name}
-                      style={t.style}
-                      plan={t.plan}
-                    />
-                    {t.id === currentTemplateId && (
-                      <div className="absolute inset-0 rounded-lg ring-2 ring-primary pointer-events-none" />
-                    )}
-                  </div>
-                  <div className="mt-1.5 px-0.5 flex items-center justify-between gap-1">
-                    <span className="text-xs font-medium text-ds-text truncate">{t.name}</span>
-                    {isFeatured(t.id) && <StarBadge />}
-                  </div>
+                <div key={t.id} className="cursor-pointer" onClick={() => setPreview(t.id)}>
+                  <PreviewThumb
+                    templateId={t.id}
+                    active={t.id === currentTemplateId}
+                    label={t.name}
+                    style={t.style}
+                    plan={t.plan}
+                    featured={isFeatured(t.id)}
+                  />
                 </div>
               ))}
             </div>

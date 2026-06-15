@@ -2266,7 +2266,7 @@ export function TemplateThumbnail({ templateId, active = false, label, style: st
       </div>
       <div className="bg-ds-card px-2 py-1.5 border-t border-ds-border">
         <p className="text-xs font-medium text-ds-text truncate">{label}</p>
-        <p className="text-[10px] text-ds-textMuted">{styleTag}</p>
+        {styleTag && <p className="text-[10px] text-ds-textMuted">{styleTag}</p>}
       </div>
     </div>
   );
