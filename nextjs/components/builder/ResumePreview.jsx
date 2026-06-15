@@ -2090,7 +2090,7 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
                 showHeader={i === 0}
               />
               {hasFooter && (
-                <div style={{ borderTop: '1px solid #e0e0e0', padding: '6px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8pt', color: '#888', background: '#fff' }}>
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, borderTop: '1px solid #e0e0e0', padding: '6px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8pt', color: '#888', background: '#fff' }}>
                   <span>{[fs.name && pi.name, fs.email && pi.email].filter(Boolean).join(' · ')}</span>
                   {fs.pageNumbers && <span>Page {i + 1} of {numPages}</span>}
                 </div>
