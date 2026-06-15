@@ -2220,14 +2220,10 @@ function TemplatePanels({ resume, ds, ss, sectionAdjustments, visibleBlockIds = 
 
 // ── Template: Vertex ──────────────────────────────────────────────────────────
 
-function VertexRing({ pct, size, accentColor }) {
-  const ringSize = size * 3;
-  const holeSize = Math.round(ringSize * 0.7);
+function VertexBar({ pct }) {
   return (
-    <div style={{ position: 'relative', width: ringSize, height: ringSize, borderRadius: '50%', background: `conic-gradient(#fff ${pct}%, rgba(255,255,255,0.22) 0)`, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-      <div style={{ width: holeSize, height: holeSize, borderRadius: '50%', background: accentColor, display: 'grid', placeItems: 'center', fontSize: '0.72em', fontWeight: 800, color: '#fff' }}>
-        {pct}%
-      </div>
+    <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.22)', overflow: 'hidden', flex: 1 }}>
+      <div style={{ height: '100%', width: `${pct}%`, borderRadius: 2, background: '#fff' }} />
     </div>
   );
 }
@@ -2276,11 +2272,14 @@ function TemplateVertex({ resume, ds, ss, sectionAdjustments, visibleBlockIds = 
       if (!layout || layout === 'rows') {
         const entries = sec.content?.entries || [];
         return entries.map((s, i) => {
-          const pct = Math.min(100, Math.max(20, Math.round((s.level || 2) / 3 * 100)));
+          const pct = Math.min(100, Math.max(10, Math.round((s.level || 2) / 3 * 100)));
           return (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 8 }}>
-              <VertexRing pct={pct} size={fontSize} accentColor={accent} />
-              <span style={{ fontSize: '0.9em', color: '#fff' }}>{s.name}</span>
+            <div key={i} style={{ marginBottom: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 3 }}>
+                <span style={{ fontSize: '0.9em', color: '#fff' }}>{s.name}</span>
+                <span style={{ fontSize: '0.72em', color: 'rgba(255,255,255,0.65)' }}>{pct}%</span>
+              </div>
+              <VertexBar pct={pct} />
             </div>
           );
         });
@@ -2294,9 +2293,12 @@ function TemplateVertex({ resume, ds, ss, sectionAdjustments, visibleBlockIds = 
         return entries.map((l, i) => {
           const pct = LANG_LEVEL_PCT[l.level] || 55;
           return (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 8 }}>
-              <VertexRing pct={pct} size={fontSize} accentColor={accent} />
-              <span style={{ fontSize: '0.9em', color: '#fff' }}>{l.name}</span>
+            <div key={i} style={{ marginBottom: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 3 }}>
+                <span style={{ fontSize: '0.9em', color: '#fff' }}>{l.name}</span>
+                <span style={{ fontSize: '0.72em', color: 'rgba(255,255,255,0.65)' }}>{l.level || ''}</span>
+              </div>
+              <VertexBar pct={pct} />
             </div>
           );
         });
