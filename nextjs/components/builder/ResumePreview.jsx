@@ -1948,10 +1948,11 @@ function TemplateConfetti({ resume, ds, ss, sectionAdjustments, visibleBlockIds 
 
 const NEW_TMPL_SIDE_TYPES = new Set(['skills', 'languages', 'hobbies', 'certifications', 'references']);
 
-function splitNewTmplCols(sections) {
+function splitNewTmplCols(sections, sc) {
+  const sectionColumns = sc || {};
   return {
-    side: sections.filter(s => NEW_TMPL_SIDE_TYPES.has(s.type)),
-    main: sections.filter(s => !NEW_TMPL_SIDE_TYPES.has(s.type)),
+    side: sections.filter(s => sectionColumns[s.id] ? sectionColumns[s.id] === 'right' : NEW_TMPL_SIDE_TYPES.has(s.type)),
+    main: sections.filter(s => sectionColumns[s.id] ? sectionColumns[s.id] !== 'right' : !NEW_TMPL_SIDE_TYPES.has(s.type)),
   };
 }
 
@@ -1961,7 +1962,9 @@ function TemplateSpotlight({ resume, ds, ss, sectionAdjustments, visibleBlockIds
   const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
   const { pi, sections } = buildRenderData(resume);
-  const { main, side } = splitNewTmplCols(sections);
+  const colLayout = resume.layout_settings?.columnLayout;
+  const sc = resume.layout_settings?.sectionColumns || {};
+  const { main, side } = splitNewTmplCols(sections, sc);
 
   const hdrPad = `${Math.max(padY * 0.85, 13)}mm`;
 
@@ -2050,17 +2053,26 @@ function TemplateSpotlight({ resume, ds, ss, sectionAdjustments, visibleBlockIds
           )}
         </div>
       )}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 26, padding: `${padY * 0.6}mm ${padX}mm ${padY}mm` }}>
-        <div>
-          {main.map(sec => renderSecBlock(sec, s => renderSectionBody(s, util, {
-            expVariant: sec.display_settings?.entryLayout || 'stacked',
-            eduVariant: sec.display_settings?.entryLayout || 'compact',
+      {colLayout === 'one' ? (
+        <div style={{ padding: `${padY * 0.6}mm ${padX}mm ${padY}mm` }}>
+          {[...main, ...side].map(sec => renderSecBlock(sec, s => NEW_TMPL_SIDE_TYPES.has(s.type) ? renderSideBody(s) : renderSectionBody(s, util, {
+            expVariant: s.display_settings?.entryLayout || 'stacked',
+            eduVariant: s.display_settings?.entryLayout || 'compact',
           })))}
         </div>
-        <div>
-          {side.map(sec => renderSecBlock(sec, renderSideBody))}
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 26, padding: `${padY * 0.6}mm ${padX}mm ${padY}mm` }}>
+          <div>
+            {main.map(sec => renderSecBlock(sec, s => renderSectionBody(s, util, {
+              expVariant: s.display_settings?.entryLayout || 'stacked',
+              eduVariant: s.display_settings?.entryLayout || 'compact',
+            })))}
+          </div>
+          <div>
+            {side.map(sec => renderSecBlock(sec, renderSideBody))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -2151,7 +2163,9 @@ function TemplatePanels({ resume, ds, ss, sectionAdjustments, visibleBlockIds = 
   const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
   const { pi, sections } = buildRenderData(resume);
-  const { main, side } = splitNewTmplCols(sections);
+  const colLayout = resume.layout_settings?.columnLayout;
+  const sc = resume.layout_settings?.sectionColumns || {};
+  const { main, side } = splitNewTmplCols(sections, sc);
 
   const contactItems = [
     { kind: 'mail', val: pi.email }, { kind: 'phone', val: pi.phone },
@@ -2215,7 +2229,7 @@ function TemplatePanels({ resume, ds, ss, sectionAdjustments, visibleBlockIds = 
   return (
     <div style={{ fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#2C2C2A', padding: `${padY}mm ${padX}mm` }}>
       {showHeader && (
-        <div style={{ background: accent + '0F', border: `1px solid ${accent}22`, borderRadius: 18, padding: '20px 22px', marginBottom: 2 }}>
+        <div style={{ background: accent + '0F', border: `1px solid ${accent}22`, borderRadius: 18, padding: `${padY * 0.7}mm ${padX}mm`, marginBottom: 2 }}>
           <div style={{ fontSize: '2.4em', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1, color: colIf(t.name) || '#1E222B' }}>{pi.name || 'Your Name'}</div>
           {pi.title && <div style={{ fontSize: '1.1em', fontWeight: 500, color: colIf(t.jobTitle) || accent, marginTop: 4 }}>{pi.title}</div>}
           {contactItems.length > 0 && (
@@ -2230,10 +2244,16 @@ function TemplatePanels({ resume, ds, ss, sectionAdjustments, visibleBlockIds = 
           )}
         </div>
       )}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.55fr 1fr', gap: 18, marginTop: 18 }}>
-        <div>{main.map(sec => renderSecBlock(sec, renderMainBody, false))}</div>
-        <div>{side.map(sec => renderSecBlock(sec, renderSideBody, true))}</div>
-      </div>
+      {colLayout === 'one' ? (
+        <div style={{ marginTop: 18 }}>
+          {[...main, ...side].map(sec => renderSecBlock(sec, NEW_TMPL_SIDE_TYPES.has(sec.type) ? renderSideBody : renderMainBody, false))}
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: '1.55fr 1fr', gap: 18, marginTop: 18 }}>
+          <div>{main.map(sec => renderSecBlock(sec, renderMainBody, false))}</div>
+          <div>{side.map(sec => renderSecBlock(sec, renderSideBody, true))}</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2258,7 +2278,9 @@ function TemplateVertex({ resume, ds, ss, sectionAdjustments, visibleBlockIds = 
   const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
   const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
   const { pi, sections } = buildRenderData(resume);
-  const { main, side } = splitNewTmplCols(sections);
+  const colLayout = resume.layout_settings?.columnLayout;
+  const sc = resume.layout_settings?.sectionColumns || {};
+  const { main, side } = splitNewTmplCols(sections, sc);
 
   const contactItems = [
     { kind: 'mail', val: pi.email }, { kind: 'phone', val: pi.phone },
@@ -2324,9 +2346,9 @@ function TemplateVertex({ resume, ds, ss, sectionAdjustments, visibleBlockIds = 
   };
 
   return (
-    <div style={{ fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#2C2C2A', display: 'grid', gridTemplateColumns: '1fr 33%', minHeight: '100%' }}>
+    <div style={{ fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#2C2C2A', display: colLayout === 'one' ? 'block' : 'grid', gridTemplateColumns: '1fr 33%', minHeight: '100%' }}>
       {/* Main column */}
-      <div style={{ padding: '30px 26px' }}>
+      <div style={{ padding: `${padY}mm ${padX}mm` }}>
         {showHeader && (
           <>
             <div style={{ fontSize: '2.6em', fontWeight: 800, letterSpacing: '-0.025em', lineHeight: 1, color: colIf(t.name) || '#1A1D24' }}>{pi.name || 'Your Name'}</div>
@@ -2351,7 +2373,7 @@ function TemplateVertex({ resume, ds, ss, sectionAdjustments, visibleBlockIds = 
         })}
       </div>
       {/* Accent rail */}
-      <div style={{ background: accent, color: '#fff', padding: '30px 22px' }}>
+      <div style={{ background: accent, color: '#fff', padding: `${padY}mm ${Math.round(padX * 0.85)}mm`, display: colLayout === 'one' ? 'none' : undefined }}>
         {showHeader && (
           <>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 18 }}>
