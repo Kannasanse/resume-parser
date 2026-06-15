@@ -61,7 +61,7 @@ export default function TestConfigModal({ topic, onClose }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to generate test');
-      router.push(`/self-test/${data.session.id}`);
+      router.push(`/interview-prep/${data.session.id}`);
     } catch (err) {
       setError(err.message);
       setGenerating(false);

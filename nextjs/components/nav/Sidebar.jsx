@@ -77,7 +77,7 @@ const USER_NAV_GROUPS = [
     id: 'learning', label: 'LEARNING',
     items: [
       { id: 'my-courses', icon: 'bookOpen', label: 'My Courses', href: '/my-courses' },
-      { id: 'self-test', icon: 'target', label: 'Interview Prep', href: '/self-test' },
+      { id: 'interview-prep', icon: 'target', label: 'Interview Prep', href: '/interview-prep' },
       { id: 'playground', icon: 'code', label: 'Code Playground', href: '/utilities/playground' },
       { id: 'notes', icon: 'notebook', label: 'Notes', href: '/notes' },
     ],

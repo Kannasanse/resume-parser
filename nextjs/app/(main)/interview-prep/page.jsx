@@ -276,7 +276,7 @@ function SessionHistoryTable() {
       const r = await fetch(`/api/v1/self-test/sessions/${sessionId}/retake`, { method: 'POST' });
       const d = await r.json();
       if (r.ok && d.sessionId) {
-        router.push(`/self-test/${d.sessionId}`);
+        router.push(`/interview-prep/${d.sessionId}`);
         return;
       }
       setRetakeError(d.error || 'Failed to create retake session.');
@@ -418,7 +418,7 @@ function SessionHistoryTable() {
                       <span className="text-[12px] text-[#6B7280]">{formatDate(s.createdAt)}</span>
                     </div>
                     <div className="flex items-center gap-3 mt-1">
-                      <a href={`/self-test/${s.id}`}
+                      <a href={`/interview-prep/${s.id}`}
                         className="text-[13px] font-semibold text-[#185FA5] hover:underline">Review</a>
                       <button onClick={() => handleRetake(s.id)} disabled={!!retakingId}
                         className="text-[13px] font-semibold text-[#185FA5] hover:underline disabled:opacity-50">
@@ -484,7 +484,7 @@ function SessionHistoryTable() {
 
                     {/* ACTIONS */}
                     <div className="px-4 flex items-center gap-3">
-                      <a href={`/self-test/${s.id}`}
+                      <a href={`/interview-prep/${s.id}`}
                         className="text-[13px] font-semibold text-[#185FA5] dark:text-[#5B9FD4] hover:underline">
                         Review
                       </a>

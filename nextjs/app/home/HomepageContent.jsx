@@ -229,7 +229,7 @@ const FEATURES = [
   {
     icon: 'M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 0 1 .665 6.479A11.952 11.952 0 0 0 12 20.055a11.952 11.952 0 0 0-6.824-2.998 12.078 12.078 0 0 1 .665-6.479L12 14zm-4 6v-7.5l4-2.222',
     title: 'Interview Prep', body: 'Scenario-based questions for medium and hard difficulty. Shared question library gets smarter with every quiz taken.',
-    stat: '3 assessment modes', link: 'Start a test →', accent: '#F59E0B', href: '/self-test',
+    stat: '3 assessment modes', link: 'Start a test →', accent: '#F59E0B', href: '/interview-prep',
   },
   {
     icon: 'M9 20l-5.447-2.724A1 1 0 0 1 3 16.382V5.618a1 1 0 0 1 1.447-.894L9 7m0 13l6-3m-6-3V7m6 10l4.553 2.276A1 1 0 0 0 21 18.382V7.618a1 1 0 0 0-1.447-.894L15 9m0 11V9m0 0L9 7',
@@ -793,7 +793,7 @@ const DUAL_CARDS = [
     body: 'Three assessment modes: by skill, by job description, or by your own content. Medium and hard difficulty uses real-world scenario questions. A shared question library gets smarter with every quiz — your questions help future users too.',
     stats: ['3 assessment modes', 'Scenario-based questions', 'Shared question library'],
     cta: 'Start practising →',
-    href: '/self-test',
+    href: '/interview-prep',
   },
 ];
 
@@ -935,7 +935,7 @@ const FOOTER_LINKS = {
   Product: [
     { label: 'Resume Builder', href: '/builder' },
     { label: 'ATS Score', href: '/upload' },
-    { label: 'Interview Prep', href: '/self-test' },
+    { label: 'Interview Prep', href: '/interview-prep' },
     { label: 'Career Map', href: '/career-map' },
     { label: 'Study Plans', href: '/my-courses' },
     { label: 'Notes', href: '/notes' },

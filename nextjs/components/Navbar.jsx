@@ -205,7 +205,7 @@ export default function Navbar() {
               <>
                 {navLink('/home', 'Home', <HomeIcon />, true)}
                 {navLink('/builder', 'Resume Builder', <PenIcon />)}
-                {navLink('/self-test', 'Interview Prep', <SelfTestIcon />)}
+                {navLink('/interview-prep', 'Interview Prep', <SelfTestIcon />)}
                 {navLink('/career-map', 'Career Map', <CareerMapIcon />)}
                 {navLink('/my-courses', 'My Courses', <MyCoursesIcon />)}
                 {navLink('/notes', 'Notes', <NotesIcon />)}
@@ -360,7 +360,7 @@ export default function Navbar() {
             <>
               {drawerLink('/home', 'Home', <HomeIcon />, true)}
               {drawerLink('/builder', 'Resume Builder', <PenIcon />)}
-              {drawerLink('/self-test', 'Interview Prep', <SelfTestIcon />)}
+              {drawerLink('/interview-prep', 'Interview Prep', <SelfTestIcon />)}
               {drawerLink('/career-map', 'Career Map', <CareerMapIcon />)}
               {drawerLink('/my-courses', 'My Courses', <MyCoursesIcon />)}
               {drawerLink('/notes', 'Notes', <NotesIcon />)}

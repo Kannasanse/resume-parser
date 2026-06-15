@@ -52,20 +52,20 @@ const DEEP_DIVE = [
 
 export default function InterviewPrepPage() {
   return (
-    <FeaturePageLayout featureName="Interview Prep" appHref="/self-test">
+    <FeaturePageLayout featureName="Interview Prep" appHref="/interview-prep">
       <FeatureHero
         eyebrow="LEARNING · INTERVIEW PREP"
         heading={"Practice interviews\nthat actually prepare you."}
         sub="Three assessment modes, scenario-based questions, and a shared question library that gets smarter with every quiz taken."
         screenshotLabel="Interview Prep"
         featureName="Interview Prep"
-        appHref="/self-test"
+        appHref="/interview-prep"
         accentColor={ACCENT}
         featureSlug="interview-prep"
       />
       <FeatureBenefits benefits={BENEFITS} />
       <FeatureDeepDive sections={DEEP_DIVE} accentColor={ACCENT} featureSlug="interview-prep" />
-      <FeatureCTABanner featureName="Interview Prep" appHref="/self-test" />
+      <FeatureCTABanner featureName="Interview Prep" appHref="/interview-prep" />
     </FeaturePageLayout>
   );
 }

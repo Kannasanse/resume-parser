@@ -38,7 +38,7 @@ const PAGE_META = [
   { match: p => p === '/home',                         title: 'Home',             ctx: 'default' },
   { match: p => p.startsWith('/builder'),              title: 'Resume Builder',   ctx: 'builder' },
   { match: p => p.startsWith('/portfolios'),           title: 'Portfolios',       ctx: 'default' },
-  { match: p => p.startsWith('/self-test'),            title: 'Interview Prep',   ctx: 'default' },
+  { match: p => p.startsWith('/interview-prep'),        title: 'Interview Prep',   ctx: 'default' },
   { match: p => p.startsWith('/career-map'),           title: 'Career Map',       ctx: 'career-map' },
   { match: p => p.startsWith('/my-courses'),           title: 'My Courses',       ctx: 'my-courses' },
   { match: p => p.startsWith('/notes'),                title: 'Notes',            ctx: 'notes' },
