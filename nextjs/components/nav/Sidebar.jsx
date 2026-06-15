@@ -77,12 +77,7 @@ const USER_NAV_GROUPS = [
     id: 'learning', label: 'LEARNING',
     items: [
       { id: 'my-courses', icon: 'bookOpen', label: 'My Courses', href: '/my-courses' },
-      {
-        id: 'self-test', icon: 'target', label: 'Interview Prep', href: '/self-test',
-        children: [
-          { id: 'interview-buddy', icon: 'mic', label: 'Interview Buddy', href: '/interview-buddy' },
-        ],
-      },
+      { id: 'self-test', icon: 'target', label: 'Interview Prep', href: '/self-test' },
       { id: 'playground', icon: 'code', label: 'Code Playground', href: '/utilities/playground' },
       { id: 'notes', icon: 'notebook', label: 'Notes', href: '/notes' },
     ],
@@ -230,84 +225,6 @@ function NavItem({ item, isActive, collapsed, showTooltip, onClick }) {
   );
 }
 
-// ── Nav item with collapsible children ────────────────────────────────────────
-function NavParentItem({ item, activeId, collapsed }) {
-  const childActive = item.children?.some(c => c.id === activeId);
-  const selfActive = item.id === activeId;
-  const [open, setOpen] = useState(childActive || selfActive);
-
-  // Keep open when a child becomes active
-  useEffect(() => {
-    if (childActive) setOpen(true);
-  }, [childActive]);
-
-  const base = `relative flex items-center gap-2.5 font-medium cursor-pointer transition-colors duration-150 select-none no-underline`;
-  const expanded = `h-10 px-3 mx-2 rounded-[10px] text-[14px]`;
-  const collapsedCls = `h-11 w-11 mx-auto rounded-xl justify-center`;
-  const activeStyle = `bg-[#E6F1FB] dark:bg-[rgba(24,95,165,0.18)] text-[#185FA5] dark:text-[#5B9FD4] font-semibold shadow-[inset_3px_0_0_0_#185FA5]`;
-  const hoverStyle = `hover:bg-[rgba(24,95,165,0.06)] dark:hover:bg-[rgba(24,95,165,0.12)] hover:text-[#185FA5] dark:hover:text-[#5B9FD4]`;
-  const defaultStyle = `text-[#2C2C2A] dark:text-[#E8EFF7]`;
-
-  if (collapsed) {
-    // In collapsed mode just show the parent icon; children are hidden
-    return (
-      <Link
-        href={item.href}
-        className={`${base} ${collapsedCls} ${selfActive || childActive ? activeStyle : `${defaultStyle} ${hoverStyle}`}`}
-        title={item.label}
-      >
-        <span className={selfActive || childActive ? 'text-[#185FA5] dark:text-[#5B9FD4]' : 'text-[#6B7280] dark:text-[#8BA3C1]'}>
-          <NavIc name={item.icon} size={20} />
-        </span>
-      </Link>
-    );
-  }
-
-  return (
-    <div>
-      {/* Parent row — clicking toggles children; navigates via Link */}
-      <div className={`${base} ${expanded} ${selfActive ? activeStyle : `${defaultStyle} ${hoverStyle}`}`}
-        onClick={() => setOpen(o => !o)}
-      >
-        <span className={selfActive ? 'text-[#185FA5] dark:text-[#5B9FD4]' : 'text-[#6B7280] dark:text-[#8BA3C1]'}>
-          <NavIc name={item.icon} size={18} />
-        </span>
-        <Link href={item.href} className="flex-1 truncate" onClick={e => e.stopPropagation()}>
-          {item.label}
-        </Link>
-        <svg
-          width="12" height="12" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-          className={`flex-shrink-0 text-[#9CA3AF] transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </div>
-
-      {/* Children */}
-      {open && (
-        <div className="flex flex-col gap-0.5 mt-0.5 mb-0.5">
-          {item.children.map(child => (
-            <Link
-              key={child.id}
-              href={child.href}
-              className={`${base} h-9 pl-10 pr-3 mx-2 rounded-[10px] text-[13px]
-                ${child.id === activeId
-                  ? 'bg-[#E6F1FB] dark:bg-[rgba(24,95,165,0.18)] text-[#185FA5] dark:text-[#5B9FD4] font-semibold'
-                  : `${defaultStyle} ${hoverStyle}`}`}
-            >
-              <span className={child.id === activeId ? 'text-[#185FA5] dark:text-[#5B9FD4]' : 'text-[#6B7280] dark:text-[#8BA3C1]'}>
-                <NavIc name={child.icon} size={15} />
-              </span>
-              <span className="flex-1 truncate">{child.label}</span>
-            </Link>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── Main sidebar ──────────────────────────────────────────────────────────────
 export default function Sidebar() {
   const pathname = usePathname();
@@ -344,11 +261,6 @@ export default function Sidebar() {
   function activeId() {
     for (const g of navGroups) {
       for (const item of g.items) {
-        if (item.children) {
-          for (const child of item.children) {
-            if (isActive(child.href)) return child.id;
-          }
-        }
         if (isActive(item.href, item.id === 'dashboard')) return item.id;
       }
     }
@@ -401,21 +313,12 @@ export default function Sidebar() {
             )}
             <div className={collapsed ? 'flex flex-col items-center gap-0.5 py-1' : 'flex flex-col gap-0.5'}>
               {group.items.map(item => (
-                item.children ? (
-                  <NavParentItem
-                    key={item.id}
-                    item={item}
-                    activeId={currentActive}
-                    collapsed={collapsed}
-                  />
-                ) : (
-                  <NavItem
-                    key={item.id}
-                    item={item}
-                    isActive={currentActive === item.id}
-                    collapsed={collapsed}
-                  />
-                )
+                <NavItem
+                  key={item.id}
+                  item={item}
+                  isActive={currentActive === item.id}
+                  collapsed={collapsed}
+                />
               ))}
             </div>
           </div>

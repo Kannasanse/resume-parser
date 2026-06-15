@@ -41,6 +41,14 @@ function JdIcon() {
   );
 }
 
+function MicIcon() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+    </svg>
+  );
+}
+
 function ChevronDown() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -798,7 +806,7 @@ export default function SelfTestCreate() {
       {/* ── Mode selection ───────────────────────────────────────────────────── */}
       {step === 'mode-select' && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 w-full">
             {[
               { id: 'skills',  icon: <SkillsIcon />,  title: 'Assess by Skill',           desc: 'Select specific skills and get questions testing your knowledge of each.' },
               { id: 'content', icon: <ContentIcon />, title: 'Assess by Content',          desc: 'Paste your notes or study material and generate questions from it.' },
@@ -812,6 +820,13 @@ export default function SelfTestCreate() {
                 <p className="text-xs text-[var(--c-primary)] font-medium mt-3">Start →</p>
               </button>
             ))}
+            <a href="/interview-buddy"
+              className="card card-interactive mode-card text-left no-underline">
+              <span className="stat-icon mb-3"><MicIcon /></span>
+              <p className="font-semibold text-sm mb-1 text-[var(--c-text)]">Interview Buddy</p>
+              <p className="text-xs text-[var(--c-text-2)] leading-relaxed">Paste a job description and get AI-generated interview questions with coaching tips.</p>
+              <p className="text-xs text-[var(--c-primary)] font-medium mt-3">Open →</p>
+            </a>
           </div>
 
           {/* Session history table (only on mode-select step) */}
