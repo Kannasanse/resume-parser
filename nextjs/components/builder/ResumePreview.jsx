@@ -158,35 +158,44 @@ function splitColumns(sections, sectionColumns, defaultLeftSet) {
   };
 }
 
-// Renders a mix-mode grid with explicit row assignments so left+right sections
-// share a row instead of leaving gaps when DOM order doesn't interleave them.
+// Renders mix-mode layout. Full-width sections span both columns. Contiguous
+// runs of left/right sections are rendered as two independent column divs so
+// each column scrolls independently — no row-height synchronization that would
+// leave whitespace when one column is taller than the other.
 function renderMixGrid(sections, sc, gridStyle, renderSec) {
-  let gridRow = 0;
-  const leftFilled  = new Set();
-  const rightFilled = new Set();
-  const rowAssign = sections.map(sec => {
+  // Split sections into runs: 'full' runs and 'side' runs.
+  const runs = [];
+  for (const sec of sections) {
     const col = sc[sec.id] || 'full';
     if (col === 'full') {
-      gridRow++;
-      return { sec, col, row: gridRow };
+      runs.push({ type: 'full', sec });
+    } else {
+      const last = runs[runs.length - 1];
+      if (last && last.type === 'side') {
+        last.secs.push(sec);
+      } else {
+        runs.push({ type: 'side', secs: [sec] });
+      }
     }
-    let r = gridRow + 1;
-    while (true) {
-      if (col === 'left'  && !leftFilled.has(r))  { leftFilled.add(r);  return { sec, col, row: r }; }
-      if (col === 'right' && !rightFilled.has(r)) { rightFilled.add(r); return { sec, col, row: r }; }
-      r++;
+  }
+
+  const output = [];
+  for (const run of runs) {
+    if (run.type === 'full') {
+      const rendered = renderSec(run.sec);
+      if (rendered) output.push(rendered);
+    } else {
+      const left  = run.secs.filter(s => (sc[s.id] || 'full') === 'left');
+      const right = run.secs.filter(s => sc[s.id] === 'right');
+      output.push(
+        <div key={run.secs[0].id + '_run'} style={gridStyle}>
+          <div>{left.map(sec => renderSec(sec))}</div>
+          <div>{right.map(sec => renderSec(sec))}</div>
+        </div>
+      );
     }
-  });
-  return (
-    <div style={gridStyle}>
-      {rowAssign.map(({ sec, col, row }) => {
-        const rendered = renderSec(sec);
-        if (!rendered) return null;
-        const gridColumn = col === 'full' ? '1 / span 2' : col === 'left' ? '1' : '2';
-        return <div key={sec.id} style={{ gridColumn, gridRow: row }}>{rendered}</div>;
-      })}
-    </div>
-  );
+  }
+  return output;
 }
 
 // Wraps section list with one/two/mix column layout for single-column templates.
@@ -1820,8 +1829,11 @@ function TemplateVerdantCrest({ resume, ds, ss, sectionAdjustments, visibleBlock
         if (colLayout === 'one') return (
           <div style={{ padding: `${padY * 0.4}mm ${padX}mm ${padY}mm` }}>{sections.map(renderSec)}</div>
         );
-        if (colLayout === 'mix') return renderMixGrid(sections, sc,
-          { padding: `${padY * 0.4}mm ${padX}mm ${padY}mm`, display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 26, alignItems: 'start' }, renderSec);
+        if (colLayout === 'mix') return (
+          <div style={{ padding: `${padY * 0.4}mm ${padX}mm ${padY}mm` }}>
+            {renderMixGrid(sections, sc, { display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 26, alignItems: 'start' }, renderSec)}
+          </div>
+        );
         const left  = sections.filter(s => sc[s.id] ? sc[s.id] === 'left' : !VERDANT_RIGHT_TYPES.has(s.type));
         const right = sections.filter(s => sc[s.id] ? sc[s.id] === 'right' : VERDANT_RIGHT_TYPES.has(s.type));
         return (
