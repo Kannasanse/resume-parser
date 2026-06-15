@@ -44,9 +44,11 @@ function LockIcon()        { return <svg width="22" height="22" viewBox="0 0 24 
 function UnlockIcon()      { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>; }
 function PenIcon()         { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>; }
 function MergeWordIcon()   { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 6H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3"/><path d="M16 6h3a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-3"/><line x1="12" y1="2" x2="12" y2="22"/></svg>; }
+function EditPdfIcon()     { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="m10.5 14.5 1 1 3-3"/><path d="M9 17h3"/></svg>; }
 
 // ── Tool data ─────────────────────────────────────────────────────────────────
 const PDF_TOOLS = [
+  { href: '/utilities/pdf/edit-pdf',         name: 'Edit PDF',              description: 'Add text, annotations, fill forms, draw and sign.',             icon: <EditPdfIcon />,  gradient: 'from-[#1e3a5f] to-[#2563eb]' },
   { href: '/utilities/pdf/merge',          name: 'Merge PDF',             description: 'Combine multiple PDF files into one, in any order.',           icon: <MergeIcon />,    gradient: 'from-[#E6F1FB] to-[#D4E8F8]' },
   { href: '/utilities/pdf/split',          name: 'Split PDF',             description: 'Extract pages or split a PDF into multiple files.',             icon: <SplitIcon />,    gradient: 'from-[#FEF3C7] to-[#FDE68A]' },
   { href: '/utilities/pdf/compress',       name: 'Compress PDF',          description: 'Reduce file size while keeping quality acceptable.',            icon: <CompressIcon />, gradient: 'from-[#D1FAE5] to-[#A7F3D0]' },
