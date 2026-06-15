@@ -949,7 +949,9 @@ function TemplateAtlanticBlue({ resume, ds, ss, sectionAdjustments, visibleBlock
   const sideColor = '#1F2A44';
   const headingIcon = resume.layout_settings?.headingIcon || 'none';
 
-  const { left: sideIds, right: bodyIds } = splitColumns(sections, resume.layout_settings?.sectionColumns, ATLANTIC_SIDEBAR_TYPES);
+  const sc      = resume.layout_settings?.sectionColumns || {};
+  const sideIds = sections.filter(s => sc[s.id] ? sc[s.id] === 'left' : ATLANTIC_SIDEBAR_TYPES.has(s.type));
+  const bodyIds = sections.filter(s => sc[s.id] ? sc[s.id] === 'right' : !ATLANTIC_SIDEBAR_TYPES.has(s.type));
 
   const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#2C2C2A', display: 'grid', gridTemplateColumns: '32% 1fr', minHeight: '100%', alignItems: 'stretch' };
 
@@ -1101,7 +1103,8 @@ function TemplateAtlanticCrest({ resume, ds, ss, sectionAdjustments, visibleBloc
   const bannerColor = '#1F2A44';
   const headingIcon = resume.layout_settings?.headingIcon || 'none';
 
-  const { left: leftIds, right: rightIds } = splitColumns(sections, resume.layout_settings?.sectionColumns, CREST_LEFT_TYPES);
+  const colLayout = resume.layout_settings?.columnLayout;
+  const sc        = resume.layout_settings?.sectionColumns || {};
 
   const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#1F2937', background: '#fff' };
 
@@ -1141,12 +1144,12 @@ function TemplateAtlanticCrest({ resume, ds, ss, sectionAdjustments, visibleBloc
       ) : (
         <div style={{ height: 8, background: bannerColor, width: '100%' }} />
       )}
-      {/* Two-column body */}
-      <div style={{ padding: `${padY * 0.6}mm ${padX}mm`, display: 'grid', gridTemplateColumns: '38% 1fr', gap: 18 }}>
-        <div>
-          {leftIds.map(sec => {
+      {/* Body — one / mix / two-column */}
+      <div style={{ padding: `${padY * 0.6}mm ${padX}mm` }}>
+        {(() => {
+          const renderSec = sec => {
             if (!isSectionVisible(sec, visibleBlockIds)) return null;
-            const body = renderSectionBody(sec, util);
+            const body = renderSectionBody(sec, util, { expVariant: CREST_LEFT_TYPES.has(sec.type) ? undefined : 'stacked' });
             if (!body) return null;
             const adj = sectionAdjustments?.[sec.id];
             const headingVisible = showSectionHeading(sec, visibleBlockIds);
@@ -1156,23 +1159,27 @@ function TemplateAtlanticCrest({ resume, ds, ss, sectionAdjustments, visibleBloc
                 {body}
               </div>
             );
-          })}
-        </div>
-        <div>
-          {rightIds.map(sec => {
-            if (!isSectionVisible(sec, visibleBlockIds)) return null;
-            const body = renderSectionBody(sec, util, { expVariant: 'stacked' });
-            if (!body) return null;
-            const adj = sectionAdjustments?.[sec.id];
-            const headingVisible = showSectionHeading(sec, visibleBlockIds);
-            return (
-              <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
-                {headingVisible && <PillHead iconName={SEC_ICONS[sec.type]}>{sec.title}</PillHead>}
-                {body}
-              </div>
-            );
-          })}
-        </div>
+          };
+          if (colLayout === 'one') return sections.map(renderSec);
+          if (colLayout === 'mix') return (
+            <div style={{ display: 'grid', gridTemplateColumns: '38% 1fr', gap: 18, alignItems: 'start' }}>
+              {sections.map(sec => {
+                const rendered = renderSec(sec);
+                if (!rendered) return null;
+                const col = sc[sec.id] || 'full';
+                return <div key={sec.id} style={{ gridColumn: col === 'full' ? '1 / span 2' : col === 'left' ? '1' : '2' }}>{rendered}</div>;
+              })}
+            </div>
+          );
+          const left  = sections.filter(s => sc[s.id] ? sc[s.id] === 'left' : CREST_LEFT_TYPES.has(s.type));
+          const right = sections.filter(s => sc[s.id] ? sc[s.id] === 'right' : !CREST_LEFT_TYPES.has(s.type));
+          return (
+            <div style={{ display: 'grid', gridTemplateColumns: '38% 1fr', gap: 18, alignItems: 'start' }}>
+              <div>{left.map(renderSec)}</div>
+              <div>{right.map(renderSec)}</div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
@@ -1366,7 +1373,8 @@ function TemplateAzureWave({ resume, ds, ss, sectionAdjustments, visibleBlockIds
   const wave     = '#D9ECFB';
   const waveDeep = '#BBDDF6';
 
-  const { left: leftSections, right: rightSections } = splitColumns(sections, resume.layout_settings?.sectionColumns, WAVE_LEFT_TYPES);
+  const colLayout = resume.layout_settings?.columnLayout;
+  const sc        = resume.layout_settings?.sectionColumns || {};
 
   const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#2C2C2A', position: 'relative', minHeight: '100%', overflow: 'hidden' };
 
@@ -1408,38 +1416,40 @@ function TemplateAzureWave({ resume, ds, ss, sectionAdjustments, visibleBlockIds
             {buildDetailsBlock(pi, ds, util, { iconColor: colIf(t.headerIcons) || accent })}
           </div>
         )}
-        <div style={{ display: 'grid', gridTemplateColumns: '38% 1fr', gap: 22 }}>
-          <div>
-            {leftSections.map(sec => {
-              if (!isSectionVisible(sec, visibleBlockIds)) return null;
-              const body = renderSectionBody(sec, util);
-              if (!body) return null;
-              const adj = sectionAdjustments?.[sec.id];
-              const headingVisible = showSectionHeading(sec, visibleBlockIds);
-              return (
-                <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
-                  {headingVisible && <SmallCapsHead iconName={SEC_ICONS[sec.type]}>{sec.title}</SmallCapsHead>}
-                  {body}
-                </div>
-              );
-            })}
-          </div>
-          <div>
-            {rightSections.map(sec => {
-              if (!isSectionVisible(sec, visibleBlockIds)) return null;
-              const body = renderSectionBody(sec, util, { expVariant: sec.type === 'work_experience' ? 'stacked' : undefined });
-              if (!body) return null;
-              const adj = sectionAdjustments?.[sec.id];
-              const headingVisible = showSectionHeading(sec, visibleBlockIds);
-              return (
-                <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
-                  {headingVisible && <SmallCapsHead iconName={SEC_ICONS[sec.type]}>{sec.title}</SmallCapsHead>}
-                  {body}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        {(() => {
+          const renderSec = sec => {
+            if (!isSectionVisible(sec, visibleBlockIds)) return null;
+            const body = renderSectionBody(sec, util, { expVariant: sec.type === 'work_experience' ? 'stacked' : undefined });
+            if (!body) return null;
+            const adj = sectionAdjustments?.[sec.id];
+            const headingVisible = showSectionHeading(sec, visibleBlockIds);
+            return (
+              <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
+                {headingVisible && <SmallCapsHead iconName={SEC_ICONS[sec.type]}>{sec.title}</SmallCapsHead>}
+                {body}
+              </div>
+            );
+          };
+          if (colLayout === 'one') return <>{sections.map(renderSec)}</>;
+          if (colLayout === 'mix') return (
+            <div style={{ display: 'grid', gridTemplateColumns: '38% 1fr', gap: 22, alignItems: 'start' }}>
+              {sections.map(sec => {
+                const rendered = renderSec(sec);
+                if (!rendered) return null;
+                const col = sc[sec.id] || 'full';
+                return <div key={sec.id} style={{ gridColumn: col === 'full' ? '1 / span 2' : col === 'left' ? '1' : '2' }}>{rendered}</div>;
+              })}
+            </div>
+          );
+          const left  = sections.filter(s => sc[s.id] ? sc[s.id] === 'left' : WAVE_LEFT_TYPES.has(s.type));
+          const right = sections.filter(s => sc[s.id] ? sc[s.id] === 'right' : !WAVE_LEFT_TYPES.has(s.type));
+          return (
+            <div style={{ display: 'grid', gridTemplateColumns: '38% 1fr', gap: 22, alignItems: 'start' }}>
+              <div>{left.map(renderSec)}</div>
+              <div>{right.map(renderSec)}</div>
+            </div>
+          );
+        })()}
         {/* Footer */}
         <div style={{ position: 'absolute', left: padX + 'mm', right: padX + 'mm', bottom: padY * 0.45 + 'mm', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#9CA3AF', fontSize: '0.78em' }}>
           <span>{pi.link || ''}</span>
@@ -1495,7 +1505,8 @@ function TemplateNoirFlash({ resume, ds, ss, sectionAdjustments, visibleBlockIds
   const isDefault = !ds.accentColor || ds.accentColor === '#185FA5';
   const yellow = isDefault ? '#F5C842' : accent;
 
-  const { left: leftSections, right: rightSections } = splitColumns(sections, resume.layout_settings?.sectionColumns, NOIR_LEFT_TYPES);
+  const colLayout = resume.layout_settings?.columnLayout;
+  const sc        = resume.layout_settings?.sectionColumns || {};
 
   const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#E8EFF7', background: '#141414', position: 'relative', minHeight: '100%', overflow: 'hidden' };
 
@@ -1554,41 +1565,43 @@ function TemplateNoirFlash({ resume, ds, ss, sectionAdjustments, visibleBlockIds
             </div>
           </div>
         )}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 24 }}>
-          <div>
-            {leftSections.map(sec => {
-              if (!isSectionVisible(sec, visibleBlockIds)) return null;
-              const headingVisible = showSectionHeading(sec, visibleBlockIds);
-              const adj = sectionAdjustments?.[sec.id];
-              let body;
-              if (sec.type === 'skills') body = <NoirSkillsLolly sec={sec} accentColor={yellow} />;
-              else if (sec.type === 'languages') body = <NoirLanguagesGrid sec={sec} />;
-              else body = renderSectionBody(sec, util);
-              if (!body) return null;
-              return (
-                <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
-                  {headingVisible && <NoirHead iconName={SEC_ICONS[sec.type]}>{sec.title}</NoirHead>}
-                  {body}
-                </div>
-              );
-            })}
-          </div>
-          <div>
-            {rightSections.map(sec => {
-              if (!isSectionVisible(sec, visibleBlockIds)) return null;
-              const body = renderSectionBody(sec, util, { expVariant: sec.type === 'work_experience' ? 'stacked' : undefined });
-              if (!body) return null;
-              const adj = sectionAdjustments?.[sec.id];
-              const headingVisible = showSectionHeading(sec, visibleBlockIds);
-              return (
-                <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
-                  {headingVisible && <NoirHead iconName={SEC_ICONS[sec.type]}>{sec.title}</NoirHead>}
-                  {body}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        {(() => {
+          const renderSec = sec => {
+            if (!isSectionVisible(sec, visibleBlockIds)) return null;
+            const headingVisible = showSectionHeading(sec, visibleBlockIds);
+            const adj = sectionAdjustments?.[sec.id];
+            let body;
+            if (sec.type === 'skills')         body = <NoirSkillsLolly sec={sec} accentColor={yellow} />;
+            else if (sec.type === 'languages') body = <NoirLanguagesGrid sec={sec} />;
+            else body = renderSectionBody(sec, util, { expVariant: sec.type === 'work_experience' ? 'stacked' : undefined });
+            if (!body) return null;
+            return (
+              <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
+                {headingVisible && <NoirHead iconName={SEC_ICONS[sec.type]}>{sec.title}</NoirHead>}
+                {body}
+              </div>
+            );
+          };
+          if (colLayout === 'one') return <>{sections.map(renderSec)}</>;
+          if (colLayout === 'mix') return (
+            <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 24, alignItems: 'start' }}>
+              {sections.map(sec => {
+                const rendered = renderSec(sec);
+                if (!rendered) return null;
+                const col = sc[sec.id] || 'full';
+                return <div key={sec.id} style={{ gridColumn: col === 'full' ? '1 / span 2' : col === 'left' ? '1' : '2' }}>{rendered}</div>;
+              })}
+            </div>
+          );
+          const left  = sections.filter(s => sc[s.id] ? sc[s.id] === 'left' : NOIR_LEFT_TYPES.has(s.type));
+          const right = sections.filter(s => sc[s.id] ? sc[s.id] === 'right' : !NOIR_LEFT_TYPES.has(s.type));
+          return (
+            <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 24, alignItems: 'start' }}>
+              <div>{left.map(renderSec)}</div>
+              <div>{right.map(renderSec)}</div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
@@ -1673,8 +1686,8 @@ function TemplateVerdantCrest({ resume, ds, ss, sectionAdjustments, visibleBlock
   const greenDeep  = isDefault ? '#5BAE82' : accent;
   const greenSoft  = isDefault ? '#D6EFE0' : accent + '33';
 
-  const VERDANT_LEFT_DEFAULT = new Set(sections.filter(s => !VERDANT_RIGHT_TYPES.has(s.type)).map(s => s.type));
-  const { left: leftSections, right: rightSections } = splitColumns(sections, resume.layout_settings?.sectionColumns, VERDANT_LEFT_DEFAULT);
+  const colLayout = resume.layout_settings?.columnLayout;
+  const sc        = resume.layout_settings?.sectionColumns || {};
 
   const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#1F2937', minHeight: '100%', position: 'relative', overflow: 'hidden' };
 
@@ -1720,43 +1733,47 @@ function TemplateVerdantCrest({ resume, ds, ss, sectionAdjustments, visibleBlock
       ) : (
         <div style={{ height: 4, background: greenDeep, width: '100%' }} />
       )}
-      {/* Two-column body */}
-      <div style={{ padding: `${padY * 0.4}mm ${padX}mm ${padY}mm`, display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 26 }}>
-        <div>
-          {leftSections.map(sec => {
-            if (!isSectionVisible(sec, visibleBlockIds)) return null;
-            const body = renderSectionBody(sec, util, { expVariant: sec.type === 'work_experience' ? 'stacked' : undefined });
-            if (!body) return null;
-            const adj = sectionAdjustments?.[sec.id];
-            const headingVisible = showSectionHeading(sec, visibleBlockIds);
-            return (
-              <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
-                {headingVisible && <GreenHead iconName={SEC_ICONS[sec.type]}>{sec.title}</GreenHead>}
-                {body}
-              </div>
-            );
-          })}
-        </div>
-        <div>
-          {rightSections.map(sec => {
-            if (!isSectionVisible(sec, visibleBlockIds)) return null;
-            const headingVisible = showSectionHeading(sec, visibleBlockIds);
-            const adj = sectionAdjustments?.[sec.id];
-            let body;
-            if (sec.type === 'skills')    body = <SkillsLolly sec={sec} accentColor={greenDeep} softColor={greenSoft} />;
-            else if (sec.type === 'languages') body = <LanguageRings sec={sec} accentColor={greenDeep} softColor={greenSoft} />;
-            else if (sec.type === 'hobbies')   body = <HashChips sec={sec} accentColor={greenDeep} />;
-            else body = renderSectionBody(sec, util);
-            if (!body) return null;
-            return (
-              <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
-                {headingVisible && <GreenHead iconName={SEC_ICONS[sec.type]}>{sec.title}</GreenHead>}
-                {body}
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      {/* Body — one / mix / two-column */}
+      {(() => {
+        const renderSec = sec => {
+          if (!isSectionVisible(sec, visibleBlockIds)) return null;
+          const headingVisible = showSectionHeading(sec, visibleBlockIds);
+          const adj = sectionAdjustments?.[sec.id];
+          let body;
+          if (sec.type === 'skills')         body = <SkillsLolly sec={sec} accentColor={greenDeep} softColor={greenSoft} />;
+          else if (sec.type === 'languages') body = <LanguageRings sec={sec} accentColor={greenDeep} softColor={greenSoft} />;
+          else if (sec.type === 'hobbies')   body = <HashChips sec={sec} accentColor={greenDeep} />;
+          else body = renderSectionBody(sec, util, { expVariant: sec.type === 'work_experience' ? 'stacked' : undefined });
+          if (!body) return null;
+          return (
+            <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
+              {headingVisible && <GreenHead iconName={SEC_ICONS[sec.type]}>{sec.title}</GreenHead>}
+              {body}
+            </div>
+          );
+        };
+        if (colLayout === 'one') return (
+          <div style={{ padding: `${padY * 0.4}mm ${padX}mm ${padY}mm` }}>{sections.map(renderSec)}</div>
+        );
+        if (colLayout === 'mix') return (
+          <div style={{ padding: `${padY * 0.4}mm ${padX}mm ${padY}mm`, display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 26, alignItems: 'start' }}>
+            {sections.map(sec => {
+              const rendered = renderSec(sec);
+              if (!rendered) return null;
+              const col = sc[sec.id] || 'full';
+              return <div key={sec.id} style={{ gridColumn: col === 'full' ? '1 / span 2' : col === 'left' ? '1' : '2' }}>{rendered}</div>;
+            })}
+          </div>
+        );
+        const left  = sections.filter(s => sc[s.id] ? sc[s.id] === 'left' : !VERDANT_RIGHT_TYPES.has(s.type));
+        const right = sections.filter(s => sc[s.id] ? sc[s.id] === 'right' : VERDANT_RIGHT_TYPES.has(s.type));
+        return (
+          <div style={{ padding: `${padY * 0.4}mm ${padX}mm ${padY}mm`, display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 26, alignItems: 'start' }}>
+            <div>{left.map(renderSec)}</div>
+            <div>{right.map(renderSec)}</div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -1777,7 +1794,8 @@ function TemplateConfetti({ resume, ds, ss, sectionAdjustments, visibleBlockIds 
   const beige      = '#D8C8B5';
   const blue       = '#B6CFE0';
 
-  const { left: leftSections, right: rightSections } = splitColumns(sections, resume.layout_settings?.sectionColumns, CONFETTI_LEFT_TYPES);
+  const colLayout = resume.layout_settings?.columnLayout;
+  const sc        = resume.layout_settings?.sectionColumns || {};
 
   const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#1F2937', minHeight: '100%', position: 'relative', overflow: 'hidden' };
 
@@ -1821,41 +1839,43 @@ function TemplateConfetti({ resume, ds, ss, sectionAdjustments, visibleBlockIds 
             <PhotoPlaceholder size={86} shape="circle" name={pi.name} src={pi.photo || null} />
           </div>
         )}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 22 }}>
-          <div>
-            {leftSections.map(sec => {
-              if (!isSectionVisible(sec, visibleBlockIds)) return null;
-              const body = renderSectionBody(sec, util, { expVariant: sec.type === 'work_experience' ? 'stacked' : undefined });
-              if (!body) return null;
-              const adj = sectionAdjustments?.[sec.id];
-              const headingVisible = showSectionHeading(sec, visibleBlockIds);
-              return (
-                <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
-                  {headingVisible && <PillHead iconName={SEC_ICONS[sec.type]}>{sec.title}</PillHead>}
-                  <div style={{ marginTop: 4 }}>{body}</div>
-                </div>
-              );
-            })}
-          </div>
-          <div>
-            {rightSections.map(sec => {
-              if (!isSectionVisible(sec, visibleBlockIds)) return null;
-              const headingVisible = showSectionHeading(sec, visibleBlockIds);
-              const adj = sectionAdjustments?.[sec.id];
-              let body;
-              if (sec.type === 'skills')  body = <SkillsLolly sec={sec} accentColor={coralDeep} softColor={coral + '55'} />;
-              else if (sec.type === 'hobbies') body = <HashChips sec={sec} accentColor={coralDeep} />;
-              else body = renderSectionBody(sec, util);
-              if (!body) return null;
-              return (
-                <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
-                  {headingVisible && <PillHead iconName={SEC_ICONS[sec.type]}>{sec.title}</PillHead>}
-                  <div style={{ marginTop: 4 }}>{body}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        {(() => {
+          const renderSec = sec => {
+            if (!isSectionVisible(sec, visibleBlockIds)) return null;
+            const headingVisible = showSectionHeading(sec, visibleBlockIds);
+            const adj = sectionAdjustments?.[sec.id];
+            let body;
+            if (sec.type === 'skills')       body = <SkillsLolly sec={sec} accentColor={coralDeep} softColor={coral + '55'} />;
+            else if (sec.type === 'hobbies') body = <HashChips sec={sec} accentColor={coralDeep} />;
+            else body = renderSectionBody(sec, util, { expVariant: sec.type === 'work_experience' ? 'stacked' : undefined });
+            if (!body) return null;
+            return (
+              <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
+                {headingVisible && <PillHead iconName={SEC_ICONS[sec.type]}>{sec.title}</PillHead>}
+                <div style={{ marginTop: 4 }}>{body}</div>
+              </div>
+            );
+          };
+          if (colLayout === 'one') return <>{sections.map(renderSec)}</>;
+          if (colLayout === 'mix') return (
+            <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 22, alignItems: 'start' }}>
+              {sections.map(sec => {
+                const rendered = renderSec(sec);
+                if (!rendered) return null;
+                const col = sc[sec.id] || 'full';
+                return <div key={sec.id} style={{ gridColumn: col === 'full' ? '1 / span 2' : col === 'left' ? '1' : '2' }}>{rendered}</div>;
+              })}
+            </div>
+          );
+          const left  = sections.filter(s => sc[s.id] ? sc[s.id] === 'left' : CONFETTI_LEFT_TYPES.has(s.type));
+          const right = sections.filter(s => sc[s.id] ? sc[s.id] === 'right' : !CONFETTI_LEFT_TYPES.has(s.type));
+          return (
+            <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 22, alignItems: 'start' }}>
+              <div>{left.map(renderSec)}</div>
+              <div>{right.map(renderSec)}</div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
