@@ -147,6 +147,55 @@ function buildRenderData(resume) {
   return { pi, sections };
 }
 
+// ── Column layout helpers ─────────────────────────────────────────────────────
+
+// Splits sections into left/right using user's sectionColumns, with type-set fallback.
+function splitColumns(sections, sectionColumns, defaultLeftSet) {
+  const sc = sectionColumns || {};
+  return {
+    left:  sections.filter(s => (sc[s.id] ? sc[s.id] === 'left' : defaultLeftSet.has(s.type))),
+    right: sections.filter(s => (sc[s.id] ? sc[s.id] === 'right' : !defaultLeftSet.has(s.type))),
+  };
+}
+
+// Wraps section list with one/two/mix column layout for single-column templates.
+function applyColumnLayout(sections, ls, padX, renderSection) {
+  const colLayout = ls?.columnLayout || 'one';
+  const sc        = ls?.sectionColumns || {};
+
+  if (colLayout === 'one') return sections.map(renderSection);
+
+  if (colLayout === 'two') {
+    const left  = sections.filter(s => (sc[s.id] || 'left') === 'left');
+    const right = sections.filter(s => sc[s.id] === 'right');
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: `0 ${Math.round(padX * 0.5)}mm`, alignItems: 'start' }}>
+        <div>{left.map(renderSection)}</div>
+        <div>{right.map(renderSection)}</div>
+      </div>
+    );
+  }
+
+  if (colLayout === 'mix') {
+    const full  = sections.filter(s => !sc[s.id] || sc[s.id] === 'full');
+    const left  = sections.filter(s => sc[s.id] === 'left');
+    const right = sections.filter(s => sc[s.id] === 'right');
+    return (
+      <>
+        {full.map(renderSection)}
+        {(left.length > 0 || right.length > 0) && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: `0 ${Math.round(padX * 0.5)}mm`, alignItems: 'start' }}>
+            <div>{left.map(renderSection)}</div>
+            <div>{right.map(renderSection)}</div>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  return sections.map(renderSection);
+}
+
 // ── Shared section body renderers ─────────────────────────────────────────────
 
 const SKILL_LEVELS = ['', 'Beginner', 'Intermediate', 'Advanced'];
@@ -875,7 +924,7 @@ function TemplateModern({ resume, ds, ss, sectionAdjustments, visibleBlockIds = 
           {buildDetailsBlock(pi, ds, util)}
         </div>
       )}
-      {sections.map(sec => {
+      {applyColumnLayout(sections, resume.layout_settings, padX, sec => {
         if (!isSectionVisible(sec, visibleBlockIds)) return null;
         const body = renderSectionBody(sec, util);
         if (!body) return null;
@@ -903,8 +952,7 @@ function TemplateAtlanticBlue({ resume, ds, ss, sectionAdjustments, visibleBlock
   const sideColor = '#1F2A44';
   const headingIcon = resume.layout_settings?.headingIcon || 'none';
 
-  const sideIds = sections.filter(s => ATLANTIC_SIDEBAR_TYPES.has(s.type));
-  const bodyIds = sections.filter(s => !ATLANTIC_SIDEBAR_TYPES.has(s.type));
+  const { left: sideIds, right: bodyIds } = splitColumns(sections, resume.layout_settings?.sectionColumns, ATLANTIC_SIDEBAR_TYPES);
 
   const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#2C2C2A', display: 'grid', gridTemplateColumns: '32% 1fr', minHeight: '100%', alignItems: 'stretch' };
 
@@ -1026,7 +1074,7 @@ function TemplateCorporate({ resume, ds, ss, sectionAdjustments, visibleBlockIds
           {buildDetailsBlock(pi, ds, util, { textColor: '#374151' })}
         </div>
       )}
-      {sections.map(sec => {
+      {applyColumnLayout(sections, resume.layout_settings, padX, sec => {
         if (!isSectionVisible(sec, visibleBlockIds)) return null;
         const certVariant = sec.type === 'certifications' ? 'three-col-bullets' : undefined;
         const skillsCols  = (sec.type === 'skills' && (sec.display_settings?.layout === 'rows' || !sec.display_settings?.layout)) ? 3 : undefined;
@@ -1056,8 +1104,7 @@ function TemplateAtlanticCrest({ resume, ds, ss, sectionAdjustments, visibleBloc
   const bannerColor = '#1F2A44';
   const headingIcon = resume.layout_settings?.headingIcon || 'none';
 
-  const leftIds  = sections.filter(s => CREST_LEFT_TYPES.has(s.type));
-  const rightIds = sections.filter(s => !CREST_LEFT_TYPES.has(s.type));
+  const { left: leftIds, right: rightIds } = splitColumns(sections, resume.layout_settings?.sectionColumns, CREST_LEFT_TYPES);
 
   const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#1F2937', background: '#fff' };
 
@@ -1171,7 +1218,7 @@ function TemplateMercuryFlow({ resume, ds, ss, sectionAdjustments, visibleBlockI
         </div>
       )}
       <div style={{ padding: `${padY * 0.5}mm ${padX}mm` }}>
-        {sections.map(sec => {
+        {applyColumnLayout(sections, resume.layout_settings, padX, sec => {
           if (!isSectionVisible(sec, visibleBlockIds)) return null;
           const isDateCol = sec.type === 'work_experience' || sec.type === 'education';
           const body = renderSectionBody(sec, util, isDateCol ? { expVariant: 'date-column', eduVariant: 'date-column' } : {});
@@ -1228,7 +1275,7 @@ function TemplateSteadyForm({ resume, ds, ss, sectionAdjustments, visibleBlockId
           <PhotoPlaceholder size={78} shape="circle" name={pi.name} src={pi.photo || null} />
         </div>
       )}
-      {sections.map(sec => {
+      {applyColumnLayout(sections, resume.layout_settings, padX, sec => {
         if (!isSectionVisible(sec, visibleBlockIds)) return null;
         const skillsCols   = (sec.type === 'skills' && (sec.display_settings?.layout === 'rows' || !sec.display_settings?.layout)) ? 3 : undefined;
         const certVariant  = sec.type === 'certifications' ? 'three-col-bullets' : undefined;
@@ -1289,7 +1336,7 @@ function TemplateExecutive({ resume, ds, ss, sectionAdjustments, visibleBlockIds
           {buildDetailsBlock(pi, ds, util, { textColor: '#374151' })}
         </div>
       )}
-      {sections.map(sec => {
+      {applyColumnLayout(sections, resume.layout_settings, padX, sec => {
         if (!isSectionVisible(sec, visibleBlockIds)) return null;
         const body = renderSectionBody(sec, util, {
           expVariant: sec.type === 'work_experience' ? 'date-column' : undefined,
@@ -1322,8 +1369,7 @@ function TemplateAzureWave({ resume, ds, ss, sectionAdjustments, visibleBlockIds
   const wave     = '#D9ECFB';
   const waveDeep = '#BBDDF6';
 
-  const leftSections  = sections.filter(s => WAVE_LEFT_TYPES.has(s.type));
-  const rightSections = sections.filter(s => !WAVE_LEFT_TYPES.has(s.type));
+  const { left: leftSections, right: rightSections } = splitColumns(sections, resume.layout_settings?.sectionColumns, WAVE_LEFT_TYPES);
 
   const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#2C2C2A', position: 'relative', minHeight: '100%', overflow: 'hidden' };
 
@@ -1452,8 +1498,7 @@ function TemplateNoirFlash({ resume, ds, ss, sectionAdjustments, visibleBlockIds
   const isDefault = !ds.accentColor || ds.accentColor === '#185FA5';
   const yellow = isDefault ? '#F5C842' : accent;
 
-  const leftSections  = sections.filter(s => NOIR_LEFT_TYPES.has(s.type));
-  const rightSections = sections.filter(s => !NOIR_LEFT_TYPES.has(s.type));
+  const { left: leftSections, right: rightSections } = splitColumns(sections, resume.layout_settings?.sectionColumns, NOIR_LEFT_TYPES);
 
   const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#E8EFF7', background: '#141414', position: 'relative', minHeight: '100%', overflow: 'hidden' };
 
@@ -1631,8 +1676,8 @@ function TemplateVerdantCrest({ resume, ds, ss, sectionAdjustments, visibleBlock
   const greenDeep  = isDefault ? '#5BAE82' : accent;
   const greenSoft  = isDefault ? '#D6EFE0' : accent + '33';
 
-  const leftSections  = sections.filter(s => !VERDANT_RIGHT_TYPES.has(s.type));
-  const rightSections = sections.filter(s => VERDANT_RIGHT_TYPES.has(s.type));
+  const VERDANT_LEFT_DEFAULT = new Set(sections.filter(s => !VERDANT_RIGHT_TYPES.has(s.type)).map(s => s.type));
+  const { left: leftSections, right: rightSections } = splitColumns(sections, resume.layout_settings?.sectionColumns, VERDANT_LEFT_DEFAULT);
 
   const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#1F2937', minHeight: '100%', position: 'relative', overflow: 'hidden' };
 
@@ -1735,8 +1780,7 @@ function TemplateConfetti({ resume, ds, ss, sectionAdjustments, visibleBlockIds 
   const beige      = '#D8C8B5';
   const blue       = '#B6CFE0';
 
-  const leftSections  = sections.filter(s => CONFETTI_LEFT_TYPES.has(s.type));
-  const rightSections = sections.filter(s => !CONFETTI_LEFT_TYPES.has(s.type));
+  const { left: leftSections, right: rightSections } = splitColumns(sections, resume.layout_settings?.sectionColumns, CONFETTI_LEFT_TYPES);
 
   const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#1F2937', minHeight: '100%', position: 'relative', overflow: 'hidden' };
 

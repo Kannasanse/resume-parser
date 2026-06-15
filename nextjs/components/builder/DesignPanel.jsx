@@ -846,16 +846,19 @@ export default function DesignPanel({
             ))}
           </TileGrid>
 
-          {ls.columnLayout === 'two' && enabledSections.length > 0 && (
+          {(ls.columnLayout === 'two' || ls.columnLayout === 'mix') && enabledSections.length > 0 && (
             <div className="space-y-1 mt-2">
-              <p className="text-xs text-ds-textMuted mb-1">Assign to columns</p>
+              <p className="text-xs text-ds-textMuted mb-1">
+                {ls.columnLayout === 'mix' ? 'Assign sections (unassigned = full width)' : 'Assign to columns'}
+              </p>
               {enabledSections.map(sec => {
-                const col = ls.sectionColumns?.[sec.id] || 'left';
+                const sides = ls.columnLayout === 'mix' ? ['left', 'right', 'full'] : ['left', 'right'];
+                const col = ls.sectionColumns?.[sec.id] || (ls.columnLayout === 'mix' ? 'full' : 'left');
                 return (
                   <div key={sec.id} className="flex items-center justify-between text-xs">
                     <span className="text-ds-text truncate flex-1 mr-2">{sec.title}</span>
                     <div className="flex rounded border border-ds-border overflow-hidden flex-shrink-0">
-                      {['left', 'right'].map(side => (
+                      {sides.map(side => (
                         <button key={side} onClick={() => setLs('sectionColumns', { ...ls.sectionColumns, [sec.id]: side })}
                           className={`px-2 py-1 capitalize transition-colors ${col === side ? 'bg-primary text-white' : 'text-ds-text hover:bg-ds-bg'}`}>
                           {side}
