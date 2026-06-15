@@ -784,7 +784,10 @@ function showSectionHeading(sec, vids) {
 
 // ── Contact detail item (for Modern header) ───────────────────────────────────
 
-function buildDetailsBlock(pi, ds, util) {
+// opts.textColor overrides the default grey for text and icon fallback (use for dark-bg templates)
+// opts.iconColor overrides the icon color entirely (ignores accentTargets)
+function buildDetailsBlock(pi, ds, util, opts = {}) {
+  const { textColor = '#6B7280', iconColor: iconColorOpt = null } = opts;
   const { fontSize, t, colIf } = util;
   const details = [
     { kind: 'mail',  val: pi.email },
@@ -794,27 +797,28 @@ function buildDetailsBlock(pi, ds, util) {
   ].filter(d => d.val);
   if (!details.length) return null;
 
-  const sep   = ds.detailsSeparator || 'icon';
-  const arr   = ds.detailsArrangement || 2;
-  const align = ds.headerAlignment === 'center' ? 'center' : 'flex-start';
+  const sep     = ds.detailsSeparator || 'icon';
+  const arr     = ds.detailsArrangement || 2;
+  const align   = ds.headerAlignment === 'center' ? 'center' : 'flex-start';
+  const iconClr = iconColorOpt !== null ? iconColorOpt : (colIf(t.headerIcons) || textColor);
 
   const item = ({ kind, val }) => (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}>
-      {sep === 'icon' && <HdrIcon kind={kind} style={ds.headerIconStyle || 1} color={colIf(t.headerIcons) || '#6B7280'} size={fontSize - 2} />}
-      <span>{val}</span>
+      {sep === 'icon' && <HdrIcon kind={kind} style={ds.headerIconStyle || 1} color={iconClr} size={fontSize - 2} />}
+      <span style={{ color: textColor }}>{val}</span>
     </span>
   );
 
   if (arr === 3) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 7, fontSize: '0.92em', color: '#6B7280', alignItems: align === 'center' ? 'center' : 'flex-start' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 7, fontSize: '0.92em', color: textColor, alignItems: align === 'center' ? 'center' : 'flex-start' }}>
         {details.map(d => <div key={d.kind}>{item(d)}</div>)}
       </div>
     );
   }
   if (arr === 2) {
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 18px', marginTop: 7, fontSize: '0.92em', color: '#6B7280', maxWidth: ds.headerAlignment === 'center' ? '70%' : '85%', marginLeft: ds.headerAlignment === 'center' ? 'auto' : 0, marginRight: ds.headerAlignment === 'center' ? 'auto' : 0 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 18px', marginTop: 7, fontSize: '0.92em', color: textColor, maxWidth: ds.headerAlignment === 'center' ? '70%' : '85%', marginLeft: ds.headerAlignment === 'center' ? 'auto' : 0, marginRight: ds.headerAlignment === 'center' ? 'auto' : 0 }}>
         {details.map(d => <div key={d.kind}>{item(d)}</div>)}
       </div>
     );
@@ -824,7 +828,7 @@ function buildDetailsBlock(pi, ds, util) {
     : sep === 'bar' ? <span style={{ color: '#9CA3AF', margin: '0 7px' }}>|</span>
     : <span style={{ width: 8 }} />;
   return (
-    <div style={{ display: 'flex', flexWrap: 'nowrap', marginTop: 7, fontSize: '0.92em', color: '#6B7280', justifyContent: align }}>
+    <div style={{ display: 'flex', flexWrap: 'nowrap', marginTop: 7, fontSize: '0.92em', color: textColor, justifyContent: align }}>
       {details.map((d, i) => (
         <span key={d.kind} style={{ display: 'inline-flex', alignItems: 'center' }}>
           {i > 0 && sepEl}
@@ -926,7 +930,7 @@ function TemplateAtlanticBlue({ resume, ds, ss, sectionAdjustments, visibleBlock
   );
   const contactRow = (icon, txt) => txt ? (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, fontSize: '0.85em', color: '#D1DCE8' }}>
-      <Icon name={icon} size={11} color="#D1DCE8" /><span>{txt}</span>
+      <HdrIcon kind={icon} style={ds.headerIconStyle || 1} color="#D1DCE8" size={fontSize - 2} /><span>{txt}</span>
     </div>
   ) : null;
 
@@ -1013,23 +1017,13 @@ function TemplateCorporate({ resume, ds, ss, sectionAdjustments, visibleBlockIds
     );
   };
 
-  const contactItems = [['pin', pi.location], ['mail', pi.email], ['phone', pi.phone], ['link', pi.link]].filter(([, v]) => v);
-
   return (
     <div style={pageStyle}>
       {showHeader && (
-        <div style={{ textAlign: 'center' }}>
+        <div style={{ textAlign: ds.headerAlignment || 'center' }}>
           <div style={{ fontSize: '2em', fontWeight: 700, color: colIf(t.name) || '#1F2937', lineHeight: 1 }}>{pi.name || 'Your Name'}</div>
           {pi.title && <div style={{ fontSize: '1.05em', fontStyle: 'italic', color: colIf(t.jobTitle) || '#374151', marginTop: 4 }}>{pi.title}</div>}
-          {contactItems.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px', marginTop: 10, fontSize: '0.9em', color: '#374151', justifyContent: 'center' }}>
-              {contactItems.map(([k, v], i) => (
-                <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                  <Icon name={k} size={11} color={colIf(t.headerIcons) || '#374151'} />{v}
-                </span>
-              ))}
-            </div>
-          )}
+          {buildDetailsBlock(pi, ds, util, { textColor: '#374151' })}
         </div>
       )}
       {sections.map(sec => {
@@ -1079,7 +1073,7 @@ function TemplateAtlanticCrest({ resume, ds, ss, sectionAdjustments, visibleBloc
   );
   const contact = (icon, txt) => txt ? (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.88em', color: '#D1DCE8' }}>
-      <Icon name={icon} size={11} color="#D1DCE8" />{txt}
+      <HdrIcon kind={icon} style={ds.headerIconStyle || 1} color="#D1DCE8" size={fontSize - 2} />{txt}
     </span>
   ) : null;
 
@@ -1163,27 +1157,16 @@ function TemplateMercuryFlow({ resume, ds, ss, sectionAdjustments, visibleBlockI
       </div>
     );
   };
-  const contact = (icon, txt) => txt ? (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.88em', color: '#374151' }}>
-      <Icon name={icon} size={11} color={colIf(t.headerIcons) || '#374151'} />{txt}
-    </span>
-  ) : null;
-
   return (
     <div style={pageStyle}>
       {/* Gray banner */}
       {showHeader && (
         <div style={{ background: '#E5E7EB', padding: `${padY * 0.7}mm ${padX}mm`, display: 'flex', alignItems: 'center', gap: 16 }}>
           <PhotoPlaceholder size={70} shape="circle" name={pi.name} src={pi.photo || null} />
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, textAlign: ds.headerAlignment }}>
             <div style={{ fontSize: '1.5em', fontWeight: 700, color: colIf(t.name) || '#1F2937', lineHeight: 1.05 }}>{pi.name || 'Your Name'}</div>
             {pi.title && <div style={{ fontSize: '0.95em', color: colIf(t.jobTitle) || '#374151', marginTop: 2 }}>{pi.title}</div>}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px 14px', marginTop: 6 }}>
-              {contact('mail', pi.email)}
-              {contact('phone', pi.phone)}
-              {contact('link', pi.link)}
-              {contact('pin', pi.location)}
-            </div>
+            {buildDetailsBlock(pi, ds, util, { textColor: '#374151' })}
           </div>
         </div>
       )}
@@ -1230,31 +1213,17 @@ function TemplateSteadyForm({ resume, ds, ss, sectionAdjustments, visibleBlockId
       </div>
     );
   };
-  const contact = (icon, txt) => txt ? (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.88em', color: '#374151' }}>
-      <span style={{ width: 16, height: 16, border: '1px solid #9CA3AF', borderRadius: 2, display: 'inline-grid', placeItems: 'center', flexShrink: 0 }}>
-        <Icon name={icon} size={9} color={colIf(t.headerIcons) || '#374151'} />
-      </span>
-      {txt}
-    </div>
-  ) : null;
-
   return (
     <div style={pageStyle}>
       {/* Name+contacts left, photo right */}
       {showHeader && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 16, alignItems: 'center', marginBottom: 6 }}>
-          <div>
+          <div style={{ textAlign: ds.headerAlignment }}>
             <div style={{ fontSize: '1.6em' }}>
               <span style={{ fontWeight: 700, color: colIf(t.name) || '#1F2937' }}>{pi.name || 'Your Name'}</span>
               {pi.title && <span style={{ fontStyle: 'italic', fontWeight: 400, color: colIf(t.jobTitle) || '#374151', marginLeft: 10 }}>{pi.title}</span>}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px', marginTop: 10 }}>
-              {contact('mail', pi.email)}
-              {contact('phone', pi.phone)}
-              {contact('link', pi.link)}
-              {contact('pin', pi.location)}
-            </div>
+            {buildDetailsBlock(pi, ds, util, { textColor: '#374151' })}
           </div>
           <PhotoPlaceholder size={78} shape="circle" name={pi.name} src={pi.photo || null} />
         </div>
@@ -1309,26 +1278,16 @@ function TemplateExecutive({ resume, ds, ss, sectionAdjustments, visibleBlockIds
       </div>
     );
   };
-  const contactItems = [['pin', pi.location], ['mail', pi.email], ['phone', pi.phone], ['link', pi.link]].filter(([, v]) => v);
-
   return (
     <div style={pageStyle}>
       {showHeader && (
-        <>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ textAlign: ds.headerAlignment }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', justifyContent: ds.headerAlignment === 'center' ? 'center' : 'flex-start' }}>
             <span style={{ fontSize: '1.8em', fontWeight: 700, color: colIf(t.name) || '#1F2937' }}>{pi.name || 'Your Name'}</span>
             {pi.title && <span style={{ fontSize: '1.05em', fontStyle: 'italic', color: colIf(t.jobTitle) || '#374151' }}>{pi.title}</span>}
           </div>
-          {contactItems.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 18px', marginTop: 8, fontSize: '0.9em', color: '#374151' }}>
-              {contactItems.map(([k, v], i) => (
-                <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                  <Icon name={k} size={11} color={colIf(t.headerIcons) || '#374151'} />{v}
-                </span>
-              ))}
-            </div>
-          )}
-        </>
+          {buildDetailsBlock(pi, ds, util, { textColor: '#374151' })}
+        </div>
       )}
       {sections.map(sec => {
         if (!isSectionVisible(sec, visibleBlockIds)) return null;
@@ -1356,8 +1315,9 @@ const WAVE_LEFT_TYPES = new Set(['skills', 'languages', 'hobbies', 'references']
 
 function TemplateAzureWave({ resume, ds, ss, sectionAdjustments, visibleBlockIds = null, showHeader = true }) {
   const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
-  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult } = util;
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult, hIconSz, hFilledSz, hFilledIconSz } = util;
   const { pi, sections } = buildRenderData(resume);
+  const headingIcon = resume.layout_settings?.headingIcon || 'none';
 
   const wave     = '#D9ECFB';
   const waveDeep = '#BBDDF6';
@@ -1367,17 +1327,19 @@ function TemplateAzureWave({ resume, ds, ss, sectionAdjustments, visibleBlockIds
 
   const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#2C2C2A', position: 'relative', minHeight: '100%', overflow: 'hidden' };
 
-  const SmallCapsHead = ({ children }) => (
-    <div style={{ marginTop: '1.2em', marginBottom: '0.45em', fontSize: `${0.74 * titleSizeMult}em`, textTransform: 'uppercase', letterSpacing: '0.16em', fontWeight: 700, color: colIf(t.headings) || '#9CA3AF' }}>
-      {children}
-    </div>
-  );
-
-  const contact = (icon, txt) => txt ? (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#6B7280', fontSize: '0.92em' }}>
-      <Icon name={icon} size={fontSize - 2} color={colIf(t.headerIcons) || accent} />{txt}
-    </span>
-  ) : null;
+  const SmallCapsHead = ({ children, iconName }) => {
+    const hColor = colIf(t.headings) || '#9CA3AF';
+    return (
+      <div style={{ marginTop: '1.2em', marginBottom: '0.45em', display: 'flex', alignItems: 'center', gap: 5 }}>
+        {headingIcon !== 'none' && iconName && (
+          headingIcon === 'filled'
+            ? <span style={{ background: hColor, borderRadius: '50%', width: hFilledSz, height: hFilledSz, display: 'inline-grid', placeItems: 'center', flexShrink: 0 }}><Icon name={iconName} size={hFilledIconSz} color="#fff" /></span>
+            : <Icon name={iconName} size={hIconSz} color={hColor} />
+        )}
+        <span style={{ fontSize: `${0.74 * titleSizeMult}em`, textTransform: 'uppercase', letterSpacing: '0.16em', fontWeight: 700, color: hColor }}>{children}</span>
+      </div>
+    );
+  };
 
   return (
     <div style={pageStyle}>
@@ -1397,15 +1359,10 @@ function TemplateAzureWave({ resume, ds, ss, sectionAdjustments, visibleBlockIds
 
       <div style={{ position: 'relative', padding: `${showHeader ? padY : padY * 0.5}mm ${padX}mm ${padY}mm` }}>
         {showHeader && (
-          <div style={{ marginBottom: '1em' }}>
+          <div style={{ marginBottom: '1em', textAlign: ds.headerAlignment }}>
             <div style={{ fontSize: '2em', fontWeight: 700, letterSpacing: '-0.01em', color: colIf(t.name) || '#2C2C2A', lineHeight: 1 }}>{pi.name || 'Your Name'}</div>
             {pi.title && <div style={{ fontSize: '0.95em', color: colIf(t.jobTitle) || accent, marginTop: 4, fontWeight: 500 }}>{pi.title}</div>}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px', marginTop: 10 }}>
-              {contact('phone', pi.phone)}
-              {contact('mail', pi.email)}
-              {contact('link', pi.link)}
-              {contact('pin', pi.location)}
-            </div>
+            {buildDetailsBlock(pi, ds, util, { iconColor: colIf(t.headerIcons) || accent })}
           </div>
         )}
         <div style={{ display: 'grid', gridTemplateColumns: '38% 1fr', gap: 22 }}>
@@ -1418,7 +1375,7 @@ function TemplateAzureWave({ resume, ds, ss, sectionAdjustments, visibleBlockIds
               const headingVisible = showSectionHeading(sec, visibleBlockIds);
               return (
                 <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
-                  {headingVisible && <SmallCapsHead>{sec.title}</SmallCapsHead>}
+                  {headingVisible && <SmallCapsHead iconName={SEC_ICONS[sec.type]}>{sec.title}</SmallCapsHead>}
                   {body}
                 </div>
               );
@@ -1433,7 +1390,7 @@ function TemplateAzureWave({ resume, ds, ss, sectionAdjustments, visibleBlockIds
               const headingVisible = showSectionHeading(sec, visibleBlockIds);
               return (
                 <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
-                  {headingVisible && <SmallCapsHead>{sec.title}</SmallCapsHead>}
+                  {headingVisible && <SmallCapsHead iconName={SEC_ICONS[sec.type]}>{sec.title}</SmallCapsHead>}
                   {body}
                 </div>
               );
@@ -1488,8 +1445,9 @@ function NoirLanguagesGrid({ sec }) {
 
 function TemplateNoirFlash({ resume, ds, ss, sectionAdjustments, visibleBlockIds = null, showHeader = true }) {
   const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
-  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult } = util;
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult, hIconSz, hFilledSz, hFilledIconSz } = util;
   const { pi, sections } = buildRenderData(resume);
+  const headingIcon = resume.layout_settings?.headingIcon || 'none';
 
   const isDefault = !ds.accentColor || ds.accentColor === '#185FA5';
   const yellow = isDefault ? '#F5C842' : accent;
@@ -1499,15 +1457,23 @@ function TemplateNoirFlash({ resume, ds, ss, sectionAdjustments, visibleBlockIds
 
   const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#E8EFF7', background: '#141414', position: 'relative', minHeight: '100%', overflow: 'hidden' };
 
-  const NoirHead = ({ children }) => (
-    <div style={{ marginTop: '1.2em', marginBottom: '0.5em', fontSize: `${1 * titleSizeMult}em`, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: yellow }}>
-      {children}
-    </div>
-  );
+  const NoirHead = ({ children, iconName }) => {
+    const hColor = colIf(t.headings) || yellow;
+    return (
+      <div style={{ marginTop: '1.2em', marginBottom: '0.5em', display: 'flex', alignItems: 'center', gap: 6 }}>
+        {headingIcon !== 'none' && iconName && (
+          headingIcon === 'filled'
+            ? <span style={{ background: hColor, borderRadius: '50%', width: hFilledSz, height: hFilledSz, display: 'inline-grid', placeItems: 'center', flexShrink: 0 }}><Icon name={iconName} size={hFilledIconSz} color="#141414" /></span>
+            : <Icon name={iconName} size={hIconSz} color={hColor} />
+        )}
+        <span style={{ fontSize: `${1 * titleSizeMult}em`, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: hColor }}>{children}</span>
+      </div>
+    );
+  };
 
   const contact = (icon, txt) => txt ? (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.9em', color: '#E8EFF7' }}>
-      <Icon name={icon} size={fontSize - 2} color={yellow} />{txt}
+      <HdrIcon kind={icon} style={ds.headerIconStyle || 1} color={yellow} size={fontSize - 2} />{txt}
     </div>
   ) : null;
 
@@ -1559,7 +1525,7 @@ function TemplateNoirFlash({ resume, ds, ss, sectionAdjustments, visibleBlockIds
               if (!body) return null;
               return (
                 <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
-                  {headingVisible && <NoirHead>{sec.title}</NoirHead>}
+                  {headingVisible && <NoirHead iconName={SEC_ICONS[sec.type]}>{sec.title}</NoirHead>}
                   {body}
                 </div>
               );
@@ -1574,7 +1540,7 @@ function TemplateNoirFlash({ resume, ds, ss, sectionAdjustments, visibleBlockIds
               const headingVisible = showSectionHeading(sec, visibleBlockIds);
               return (
                 <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
-                  {headingVisible && <NoirHead>{sec.title}</NoirHead>}
+                  {headingVisible && <NoirHead iconName={SEC_ICONS[sec.type]}>{sec.title}</NoirHead>}
                   {body}
                 </div>
               );
@@ -1656,8 +1622,9 @@ function HashChips({ sec, accentColor }) {
 
 function TemplateVerdantCrest({ resume, ds, ss, sectionAdjustments, visibleBlockIds = null, showHeader = true }) {
   const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
-  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult } = util;
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult, hIconSz, hFilledSz, hFilledIconSz } = util;
   const { pi, sections } = buildRenderData(resume);
+  const headingIcon = resume.layout_settings?.headingIcon || 'none';
 
   const isDefault  = !ds.accentColor || ds.accentColor === '#185FA5';
   const green      = isDefault ? '#7BC79A' : accent;
@@ -1669,11 +1636,19 @@ function TemplateVerdantCrest({ resume, ds, ss, sectionAdjustments, visibleBlock
 
   const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#1F2937', minHeight: '100%', position: 'relative', overflow: 'hidden' };
 
-  const GreenHead = ({ children }) => (
-    <div style={{ marginTop: '1.1em', marginBottom: '0.45em', display: 'flex', alignItems: 'center', gap: 6 }}>
-      <span style={{ fontSize: `${1.05 * titleSizeMult}em`, fontWeight: 700, color: colIf(t.headings) || '#1F2937' }}>{children}</span>
-    </div>
-  );
+  const GreenHead = ({ children, iconName }) => {
+    const hColor = colIf(t.headings) || '#1F2937';
+    return (
+      <div style={{ marginTop: '1.1em', marginBottom: '0.45em', display: 'flex', alignItems: 'center', gap: 6 }}>
+        {headingIcon !== 'none' && iconName && (
+          headingIcon === 'filled'
+            ? <span style={{ background: hColor, borderRadius: '50%', width: hFilledSz, height: hFilledSz, display: 'inline-grid', placeItems: 'center', flexShrink: 0 }}><Icon name={iconName} size={hFilledIconSz} color="#fff" /></span>
+            : <Icon name={iconName} size={hIconSz} color={hColor} />
+        )}
+        <span style={{ fontSize: `${1.05 * titleSizeMult}em`, fontWeight: 700, color: hColor }}>{children}</span>
+      </div>
+    );
+  };
 
   return (
     <div style={pageStyle}>
@@ -1696,12 +1671,7 @@ function TemplateVerdantCrest({ resume, ds, ss, sectionAdjustments, visibleBlock
             <div>
               <div style={{ fontSize: '2.2em', fontWeight: 800, letterSpacing: '-0.01em', color: colIf(t.name) || '#1F2937', lineHeight: 1 }}>{pi.name || 'Your Name'}</div>
               {pi.title && <div style={{ fontSize: '0.95em', color: '#374151', marginTop: 4 }}>{pi.title}</div>}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px 14px', marginTop: 6, fontSize: '0.88em', color: '#374151' }}>
-                {pi.phone    && <span><Icon name="phone" size={10} color={greenDeep} /> {pi.phone}</span>}
-                {pi.email    && <span><Icon name="mail"  size={10} color={greenDeep} /> {pi.email}</span>}
-                {pi.location && <span><Icon name="pin"   size={10} color={greenDeep} /> {pi.location}</span>}
-                {pi.link     && <span><Icon name="link"  size={10} color={greenDeep} /> {pi.link}</span>}
-              </div>
+              {buildDetailsBlock(pi, ds, util, { textColor: '#374151', iconColor: colIf(t.headerIcons) || greenDeep })}
             </div>
           </div>
         </div>
@@ -1719,7 +1689,7 @@ function TemplateVerdantCrest({ resume, ds, ss, sectionAdjustments, visibleBlock
             const headingVisible = showSectionHeading(sec, visibleBlockIds);
             return (
               <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
-                {headingVisible && <GreenHead>{sec.title}</GreenHead>}
+                {headingVisible && <GreenHead iconName={SEC_ICONS[sec.type]}>{sec.title}</GreenHead>}
                 {body}
               </div>
             );
@@ -1738,7 +1708,7 @@ function TemplateVerdantCrest({ resume, ds, ss, sectionAdjustments, visibleBlock
             if (!body) return null;
             return (
               <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
-                {headingVisible && <GreenHead>{sec.title}</GreenHead>}
+                {headingVisible && <GreenHead iconName={SEC_ICONS[sec.type]}>{sec.title}</GreenHead>}
                 {body}
               </div>
             );
@@ -1755,8 +1725,9 @@ const CONFETTI_LEFT_TYPES = new Set(['summary', 'work_experience', 'education', 
 
 function TemplateConfetti({ resume, ds, ss, sectionAdjustments, visibleBlockIds = null, showHeader = true }) {
   const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
-  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult } = util;
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult, hIconSz, hFilledSz, hFilledIconSz } = util;
   const { pi, sections } = buildRenderData(resume);
+  const headingIcon = resume.layout_settings?.headingIcon || 'none';
 
   const isDefault  = !ds.accentColor || ds.accentColor === '#185FA5';
   const coral      = isDefault ? '#EBA9A4' : accent;
@@ -1769,15 +1740,12 @@ function TemplateConfetti({ resume, ds, ss, sectionAdjustments, visibleBlockIds 
 
   const pageStyle = { fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#1F2937', minHeight: '100%', position: 'relative', overflow: 'hidden' };
 
-  const PillHead = ({ children }) => (
-    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: coral, color: '#fff', padding: '4px 14px', borderRadius: 999, fontSize: `${0.95 * titleSizeMult}em`, fontWeight: 700, marginTop: '1em', marginBottom: '0.45em' }}>
+  const PillHead = ({ children, iconName }) => (
+    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: colIf(t.headings) || coral, color: '#fff', padding: '4px 14px', borderRadius: 999, fontSize: `${0.95 * titleSizeMult}em`, fontWeight: 700, marginTop: '1em', marginBottom: '0.45em' }}>
+      {headingIcon !== 'none' && iconName && <Icon name={iconName} size={hIconSz} color="#fff" />}
       {children}
     </div>
   );
-
-  const contactLine = (label, val) => val ? (
-    <div style={{ fontSize: '0.92em' }}><strong>{label}:</strong>&nbsp;{val}</div>
-  ) : null;
 
   return (
     <div style={pageStyle}>
@@ -1805,14 +1773,9 @@ function TemplateConfetti({ resume, ds, ss, sectionAdjustments, visibleBlockIds 
       <div style={{ position: 'relative', padding: `${padY}mm ${padX}mm` }}>
         {showHeader && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 16, alignItems: 'center', marginBottom: '0.6em' }}>
-            <div>
+            <div style={{ textAlign: ds.headerAlignment }}>
               <div style={{ fontSize: '2.1em', fontWeight: 800, letterSpacing: '-0.01em', color: colIf(t.name) || '#1F2937', lineHeight: 1 }}>{pi.name || 'Your Name'}</div>
-              <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {contactLine('Address', pi.location)}
-                {contactLine('Phone', pi.phone)}
-                {contactLine('Email', pi.email)}
-                {contactLine('Web', pi.link)}
-              </div>
+              {buildDetailsBlock(pi, ds, util)}
             </div>
             <PhotoPlaceholder size={86} shape="circle" name={pi.name} src={pi.photo || null} />
           </div>
@@ -1827,7 +1790,7 @@ function TemplateConfetti({ resume, ds, ss, sectionAdjustments, visibleBlockIds 
               const headingVisible = showSectionHeading(sec, visibleBlockIds);
               return (
                 <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
-                  {headingVisible && <PillHead>{sec.title}</PillHead>}
+                  {headingVisible && <PillHead iconName={SEC_ICONS[sec.type]}>{sec.title}</PillHead>}
                   <div style={{ marginTop: 4 }}>{body}</div>
                 </div>
               );
@@ -1845,7 +1808,7 @@ function TemplateConfetti({ resume, ds, ss, sectionAdjustments, visibleBlockIds 
               if (!body) return null;
               return (
                 <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
-                  {headingVisible && <PillHead>{sec.title}</PillHead>}
+                  {headingVisible && <PillHead iconName={SEC_ICONS[sec.type]}>{sec.title}</PillHead>}
                   <div style={{ marginTop: 4 }}>{body}</div>
                 </div>
               );
