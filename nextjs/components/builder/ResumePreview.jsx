@@ -1960,7 +1960,7 @@ function splitNewTmplCols(sections, sc) {
 
 function TemplateSpotlight({ resume, ds, ss, sectionAdjustments, visibleBlockIds = null, showHeader = true }) {
   const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
-  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult, hIconSz } = util;
   const { pi, sections } = buildRenderData(resume);
   const colLayout = resume.layout_settings?.columnLayout;
   const sc = resume.layout_settings?.sectionColumns || {};
@@ -1970,7 +1970,7 @@ function TemplateSpotlight({ resume, ds, ss, sectionAdjustments, visibleBlockIds
 
   const SpotHead = ({ children }) => (
     <div style={{ marginTop: '1.3em', marginBottom: '0.55em' }}>
-      <div style={{ fontSize: '0.82em', fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: colIf(t.headings) || accent }}>
+      <div style={{ fontSize: `${0.82 * titleSizeMult}em`, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: colIf(t.headings) || accent }}>
         {children}
       </div>
       <div style={{ height: 3, width: 32, borderRadius: 2, background: colIf(t.headingsLine) || accent, marginTop: 5 }} />
@@ -1982,46 +1982,27 @@ function TemplateSpotlight({ resume, ds, ss, sectionAdjustments, visibleBlockIds
     { kind: 'pin', val: pi.location }, { kind: 'link', val: pi.link },
   ].filter(d => d.val);
 
-  const chipColor = colIf(t.dotsBarsBubbles) || accent;
-
-  const renderSideBody = (sec) => {
-    if (sec.type === 'skills') {
-      const entries = sec.content?.entries || [];
-      return (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-          {entries.map((s, i) => (
-            <span key={i} style={{ padding: '4px 12px', borderRadius: 8, background: chipColor + '14', color: '#243', fontSize: '0.9em', fontWeight: 500 }}>{s.name}</span>
-          ))}
-        </div>
-      );
-    }
-    if (sec.type === 'languages') {
-      const entries = sec.content?.entries || [];
-      return (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', rowGap: 4 }}>
-          {entries.map((l, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-              <span>{l.name}</span>
-              <span style={{ color: '#9097A3', fontSize: '0.88em' }}>{l.level}</span>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    if (sec.type === 'hobbies') {
-      const items = (sec.content?.text || '').split(/[,;·•|]+/).map(s => s.trim()).filter(Boolean);
-      return (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-          {items.map((item, i) => (
-            <span key={i} style={{ padding: '4px 12px', borderRadius: 8, background: chipColor + '14', color: '#243', fontSize: '0.9em', fontWeight: 500 }}>{item}</span>
-          ))}
-        </div>
-      );
-    }
-    return renderSectionBody(sec, util, { expVariant: 'stacked', eduVariant: 'compact' });
+  const SIDE_OPTS = {
+    expVariant: 'stacked',
+    eduVariant: 'compact',
+    hobbiesDefaultStyle: 'chips',
+    langDefaultLayout: 'compact',
+    certVariant: 'compact-list',
   };
+  const MAIN_OPTS = (sec) => ({
+    expVariant: sec.display_settings?.entryLayout || 'stacked',
+    eduVariant: sec.display_settings?.entryLayout || 'compact',
+    hobbiesDefaultStyle: 'chips',
+    langDefaultLayout: 'compact',
+    certVariant: sec.display_settings?.certLayout,
+  });
 
-  const renderSecBlock = (sec, bodyFn, opts = {}) => {
+  const renderSideBody = (sec) => renderSectionBody(sec, util, {
+    ...SIDE_OPTS,
+    certVariant: sec.display_settings?.certLayout || 'compact-list',
+  });
+
+  const renderSecBlock = (sec, bodyFn) => {
     if (!isSectionVisible(sec, visibleBlockIds)) return null;
     const body = bodyFn(sec);
     if (!body) return null;
@@ -2045,7 +2026,7 @@ function TemplateSpotlight({ resume, ds, ss, sectionAdjustments, visibleBlockIds
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 22px', marginTop: 14 }}>
               {contactItems.map(({ kind, val }) => (
                 <span key={kind} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, color: 'rgba(255,255,255,0.92)', fontSize: '0.92em' }}>
-                  <Icon name={kind} size={fontSize - 1} color="rgba(255,255,255,0.92)" />
+                  <Icon name={kind} size={hIconSz} color="rgba(255,255,255,0.92)" />
                   {val}
                 </span>
               ))}
@@ -2055,18 +2036,12 @@ function TemplateSpotlight({ resume, ds, ss, sectionAdjustments, visibleBlockIds
       )}
       {colLayout === 'one' ? (
         <div style={{ padding: `${padY * 0.6}mm ${padX}mm ${padY}mm` }}>
-          {[...main, ...side].map(sec => renderSecBlock(sec, s => NEW_TMPL_SIDE_TYPES.has(s.type) ? renderSideBody(s) : renderSectionBody(s, util, {
-            expVariant: s.display_settings?.entryLayout || 'stacked',
-            eduVariant: s.display_settings?.entryLayout || 'compact',
-          })))}
+          {[...main, ...side].map(sec => renderSecBlock(sec, s => renderSectionBody(s, util, MAIN_OPTS(s))))}
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 26, padding: `${padY * 0.6}mm ${padX}mm ${padY}mm` }}>
           <div>
-            {main.map(sec => renderSecBlock(sec, s => renderSectionBody(s, util, {
-              expVariant: s.display_settings?.entryLayout || 'stacked',
-              eduVariant: s.display_settings?.entryLayout || 'compact',
-            })))}
+            {main.map(sec => renderSecBlock(sec, s => renderSectionBody(s, util, MAIN_OPTS(s))))}
           </div>
           <div>
             {side.map(sec => renderSecBlock(sec, renderSideBody))}
@@ -2081,13 +2056,15 @@ function TemplateSpotlight({ resume, ds, ss, sectionAdjustments, visibleBlockIds
 
 function TemplateIndex({ resume, ds, ss, sectionAdjustments, visibleBlockIds = null, showHeader = true }) {
   const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
-  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult } = util;
   const { pi, sections } = buildRenderData(resume);
 
   const contactItems = [
     { kind: 'mail', val: pi.email }, { kind: 'phone', val: pi.phone },
     { kind: 'pin', val: pi.location }, { kind: 'link', val: pi.link },
   ].filter(d => d.val);
+
+  const numColW = `${Math.round(52 * titleSizeMult)}px`;
 
   return (
     <div style={{ fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#2C2C2A', paddingLeft: `${padX}mm`, paddingRight: `${padX}mm`, paddingTop: `${padY}mm`, paddingBottom: `${padY}mm` }}>
@@ -2111,42 +2088,30 @@ function TemplateIndex({ resume, ds, ss, sectionAdjustments, visibleBlockIds = n
         const headingVisible = showSectionHeading(sec, visibleBlockIds);
         const n = idx + 1;
 
-        let body;
-        if (sec.type === 'skills') {
-          const entries = sec.content?.entries || [];
-          body = (
-            <div style={{ fontSize: '1.05em', lineHeight: 1.7, overflowWrap: 'break-word' }}>
-              {entries.map((s, i) => (
-                <span key={i}>
-                  {i > 0 && <span style={{ color: colIf(t.dotsBarsBubbles) || accent, margin: '0 8px', fontWeight: 700 }}>/</span>}
-                  <span style={{ whiteSpace: 'nowrap' }}>{s.name}</span>
-                </span>
-              ))}
-            </div>
-          );
-        } else {
-          body = renderSectionBody(sec, util, {
-            expVariant: sec.type === 'work_experience' ? (sec.display_settings?.entryLayout || 'date-column') : undefined,
-            eduVariant: sec.type === 'education' ? (sec.display_settings?.entryLayout || 'date-column') : undefined,
-          });
-        }
+        const body = renderSectionBody(sec, util, {
+          expVariant: sec.type === 'work_experience' ? (sec.display_settings?.entryLayout || 'date-column') : undefined,
+          eduVariant: sec.type === 'education' ? (sec.display_settings?.entryLayout || 'date-column') : undefined,
+          hobbiesDefaultStyle: 'chips',
+          langDefaultLayout: 'compact',
+          certVariant: sec.display_settings?.certLayout,
+        });
 
         if (!body) return null;
 
         return (
           <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
             {headingVisible && (
-              <div style={{ display: 'grid', gridTemplateColumns: '52px 1fr', gap: 14, alignItems: 'baseline', marginTop: '1.6em', marginBottom: '0.7em' }}>
-                <div style={{ fontSize: '1.6em', fontWeight: 800, color: colIf(t.headings) || accent, lineHeight: 1, letterSpacing: '-0.02em' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: `${numColW} 1fr`, gap: 14, alignItems: 'baseline', marginTop: '1.6em', marginBottom: '0.7em' }}>
+                <div style={{ fontSize: `${1.6 * titleSizeMult}em`, fontWeight: 800, color: colIf(t.headings) || accent, lineHeight: 1, letterSpacing: '-0.02em' }}>
                   {String(n).padStart(2, '0')}
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.84em', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#16181D' }}>{sec.title}</div>
+                  <div style={{ fontSize: `${0.84 * titleSizeMult}em`, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: colIf(t.headings) || '#16181D' }}>{sec.title}</div>
                   <div style={{ height: 1, background: colIf(t.headingsLine) || '#D7DBE2', marginTop: 6 }} />
                 </div>
               </div>
             )}
-            <div style={{ display: 'grid', gridTemplateColumns: '52px 1fr', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: `${numColW} 1fr`, gap: 14 }}>
               <div />
               <div>{body}</div>
             </div>
@@ -2161,7 +2126,7 @@ function TemplateIndex({ resume, ds, ss, sectionAdjustments, visibleBlockIds = n
 
 function TemplatePanels({ resume, ds, ss, sectionAdjustments, visibleBlockIds = null, showHeader = true }) {
   const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
-  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult, hIconSz } = util;
   const { pi, sections } = buildRenderData(resume);
   const colLayout = resume.layout_settings?.columnLayout;
   const sc = resume.layout_settings?.sectionColumns || {};
@@ -2173,7 +2138,7 @@ function TemplatePanels({ resume, ds, ss, sectionAdjustments, visibleBlockIds = 
   ].filter(d => d.val);
 
   const PillLabel = ({ children }) => (
-    <div style={{ display: 'inline-block', whiteSpace: 'nowrap', padding: '4px 13px', borderRadius: 999, background: accent + '14', color: colIf(t.headings) || accent, fontSize: '0.74em', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '0.55em' }}>
+    <div style={{ display: 'inline-block', whiteSpace: 'nowrap', padding: '4px 13px', borderRadius: 999, background: accent + '14', color: colIf(t.headings) || accent, fontSize: `${0.74 * titleSizeMult}em`, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '0.55em' }}>
       {children}
     </div>
   );
@@ -2181,23 +2146,18 @@ function TemplatePanels({ resume, ds, ss, sectionAdjustments, visibleBlockIds = 
   const renderMainBody = (sec) => renderSectionBody(sec, util, {
     expVariant: sec.type === 'work_experience' ? (sec.display_settings?.entryLayout || 'stacked') : undefined,
     eduVariant: sec.type === 'education' ? (sec.display_settings?.entryLayout || 'compact') : undefined,
+    hobbiesDefaultStyle: 'chips',
+    langDefaultLayout: 'compact',
+    certVariant: sec.display_settings?.certLayout,
   });
 
-  const renderSideBody = (sec) => {
-    if (sec.type === 'skills' || sec.type === 'hobbies') {
-      const items = sec.type === 'skills'
-        ? (sec.content?.entries || []).map(e => e.name)
-        : (sec.content?.text || '').split(/[,;·•|]+/).map(s => s.trim()).filter(Boolean);
-      return (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-          {items.map((item, i) => (
-            <span key={i} style={{ padding: '4px 12px', borderRadius: 8, background: '#F2F4F8', border: '1px solid #E6E9EF', fontSize: '0.9em', fontWeight: 500 }}>{item}</span>
-          ))}
-        </div>
-      );
-    }
-    return renderSectionBody(sec, util, {});
-  };
+  const renderSideBody = (sec) => renderSectionBody(sec, util, {
+    expVariant: sec.display_settings?.entryLayout || 'stacked',
+    eduVariant: sec.display_settings?.entryLayout || 'compact',
+    hobbiesDefaultStyle: 'chips',
+    langDefaultLayout: 'compact',
+    certVariant: sec.display_settings?.certLayout || 'compact-list',
+  });
 
   const renderSecBlock = (sec, bodyFn, wrapCard = false) => {
     if (!isSectionVisible(sec, visibleBlockIds)) return null;
@@ -2236,7 +2196,7 @@ function TemplatePanels({ resume, ds, ss, sectionAdjustments, visibleBlockIds = 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
               {contactItems.map(({ kind, val }) => (
                 <span key={kind} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '5px 12px', borderRadius: 999, background: '#fff', border: '1px solid #E6E9EF', fontSize: '0.86em' }}>
-                  <Icon name={kind} size={fontSize - 2} color={colIf(t.headerIcons) || accent} />
+                  <Icon name={kind} size={hIconSz} color={colIf(t.headerIcons) || accent} />
                   {val}
                 </span>
               ))}
@@ -2276,7 +2236,7 @@ const LANG_LEVEL_PCT = { Beginner: 30, Intermediate: 55, Advanced: 75, Fluent: 9
 
 function TemplateVertex({ resume, ds, ss, sectionAdjustments, visibleBlockIds = null, showHeader = true }) {
   const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
-  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily, titleSizeMult, hIconSz } = util;
   const { pi, sections } = buildRenderData(resume);
   const colLayout = resume.layout_settings?.columnLayout;
   const sc = resume.layout_settings?.sectionColumns || {};
@@ -2290,7 +2250,7 @@ function TemplateVertex({ resume, ds, ss, sectionAdjustments, visibleBlockIds = 
   const MainHead = ({ children }) => (
     <div style={{ marginTop: '1.3em', marginBottom: '0.5em' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ fontSize: '0.86em', fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: colIf(t.headings) || accent, whiteSpace: 'nowrap' }}>{children}</span>
+        <span style={{ fontSize: `${0.86 * titleSizeMult}em`, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: colIf(t.headings) || accent, whiteSpace: 'nowrap' }}>{children}</span>
         <span style={{ flex: 1, height: 1, background: colIf(t.headingsLine) || '#E2E5EB' }} />
       </div>
     </div>
@@ -2298,49 +2258,57 @@ function TemplateVertex({ resume, ds, ss, sectionAdjustments, visibleBlockIds = 
 
   const RailHead = ({ children }) => (
     <div style={{ marginTop: '1.2em', marginBottom: '0.5em' }}>
-      <div style={{ fontSize: '0.78em', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.95)' }}>{children}</div>
-      <div style={{ height: 2, width: 22, background: 'rgba(255,255,255,0.6)', marginTop: 5 }} />
+      <div style={{ fontSize: `${0.78 * titleSizeMult}em`, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.95)' }}>{children}</div>
+      <div style={{ height: 2, width: Math.round(22 * titleSizeMult), background: 'rgba(255,255,255,0.6)', marginTop: 5 }} />
     </div>
   );
 
+  const RAIL_OPTS = {
+    hobbiesDefaultStyle: 'chips',
+    langDefaultLayout: 'compact',
+    certVariant: 'compact-list',
+  };
+
   const renderRailSideBody = (sec) => {
+    // Skills: use rings if user hasn't overridden the layout; else delegate to standard renderer
     if (sec.type === 'skills') {
-      const entries = sec.content?.entries || [];
-      return entries.map((s, i) => {
-        const pct = Math.min(100, Math.max(20, Math.round((s.level || 2) / 3 * 100)));
-        return (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 8 }}>
-            <VertexRing pct={pct} size={fontSize} accentColor={accent} />
-            <span style={{ fontSize: '0.9em', color: '#fff' }}>{s.name}</span>
-          </div>
-        );
-      });
+      const layout = sec.display_settings?.layout;
+      if (!layout || layout === 'rows') {
+        const entries = sec.content?.entries || [];
+        return entries.map((s, i) => {
+          const pct = Math.min(100, Math.max(20, Math.round((s.level || 2) / 3 * 100)));
+          return (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 8 }}>
+              <VertexRing pct={pct} size={fontSize} accentColor={accent} />
+              <span style={{ fontSize: '0.9em', color: '#fff' }}>{s.name}</span>
+            </div>
+          );
+        });
+      }
     }
+    // Languages: rings if no layout override
     if (sec.type === 'languages') {
-      const entries = sec.content?.entries || [];
-      return entries.map((l, i) => {
-        const pct = LANG_LEVEL_PCT[l.level] || 55;
-        return (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 8 }}>
-            <VertexRing pct={pct} size={fontSize} accentColor={accent} />
-            <span style={{ fontSize: '0.9em', color: '#fff' }}>{l.name}</span>
-          </div>
-        );
-      });
+      const layout = sec.display_settings?.layout;
+      if (!layout) {
+        const entries = sec.content?.entries || [];
+        return entries.map((l, i) => {
+          const pct = LANG_LEVEL_PCT[l.level] || 55;
+          return (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 8 }}>
+              <VertexRing pct={pct} size={fontSize} accentColor={accent} />
+              <span style={{ fontSize: '0.9em', color: '#fff' }}>{l.name}</span>
+            </div>
+          );
+        });
+      }
     }
-    if (sec.type === 'hobbies') {
-      const items = (sec.content?.text || '').split(/[,;·•|]+/).map(s => s.trim()).filter(Boolean);
-      return (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-          {items.map((item, i) => (
-            <span key={i} style={{ padding: '3px 10px', borderRadius: 999, background: 'rgba(255,255,255,0.16)', color: '#fff', fontSize: '0.85em' }}>{item}</span>
-          ))}
-        </div>
-      );
-    }
+    // All other sections (or skills/languages with custom layout): white wrapper
     return (
       <div style={{ color: 'rgba(255,255,255,0.92)' }}>
-        {renderSectionBody(sec, util, {})}
+        {renderSectionBody(sec, util, {
+          ...RAIL_OPTS,
+          certVariant: sec.display_settings?.certLayout || 'compact-list',
+        })}
       </div>
     );
   };
@@ -2360,6 +2328,9 @@ function TemplateVertex({ resume, ds, ss, sectionAdjustments, visibleBlockIds = 
           const body = renderSectionBody(sec, util, {
             expVariant: sec.type === 'work_experience' ? (sec.display_settings?.entryLayout || 'stacked') : undefined,
             eduVariant: sec.type === 'education' ? (sec.display_settings?.entryLayout || 'compact') : undefined,
+            hobbiesDefaultStyle: 'chips',
+            langDefaultLayout: 'compact',
+            certVariant: sec.display_settings?.certLayout,
           });
           if (!body) return null;
           const adj = sectionAdjustments?.[sec.id];
@@ -2382,7 +2353,7 @@ function TemplateVertex({ resume, ds, ss, sectionAdjustments, visibleBlockIds = 
             <RailHead>Contact</RailHead>
             {contactItems.map(({ kind, val }) => (
               <div key={kind} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 6, fontSize: '0.84em', color: 'rgba(255,255,255,0.92)', wordBreak: 'break-word' }}>
-                <span style={{ flexShrink: 0, marginTop: 1 }}><Icon name={kind} size={fontSize - 2} color="rgba(255,255,255,0.92)" /></span>
+                <span style={{ flexShrink: 0, marginTop: 1 }}><Icon name={kind} size={hIconSz} color="rgba(255,255,255,0.92)" /></span>
                 {val}
               </div>
             ))}
