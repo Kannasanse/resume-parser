@@ -2116,6 +2116,7 @@ export default function ResumePreview({ resume, designSettings = {}, scale = nul
               top:             0,
               left:            0,
               width:           page.width,
+              height:          page.height,
               transform:       `scale(${s})`,
               transformOrigin: 'top left',
             }}>
