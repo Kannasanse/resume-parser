@@ -661,10 +661,53 @@ function EducationBody({ secs, util, variant }) {
   );
 }
 
-function LanguagesBody({ sec, util }) {
-  const { t, colIf } = util;
+function LanguagesBody({ sec, util, defaultLayout }) {
+  const { t, colIf, accent } = util;
   const entries = sec?.content?.entries || [];
   if (!entries.length) return null;
+  const layout = sec.display_settings?.layout || defaultLayout || 'rows';
+
+  if (layout === 'rings') {
+    const ringColor = colIf(t.dotsBarsBubbles) || accent;
+    const pctMap = { Beginner: 20, Intermediate: 45, Advanced: 70, Fluent: 88, Native: 100 };
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 14px' }}>
+        {entries.map((l, i) => {
+          const pct = pctMap[l.level] ?? (typeof l.level === 'number' ? Math.round(l.level / 3 * 100) : 70);
+          const r = 12; const circ = 2 * Math.PI * r;
+          return (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <svg width="28" height="28" viewBox="0 0 28 28" style={{ flexShrink: 0 }}>
+                <circle cx="14" cy="14" r={r} fill="none" stroke={ringColor + '33'} strokeWidth="2.5" />
+                <circle cx="14" cy="14" r={r} fill="none" stroke={ringColor} strokeWidth="2.5"
+                  strokeDasharray={circ} strokeDashoffset={circ - (pct / 100) * circ}
+                  strokeLinecap="round" transform="rotate(-90 14 14)" />
+              </svg>
+              <div>
+                <div style={{ fontWeight: 500, fontSize: '0.88em' }}>{l.name}</div>
+                {l.level && <div style={{ fontSize: '0.75em', color: '#6B7280' }}>{l.level}</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  if (layout === 'compact') {
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 24, rowGap: 3 }}>
+        {entries.map((l, i) => (
+          <div key={i}>
+            <span style={{ fontWeight: 500 }}>{l.name}</span>
+            {l.level && <span style={{ fontSize: '0.85em', color: '#6B7280', marginLeft: 6 }}>{l.level}</span>}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // default: 'rows' — name + 5-dot level indicator
   const lvlMap = { Beginner: 1, Intermediate: 2, Advanced: 3, Fluent: 4, Native: 5 };
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 24, rowGap: 4 }}>
@@ -761,13 +804,32 @@ function renderSectionBody(sec, util, opts = {}) {
       ? <div className="resume-rich-body" style={{ fontSize: '0.95em' }} dangerouslySetInnerHTML={{ __html: txt }} />
       : <div style={{ fontSize: '0.95em' }}>{txt}</div>;
   }
-  if (type === 'work_experience') return <ExperienceBody secs={[sec]} util={util} variant={opts.expVariant} />;
-  if (type === 'education')      return <EducationBody secs={[sec]} util={util} variant={opts.eduVariant} />;
+  if (type === 'work_experience') return <ExperienceBody secs={[sec]} util={util} variant={opts.expVariant || sec.display_settings?.entryLayout} />;
+  if (type === 'education')      return <EducationBody secs={[sec]} util={util} variant={opts.eduVariant || sec.display_settings?.entryLayout} />;
   if (type === 'skills')         return <SkillsBody sec={sec} util={util} variantCols={opts.skillsCols} />;
-  if (type === 'languages')      return <LanguagesBody sec={sec} util={util} />;
-  if (type === 'certifications') return <CertsBody sec={sec} util={util} variant={opts.certVariant} />;
+  if (type === 'languages')      return <LanguagesBody sec={sec} util={util} defaultLayout={opts.langDefaultLayout} />;
+  if (type === 'certifications') return <CertsBody sec={sec} util={util} variant={opts.certVariant || sec.display_settings?.certLayout} />;
   if (type === 'projects')       return <ProjectsBody sec={sec} util={util} />;
-  if (type === 'hobbies' || type === 'references') {
+  if (type === 'hobbies') {
+    const text = sec.content?.text;
+    if (!text) return null;
+    const style = sec.display_settings?.style || opts.hobbiesDefaultStyle || 'text';
+    if (style === 'chips') {
+      const items = text.split(/[,;·•|]+/).map(s => s.trim()).filter(Boolean);
+      if (!items.length) return <div style={{ fontSize: '0.95em' }}>{text}</div>;
+      const { t, colIf, accent } = util;
+      const chipColor = colIf(t.dotsBarsBubbles) || accent;
+      return (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {items.map((item, i) => (
+            <span key={i} style={{ padding: '2px 10px', borderRadius: 999, background: chipColor + '22', color: chipColor, fontSize: '0.88em' }}>{item}</span>
+          ))}
+        </div>
+      );
+    }
+    return <div style={{ fontSize: '0.95em' }}>{text}</div>;
+  }
+  if (type === 'references') {
     const text = sec.content?.text;
     return text ? <div style={{ fontSize: '0.95em' }}>{text}</div> : null;
   }
@@ -1003,7 +1065,7 @@ function TemplateAtlanticBlue({ resume, ds, ss, sectionAdjustments, visibleBlock
         <div style={{ color: '#E8EEF7' }}>
           {sideIds.map(sec => {
             if (!isSectionVisible(sec, visibleBlockIds)) return null;
-            const body = renderSectionBody(sec, util, { certVariant: 'compact-list' });
+            const body = renderSectionBody(sec, util, { certVariant: sec.display_settings?.certLayout || 'compact-list', langDefaultLayout: 'compact' });
             if (!body) return null;
             const adj = sectionAdjustments?.[sec.id];
             const headingVisible = showSectionHeading(sec, visibleBlockIds);
@@ -1020,7 +1082,9 @@ function TemplateAtlanticBlue({ resume, ds, ss, sectionAdjustments, visibleBlock
       <div style={{ padding: '24px 22px' }}>
         {bodyIds.map(sec => {
           if (!isSectionVisible(sec, visibleBlockIds)) return null;
-          const body = renderSectionBody(sec, util, { expVariant: 'stacked' });
+          const body = renderSectionBody(sec, util, {
+            expVariant: sec.type === 'work_experience' ? (sec.display_settings?.entryLayout || 'stacked') : undefined,
+          });
           if (!body) return null;
           const adj = sectionAdjustments?.[sec.id];
           const headingVisible = showSectionHeading(sec, visibleBlockIds);
@@ -1075,9 +1139,7 @@ function TemplateCorporate({ resume, ds, ss, sectionAdjustments, visibleBlockIds
       )}
       {applyColumnLayout(sections, resume.layout_settings, padX, sec => {
         if (!isSectionVisible(sec, visibleBlockIds)) return null;
-        const certVariant = sec.type === 'certifications' ? 'three-col-bullets' : undefined;
-        const skillsCols  = (sec.type === 'skills' && (sec.display_settings?.layout === 'rows' || !sec.display_settings?.layout)) ? 3 : undefined;
-        const body = renderSectionBody(sec, util, { certVariant, skillsCols });
+        const body = renderSectionBody(sec, util);
         if (!body) return null;
         const adj = sectionAdjustments?.[sec.id];
         const headingVisible = showSectionHeading(sec, visibleBlockIds);
@@ -1149,7 +1211,10 @@ function TemplateAtlanticCrest({ resume, ds, ss, sectionAdjustments, visibleBloc
         {(() => {
           const renderSec = sec => {
             if (!isSectionVisible(sec, visibleBlockIds)) return null;
-            const body = renderSectionBody(sec, util, { expVariant: CREST_LEFT_TYPES.has(sec.type) ? undefined : 'stacked' });
+            const defaultExp = CREST_LEFT_TYPES.has(sec.type) ? undefined : 'stacked';
+            const body = renderSectionBody(sec, util, {
+              expVariant: sec.type === 'work_experience' ? (sec.display_settings?.entryLayout || defaultExp) : undefined,
+            });
             if (!body) return null;
             const adj = sectionAdjustments?.[sec.id];
             const headingVisible = showSectionHeading(sec, visibleBlockIds);
@@ -1224,8 +1289,10 @@ function TemplateMercuryFlow({ resume, ds, ss, sectionAdjustments, visibleBlockI
       <div style={{ padding: `${padY * 0.5}mm ${padX}mm` }}>
         {applyColumnLayout(sections, resume.layout_settings, padX, sec => {
           if (!isSectionVisible(sec, visibleBlockIds)) return null;
-          const isDateCol = sec.type === 'work_experience' || sec.type === 'education';
-          const body = renderSectionBody(sec, util, isDateCol ? { expVariant: 'date-column', eduVariant: 'date-column' } : {});
+          const body = renderSectionBody(sec, util, {
+            expVariant: sec.type === 'work_experience' ? (sec.display_settings?.entryLayout || 'date-column') : undefined,
+            eduVariant: sec.type === 'education' ? (sec.display_settings?.entryLayout || 'date-column') : undefined,
+          });
           if (!body) return null;
           const adj = sectionAdjustments?.[sec.id];
           const headingVisible = showSectionHeading(sec, visibleBlockIds);
@@ -1281,13 +1348,9 @@ function TemplateSteadyForm({ resume, ds, ss, sectionAdjustments, visibleBlockId
       )}
       {applyColumnLayout(sections, resume.layout_settings, padX, sec => {
         if (!isSectionVisible(sec, visibleBlockIds)) return null;
-        const skillsCols   = (sec.type === 'skills' && (sec.display_settings?.layout === 'rows' || !sec.display_settings?.layout)) ? 3 : undefined;
-        const certVariant  = sec.type === 'certifications' ? 'three-col-bullets' : undefined;
         const body = renderSectionBody(sec, util, {
-          expVariant: sec.type === 'work_experience' ? 'inline-title-role' : undefined,
-          eduVariant: sec.type === 'education' ? 'date-column' : undefined,
-          skillsCols,
-          certVariant,
+          expVariant: sec.type === 'work_experience' ? (sec.display_settings?.entryLayout || 'inline-title-role') : undefined,
+          eduVariant: sec.type === 'education' ? (sec.display_settings?.entryLayout || 'date-column') : undefined,
         });
         if (!body) return null;
         const adj = sectionAdjustments?.[sec.id];
@@ -1343,8 +1406,8 @@ function TemplateExecutive({ resume, ds, ss, sectionAdjustments, visibleBlockIds
       {applyColumnLayout(sections, resume.layout_settings, padX, sec => {
         if (!isSectionVisible(sec, visibleBlockIds)) return null;
         const body = renderSectionBody(sec, util, {
-          expVariant: sec.type === 'work_experience' ? 'date-column' : undefined,
-          eduVariant: sec.type === 'education' ? 'date-column' : undefined,
+          expVariant: sec.type === 'work_experience' ? (sec.display_settings?.entryLayout || 'date-column') : undefined,
+          eduVariant: sec.type === 'education' ? (sec.display_settings?.entryLayout || 'date-column') : undefined,
         });
         if (!body) return null;
         const adj = sectionAdjustments?.[sec.id];
@@ -1419,7 +1482,9 @@ function TemplateAzureWave({ resume, ds, ss, sectionAdjustments, visibleBlockIds
         {(() => {
           const renderSec = sec => {
             if (!isSectionVisible(sec, visibleBlockIds)) return null;
-            const body = renderSectionBody(sec, util, { expVariant: sec.type === 'work_experience' ? 'stacked' : undefined });
+            const body = renderSectionBody(sec, util, {
+              expVariant: sec.type === 'work_experience' ? (sec.display_settings?.entryLayout || 'stacked') : undefined,
+            });
             if (!body) return null;
             const adj = sectionAdjustments?.[sec.id];
             const headingVisible = showSectionHeading(sec, visibleBlockIds);
@@ -1570,10 +1635,11 @@ function TemplateNoirFlash({ resume, ds, ss, sectionAdjustments, visibleBlockIds
             if (!isSectionVisible(sec, visibleBlockIds)) return null;
             const headingVisible = showSectionHeading(sec, visibleBlockIds);
             const adj = sectionAdjustments?.[sec.id];
-            let body;
-            if (sec.type === 'skills')         body = <SkillsBody sec={sec} util={util} />;
-            else if (sec.type === 'languages') body = <NoirLanguagesGrid sec={sec} />;
-            else body = renderSectionBody(sec, util, { expVariant: sec.type === 'work_experience' ? 'stacked' : undefined });
+            const body = renderSectionBody(sec, util, {
+              expVariant: sec.type === 'work_experience' ? (sec.display_settings?.entryLayout || 'stacked') : undefined,
+              langDefaultLayout: 'compact',
+              hobbiesDefaultStyle: 'chips',
+            });
             if (!body) return null;
             return (
               <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
@@ -1739,11 +1805,11 @@ function TemplateVerdantCrest({ resume, ds, ss, sectionAdjustments, visibleBlock
           if (!isSectionVisible(sec, visibleBlockIds)) return null;
           const headingVisible = showSectionHeading(sec, visibleBlockIds);
           const adj = sectionAdjustments?.[sec.id];
-          let body;
-          if (sec.type === 'skills')         body = <SkillsBody sec={sec} util={util} />;
-          else if (sec.type === 'languages') body = <LanguageRings sec={sec} accentColor={greenDeep} softColor={greenSoft} />;
-          else if (sec.type === 'hobbies')   body = <HashChips sec={sec} accentColor={greenDeep} />;
-          else body = renderSectionBody(sec, util, { expVariant: sec.type === 'work_experience' ? 'stacked' : undefined });
+          const body = renderSectionBody(sec, util, {
+            expVariant: sec.type === 'work_experience' ? (sec.display_settings?.entryLayout || 'stacked') : undefined,
+            langDefaultLayout: 'rings',
+            hobbiesDefaultStyle: 'chips',
+          });
           if (!body) return null;
           return (
             <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
@@ -1844,10 +1910,10 @@ function TemplateConfetti({ resume, ds, ss, sectionAdjustments, visibleBlockIds 
             if (!isSectionVisible(sec, visibleBlockIds)) return null;
             const headingVisible = showSectionHeading(sec, visibleBlockIds);
             const adj = sectionAdjustments?.[sec.id];
-            let body;
-            if (sec.type === 'skills')       body = <SkillsBody sec={sec} util={util} />;
-            else if (sec.type === 'hobbies') body = <HashChips sec={sec} accentColor={coralDeep} />;
-            else body = renderSectionBody(sec, util, { expVariant: sec.type === 'work_experience' ? 'stacked' : undefined });
+            const body = renderSectionBody(sec, util, {
+              expVariant: sec.type === 'work_experience' ? (sec.display_settings?.entryLayout || 'stacked') : undefined,
+              hobbiesDefaultStyle: 'chips',
+            });
             if (!body) return null;
             return (
               <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>

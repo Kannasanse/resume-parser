@@ -367,9 +367,12 @@ export default function DesignPanel({
   const setLs = (key, val) => onLayoutChange({ ...ls, [key]: val });
 
   const enabledSections = (sections || []).filter(s => s.enabled !== false);
-  const skillsSec = enabledSections.find(s => s.type === 'skills');
-  const eduSec = enabledSections.find(s => s.type === 'education');
-  const workSec = enabledSections.find(s => s.type === 'work_experience');
+  const skillsSec   = enabledSections.find(s => s.type === 'skills');
+  const eduSec      = enabledSections.find(s => s.type === 'education');
+  const workSec     = enabledSections.find(s => s.type === 'work_experience');
+  const langSec     = enabledSections.find(s => s.type === 'languages');
+  const certsSec    = enabledSections.find(s => s.type === 'certifications');
+  const hobbiesSec  = enabledSections.find(s => s.type === 'hobbies');
 
   // ── DESIGN TAB ──────────────────────────────────────────────────────────────
   if (activeTab === 'design') return (
@@ -809,23 +812,83 @@ export default function DesignPanel({
       {/* Education */}
       {eduSec && onSectionDisplayChange && (
         <PanelSection title="Education">
-          <p className="text-xs font-medium text-ds-text mb-1.5">Display order</p>
-          <Seg
-            value={eduSec.display_settings?.eduOrder || 'school-first'}
-            onChange={v => onSectionDisplayChange(eduSec.id, { ...eduSec.display_settings, eduOrder: v })}
-            options={[{ value: 'school-first', label: 'School → Degree' }, { value: 'degree-first', label: 'Degree → School' }]}
-          />
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs font-medium text-ds-text mb-1.5">Display order</p>
+              <Seg
+                value={eduSec.display_settings?.eduOrder || 'school-first'}
+                onChange={v => onSectionDisplayChange(eduSec.id, { ...eduSec.display_settings, eduOrder: v })}
+                options={[{ value: 'school-first', label: 'School → Degree' }, { value: 'degree-first', label: 'Degree → School' }]}
+              />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-ds-text mb-1.5">Entry style</p>
+              <Seg
+                value={eduSec.display_settings?.entryLayout || 'auto'}
+                onChange={v => onSectionDisplayChange(eduSec.id, { ...eduSec.display_settings, entryLayout: v === 'auto' ? undefined : v })}
+                options={[{ value: 'auto', label: 'Auto' }, { value: 'default', label: 'Default' }, { value: 'date-col', label: 'Date col' }]}
+              />
+            </div>
+          </div>
         </PanelSection>
       )}
 
       {/* Work Experience */}
       {workSec && onSectionDisplayChange && (
         <PanelSection title="Work Experience">
-          <p className="text-xs font-medium text-ds-text mb-1.5">Display order</p>
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs font-medium text-ds-text mb-1.5">Display order</p>
+              <Seg
+                value={workSec.display_settings?.workOrder || 'title-first'}
+                onChange={v => onSectionDisplayChange(workSec.id, { ...workSec.display_settings, workOrder: v })}
+                options={[{ value: 'title-first', label: 'Title → Employer' }, { value: 'employer-first', label: 'Employer → Title' }]}
+              />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-ds-text mb-1.5">Entry style</p>
+              <Seg
+                value={workSec.display_settings?.entryLayout || 'auto'}
+                onChange={v => onSectionDisplayChange(workSec.id, { ...workSec.display_settings, entryLayout: v === 'auto' ? undefined : v })}
+                options={[{ value: 'auto', label: 'Auto' }, { value: 'stacked', label: 'Stacked' }, { value: 'date-col', label: 'Date col' }, { value: 'inline', label: 'Inline' }]}
+              />
+            </div>
+          </div>
+        </PanelSection>
+      )}
+
+      {/* Languages */}
+      {langSec && onSectionDisplayChange && (
+        <PanelSection title="Languages">
+          <p className="text-xs font-medium text-ds-text mb-1.5">Layout</p>
           <Seg
-            value={workSec.display_settings?.workOrder || 'title-first'}
-            onChange={v => onSectionDisplayChange(workSec.id, { ...workSec.display_settings, workOrder: v })}
-            options={[{ value: 'title-first', label: 'Title → Employer' }, { value: 'employer-first', label: 'Employer → Title' }]}
+            value={langSec.display_settings?.layout || 'rows'}
+            onChange={v => onSectionDisplayChange(langSec.id, { ...langSec.display_settings, layout: v })}
+            options={[{ value: 'rows', label: 'Dots' }, { value: 'rings', label: 'Rings' }, { value: 'compact', label: 'Compact' }]}
+          />
+        </PanelSection>
+      )}
+
+      {/* Certifications */}
+      {certsSec && onSectionDisplayChange && (
+        <PanelSection title="Certifications">
+          <p className="text-xs font-medium text-ds-text mb-1.5">Layout</p>
+          <Seg
+            value={certsSec.display_settings?.certLayout || 'default'}
+            onChange={v => onSectionDisplayChange(certsSec.id, { ...certsSec.display_settings, certLayout: v === 'default' ? undefined : v })}
+            options={[{ value: 'default', label: 'Default' }, { value: 'three-col-bullets', label: '3-Col' }, { value: 'compact-list', label: 'Compact' }]}
+          />
+        </PanelSection>
+      )}
+
+      {/* Hobbies */}
+      {hobbiesSec && onSectionDisplayChange && (
+        <PanelSection title="Hobbies">
+          <p className="text-xs font-medium text-ds-text mb-1.5">Display style</p>
+          <Seg
+            value={hobbiesSec.display_settings?.style || 'chips'}
+            onChange={v => onSectionDisplayChange(hobbiesSec.id, { ...hobbiesSec.display_settings, style: v })}
+            options={[{ value: 'text', label: 'Text' }, { value: 'chips', label: 'Chips' }]}
           />
         </PanelSection>
       )}
