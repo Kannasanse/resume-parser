@@ -693,245 +693,299 @@ export function ConfettiPreview({ dark = false }) {
   )
 }
 
+// ─── Shared sample data & helpers for new SVG previews ───────────────────────
+const NP = {
+  name: "Alex Johnson", title: "Senior React Developer",
+  email: "alex@email.com", phone: "+1 (555) 234-5678", location: "San Francisco, CA",
+  summary: "Full-stack developer with 6+ years building scalable React applications. Led teams of 8 engineers across fintech and e-commerce domains. Passionate about performance.",
+  exp: [
+    { role: "Senior React Developer", co: "Razorpay", loc: "Remote", dates: "Jan 2021 – Present",
+      b: ["Built component library used by 40+ engineers","Reduced page load by 34% via code splitting","Led migration from Redux to Zustand, 18% bundle reduction","Mentored 4 junior developers quarterly"] },
+    { role: "Frontend Engineer", co: "Freshworks", loc: "Chennai", dates: "Jun 2019 – Dec 2020",
+      b: ["Developed 15 customer-facing features for 50K+ users","Improved test coverage from 40% to 85%"] }
+  ],
+  edu: [{ deg: "B.S. Computer Science", inst: "Stanford University", year: "2019" }],
+  skills: ["React","TypeScript","Node.js","GraphQL","AWS","Docker","PostgreSQL","Redis","PowerShell","Agile","Report Auto","Teams","Tech Support","Info Architecture"]
+}
+const ntr = (s, n) => s && s.length > n ? s.slice(0, n - 1) + "…" : (s || "")
+
 // ─── Spotlight preview ────────────────────────────────────────────────────────
 function SpotlightPreview() {
-  const accent = "#185FA5";
-  const chipStyle = { display:"inline-block", padding:"2px 7px", borderRadius:6, background:accent+"14", color:accent, fontSize:6.5, fontWeight:500, margin:"2px 2px 0 0" };
-  const Heading = ({ label }) => (
-    <div style={{ marginTop:8, marginBottom:3 }}>
-      <div style={{ fontSize:7, fontWeight:800, letterSpacing:"0.12em", textTransform:"uppercase", color:accent }}>{label}</div>
-      <div style={{ height:2, width:18, borderRadius:1, background:accent, marginTop:2 }} />
-    </div>
-  );
+  const a  = "#1B5FA8"
+  const tx = "#111827"
+  const mt = "#6B7280"
+  const pillBg = "#F1F5FA"
+  const pillBd = "#C8D8ED"
+
+  const SH = ({ x, y, label }) => (
+    <g>
+      <text x={x} y={y} fontSize={5.5} fontWeight="bold" fill={a} letterSpacing="0.6">{label}</text>
+      <rect x={x} y={y + 2.5} width={18} height={1.5} rx={0.5} fill={a} />
+    </g>
+  )
+
   return (
-    <div style={{ fontFamily:"Inter,sans-serif", fontSize:8 }}>
-      <div style={{ background:accent, padding:"14px 13px 10px" }}>
-        <div style={{ fontSize:22, fontWeight:800, letterSpacing:"-0.02em", lineHeight:1, color:"#fff" }}>Alex Johnson</div>
-        <div style={{ fontSize:9.5, fontWeight:500, color:"rgba(255,255,255,0.82)", marginTop:3 }}>Senior React Developer</div>
-        <div style={{ display:"flex", flexWrap:"wrap", gap:"3px 10px", marginTop:6 }}>
-          {["✉ alex@email.com","☏ +1 555 234-5678","⌖ San Francisco, CA"].map((c,i) => (
-            <span key={i} style={{ fontSize:7.5, color:"rgba(255,255,255,0.88)" }}>{c}</span>
-          ))}
-        </div>
-      </div>
-      <div style={{ display:"grid", gridTemplateColumns:"1.6fr 1fr", gap:10, padding:"8px 13px" }}>
-        <div>
-          <Heading label="Summary" />
-          <div style={{ fontSize:6.5, color:"#374151", lineHeight:1.5 }}>Full-stack developer with 6+ years building scalable React apps across fintech and e-commerce.</div>
-          <Heading label="Work Experience" />
-          <div style={{ marginBottom:5 }}>
-            <div style={{ fontSize:7.5, fontWeight:700 }}>Senior React Developer</div>
-            <div style={{ fontSize:7, fontStyle:"italic", color:"#6B7280" }}>Razorpay</div>
-            <div style={{ fontSize:6.5, color:"#9097A3", marginBottom:1 }}>Jan 2021 – Present</div>
-            <div style={{ fontSize:6.5, color:"#374151", paddingLeft:8 }}>• Built component library used by 40+ engineers</div>
-            <div style={{ fontSize:6.5, color:"#374151", paddingLeft:8 }}>• Reduced page load by 34% via code splitting</div>
-          </div>
-          <div>
-            <div style={{ fontSize:7.5, fontWeight:700 }}>Frontend Engineer</div>
-            <div style={{ fontSize:7, fontStyle:"italic", color:"#6B7280" }}>Freshworks</div>
-            <div style={{ fontSize:6.5, color:"#9097A3" }}>Jun 2019 – Dec 2020</div>
-            <div style={{ fontSize:6.5, color:"#374151", paddingLeft:8 }}>• Developed 15 customer-facing features</div>
-          </div>
-          <Heading label="Education" />
-          <div style={{ fontSize:7.5, fontWeight:700 }}>B.S. Computer Science</div>
-          <div style={{ fontSize:7, color:"#6B7280" }}>Stanford University</div>
-        </div>
-        <div>
-          <Heading label="Skills" />
-          <div>{["React","TypeScript","Node.js","GraphQL","AWS","Redux","Tailwind"].map(s=><span key={s} style={chipStyle}>{s}</span>)}</div>
-          <Heading label="Languages" />
-          {[["English","Native"],["Hindi","Fluent"],["Spanish","Intermediate"]].map(([lang,level])=>(
-            <div key={lang} style={{ display:"flex", justifyContent:"space-between", fontSize:7, color:"#374151", marginBottom:2 }}>
-              <span>{lang}</span><span style={{ color:"#9097A3" }}>{level}</span>
-            </div>
-          ))}
-          <Heading label="Interests" />
-          {["Open Source","Running","Design"].map(s=><span key={s} style={chipStyle}>{s}</span>)}
-        </div>
-      </div>
-    </div>
-  );
+    <svg viewBox="0 0 210 297" xmlns="http://www.w3.org/2000/svg" style={{ width:"100%", height:"100%", display:"block" }}>
+      <rect width="210" height="297" fill="#fff" />
+      <rect width="210" height="58" fill={a} />
+      <text x={14} y={22} fontSize={13} fontWeight="bold" fill="white" fontFamily="Arial, sans-serif">{NP.name}</text>
+      <text x={14} y={32} fontSize={6.5} fill="rgba(255,255,255,0.85)">{NP.title}</text>
+      <text x={14} y={44} fontSize={4.5} fill="rgba(255,255,255,0.75)">✉ {NP.email}</text>
+      <text x={82} y={44} fontSize={4.5} fill="rgba(255,255,255,0.75)">✆ {NP.phone}</text>
+      <text x={148} y={44} fontSize={4.5} fill="rgba(255,255,255,0.75)">⌖ {NP.location}</text>
+
+      <SH x={14} y={67} label="SUMMARY" />
+      {[NP.summary.slice(0,48), NP.summary.slice(44,92), NP.summary.slice(88,136), NP.summary.slice(132)].map((l, i) => (
+        <text key={i} x={14} y={76 + i * 6} fontSize={4.5} fill={mt}>{ntr(l, 50)}</text>
+      ))}
+
+      <SH x={14} y={103} label="WORK EXPERIENCE" />
+      <text x={14} y={112} fontSize={5.5} fontWeight="bold" fill={tx}>{ntr(NP.exp[0].role, 28)}</text>
+      <text x={14} y={118} fontSize={4.5} fontStyle="italic" fill={mt}>{NP.exp[0].co}</text>
+      <text x={14} y={123.5} fontSize={4} fill={mt}>{NP.exp[0].dates} | {NP.exp[0].loc}</text>
+      {NP.exp[0].b.slice(0, 4).map((b, i) => (
+        <g key={i}>
+          <circle cx={16.5} cy={129.5 + i * 6} r={0.9} fill={mt} opacity={0.7} />
+          <text x={19.5} y={131 + i * 6} fontSize={4} fill={mt}>{ntr(b, 38)}</text>
+        </g>
+      ))}
+      <text x={14} y={158} fontSize={5.5} fontWeight="bold" fill={tx}>{ntr(NP.exp[1].role, 28)}</text>
+      <text x={14} y={164} fontSize={4.5} fontStyle="italic" fill={mt}>{NP.exp[1].co}</text>
+      {NP.exp[1].b.slice(0, 2).map((b, i) => (
+        <g key={i}>
+          <circle cx={16.5} cy={170.5 + i * 6} r={0.9} fill={mt} opacity={0.7} />
+          <text x={19.5} y={172 + i * 6} fontSize={4} fill={mt}>{ntr(b, 38)}</text>
+        </g>
+      ))}
+
+      <SH x={125} y={67} label="SKILLS" />
+      {NP.skills.slice(0, 14).map((sk, i) => {
+        const col = i % 2, row = Math.floor(i / 2)
+        const x = 125 + col * 38, y = 76 + row * 10
+        return (
+          <g key={sk}>
+            <rect x={x} y={y - 4} width={35} height={6.5} rx={3.2} fill={pillBg} stroke={pillBd} strokeWidth={0.5} />
+            <text x={x + 17.5} y={y + 0.5} fontSize={3.8} fill="#374151" textAnchor="middle">{ntr(sk, 12)}</text>
+          </g>
+        )
+      })}
+    </svg>
+  )
 }
 
 // ─── Index preview ────────────────────────────────────────────────────────────
 function IndexPreview() {
-  const accent = "#185FA5";
-  const NumHeading = ({ n, label }) => (
-    <div style={{ display:"grid", gridTemplateColumns:"30px 1fr", gap:8, alignItems:"baseline", marginTop:10, marginBottom:4 }}>
-      <div style={{ fontSize:12, fontWeight:800, color:accent, lineHeight:1, letterSpacing:"-0.02em" }}>{String(n).padStart(2,"0")}</div>
-      <div>
-        <div style={{ fontSize:7, fontWeight:700, letterSpacing:"0.18em", textTransform:"uppercase", color:"#16181D" }}>{label}</div>
-        <div style={{ height:1, background:"#D7DBE2", marginTop:3 }} />
-      </div>
-    </div>
-  );
-  const Body = ({ children }) => (
-    <div style={{ display:"grid", gridTemplateColumns:"30px 1fr", gap:8 }}><div /><div style={{ minWidth:0 }}>{children}</div></div>
-  );
+  const a  = "#1B5FA8"
+  const tx = "#111827"
+  const mt = "#6B7280"
+  const rl = "#C8D8ED"
+
+  const Section = ({ num, label, y }) => (
+    <g>
+      <text x={14} y={y + 8} fontSize={10} fontWeight="bold" fill={a}>{num}</text>
+      <text x={36} y={y + 5} fontSize={5.5} fontWeight="bold" fill={tx} letterSpacing="0.8">{label}</text>
+      <rect x={36} y={y + 7} width={160} height={0.6} fill={rl} />
+    </g>
+  )
+
   return (
-    <div style={{ fontFamily:"Inter,sans-serif", padding:"14px 13px" }}>
-      <div style={{ fontSize:26, fontWeight:800, letterSpacing:"-0.035em", lineHeight:0.95, color:"#16181D" }}>Alex Johnson</div>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", flexWrap:"wrap", gap:8, marginTop:6 }}>
-        <div style={{ fontSize:9, fontWeight:500, color:accent }}>Senior React Developer</div>
-        <div style={{ display:"flex", gap:8, fontSize:7, color:"#9097A3" }}>
-          <span>alex@email.com</span><span>+1 555 234-5678</span><span>San Francisco</span>
-        </div>
-      </div>
-      <div style={{ height:2, background:"#16181D", marginTop:7 }} />
-      <NumHeading n={1} label="Summary" />
-      <Body><div style={{ fontSize:7, color:"#374151", lineHeight:1.6 }}>Full-stack developer with 6+ years building scalable React applications across fintech.</div></Body>
-      <NumHeading n={2} label="Work Experience" />
-      <Body>
-        <div style={{ display:"grid", gridTemplateColumns:"64px 1fr", gap:8, marginBottom:4 }}>
-          <div style={{ fontSize:7, color:"#374151" }}><div>Jan 2021 – Now</div><div style={{ color:"#9097A3" }}>Remote</div></div>
-          <div>
-            <div style={{ fontSize:7.5, fontWeight:700, color:"#16181D" }}>Senior React Developer</div>
-            <div style={{ fontSize:7, color:"#6B7280" }}>Razorpay</div>
-            <div style={{ fontSize:6.5, color:"#374151", paddingLeft:8 }}>• Built component library used by 40+ engineers</div>
-          </div>
-        </div>
-      </Body>
-      <NumHeading n={3} label="Skills" />
-      <Body>
-        <div style={{ fontSize:7.5, lineHeight:1.7, color:"#374151" }}>
-          {["React","TypeScript","Node.js","GraphQL","AWS","Redux"].map((s,i,arr)=>(
-            <span key={s}><span style={{ whiteSpace:"nowrap" }}>{s}</span>{i<arr.length-1&&<span style={{ color:accent, margin:"0 4px", fontWeight:700 }}>/</span>}</span>
-          ))}
-        </div>
-      </Body>
-      <NumHeading n={4} label="Education" />
-      <Body>
-        <div style={{ display:"grid", gridTemplateColumns:"64px 1fr", gap:8 }}>
-          <div style={{ fontSize:7, color:"#374151" }}>2015 – 2019</div>
-          <div>
-            <div style={{ fontSize:7.5, fontWeight:700, color:"#16181D" }}>B.S. Computer Science</div>
-            <div style={{ fontSize:7, color:"#6B7280" }}>Stanford University</div>
-          </div>
-        </div>
-      </Body>
-    </div>
-  );
+    <svg viewBox="0 0 210 297" xmlns="http://www.w3.org/2000/svg" style={{ width:"100%", height:"100%", display:"block" }}>
+      <rect width="210" height="297" fill="#fff" />
+      <text x={14} y={22} fontSize={15} fontWeight="bold" fill={a} fontFamily="Arial, sans-serif" letterSpacing="-0.5">{NP.name}</text>
+      <text x={14} y={31} fontSize={7} fontStyle="italic" fill={a}>{NP.title}</text>
+      <text x={14} y={39} fontSize={5} fill={mt}>{NP.email}   {NP.phone}   {NP.location}</text>
+      <rect x={14} y={43} width={182} height={1} fill={a} opacity={0.6} />
+
+      <Section num="01" label="SUMMARY" y={49} />
+      {[NP.summary.slice(0,70), NP.summary.slice(66,136)].map((l, i) => (
+        <text key={i} x={36} y={64 + i * 6} fontSize={4.5} fill={mt}>{ntr(l, 72)}</text>
+      ))}
+      <text x={36} y={76} fontSize={4.5} fill={mt}>{ntr(NP.summary.slice(120), 72)}</text>
+
+      <Section num="02" label="SKILLS" y={83} />
+      <text x={36} y={99} fontSize={4.5} fill={mt}>{NP.skills.slice(0, 7).join("  /  ")}</text>
+      <text x={36} y={105} fontSize={4.5} fill={mt}>{NP.skills.slice(7, 14).join("  /  ")}</text>
+
+      <Section num="03" label="WORK EXPERIENCE" y={112} />
+      <text x={36} y={129} fontSize={4.5} fill={mt}>Feb 2021 –</text>
+      <text x={36} y={135} fontSize={4.5} fill={mt}>Present</text>
+      <text x={36} y={141} fontSize={4.5} fill={mt}>Remote</text>
+      <text x={76} y={129} fontSize={5.5} fontWeight="bold" fill={tx}>{ntr(NP.exp[0].role, 30)}</text>
+      <text x={76} y={135} fontSize={4.5} fill={mt}>{NP.exp[0].co}</text>
+      {NP.exp[0].b.slice(0, 3).map((b, i) => (
+        <g key={i}>
+          <circle cx={78} cy={141.5 + i * 6} r={0.9} fill={mt} opacity={0.7} />
+          <text x={81} y={143 + i * 6} fontSize={4} fill={mt}>{ntr(b, 40)}</text>
+        </g>
+      ))}
+      <text x={36} y={164} fontSize={4.5} fill={mt}>Jun 2019 –</text>
+      <text x={36} y={170} fontSize={4.5} fill={mt}>Dec 2020</text>
+      <text x={76} y={164} fontSize={5.5} fontWeight="bold" fill={tx}>{ntr(NP.exp[1].role, 30)}</text>
+      <text x={76} y={170} fontSize={4.5} fill={mt}>{NP.exp[1].co}</text>
+      {NP.exp[1].b.slice(0, 2).map((b, i) => (
+        <g key={i}>
+          <circle cx={78} cy={176.5 + i * 6} r={0.9} fill={mt} opacity={0.7} />
+          <text x={81} y={178 + i * 6} fontSize={4} fill={mt}>{ntr(b, 40)}</text>
+        </g>
+      ))}
+
+      <Section num="04" label="EDUCATION" y={190} />
+      <text x={76} y={207} fontSize={5.5} fontWeight="bold" fill={tx}>{NP.edu[0].deg}</text>
+      <text x={76} y={213} fontSize={4.5} fill={mt}>{NP.edu[0].inst}</text>
+    </svg>
+  )
 }
 
 // ─── Panels preview ───────────────────────────────────────────────────────────
 function PanelsPreview() {
-  const accent = "#185FA5";
-  const Pill = ({ children }) => (
-    <div style={{ display:"inline-block", whiteSpace:"nowrap", padding:"2px 8px", borderRadius:999, background:accent+"14", color:accent, fontSize:6.5, fontWeight:800, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:4 }}>{children}</div>
-  );
-  const SkillChip = ({ label }) => (
-    <span style={{ padding:"2px 7px", borderRadius:6, background:"#F2F4F8", border:"1px solid #E6E9EF", fontSize:6.5, fontWeight:500, color:"#374151", margin:"2px 2px 0 0", display:"inline-block" }}>{label}</span>
-  );
-  const SideCard = ({ children }) => (
-    <div style={{ background:"#F7F8FB", border:"1px solid #ECEEF3", borderRadius:9, padding:"8px 9px", marginBottom:7 }}>{children}</div>
-  );
+  const cardBg = "#EDF3FA"
+  const a      = "#1B5FA8"
+  const tx     = "#111827"
+  const mt     = "#6B7280"
+  const pillLabelBg = "#DDEAF8"
+  const skillBg     = "#F5F7FA"
+  const skillBd     = "#C8D8ED"
+
+  const PillLabel = ({ x, y, label }) => (
+    <g>
+      <rect x={x} y={y - 5} width={label.length * 3.3 + 8} height={7} rx={3.5} fill={pillLabelBg} />
+      <text x={x + 4} y={y} fontSize={4.5} fontWeight="bold" fill={a}>{label}</text>
+    </g>
+  )
+
   return (
-    <div style={{ fontFamily:"Inter,sans-serif", padding:12 }}>
-      <div style={{ background:accent+"0F", border:`1px solid ${accent}22`, borderRadius:10, padding:"10px 11px" }}>
-        <div style={{ fontSize:18, fontWeight:800, letterSpacing:"-0.02em", lineHeight:1, color:"#1E222B" }}>Alex Johnson</div>
-        <div style={{ fontSize:9, fontWeight:500, color:accent, marginTop:2 }}>Senior React Developer</div>
-        <div style={{ display:"flex", flexWrap:"wrap", gap:5, marginTop:7 }}>
-          {["✉ alex@email.com","☏ +1 555 234-5678","⌖ San Francisco"].map((c,i)=>(
-            <div key={i} style={{ display:"inline-flex", alignItems:"center", gap:3, padding:"2px 7px", borderRadius:999, background:"#fff", border:"1px solid #E6E9EF", fontSize:7, color:"#374151" }}>{c}</div>
-          ))}
-        </div>
-      </div>
-      <div style={{ display:"grid", gridTemplateColumns:"1.55fr 1fr", gap:10, marginTop:10 }}>
-        <div>
-          <Pill>Summary</Pill>
-          <div style={{ fontSize:6.5, color:"#374151", lineHeight:1.5, marginBottom:7 }}>Full-stack developer with 6+ years building scalable React applications across fintech.</div>
-          <Pill>Work Experience</Pill>
-          <div style={{ marginBottom:5 }}>
-            <div style={{ fontSize:7.5, fontWeight:700, color:"#1E222B" }}>Senior React Developer</div>
-            <div style={{ fontSize:7, fontStyle:"italic", color:"#6B7280" }}>Razorpay</div>
-            <div style={{ fontSize:6.5, color:"#9097A3" }}>Jan 2021 – Present</div>
-            <div style={{ fontSize:6.5, color:"#374151", paddingLeft:8 }}>• Built component library used by 40+ engineers</div>
-            <div style={{ fontSize:6.5, color:"#374151", paddingLeft:8 }}>• Reduced page load by 34% via code splitting</div>
-          </div>
-          <div>
-            <div style={{ fontSize:7.5, fontWeight:700, color:"#1E222B" }}>Frontend Engineer</div>
-            <div style={{ fontSize:7, fontStyle:"italic", color:"#6B7280" }}>Freshworks</div>
-            <div style={{ fontSize:6.5, color:"#9097A3" }}>Jun 2019 – Dec 2020</div>
-            <div style={{ fontSize:6.5, color:"#374151", paddingLeft:8 }}>• Developed 15 customer-facing features</div>
-          </div>
-        </div>
-        <div>
-          <SideCard><Pill>Skills</Pill><div style={{ marginTop:2 }}>{["React","TypeScript","Node.js","GraphQL","AWS","Redux"].map(s=><SkillChip key={s} label={s} />)}</div></SideCard>
-          <SideCard>
-            <Pill>Languages</Pill>
-            {[["English","Native"],["Hindi","Fluent"]].map(([l,v])=>(
-              <div key={l} style={{ display:"flex", justifyContent:"space-between", fontSize:7, color:"#374151", lineHeight:2 }}><span>{l}</span><span style={{ color:"#9097A3" }}>{v}</span></div>
-            ))}
-          </SideCard>
-          <SideCard>
-            <Pill>Education</Pill>
-            <div style={{ fontSize:7, fontWeight:700, color:"#374151", marginTop:2 }}>B.S. Computer Science</div>
-            <div style={{ fontSize:6.5, color:"#6B7280" }}>Stanford University · 2019</div>
-          </SideCard>
-        </div>
-      </div>
-    </div>
-  );
+    <svg viewBox="0 0 210 297" xmlns="http://www.w3.org/2000/svg" style={{ width:"100%", height:"100%", display:"block" }}>
+      <rect width="210" height="297" fill="#fff" />
+      <rect x={12} y={10} width={186} height={60} rx={9} fill={cardBg} />
+      <text x={22} y={28} fontSize={11} fontWeight="bold" fill={a} fontFamily="Arial, sans-serif">{NP.name}</text>
+      <text x={22} y={37} fontSize={6} fontStyle="italic" fill={a}>{NP.title}</text>
+      {[
+        { text: ntr(NP.email, 18), x: 22 },
+        { text: NP.phone, x: 90 },
+        { text: ntr(NP.location, 16), x: 145 },
+      ].map((c, i) => (
+        <g key={i}>
+          <rect x={c.x} y={47} width={c.text.length * 2.8 + 14} height={8} rx={4}
+            fill="none" stroke="#C8D8ED" strokeWidth="0.7" />
+          <text x={c.x + 4} y={52.5} fontSize={4} fill={mt}>{c.text}</text>
+        </g>
+      ))}
+
+      <PillLabel x={12} y={83} label="SUMMARY" />
+      {[NP.summary.slice(0,50), NP.summary.slice(46,96), NP.summary.slice(92,142), NP.summary.slice(138)].map((l, i) => (
+        <text key={i} x={12} y={92 + i * 6} fontSize={4.5} fill={mt}>{ntr(l, 52)}</text>
+      ))}
+
+      <PillLabel x={12} y={121} label="WORK EXPERIENCE" />
+      <text x={12} y={130} fontSize={5.5} fontWeight="bold" fill={tx}>{ntr(NP.exp[0].role, 28)}</text>
+      <text x={12} y={136} fontSize={4.5} fontStyle="italic" fill={mt}>{NP.exp[0].co}</text>
+      <text x={12} y={141.5} fontSize={4} fill={mt}>{NP.exp[0].dates} | {NP.exp[0].loc}</text>
+      {NP.exp[0].b.slice(0, 3).map((b, i) => (
+        <g key={i}>
+          <circle cx={14.5} cy={147.5 + i * 6} r={0.9} fill={mt} opacity={0.7} />
+          <text x={17.5} y={149 + i * 6} fontSize={4} fill={mt}>{ntr(b, 40)}</text>
+        </g>
+      ))}
+      <text x={12} y={170} fontSize={5.5} fontWeight="bold" fill={tx}>{ntr(NP.exp[1].role, 28)}</text>
+      <text x={12} y={176} fontSize={4.5} fontStyle="italic" fill={mt}>{NP.exp[1].co}</text>
+      {NP.exp[1].b.slice(0, 2).map((b, i) => (
+        <g key={i}>
+          <circle cx={14.5} cy={182.5 + i * 6} r={0.9} fill={mt} opacity={0.7} />
+          <text x={17.5} y={184 + i * 6} fontSize={4} fill={mt}>{ntr(b, 40)}</text>
+        </g>
+      ))}
+
+      <PillLabel x={125} y={83} label="SKILLS" />
+      {NP.skills.slice(0, 14).map((sk, i) => (
+        <g key={sk}>
+          <rect x={125} y={88 + i * 10} width={70} height={7} rx={3.5} fill={skillBg} stroke={skillBd} strokeWidth={0.6} />
+          <text x={160} y={93.5 + i * 10} fontSize={4} fill={mt} textAnchor="middle">{ntr(sk, 18)}</text>
+        </g>
+      ))}
+    </svg>
+  )
 }
 
 // ─── Vertex preview ───────────────────────────────────────────────────────────
 function VertexPreview() {
-  const accent = "#185FA5";
-  const RailHead = ({ children }) => (
-    <div style={{ marginTop:10, marginBottom:4 }}>
-      <div style={{ fontSize:6.5, fontWeight:800, letterSpacing:"0.16em", textTransform:"uppercase", color:"rgba(255,255,255,0.95)" }}>{children}</div>
-      <div style={{ height:2, width:14, background:"rgba(255,255,255,0.5)", marginTop:2 }} />
-    </div>
-  );
-  const Ring = ({ pct, label }) => (
-    <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:5 }}>
-      <div style={{ position:"relative", width:26, height:26, borderRadius:"50%", background:`conic-gradient(#fff ${pct}%, rgba(255,255,255,0.22) 0)`, display:"grid", placeItems:"center", flexShrink:0 }}>
-        <div style={{ width:"70%", height:"70%", borderRadius:"50%", background:accent, display:"grid", placeItems:"center", fontSize:5.5, fontWeight:800, color:"#fff" }}>{pct}%</div>
-      </div>
-      <div style={{ fontSize:7, color:"#fff" }}>{label}</div>
-    </div>
-  );
-  const MainHead = ({ children }) => (
-    <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:11, marginBottom:4 }}>
-      <span style={{ fontSize:7, fontWeight:800, letterSpacing:"0.14em", textTransform:"uppercase", color:accent, whiteSpace:"nowrap" }}>{children}</span>
-      <span style={{ flex:1, height:1, background:"#E2E5EB" }} />
-    </div>
-  );
+  const sidebar = "#1B5FA8"
+  const a2      = "#1B5FA8"
+  const tx      = "#111827"
+  const mt      = "#6B7280"
+  const sidebarX = 130
+
+  const SH = ({ x, y, label }) => (
+    <g>
+      <text x={x} y={y} fontSize={5.5} fontWeight="bold" fill={a2} letterSpacing="0.8">{label}</text>
+      <rect x={x + label.length * 3.2 + 4} y={y - 2} width={130 - label.length * 3.2} height={0.6} fill="#C8D8ED" />
+    </g>
+  )
+
+  const pcts = [0.85,0.80,0.75,0.70,0.90,0.65,0.72,0.68,0.60,0.78]
+
   return (
-    <div style={{ fontFamily:"Inter,sans-serif", display:"grid", gridTemplateColumns:"1fr 34%", height:"100%" }}>
-      <div style={{ padding:"14px 13px" }}>
-        <div style={{ fontSize:20, fontWeight:800, letterSpacing:"-0.025em", lineHeight:1, color:"#1A1D24" }}>Alex Johnson</div>
-        <div style={{ fontSize:9, fontWeight:500, color:accent, marginTop:4 }}>Senior React Developer</div>
-        <MainHead>Summary</MainHead>
-        <div style={{ fontSize:6.5, color:"#374151", lineHeight:1.5 }}>Full-stack developer with 6+ years building scalable React apps across fintech and e-commerce.</div>
-        <MainHead>Work Experience</MainHead>
-        <div style={{ marginBottom:5 }}>
-          <div style={{ fontSize:7.5, fontWeight:700, color:"#1A1D24" }}>Senior React Developer</div>
-          <div style={{ fontSize:7, fontStyle:"italic", color:"#6B7280" }}>Razorpay</div>
-          <div style={{ fontSize:6.5, color:"#9097A3" }}>Jan 2021 – Present · Remote</div>
-          <div style={{ fontSize:6.5, color:"#374151", paddingLeft:8 }}>• Built component library used by 40+ engineers</div>
-          <div style={{ fontSize:6.5, color:"#374151", paddingLeft:8 }}>• Reduced page load by 34% via code splitting</div>
-        </div>
-        <MainHead>Education</MainHead>
-        <div style={{ fontSize:7.5, fontWeight:700, color:"#1A1D24" }}>B.S. Computer Science</div>
-        <div style={{ fontSize:7, color:"#6B7280" }}>Stanford University · 2015–2019</div>
-      </div>
-      <div style={{ background:accent, padding:"14px 10px" }}>
-        <div style={{ display:"flex", justifyContent:"center", marginBottom:10 }}>
-          <div style={{ width:44, height:44, borderRadius:"50%", background:"rgba(255,255,255,0.22)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:700, color:"#fff", border:"2px solid rgba(255,255,255,0.4)" }}>AJ</div>
-        </div>
-        <RailHead>Contact</RailHead>
-        {["✉ alex@email.com","☏ +1 555 234-5678","⌖ San Francisco"].map((c,i)=>(
-          <div key={i} style={{ fontSize:6.5, color:"rgba(255,255,255,0.88)", marginBottom:3, lineHeight:1.4 }}>{c}</div>
-        ))}
-        <RailHead>Skills</RailHead>
-        <Ring pct={100} label="React" />
-        <Ring pct={87} label="TypeScript" />
-        <Ring pct={67} label="GraphQL" />
-        <Ring pct={53} label="AWS" />
-      </div>
-    </div>
-  );
+    <svg viewBox="0 0 210 297" xmlns="http://www.w3.org/2000/svg" style={{ width:"100%", height:"100%", display:"block" }}>
+      <rect width="210" height="297" fill="#fff" />
+      <rect x={sidebarX} y={0} width={80} height={297} fill={sidebar} />
+
+      <text x={14} y={19} fontSize={11} fontWeight="bold" fill={a2} fontFamily="Arial, sans-serif">{NP.name}</text>
+      <text x={14} y={28} fontSize={6} fontStyle="italic" fill={a2}>{NP.title}</text>
+      <rect x={14} y={32} width={110} height={0.5} fill="#C8D8ED" />
+
+      <SH x={14} y={40} label="SUMMARY" />
+      {[NP.summary.slice(0,48), NP.summary.slice(44,92), NP.summary.slice(88,136), NP.summary.slice(132)].map((l, i) => (
+        <text key={i} x={14} y={48 + i * 6} fontSize={4.5} fill={mt}>{ntr(l, 48)}</text>
+      ))}
+
+      <SH x={14} y={76} label="WORK EXPERIENCE" />
+      <text x={14} y={84} fontSize={5.5} fontWeight="bold" fill={tx}>{ntr(NP.exp[0].role, 25)}</text>
+      <text x={14} y={90} fontSize={4.5} fontStyle="italic" fill={mt}>{NP.exp[0].co}</text>
+      <text x={14} y={95.5} fontSize={4} fill={mt}>{NP.exp[0].dates} | {NP.exp[0].loc}</text>
+      {NP.exp[0].b.slice(0, 4).map((b, i) => (
+        <g key={i}>
+          <circle cx={16.5} cy={101.5 + i * 6} r={0.9} fill={mt} opacity={0.7} />
+          <text x={19.5} y={103 + i * 6} fontSize={4} fill={mt}>{ntr(b, 34)}</text>
+        </g>
+      ))}
+      <text x={14} y={127} fontSize={5.5} fontWeight="bold" fill={tx}>{ntr(NP.exp[1].role, 25)}</text>
+      <text x={14} y={133} fontSize={4.5} fontStyle="italic" fill={mt}>{NP.exp[1].co}</text>
+      {NP.exp[1].b.slice(0, 2).map((b, i) => (
+        <g key={i}>
+          <circle cx={16.5} cy={139.5 + i * 6} r={0.9} fill={mt} opacity={0.7} />
+          <text x={19.5} y={141 + i * 6} fontSize={4} fill={mt}>{ntr(b, 34)}</text>
+        </g>
+      ))}
+
+      <SH x={14} y={162} label="EDUCATION" />
+      <text x={14} y={170} fontSize={5.5} fontWeight="bold" fill={tx}>{NP.edu[0].deg}</text>
+      <text x={14} y={176} fontSize={4.5} fill={mt}>{NP.edu[0].inst}</text>
+
+      {/* Sidebar avatar */}
+      <circle cx={170} cy={28} r={20} fill="#5B7A9B" />
+      <circle cx={170} cy={28} r={20} fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
+      <text x={170} y={30.5} fontSize={11} fontWeight="bold" fill="white" textAnchor="middle" fontFamily="Arial, sans-serif">AJ</text>
+
+      <text x={137} y={57} fontSize={5} fontWeight="bold" fill="rgba(255,255,255,0.70)" letterSpacing="1">CONTACT</text>
+      <rect x={137} y={59} width={60} height={0.5} fill="rgba(255,255,255,0.25)" />
+      <text x={137} y={65.5} fontSize={4} fill="rgba(255,255,255,0.65)">✉ {ntr(NP.email, 18)}</text>
+      <text x={137} y={71.5} fontSize={4} fill="rgba(255,255,255,0.65)">✆ {NP.phone}</text>
+      <text x={137} y={77.5} fontSize={4} fill="rgba(255,255,255,0.65)">⌖ {ntr(NP.location, 18)}</text>
+
+      <text x={137} y={90} fontSize={5} fontWeight="bold" fill="rgba(255,255,255,0.70)" letterSpacing="1">SKILLS</text>
+      <rect x={137} y={92} width={60} height={0.5} fill="rgba(255,255,255,0.25)" />
+      {NP.skills.slice(0, 10).map((sk, i) => {
+        const pct = pcts[i] || 0.70
+        const barX = 137, barY = 97 + i * 10, barW = 58, barH = 1.8
+        return (
+          <g key={sk}>
+            <text x={barX} y={barY} fontSize={4} fill="rgba(255,255,255,0.85)">{ntr(sk, 13)}</text>
+            <rect x={barX} y={barY + 2.5} width={barW} height={barH} rx={0.9} fill="rgba(255,255,255,0.18)" />
+            <rect x={barX} y={barY + 2.5} width={barW * pct} height={barH} rx={0.9} fill="rgba(255,255,255,0.85)" />
+          </g>
+        )
+      })}
+    </svg>
+  )
 }
 
 // ─── MASTER MAP — 15 templates ────────────────────────────────────────────────
