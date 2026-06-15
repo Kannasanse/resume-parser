@@ -439,103 +439,54 @@ export function computeFlowAdjustments(contentEl, config) {
   const mt      = page.marginTop;
   const mb      = page.marginBottom;
   const pageEnd = page.height - mb - SAFE;
+  // Height of a continuation page (after page 1 header).
+  const effH    = Math.max(1, pageEnd - mt);
 
-  // Distance from template top to first section = header height (includes paddingTop).
   const containerTop = contentEl.getBoundingClientRect().top;
-  const firstSection = contentEl.querySelector('[data-section-id]');
-  const headerH      = firstSection
-    ? Math.max(mt, firstSection.getBoundingClientRect().top - containerTop)
-    : mt;
 
-  // Build a flat ordered list of fine-grained flow blocks.
-  //
-  // DO NOT measure [data-section-id] or [data-entry-id] container heights — they
-  // are nested and would triple-count content.  Instead decompose each section into:
-  //   • section heading  → id = sec.id,   height = section.top → first entry.top
-  //   • entry heading    → id = entryId,  height = [data-entry-heading] element
-  //   • bullets          → id = bulletId, height = [data-bullet-id] element
-  // Compact sections (no entries: Skills, Summary, etc.) use full section height.
-  const blocks = [];
+  // Map actual Y position (relative to container top) to a 0-based page index.
+  // This correctly handles CSS grid multi-column layouts: sections in different
+  // columns share the same vertical position, so they land on the same page.
+  function pageIdxFor(y) {
+    if (y < pageEnd) return 0;
+    return 1 + Math.floor((y - pageEnd) / effH);
+  }
+
+  const sliceMap = {};
+  function addToSlice(pageIdx, id) {
+    if (!sliceMap[pageIdx]) sliceMap[pageIdx] = [];
+    sliceMap[pageIdx].push(id);
+  }
 
   contentEl.querySelectorAll('[data-section-id]').forEach(secEl => {
-    const secId      = secEl.dataset.sectionId;
-    const secTop     = secEl.getBoundingClientRect().top;
+    const secId  = secEl.dataset.sectionId;
+    const secTop = secEl.getBoundingClientRect().top - containerTop;
     const firstEntry = secEl.querySelector('[data-entry-id]');
 
     if (!firstEntry) {
-      // Compact section — no entries, render as one undivided block.
-      blocks.push({ id: secId, height: secEl.getBoundingClientRect().height });
+      // Compact section (skills, summary, languages…) — one block at its actual Y.
+      addToSlice(pageIdxFor(secTop), secId);
       return;
     }
 
-    // Section heading = gap between section container top and first entry top.
-    const headingH = Math.max(0, firstEntry.getBoundingClientRect().top - secTop);
-    if (headingH > 0) blocks.push({ id: secId, height: headingH, isSectionHeading: true });
+    // Section heading assigned to the page where the heading starts.
+    addToSlice(pageIdxFor(secTop), secId);
 
-    const entryEls = Array.from(secEl.querySelectorAll('[data-entry-id]'));
-    entryEls.forEach((entryEl, ei) => {
-      const entryId        = entryEl.dataset.entryId;
-      const entryHeadingEl = entryEl.querySelector('[data-entry-heading]');
-
-      if (!entryHeadingEl) {
-        // Entry without fine-grained heading (Education, etc.) — one block.
-        // Include the CSS marginBottom gap (not captured by getBoundingClientRect).
-        let h = entryEl.getBoundingClientRect().height;
-        const nextEntry = entryEls[ei + 1];
-        if (nextEntry) {
-          const gap = nextEntry.getBoundingClientRect().top - entryEl.getBoundingClientRect().bottom;
-          if (gap > 0) h += gap;
-        }
-        blocks.push({ id: entryId, height: h });
-        return;
-      }
-
-      const headH = entryHeadingEl.getBoundingClientRect().height;
-      if (headH > 0) blocks.push({ id: entryId, height: headH });
-
-      const bulletEls = Array.from(entryEl.querySelectorAll('[data-bullet-id]'));
-      bulletEls.forEach((bulletEl, bi) => {
-        let h = bulletEl.getBoundingClientRect().height;
-        // For the last bullet of an entry, fold in the CSS marginBottom gap so the
-        // flow budget matches what actually renders (getBoundingClientRect excludes margins).
-        if (bi === bulletEls.length - 1) {
-          const nextEntry = entryEls[ei + 1];
-          if (nextEntry) {
-            const gap = nextEntry.getBoundingClientRect().top - entryEl.getBoundingClientRect().bottom;
-            if (gap > 0) h += gap;
-          }
-        }
-        if (h > 0) blocks.push({ id: bulletEl.dataset.bulletId, height: h });
-      });
+    Array.from(secEl.querySelectorAll('[data-entry-id]')).forEach(entryEl => {
+      const entryTop = entryEl.getBoundingClientRect().top - containerTop;
+      addToSlice(pageIdxFor(entryTop), entryEl.dataset.entryId);
     });
   });
 
-  // Flow blocks onto pages.
-  // ONE look-ahead rule: section headings must travel with their first content
-  // block. Use effectiveH = headingH + nextBlockH for the fit check only;
-  // advance curY by headingH alone after placement.
-  const pages = [];
-  let curPage = [];
-  let curY    = headerH;
+  contentEl.querySelectorAll('[data-bullet-id]').forEach(el => {
+    const top = el.getBoundingClientRect().top - containerTop;
+    addToSlice(pageIdxFor(top), el.dataset.bulletId);
+  });
 
-  for (let i = 0; i < blocks.length; i++) {
-    const block      = blocks[i];
-    const next       = blocks[i + 1];
-    const effectiveH = block.isSectionHeading && next
-      ? block.height + next.height
-      : block.height;
+  const maxPage = Object.keys(sliceMap).reduce((m, k) => Math.max(m, +k), 0);
+  const pageSlices = Array.from({ length: maxPage + 1 }, (_, i) => sliceMap[i] || []);
 
-    if (curY + effectiveH > pageEnd && curPage.length > 0) {
-      pages.push(curPage);
-      curPage = [];
-      curY    = mt;
-    }
-    curPage.push(block.id);
-    curY += block.height; // advance by own height, not effectiveH
-  }
-  if (curPage.length > 0 || pages.length === 0) pages.push(curPage);
-
-  return { adj: {}, pageSlices: pages };
+  return { adj: {}, pageSlices };
 }
 
 // ── Word-export block builder (server-side) ───────────────────────────────────
