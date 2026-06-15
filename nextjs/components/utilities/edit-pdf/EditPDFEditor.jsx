@@ -491,6 +491,14 @@ export default function EditPDFEditor() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-950 text-white overflow-hidden">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-1.5 px-4 py-1.5 bg-gray-900 border-b border-gray-800 text-[11px] text-gray-400 flex-shrink-0">
+        <a href="/utilities" className="hover:text-white transition-colors">Utilities</a>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+        <a href="/utilities/pdf" className="hover:text-white transition-colors">PDF Tools</a>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+        <span className="text-gray-300">Edit PDF</span>
+      </div>
       {/* Top toolbar */}
       <Toolbar
         mode={mode}
