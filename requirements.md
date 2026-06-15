@@ -1,6 +1,6 @@
 # Proflect — Requirements & Implementation Reference
 
-> **Status:** Living document. Reflects implementation as of June 2026.  
+> **Status:** Living document. Reflects implementation as of 2026-06-15.  
 > **Stack:** Next.js 15 App Router · MUI v9 · Tiptap v3 · Supabase · Gemini 3.5 Flash  
 > **Platform:** https://proflect-neo.vercel.app  
 > **Design Reference:** `design-brief` (MUI v9 + TailwindCSS component spec)
@@ -201,13 +201,13 @@ New users automatically receive **30 credits** on first login (inserted by `ensu
 - Accepts PDF, DOCX, TXT (max 10 MB)
 - Coordinate-aware PDF text extraction handles multi-column layouts (`pdfjs-dist`, sorted by Y then X coordinate)
 - Fallback to `pdf-parse` for encrypted/non-standard PDFs
-- AI parsing: OpenRouter primary → Groq fallback
+- AI parsing: Gemini 3.5 Flash (`callGemini` via `lib/parser.js`)
 - Extracted fields: `personal_info`, `summary`, `skills` (with proficiency), `experience`, `projects`, `education`, `certifications`, `other`
 - Skills proficiency inferred: Expert / Advanced / Intermediate / Beginner / null
 - Stored in `resumes` table with `raw_text` and `parsed_data` (JSONB)
 
 **Reparse:** `POST /api/v1/resumes/[id]/reparse`
-- Re-runs AI parsing on existing `raw_text`; same OpenRouter → Groq chain
+- Re-runs AI parsing on existing `raw_text`; same Gemini 3.5 Flash chain
 
 ### 5.2 Resume Viewer
 
@@ -227,7 +227,7 @@ New users automatically receive **30 credits** on first login (inserted by `ensu
 - Scoring dimensions: Skills (40%), Experience (25%), Education (15%), Projects (10%), Quality (10%)
 - Skill synonym matching via `SKILL_SYNONYMS` map in `lib/scorer.js`
 - Returns: overall score (0–100), band (Excellent/Good/Fair/Poor), per-dimension breakdown, skill match detail, narrative summary
-- AI narrative summary: OpenRouter `llama-3.3-70b-instruct:free` → Groq `llama-4-scout` fallback (200–400 tokens)
+- AI narrative summary: Gemini 3.5 Flash (`callGemini`, 200–400 tokens)
 
 ### 5.4 Resume Builder
 
@@ -241,11 +241,11 @@ New users automatically receive **30 credits** on first login (inserted by `ensu
 
 **AI Import (parse resume into builder):**
 - `POST /api/v1/builder/[id]/import` — costs 5 credits (`resume_import`)
-- Uses Groq-only parsing (`parseResumeWithGroq`) — no OpenRouter (deterministic, no rate-limit risk)
+- Uses Gemini 3.5 Flash (`callGemini` via `lib/parser.js`)
 
 **AI Writing Assistant:**
 - `POST /api/v1/builder/[id]/writing-assist` — costs 1 credit (`writing_assist`)
-- Model: Groq `llama-4-scout-17b-16e-instruct`
+- Model: Gemini 3.5 Flash
 - Rewrites or improves selected section content
 
 **ATS Score (builder):**
@@ -261,8 +261,11 @@ New users automatically receive **30 credits** on first login (inserted by `ensu
 - `GET /api/public/resume/[token]` — public read-only view (no auth required)
 
 **Templates:**
-- `GET /api/v1/templates` — list available resume templates
+- `GET /api/v1/templates` — list available resume templates; returns `featuredIds[]` for Featured category
 - Admin: `GET/POST /api/v1/admin/templates`
+- 11 built-in templates: Modern, Atlantic Blue, Corporate, Atlantic Crest, Mercury Flow, Steady Form, Executive, Azure Wave, Noir Flash, Verdant Crest, Confetti
+- `TemplateGallery` component: search, category/style filter pills, Featured virtual category, thumbnail grid, full-size preview modal with prev/next navigation
+- `ResumeTemplatePreviews.jsx`: SVG-based static preview thumbnails for all 11 templates (no rendering overhead); each exported component accepts a `dark` prop; `TEMPLATE_PREVIEWS` map keyed by template ID; `PreviewThumb` wrapper falls back to CSS-scaled `TemplateThumbnail` for any unmapped ID
 
 ### 5.6 Notes (Block Editor)
 
@@ -392,7 +395,7 @@ Button: **Chat** in top bar (toggles 320px right panel, Chat tab active)
 - `GET /api/v1/career-map/study-plan/[id]` — fetch plan + all topics
 - `POST /api/v1/career-map/update-study-plan` — update plan metadata
 
-**AI model:** Gemini 3.5 Flash for roadmap generation and section content generation.
+**AI model:** Gemini 3.5 Flash (`callGemini`) for roadmap generation and section content generation.
 - Roadmap generation: max 1500 tokens
 - Section content generation: max 1024 tokens; prompt adapts to learner level and learning style; content is 300–600 words structured with `###` sub-headings; includes code examples or exercises when relevant
 
@@ -414,7 +417,7 @@ TopBar detects UUID segments in career-map URLs and fetches real names from `/ap
 
 **Job skill parsing:**
 - `POST /api/v1/jobs/parse-skills` — extract skills from raw JD text
-- Model: Groq `llama-3.3-70b-versatile`
+- Model: Gemini 3.5 Flash
 
 ### 5.11 Admin Surface
 
@@ -474,7 +477,7 @@ TopBar detects UUID segments in career-map URLs and fetches real names from `/ap
 
 **Frontend features:** Category filter pills (All + per-category), expand-all toggle, "Practice with self-test" action, "Print/Save PDF" action, previous kits list on landing page
 
-**AI model:** Gemini 3.5 Flash (`callGemini` with `json: true`), temperature 0.4
+**AI model:** Gemini 3.5 Flash (`callGemini` with `json: true`), temperature 0.4; `jsonrepair` fallback applied to handle malformed JSON output.
 
 **Database:** `interview_kits` table — RLS via `auth.uid() = user_id`; stores `title`, `company`, `role_level`, `depth`, `jd_text`, `categories` (text[]), `questions` (JSONB), `question_count`, `last_viewed_at`
 
@@ -798,7 +801,7 @@ From `@tiptap/*` packages:
 | Method | Path | Description |
 |---|---|---|
 | GET | `/api/v1/resumes` | List user's resumes |
-| POST | `/api/v1/resumes/upload` | Upload & parse resume (OpenRouter → Groq) |
+| POST | `/api/v1/resumes/upload` | Upload & parse resume (Gemini 3.5 Flash) |
 | GET | `/api/v1/resumes/[id]` | Get parsed resume |
 | PUT | `/api/v1/resumes/[id]` | Update resume data |
 | DELETE | `/api/v1/resumes/[id]` | Delete resume |
@@ -848,8 +851,8 @@ From `@tiptap/*` packages:
 
 | Method | Path | Description |
 |---|---|---|
-| POST | `/api/v1/career-map/learning-roadmap` | Generate study plan (Groq llama-4-scout) |
-| POST | `/api/v1/career-map/generate-section-content` | Generate topic section (Groq llama-3.3-70b-versatile) |
+| POST | `/api/v1/career-map/learning-roadmap` | Generate study plan (Gemini 3.5 Flash) |
+| POST | `/api/v1/career-map/generate-section-content` | Generate topic section (Gemini 3.5 Flash) |
 | POST | `/api/v1/career-map/complete-section` | Mark section complete |
 | POST | `/api/v1/career-map/complete-topic` | Mark topic complete |
 | GET | `/api/v1/career-map/study-plan/[id]` | Get plan + all topics |
@@ -925,7 +928,7 @@ From `@tiptap/*` packages:
 
 | Method | Path | Description |
 |---|---|---|
-| POST | `/api/v1/interview-buddy/generate` | Generate interview kit from JD (OpenRouter → Groq) |
+| POST | `/api/v1/interview-buddy/generate` | Generate interview kit from JD (Gemini 3.5 Flash) |
 | GET | `/api/v1/interview-buddy` | List user's kits (20 most recent) |
 | GET | `/api/v1/interview-buddy/[kitId]` | Get kit detail; updates `last_viewed_at` |
 | DELETE | `/api/v1/interview-buddy/[kitId]` | Delete kit (owner-only via RLS) |
@@ -1055,4 +1058,4 @@ The following features were scoped but not yet built:
 
 ---
 
-*Last updated: 2026-06-12*
+*Last updated: 2026-06-15*
