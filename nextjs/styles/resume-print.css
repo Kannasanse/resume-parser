@@ -25,6 +25,12 @@
   display: flow-root; /* BFC: prevents heading marginTop from leaking above section div, keeping elTop measurements accurate without clipping overflowing decorative content */
 }
 
+/* Strip top margin from the first section heading in each column/container
+   so continuation pages and column tops don't show blank space. */
+.resume-section-block:first-child > *:first-child {
+  margin-top: 0 !important;
+}
+
 /* Section headings always glue to first content line */
 .resume-section-block > *:first-child {
   break-after: avoid-page;

@@ -18,10 +18,18 @@ function PreviewThumb({ templateId, active, label, style, plan, large = false })
   return <TemplateThumbnail templateId={templateId} active={active} label={label} style={style} plan={plan} />;
 }
 
-function StarBadge() {
-  return (
+function StarBadge({ small = false }) {
+  if (small) return (
     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-semibold bg-yellow-400/20 text-yellow-700 rounded border border-yellow-400/40">
       <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+      Featured
+    </span>
+  );
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-bold bg-yellow-400 text-yellow-900 rounded-sm shadow-sm">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none">
         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
       </svg>
       Featured
@@ -111,19 +119,23 @@ export default function TemplateGallery({ currentTemplateId, onSelect, onClose }
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {filtered.map(t => (
-                <div key={t.id} className="relative cursor-pointer" onClick={() => setPreview(t.id)}>
-                  {isFeatured(t.id) && (
-                    <div className="absolute top-2 left-2 z-10">
-                      <StarBadge />
-                    </div>
-                  )}
-                  <PreviewThumb
-                    templateId={t.id}
-                    active={t.id === currentTemplateId}
-                    label={t.name}
-                    style={t.style}
-                    plan={t.plan}
-                  />
+                <div key={t.id} className="cursor-pointer group" onClick={() => setPreview(t.id)}>
+                  <div className="relative">
+                    <PreviewThumb
+                      templateId={t.id}
+                      active={t.id === currentTemplateId}
+                      label={t.name}
+                      style={t.style}
+                      plan={t.plan}
+                    />
+                    {t.id === currentTemplateId && (
+                      <div className="absolute inset-0 rounded-lg ring-2 ring-primary pointer-events-none" />
+                    )}
+                  </div>
+                  <div className="mt-1.5 px-0.5 flex items-center justify-between gap-1">
+                    <span className="text-xs font-medium text-ds-text truncate">{t.name}</span>
+                    {isFeatured(t.id) && <StarBadge />}
+                  </div>
                 </div>
               ))}
             </div>
@@ -141,7 +153,7 @@ export default function TemplateGallery({ currentTemplateId, onSelect, onClose }
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="font-heading font-bold text-ds-text">{previewTpl.name}</h3>
-                  {isFeatured(previewTpl.id) && <StarBadge />}
+                  {isFeatured(previewTpl.id) && <StarBadge small />}
                 </div>
                 <p className="text-xs text-ds-textMuted">{previewTpl.description}</p>
               </div>
