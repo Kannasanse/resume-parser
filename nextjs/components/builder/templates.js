@@ -12,6 +12,10 @@ export const TEMPLATES = [
   { id: 'noir-flash',    name: 'Noir Flash',    style: 'Creative', plan: 'basic', description: 'Dark background with yellow accent, vertical display name, two-column.',  accent: '#F5C842', sw1: '#141414', sw2: '#F5C842' },
   { id: 'verdant-crest', name: 'Verdant Crest', style: 'Creative', plan: 'basic', description: 'Green low-poly polygon header, circular photo, lollipop skill bars.',     accent: '#5BAE82', sw1: '#D6EFE0', sw2: '#FFFFFF' },
   { id: 'confetti',      name: 'Confetti',      style: 'Creative', plan: 'basic', description: 'Coral bubble decorations, pill-shaped section headings, two-column.',     accent: '#C66A66', sw1: '#EBA9A4', sw2: '#FFFFFF' },
+  { id: 'spotlight',    name: 'Spotlight',    style: 'Modern',   plan: 'basic', description: 'Bold full-accent header band, two-column body with chip-style skills.',  accent: '#185FA5', sw1: '#185FA5', sw2: '#FFFFFF' },
+  { id: 'index',        name: 'Index',        style: 'Clean',    plan: 'basic', description: 'Swiss big-type single column with oversized numbered section headings.', accent: '#185FA5', sw1: '#FFFFFF', sw2: '#16181D' },
+  { id: 'panels',       name: 'Panels',       style: 'Creative', plan: 'basic', description: 'Dashboard-style cards and chips, tinted header card, two-column.',       accent: '#185FA5', sw1: '#F7F8FB', sw2: '#185FA5' },
+  { id: 'vertex',       name: 'Vertex',       style: 'Creative', plan: 'basic', description: 'Accent rail with circular skill rings, photo avatar, and contact panel.', accent: '#185FA5', sw1: '#185FA5', sw2: '#FFFFFF' },
 ];
 
 export const TEMPLATE_CATEGORIES = ['All', 'Clean', 'Classic', 'Modern', 'Creative', 'Serif'];

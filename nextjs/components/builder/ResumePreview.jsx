@@ -1944,6 +1944,448 @@ function TemplateConfetti({ resume, ds, ss, sectionAdjustments, visibleBlockIds 
 
 // ── Template registry ─────────────────────────────────────────────────────────
 
+// ── Side-section split used by Spotlight, Panels, Vertex ─────────────────────
+
+const NEW_TMPL_SIDE_TYPES = new Set(['skills', 'languages', 'hobbies', 'certifications', 'references']);
+
+function splitNewTmplCols(sections) {
+  return {
+    side: sections.filter(s => NEW_TMPL_SIDE_TYPES.has(s.type)),
+    main: sections.filter(s => !NEW_TMPL_SIDE_TYPES.has(s.type)),
+  };
+}
+
+// ── Template: Spotlight ───────────────────────────────────────────────────────
+
+function TemplateSpotlight({ resume, ds, ss, sectionAdjustments, visibleBlockIds = null, showHeader = true }) {
+  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
+  const { pi, sections } = buildRenderData(resume);
+  const { main, side } = splitNewTmplCols(sections);
+
+  const hdrPad = `${Math.max(padY * 0.85, 13)}mm`;
+
+  const SpotHead = ({ children }) => (
+    <div style={{ marginTop: '1.3em', marginBottom: '0.55em' }}>
+      <div style={{ fontSize: '0.82em', fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: colIf(t.headings) || accent }}>
+        {children}
+      </div>
+      <div style={{ height: 3, width: 32, borderRadius: 2, background: colIf(t.headingsLine) || accent, marginTop: 5 }} />
+    </div>
+  );
+
+  const contactItems = [
+    { kind: 'mail', val: pi.email }, { kind: 'phone', val: pi.phone },
+    { kind: 'pin', val: pi.location }, { kind: 'link', val: pi.link },
+  ].filter(d => d.val);
+
+  const chipColor = colIf(t.dotsBarsBubbles) || accent;
+
+  const renderSideBody = (sec) => {
+    if (sec.type === 'skills') {
+      const entries = sec.content?.entries || [];
+      return (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+          {entries.map((s, i) => (
+            <span key={i} style={{ padding: '4px 12px', borderRadius: 8, background: chipColor + '14', color: '#243', fontSize: '0.9em', fontWeight: 500 }}>{s.name}</span>
+          ))}
+        </div>
+      );
+    }
+    if (sec.type === 'languages') {
+      const entries = sec.content?.entries || [];
+      return (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', rowGap: 4 }}>
+          {entries.map((l, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+              <span>{l.name}</span>
+              <span style={{ color: '#9097A3', fontSize: '0.88em' }}>{l.level}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    if (sec.type === 'hobbies') {
+      const items = (sec.content?.text || '').split(/[,;·•|]+/).map(s => s.trim()).filter(Boolean);
+      return (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+          {items.map((item, i) => (
+            <span key={i} style={{ padding: '4px 12px', borderRadius: 8, background: chipColor + '14', color: '#243', fontSize: '0.9em', fontWeight: 500 }}>{item}</span>
+          ))}
+        </div>
+      );
+    }
+    return renderSectionBody(sec, util, { expVariant: 'stacked', eduVariant: 'compact' });
+  };
+
+  const renderSecBlock = (sec, bodyFn, opts = {}) => {
+    if (!isSectionVisible(sec, visibleBlockIds)) return null;
+    const body = bodyFn(sec);
+    if (!body) return null;
+    const adj = sectionAdjustments?.[sec.id];
+    const headingVisible = showSectionHeading(sec, visibleBlockIds);
+    return (
+      <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
+        {headingVisible && <SpotHead>{sec.title}</SpotHead>}
+        {body}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#2C2C2A' }}>
+      {showHeader && (
+        <div style={{ background: accent, padding: `${hdrPad} ${padX}mm` }}>
+          <div style={{ fontSize: '3em', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 0.98, color: '#fff' }}>{pi.name || 'Your Name'}</div>
+          {pi.title && <div style={{ fontSize: '1.15em', fontWeight: 500, color: 'rgba(255,255,255,0.85)', marginTop: 6 }}>{pi.title}</div>}
+          {contactItems.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 22px', marginTop: 14 }}>
+              {contactItems.map(({ kind, val }) => (
+                <span key={kind} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, color: 'rgba(255,255,255,0.92)', fontSize: '0.92em' }}>
+                  <Icon name={kind} size={fontSize - 1} color="rgba(255,255,255,0.92)" />
+                  {val}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 26, padding: `${padY * 0.6}mm ${padX}mm ${padY}mm` }}>
+        <div>
+          {main.map(sec => renderSecBlock(sec, s => renderSectionBody(s, util, {
+            expVariant: sec.display_settings?.entryLayout || 'stacked',
+            eduVariant: sec.display_settings?.entryLayout || 'compact',
+          })))}
+        </div>
+        <div>
+          {side.map(sec => renderSecBlock(sec, renderSideBody))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Template: Index ───────────────────────────────────────────────────────────
+
+function TemplateIndex({ resume, ds, ss, sectionAdjustments, visibleBlockIds = null, showHeader = true }) {
+  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
+  const { pi, sections } = buildRenderData(resume);
+
+  const contactItems = [
+    { kind: 'mail', val: pi.email }, { kind: 'phone', val: pi.phone },
+    { kind: 'pin', val: pi.location }, { kind: 'link', val: pi.link },
+  ].filter(d => d.val);
+
+  return (
+    <div style={{ fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#2C2C2A', paddingLeft: `${padX}mm`, paddingRight: `${padX}mm`, paddingTop: `${padY}mm`, paddingBottom: `${padY}mm` }}>
+      {showHeader && (
+        <div>
+          <div style={{ fontSize: '3.6em', fontWeight: 800, letterSpacing: '-0.035em', lineHeight: 0.95, color: colIf(t.name) || '#16181D' }}>{pi.name || 'Your Name'}</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 10, marginTop: 12 }}>
+            {pi.title && <div style={{ fontSize: '1.15em', fontWeight: 500, color: colIf(t.jobTitle) || accent }}>{pi.title}</div>}
+            {contactItems.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 16px', fontSize: '0.9em', color: '#6B7280', justifyContent: 'flex-end' }}>
+                {contactItems.map(({ val }) => <span key={val}>{val}</span>)}
+              </div>
+            )}
+          </div>
+          <div style={{ height: 2, background: colIf(t.headingsLine) || '#16181D', marginTop: 14 }} />
+        </div>
+      )}
+      {sections.map((sec, idx) => {
+        if (!isSectionVisible(sec, visibleBlockIds)) return null;
+        const adj = sectionAdjustments?.[sec.id];
+        const headingVisible = showSectionHeading(sec, visibleBlockIds);
+        const n = idx + 1;
+
+        let body;
+        if (sec.type === 'skills') {
+          const entries = sec.content?.entries || [];
+          body = (
+            <div style={{ fontSize: '1.05em', lineHeight: 1.7, overflowWrap: 'break-word' }}>
+              {entries.map((s, i) => (
+                <span key={i}>
+                  {i > 0 && <span style={{ color: colIf(t.dotsBarsBubbles) || accent, margin: '0 8px', fontWeight: 700 }}>/</span>}
+                  <span style={{ whiteSpace: 'nowrap' }}>{s.name}</span>
+                </span>
+              ))}
+            </div>
+          );
+        } else {
+          body = renderSectionBody(sec, util, {
+            expVariant: sec.type === 'work_experience' ? (sec.display_settings?.entryLayout || 'date-column') : undefined,
+            eduVariant: sec.type === 'education' ? (sec.display_settings?.entryLayout || 'date-column') : undefined,
+          });
+        }
+
+        if (!body) return null;
+
+        return (
+          <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
+            {headingVisible && (
+              <div style={{ display: 'grid', gridTemplateColumns: '52px 1fr', gap: 14, alignItems: 'baseline', marginTop: '1.6em', marginBottom: '0.7em' }}>
+                <div style={{ fontSize: '1.6em', fontWeight: 800, color: colIf(t.headings) || accent, lineHeight: 1, letterSpacing: '-0.02em' }}>
+                  {String(n).padStart(2, '0')}
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.84em', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#16181D' }}>{sec.title}</div>
+                  <div style={{ height: 1, background: colIf(t.headingsLine) || '#D7DBE2', marginTop: 6 }} />
+                </div>
+              </div>
+            )}
+            <div style={{ display: 'grid', gridTemplateColumns: '52px 1fr', gap: 14 }}>
+              <div />
+              <div>{body}</div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Template: Panels ──────────────────────────────────────────────────────────
+
+function TemplatePanels({ resume, ds, ss, sectionAdjustments, visibleBlockIds = null, showHeader = true }) {
+  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
+  const { pi, sections } = buildRenderData(resume);
+  const { main, side } = splitNewTmplCols(sections);
+
+  const contactItems = [
+    { kind: 'mail', val: pi.email }, { kind: 'phone', val: pi.phone },
+    { kind: 'pin', val: pi.location }, { kind: 'link', val: pi.link },
+  ].filter(d => d.val);
+
+  const PillLabel = ({ children }) => (
+    <div style={{ display: 'inline-block', whiteSpace: 'nowrap', padding: '4px 13px', borderRadius: 999, background: accent + '14', color: colIf(t.headings) || accent, fontSize: '0.74em', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '0.55em' }}>
+      {children}
+    </div>
+  );
+
+  const renderMainBody = (sec) => renderSectionBody(sec, util, {
+    expVariant: sec.type === 'work_experience' ? (sec.display_settings?.entryLayout || 'stacked') : undefined,
+    eduVariant: sec.type === 'education' ? (sec.display_settings?.entryLayout || 'compact') : undefined,
+  });
+
+  const renderSideBody = (sec) => {
+    if (sec.type === 'skills' || sec.type === 'hobbies') {
+      const items = sec.type === 'skills'
+        ? (sec.content?.entries || []).map(e => e.name)
+        : (sec.content?.text || '').split(/[,;·•|]+/).map(s => s.trim()).filter(Boolean);
+      return (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+          {items.map((item, i) => (
+            <span key={i} style={{ padding: '4px 12px', borderRadius: 8, background: '#F2F4F8', border: '1px solid #E6E9EF', fontSize: '0.9em', fontWeight: 500 }}>{item}</span>
+          ))}
+        </div>
+      );
+    }
+    return renderSectionBody(sec, util, {});
+  };
+
+  const renderSecBlock = (sec, bodyFn, wrapCard = false) => {
+    if (!isSectionVisible(sec, visibleBlockIds)) return null;
+    const body = bodyFn(sec);
+    if (!body) return null;
+    const adj = sectionAdjustments?.[sec.id];
+    const headingVisible = showSectionHeading(sec, visibleBlockIds);
+    const inner = (
+      <>
+        {headingVisible && <PillLabel>{sec.title}</PillLabel>}
+        {body}
+      </>
+    );
+    if (wrapCard) {
+      return (
+        <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id}
+          style={{ background: '#F7F8FB', border: '1px solid #ECEEF3', borderRadius: 16, padding: '16px 17px', marginBottom: 14, ...(adj ? { marginTop: adj } : {}) }}>
+          {inner}
+        </div>
+      );
+    }
+    return (
+      <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={{ marginBottom: 16, ...(adj ? { marginTop: adj } : {}) }}>
+        {inner}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#2C2C2A', padding: `${padY}mm ${padX}mm` }}>
+      {showHeader && (
+        <div style={{ background: accent + '0F', border: `1px solid ${accent}22`, borderRadius: 18, padding: '20px 22px', marginBottom: 2 }}>
+          <div style={{ fontSize: '2.4em', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1, color: colIf(t.name) || '#1E222B' }}>{pi.name || 'Your Name'}</div>
+          {pi.title && <div style={{ fontSize: '1.1em', fontWeight: 500, color: colIf(t.jobTitle) || accent, marginTop: 4 }}>{pi.title}</div>}
+          {contactItems.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
+              {contactItems.map(({ kind, val }) => (
+                <span key={kind} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '5px 12px', borderRadius: 999, background: '#fff', border: '1px solid #E6E9EF', fontSize: '0.86em' }}>
+                  <Icon name={kind} size={fontSize - 2} color={colIf(t.headerIcons) || accent} />
+                  {val}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.55fr 1fr', gap: 18, marginTop: 18 }}>
+        <div>{main.map(sec => renderSecBlock(sec, renderMainBody, false))}</div>
+        <div>{side.map(sec => renderSecBlock(sec, renderSideBody, true))}</div>
+      </div>
+    </div>
+  );
+}
+
+// ── Template: Vertex ──────────────────────────────────────────────────────────
+
+function VertexRing({ pct, size, accentColor }) {
+  const ringSize = size * 3;
+  const holeSize = Math.round(ringSize * 0.7);
+  return (
+    <div style={{ position: 'relative', width: ringSize, height: ringSize, borderRadius: '50%', background: `conic-gradient(#fff ${pct}%, rgba(255,255,255,0.22) 0)`, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+      <div style={{ width: holeSize, height: holeSize, borderRadius: '50%', background: accentColor, display: 'grid', placeItems: 'center', fontSize: '0.72em', fontWeight: 800, color: '#fff' }}>
+        {pct}%
+      </div>
+    </div>
+  );
+}
+
+const LANG_LEVEL_PCT = { Beginner: 30, Intermediate: 55, Advanced: 75, Fluent: 90, Native: 100 };
+
+function TemplateVertex({ resume, ds, ss, sectionAdjustments, visibleBlockIds = null, showHeader = true }) {
+  const util = tmplUtils(ds, ss, resume.layout_settings || {}, sectionAdjustments, visibleBlockIds);
+  const { fontSize, lineHeight, padX, padY, accent, t, colIf, fontFamily } = util;
+  const { pi, sections } = buildRenderData(resume);
+  const { main, side } = splitNewTmplCols(sections);
+
+  const contactItems = [
+    { kind: 'mail', val: pi.email }, { kind: 'phone', val: pi.phone },
+    { kind: 'pin', val: pi.location }, { kind: 'link', val: pi.link },
+  ].filter(d => d.val);
+
+  const MainHead = ({ children }) => (
+    <div style={{ marginTop: '1.3em', marginBottom: '0.5em' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span style={{ fontSize: '0.86em', fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: colIf(t.headings) || accent, whiteSpace: 'nowrap' }}>{children}</span>
+        <span style={{ flex: 1, height: 1, background: colIf(t.headingsLine) || '#E2E5EB' }} />
+      </div>
+    </div>
+  );
+
+  const RailHead = ({ children }) => (
+    <div style={{ marginTop: '1.2em', marginBottom: '0.5em' }}>
+      <div style={{ fontSize: '0.78em', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.95)' }}>{children}</div>
+      <div style={{ height: 2, width: 22, background: 'rgba(255,255,255,0.6)', marginTop: 5 }} />
+    </div>
+  );
+
+  const renderRailSideBody = (sec) => {
+    if (sec.type === 'skills') {
+      const entries = sec.content?.entries || [];
+      return entries.map((s, i) => {
+        const pct = Math.min(100, Math.max(20, Math.round((s.level || 2) / 3 * 100)));
+        return (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 8 }}>
+            <VertexRing pct={pct} size={fontSize} accentColor={accent} />
+            <span style={{ fontSize: '0.9em', color: '#fff' }}>{s.name}</span>
+          </div>
+        );
+      });
+    }
+    if (sec.type === 'languages') {
+      const entries = sec.content?.entries || [];
+      return entries.map((l, i) => {
+        const pct = LANG_LEVEL_PCT[l.level] || 55;
+        return (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 8 }}>
+            <VertexRing pct={pct} size={fontSize} accentColor={accent} />
+            <span style={{ fontSize: '0.9em', color: '#fff' }}>{l.name}</span>
+          </div>
+        );
+      });
+    }
+    if (sec.type === 'hobbies') {
+      const items = (sec.content?.text || '').split(/[,;·•|]+/).map(s => s.trim()).filter(Boolean);
+      return (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {items.map((item, i) => (
+            <span key={i} style={{ padding: '3px 10px', borderRadius: 999, background: 'rgba(255,255,255,0.16)', color: '#fff', fontSize: '0.85em' }}>{item}</span>
+          ))}
+        </div>
+      );
+    }
+    return (
+      <div style={{ color: 'rgba(255,255,255,0.92)' }}>
+        {renderSectionBody(sec, util, {})}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ fontFamily, fontSize: `${fontSize}pt`, lineHeight, color: '#2C2C2A', display: 'grid', gridTemplateColumns: '1fr 33%', minHeight: '100%' }}>
+      {/* Main column */}
+      <div style={{ padding: '30px 26px' }}>
+        {showHeader && (
+          <>
+            <div style={{ fontSize: '2.6em', fontWeight: 800, letterSpacing: '-0.025em', lineHeight: 1, color: colIf(t.name) || '#1A1D24' }}>{pi.name || 'Your Name'}</div>
+            {pi.title && <div style={{ fontSize: '1.12em', fontWeight: 500, color: colIf(t.jobTitle) || accent, marginTop: 5 }}>{pi.title}</div>}
+          </>
+        )}
+        {main.map(sec => {
+          if (!isSectionVisible(sec, visibleBlockIds)) return null;
+          const body = renderSectionBody(sec, util, {
+            expVariant: sec.type === 'work_experience' ? (sec.display_settings?.entryLayout || 'stacked') : undefined,
+            eduVariant: sec.type === 'education' ? (sec.display_settings?.entryLayout || 'compact') : undefined,
+          });
+          if (!body) return null;
+          const adj = sectionAdjustments?.[sec.id];
+          const headingVisible = showSectionHeading(sec, visibleBlockIds);
+          return (
+            <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
+              {headingVisible && <MainHead>{sec.title}</MainHead>}
+              {body}
+            </div>
+          );
+        })}
+      </div>
+      {/* Accent rail */}
+      <div style={{ background: accent, color: '#fff', padding: '30px 22px' }}>
+        {showHeader && (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 18 }}>
+              <PhotoPlaceholder size={104} shape="circle" name={pi.name || ''} />
+            </div>
+            <RailHead>Contact</RailHead>
+            {contactItems.map(({ kind, val }) => (
+              <div key={kind} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 6, fontSize: '0.84em', color: 'rgba(255,255,255,0.92)', wordBreak: 'break-word' }}>
+                <span style={{ flexShrink: 0, marginTop: 1 }}><Icon name={kind} size={fontSize - 2} color="rgba(255,255,255,0.92)" /></span>
+                {val}
+              </div>
+            ))}
+          </>
+        )}
+        {side.map(sec => {
+          if (!isSectionVisible(sec, visibleBlockIds)) return null;
+          const body = renderRailSideBody(sec);
+          if (!body) return null;
+          const adj = sectionAdjustments?.[sec.id];
+          const headingVisible = showSectionHeading(sec, visibleBlockIds);
+          return (
+            <div key={sec.id} className="resume-section-block" data-type={sec.type} data-section-id={sec.id} style={adj ? { marginTop: adj } : undefined}>
+              {headingVisible && <RailHead>{sec.title}</RailHead>}
+              {body}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const TEMPLATE_COMPONENTS = {
   'modern':         TemplateModern,
   'atlantic-blue':  TemplateAtlanticBlue,
@@ -1956,6 +2398,10 @@ const TEMPLATE_COMPONENTS = {
   'noir-flash':     TemplateNoirFlash,
   'verdant-crest':  TemplateVerdantCrest,
   'confetti':       TemplateConfetti,
+  'spotlight':      TemplateSpotlight,
+  'index':          TemplateIndex,
+  'panels':         TemplatePanels,
+  'vertex':         TemplateVertex,
 };
 
 // ── ResumePreview default export ──────────────────────────────────────────────
@@ -2235,6 +2681,10 @@ const THUMBNAIL_ACCENTS = {
   'mercury-flow':   '#374151',
   'steady-form':    '#1F2A44',
   'executive':      '#0F172A',
+  'spotlight':      '#185FA5',
+  'index':          '#185FA5',
+  'panels':         '#185FA5',
+  'vertex':         '#185FA5',
 };
 
 const THUMBNAIL_RESUME = {
