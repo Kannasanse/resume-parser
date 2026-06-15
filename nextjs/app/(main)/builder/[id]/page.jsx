@@ -594,11 +594,15 @@ export default function BuilderEditor() {
   // ── Template change ───────────────────────────────────────────────────────
 
   const handleTemplateSelect = useCallback((tplId) => {
-    setPreviewResume(prev => prev ? { ...prev, template_id: tplId } : prev);
-    updateResumeMutation.mutate({ template_id: tplId });
+    const tpl = TEMPLATES.find(t => t.id === tplId);
+    const newLayout = tpl?.defaultLayout
+      ? { ...tpl.defaultLayout, pageBreaks: layoutSettings.pageBreaks || [] }
+      : layoutSettings;
+    setPreviewResume(prev => prev ? { ...prev, template_id: tplId, layout_settings: newLayout } : prev);
+    updateResumeMutation.mutate({ template_id: tplId, layout_settings: newLayout });
     setShowGallery(false);
     showToast('Template applied.', 'success');
-  }, [updateResumeMutation, showToast]);
+  }, [updateResumeMutation, showToast, layoutSettings]);
 
   // ── Reorder ───────────────────────────────────────────────────────────────
 
