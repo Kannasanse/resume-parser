@@ -1085,8 +1085,8 @@ function TemplateAtlanticCrest({ resume, ds, ss, sectionAdjustments, visibleBloc
 
   return (
     <div style={pageStyle}>
-      {/* Dark banner */}
-      {showHeader && (
+      {/* Dark banner — first page only; thin anchor bar on continuation pages */}
+      {showHeader ? (
         <div style={{ background: bannerColor, color: '#fff', padding: `${padY}mm ${padX}mm`, display: 'grid', gridTemplateColumns: '1fr auto', gap: 18, alignItems: 'center' }}>
           <div>
             <div style={{ fontSize: '1.9em', fontWeight: 700, color: colIf(t.name) || '#fff', lineHeight: 1 }}>{pi.name || 'Your Name'}</div>
@@ -1100,6 +1100,8 @@ function TemplateAtlanticCrest({ resume, ds, ss, sectionAdjustments, visibleBloc
           </div>
           <PhotoPlaceholder size={96} shape="circle" name={pi.name} src={pi.photo || null} />
         </div>
+      ) : (
+        <div style={{ height: 8, background: bannerColor, width: '100%' }} />
       )}
       {/* Two-column body */}
       <div style={{ padding: `${padY * 0.6}mm ${padX}mm`, display: 'grid', gridTemplateColumns: '38% 1fr', gap: 18 }}>
@@ -1379,18 +1381,21 @@ function TemplateAzureWave({ resume, ds, ss, sectionAdjustments, visibleBlockIds
 
   return (
     <div style={pageStyle}>
-      {/* Top waves */}
-      <svg viewBox="0 0 200 100" preserveAspectRatio="none" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '26%', pointerEvents: 'none' }}>
-        <path d="M 0 0 L 200 0 L 200 55 C 165 75, 130 35, 95 55 S 30 80, 0 60 Z" fill={waveDeep} opacity="0.55" />
-        <path d="M 0 0 L 200 0 L 200 30 C 165 55, 130 15, 95 35 S 30 60, 0 40 Z" fill={wave} />
-      </svg>
-      {/* Bottom waves */}
-      <svg viewBox="0 0 200 100" preserveAspectRatio="none" style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '20%', pointerEvents: 'none' }}>
-        <path d="M 0 100 L 200 100 L 200 50 C 170 30, 130 70, 95 50 S 30 25, 0 45 Z" fill={waveDeep} opacity="0.55" />
-        <path d="M 0 100 L 200 100 L 200 70 C 170 55, 130 90, 95 70 S 30 50, 0 65 Z" fill={wave} />
-      </svg>
+      {/* Wave decorations — first page only */}
+      {showHeader && (
+        <>
+          <svg viewBox="0 0 200 100" preserveAspectRatio="none" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '26%', pointerEvents: 'none' }}>
+            <path d="M 0 0 L 200 0 L 200 55 C 165 75, 130 35, 95 55 S 30 80, 0 60 Z" fill={waveDeep} opacity="0.55" />
+            <path d="M 0 0 L 200 0 L 200 30 C 165 55, 130 15, 95 35 S 30 60, 0 40 Z" fill={wave} />
+          </svg>
+          <svg viewBox="0 0 200 100" preserveAspectRatio="none" style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '20%', pointerEvents: 'none' }}>
+            <path d="M 0 100 L 200 100 L 200 50 C 170 30, 130 70, 95 50 S 30 25, 0 45 Z" fill={waveDeep} opacity="0.55" />
+            <path d="M 0 100 L 200 100 L 200 70 C 170 55, 130 90, 95 70 S 30 50, 0 65 Z" fill={wave} />
+          </svg>
+        </>
+      )}
 
-      <div style={{ position: 'relative', padding: `${padY}mm ${padX}mm` }}>
+      <div style={{ position: 'relative', padding: `${showHeader ? padY : padY * 0.5}mm ${padX}mm ${padY}mm` }}>
         {showHeader && (
           <div style={{ marginBottom: '1em' }}>
             <div style={{ fontSize: '2em', fontWeight: 700, letterSpacing: '-0.01em', color: colIf(t.name) || '#2C2C2A', lineHeight: 1 }}>{pi.name || 'Your Name'}</div>
@@ -1510,16 +1515,18 @@ function TemplateNoirFlash({ resume, ds, ss, sectionAdjustments, visibleBlockIds
 
   return (
     <div style={pageStyle}>
-      {/* Top-right yellow diagonal */}
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', top: 0, right: 0, width: '40%', height: '34%', pointerEvents: 'none' }}>
-        <polygon points="100,0 100,100 0,0" fill={yellow} />
-      </svg>
-      {/* Bottom-right yellow band */}
+      {/* Top-right yellow diagonal — first page only */}
+      {showHeader && (
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', top: 0, right: 0, width: '40%', height: '34%', pointerEvents: 'none' }}>
+          <polygon points="100,0 100,100 0,0" fill={yellow} />
+        </svg>
+      )}
+      {/* Bottom-right yellow band — always shown as footer anchor */}
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', bottom: 0, right: 0, width: '55%', height: '8%', pointerEvents: 'none' }}>
         <polygon points="0,100 100,100 100,0 8,0" fill={yellow} />
       </svg>
 
-      <div style={{ position: 'relative', padding: `${padY}mm ${padX}mm`, zIndex: 1 }}>
+      <div style={{ position: 'relative', paddingTop: `${showHeader ? padY : padY * 0.5}mm`, paddingBottom: `${padY}mm`, paddingLeft: `${padX}mm`, paddingRight: `${padX}mm`, zIndex: 1 }}>
         {showHeader && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 16, alignItems: 'center', marginBottom: '1em' }}>
             <div>
@@ -1670,20 +1677,20 @@ function TemplateVerdantCrest({ resume, ds, ss, sectionAdjustments, visibleBlock
 
   return (
     <div style={pageStyle}>
-      {/* Header: polygon SVG confined within overflow:hidden wrapper */}
-      <div style={{ position: 'relative', overflow: 'hidden' }}>
-        <svg viewBox="0 0 600 200" preserveAspectRatio="xMidYMid slice" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}>
-          <rect width="600" height="200" fill={greenSoft} />
-          <polygon points="0,0 140,0 70,90"             fill={green}     opacity="0.55" />
-          <polygon points="140,0 280,0 200,70 110,90"   fill={greenDeep} opacity="0.32" />
-          <polygon points="280,0 420,0 350,80 220,100"  fill={green}     opacity="0.45" />
-          <polygon points="420,0 600,0 600,90 500,100 410,70" fill={greenDeep} opacity="0.28" />
-          <polygon points="0,200 80,160 180,180 130,200" fill={green}    opacity="0.4" />
-          <polygon points="180,180 320,140 380,200 130,200" fill={greenDeep} opacity="0.25" />
-          <polygon points="320,140 460,160 540,200 380,200" fill={green} opacity="0.45" />
-          <polygon points="70,90 200,70 280,180 130,180"  fill="#fff"     opacity="0.18" />
-        </svg>
-        {showHeader && (
+      {/* Header: polygon SVG — first page only; left accent stripe on continuation pages */}
+      {showHeader ? (
+        <div style={{ position: 'relative', overflow: 'hidden' }}>
+          <svg viewBox="0 0 600 200" preserveAspectRatio="xMidYMid slice" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}>
+            <rect width="600" height="200" fill={greenSoft} />
+            <polygon points="0,0 140,0 70,90"             fill={green}     opacity="0.55" />
+            <polygon points="140,0 280,0 200,70 110,90"   fill={greenDeep} opacity="0.32" />
+            <polygon points="280,0 420,0 350,80 220,100"  fill={green}     opacity="0.45" />
+            <polygon points="420,0 600,0 600,90 500,100 410,70" fill={greenDeep} opacity="0.28" />
+            <polygon points="0,200 80,160 180,180 130,200" fill={green}    opacity="0.4" />
+            <polygon points="180,180 320,140 380,200 130,200" fill={greenDeep} opacity="0.25" />
+            <polygon points="320,140 460,160 540,200 380,200" fill={green} opacity="0.45" />
+            <polygon points="70,90 200,70 280,180 130,180"  fill="#fff"     opacity="0.18" />
+          </svg>
           <div style={{ position: 'relative', padding: `${padY * 0.7}mm ${padX}mm`, display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 18, alignItems: 'center' }}>
             <PhotoPlaceholder size={84} shape="circle" name={pi.name} src={pi.photo || null} />
             <div>
@@ -1697,8 +1704,10 @@ function TemplateVerdantCrest({ resume, ds, ss, sectionAdjustments, visibleBlock
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div style={{ height: 4, background: greenDeep, width: '100%' }} />
+      )}
       {/* Two-column body */}
       <div style={{ padding: `${padY * 0.4}mm ${padX}mm ${padY}mm`, display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 26 }}>
         <div>
@@ -1772,24 +1781,26 @@ function TemplateConfetti({ resume, ds, ss, sectionAdjustments, visibleBlockIds 
 
   return (
     <div style={pageStyle}>
-      {/* Confetti circles — full-page, pointer-events none */}
-      <svg viewBox="0 0 600 800" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
-        <circle cx="520" cy="50"  r="55" fill={coral}     opacity="0.55" />
-        <circle cx="565" cy="120" r="22" fill={coral}     opacity="0.35" />
-        <circle cx="460" cy="80"  r="14" fill={beige}     opacity="0.7"  />
-        <circle cx="500" cy="160" r="32" fill={beige}     opacity="0.55" />
-        <circle cx="430" cy="30"  r="10" fill={blue}      opacity="0.6"  />
-        <circle cx="580" cy="22"  r="18" fill={blue}      opacity="0.55" />
-        <circle cx="590" cy="420" r="34" fill={coral}     opacity="0.35" />
-        <circle cx="575" cy="500" r="14" fill={beige}     opacity="0.8"  />
-        <circle cx="40"  cy="760" r="48" fill={coral}     opacity="0.45" />
-        <circle cx="98"  cy="730" r="18" fill={beige}     opacity="0.6"  />
-        <circle cx="20"  cy="700" r="10" fill={blue}      opacity="0.65" />
-        <circle cx="120" cy="780" r="22" fill={blue}      opacity="0.45" />
-        <circle cx="180" cy="760" r="14" fill={coral}     opacity="0.6"  />
-        <circle cx="10"  cy="320" r="14" fill={beige}     opacity="0.6"  />
-        <circle cx="20"  cy="500" r="10" fill={coral}     opacity="0.5"  />
-      </svg>
+      {/* Confetti circles — first page only */}
+      {showHeader && (
+        <svg viewBox="0 0 600 800" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+          <circle cx="520" cy="50"  r="55" fill={coral}     opacity="0.55" />
+          <circle cx="565" cy="120" r="22" fill={coral}     opacity="0.35" />
+          <circle cx="460" cy="80"  r="14" fill={beige}     opacity="0.7"  />
+          <circle cx="500" cy="160" r="32" fill={beige}     opacity="0.55" />
+          <circle cx="430" cy="30"  r="10" fill={blue}      opacity="0.6"  />
+          <circle cx="580" cy="22"  r="18" fill={blue}      opacity="0.55" />
+          <circle cx="590" cy="420" r="34" fill={coral}     opacity="0.35" />
+          <circle cx="575" cy="500" r="14" fill={beige}     opacity="0.8"  />
+          <circle cx="40"  cy="760" r="48" fill={coral}     opacity="0.45" />
+          <circle cx="98"  cy="730" r="18" fill={beige}     opacity="0.6"  />
+          <circle cx="20"  cy="700" r="10" fill={blue}      opacity="0.65" />
+          <circle cx="120" cy="780" r="22" fill={blue}      opacity="0.45" />
+          <circle cx="180" cy="760" r="14" fill={coral}     opacity="0.6"  />
+          <circle cx="10"  cy="320" r="14" fill={beige}     opacity="0.6"  />
+          <circle cx="20"  cy="500" r="10" fill={coral}     opacity="0.5"  />
+        </svg>
+      )}
 
       <div style={{ position: 'relative', padding: `${padY}mm ${padX}mm` }}>
         {showHeader && (
