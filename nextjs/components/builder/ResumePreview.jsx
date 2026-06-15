@@ -2350,7 +2350,7 @@ function TemplateVertex({ resume, ds, ss, sectionAdjustments, visibleBlockIds = 
         {showHeader && (
           <>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 18 }}>
-              <PhotoPlaceholder size={104} shape="circle" name={pi.name || ''} />
+              <PhotoPlaceholder size={104} shape="circle" name={pi.name || ''} src={pi.photo || null} />
             </div>
             <RailHead>Contact</RailHead>
             {contactItems.map(({ kind, val }) => (
