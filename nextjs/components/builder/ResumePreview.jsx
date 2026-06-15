@@ -2275,10 +2275,7 @@ function TemplateVertex({ resume, ds, ss, sectionAdjustments, visibleBlockIds = 
           const pct = Math.min(100, Math.max(10, Math.round((s.level || 2) / 3 * 100)));
           return (
             <div key={i} style={{ marginBottom: 8 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 3 }}>
-                <span style={{ fontSize: '0.9em', color: '#fff' }}>{s.name}</span>
-                <span style={{ fontSize: '0.72em', color: 'rgba(255,255,255,0.65)' }}>{pct}%</span>
-              </div>
+              <span style={{ fontSize: '0.9em', color: '#fff', display: 'block', marginBottom: 3 }}>{s.name}</span>
               <VertexBar pct={pct} />
             </div>
           );
