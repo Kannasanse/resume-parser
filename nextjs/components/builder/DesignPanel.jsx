@@ -20,6 +20,18 @@ const ACCENT_TARGETS = [
   { key: 'linkIcons',      label: 'Link icons' },
 ];
 
+const COMPONENT_COLOR_TARGETS = [
+  { key: 'name',            label: 'Name' },
+  { key: 'jobTitle',        label: 'Job Title' },
+  { key: 'headings',        label: 'Section Headings' },
+  { key: 'headingsLine',    label: 'Heading Line' },
+  { key: 'dates',           label: 'Dates' },
+  { key: 'entrySubtitle',   label: 'Employer / School' },
+  { key: 'dotsBarsBubbles', label: 'Skill Indicators' },
+  { key: 'bullets',         label: 'Bullet Points' },
+  { key: 'headerIcons',     label: 'Header Icons' },
+];
+
 // ── Collapsible section (matches prototype .section pattern) ──────────────────
 function PanelSection({ title, children, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -422,6 +434,50 @@ export default function DesignPanel({
               {t.label}
             </Check>
           ))}
+        </div>
+      </PanelSection>
+
+      {/* Component Colors */}
+      <PanelSection title="Component Colors" defaultOpen={false}>
+        <p className="text-[11px] text-ds-textMuted mb-2">Override the color of individual resume elements.</p>
+        <div className="space-y-1">
+          {COMPONENT_COLOR_TARGETS.map(({ key, label }) => {
+            const current = (d.componentColors || {})[key];
+            return (
+              <div key={key} className="flex items-center justify-between py-[3px]">
+                <span className="text-[13px] text-ds-text">{label}</span>
+                <div className="flex items-center gap-1.5">
+                  <label
+                    className="w-6 h-6 rounded cursor-pointer border border-ds-border overflow-hidden relative"
+                    style={{ background: current || '#e5e7eb' }}
+                    title={current || 'Click to set color'}
+                  >
+                    <input
+                      type="color"
+                      value={current || '#185FA5'}
+                      onChange={e => set('componentColors', { ...(d.componentColors || {}), [key]: e.target.value })}
+                      className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                    />
+                  </label>
+                  {current && (
+                    <button
+                      onClick={() => {
+                        const cc = { ...(d.componentColors || {}) };
+                        delete cc[key];
+                        set('componentColors', cc);
+                      }}
+                      className="w-4 h-4 flex items-center justify-center text-ds-textMuted hover:text-ds-text"
+                      title="Reset to default"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </PanelSection>
 
