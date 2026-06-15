@@ -726,6 +726,12 @@ function SpotlightPreview() {
             <div style={{ fontSize:6.5, color:"#374151", paddingLeft:8 }}>• Built component library used by 40+ engineers</div>
             <div style={{ fontSize:6.5, color:"#374151", paddingLeft:8 }}>• Reduced page load by 34% via code splitting</div>
           </div>
+          <div>
+            <div style={{ fontSize:7.5, fontWeight:700 }}>Frontend Engineer</div>
+            <div style={{ fontSize:7, fontStyle:"italic", color:"#6B7280" }}>Freshworks</div>
+            <div style={{ fontSize:6.5, color:"#9097A3" }}>Jun 2019 – Dec 2020</div>
+            <div style={{ fontSize:6.5, color:"#374151", paddingLeft:8 }}>• Developed 15 customer-facing features</div>
+          </div>
           <Heading label="Education" />
           <div style={{ fontSize:7.5, fontWeight:700 }}>B.S. Computer Science</div>
           <div style={{ fontSize:7, color:"#6B7280" }}>Stanford University</div>
