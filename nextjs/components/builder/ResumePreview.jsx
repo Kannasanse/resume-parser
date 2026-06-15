@@ -1571,7 +1571,7 @@ function TemplateNoirFlash({ resume, ds, ss, sectionAdjustments, visibleBlockIds
             const headingVisible = showSectionHeading(sec, visibleBlockIds);
             const adj = sectionAdjustments?.[sec.id];
             let body;
-            if (sec.type === 'skills')         body = <NoirSkillsLolly sec={sec} accentColor={yellow} />;
+            if (sec.type === 'skills')         body = <SkillsBody sec={sec} util={util} />;
             else if (sec.type === 'languages') body = <NoirLanguagesGrid sec={sec} />;
             else body = renderSectionBody(sec, util, { expVariant: sec.type === 'work_experience' ? 'stacked' : undefined });
             if (!body) return null;
@@ -1740,7 +1740,7 @@ function TemplateVerdantCrest({ resume, ds, ss, sectionAdjustments, visibleBlock
           const headingVisible = showSectionHeading(sec, visibleBlockIds);
           const adj = sectionAdjustments?.[sec.id];
           let body;
-          if (sec.type === 'skills')         body = <SkillsLolly sec={sec} accentColor={greenDeep} softColor={greenSoft} />;
+          if (sec.type === 'skills')         body = <SkillsBody sec={sec} util={util} />;
           else if (sec.type === 'languages') body = <LanguageRings sec={sec} accentColor={greenDeep} softColor={greenSoft} />;
           else if (sec.type === 'hobbies')   body = <HashChips sec={sec} accentColor={greenDeep} />;
           else body = renderSectionBody(sec, util, { expVariant: sec.type === 'work_experience' ? 'stacked' : undefined });
@@ -1845,7 +1845,7 @@ function TemplateConfetti({ resume, ds, ss, sectionAdjustments, visibleBlockIds 
             const headingVisible = showSectionHeading(sec, visibleBlockIds);
             const adj = sectionAdjustments?.[sec.id];
             let body;
-            if (sec.type === 'skills')       body = <SkillsLolly sec={sec} accentColor={coralDeep} softColor={coral + '55'} />;
+            if (sec.type === 'skills')       body = <SkillsBody sec={sec} util={util} />;
             else if (sec.type === 'hobbies') body = <HashChips sec={sec} accentColor={coralDeep} />;
             else body = renderSectionBody(sec, util, { expVariant: sec.type === 'work_experience' ? 'stacked' : undefined });
             if (!body) return null;
