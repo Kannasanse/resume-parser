@@ -2,6 +2,21 @@
 import { useState, useEffect } from 'react';
 import { TEMPLATES, TEMPLATE_CATEGORIES } from './templates.js';
 import { TemplateThumbnail } from './ResumePreview.jsx';
+import { TEMPLATE_PREVIEWS } from './ResumeTemplatePreviews.jsx';
+
+function PreviewThumb({ templateId, active, label, style, plan, large = false }) {
+  const entry = TEMPLATE_PREVIEWS[templateId];
+  if (entry) {
+    const Comp = entry.component;
+    return (
+      <div className={`rounded-lg overflow-hidden border-2 transition-colors ${active ? 'border-primary' : 'border-ds-border'}`}
+        style={{ aspectRatio: '210/297' }}>
+        <Comp />
+      </div>
+    );
+  }
+  return <TemplateThumbnail templateId={templateId} active={active} label={label} style={style} plan={plan} />;
+}
 
 function StarBadge() {
   return (
@@ -102,7 +117,7 @@ export default function TemplateGallery({ currentTemplateId, onSelect, onClose }
                       <StarBadge />
                     </div>
                   )}
-                  <TemplateThumbnail
+                  <PreviewThumb
                     templateId={t.id}
                     active={t.id === currentTemplateId}
                     label={t.name}
@@ -154,12 +169,13 @@ export default function TemplateGallery({ currentTemplateId, onSelect, onClose }
             {/* Large thumbnail */}
             <div className="flex-1 overflow-hidden bg-gray-100 dark:bg-[#0D1830] flex items-start justify-center p-6">
               <div style={{ width: 320 }}>
-                <TemplateThumbnail
+                <PreviewThumb
                   templateId={previewTpl.id}
                   active={false}
                   label={previewTpl.name}
                   style={previewTpl.style}
                   plan={previewTpl.plan}
+                  large
                 />
               </div>
             </div>
