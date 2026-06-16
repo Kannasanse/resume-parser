@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 
-export default function FabricCanvas({ width, height, fabricRef, mode }) {
+export default function FabricCanvas({ width, height, fabricRef, onReady, mode }) {
   const canvasEl = useRef(null);
   const fabricInstance = useRef(null);
 
@@ -19,12 +19,14 @@ export default function FabricCanvas({ width, height, fabricRef, mode }) {
       fc.setDimensions({ width: width || 800, height: height || 1100 });
       fabricInstance.current = fc;
       if (fabricRef) fabricRef.current = fc;
+      if (onReady) onReady(fc);
     });
     return () => {
       if (fc) {
         fc.dispose();
         fabricInstance.current = null;
         if (fabricRef) fabricRef.current = null;
+        if (onReady) onReady(null);
       }
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

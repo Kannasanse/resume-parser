@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { usePDFDocument } from './usePDFDocument';
 import { useUndoRedo } from './useUndoRedo';
 import Toolbar from './Toolbar';
@@ -136,6 +136,7 @@ export default function EditPDFEditor() {
   const [zoom, setZoom] = useState(100); // stored as percentage
   const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
   const [fabricCanvases, setFabricCanvases] = useState({}); // page index -> JSON snapshot
+  const [fabricCanvas, setFabricCanvas] = useState(null);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [selectedObject, setSelectedObject] = useState(null);
 
@@ -169,9 +170,14 @@ export default function EditPDFEditor() {
   const fileInputRef = useRef(null);
   const scrollContainerRef = useRef(null);
 
+  const handleFabricReady = useCallback((fc) => {
+    fabricRef.current = fc;
+    setFabricCanvas(fc || null);
+  }, []);
+
   // ── Fabric canvas selection tracking ────────────────────────────────────────
   useEffect(() => {
-    const fc = fabricRef.current;
+    const fc = fabricCanvas;
     if (!fc) return;
 
     const onSelected = (e) => setSelectedObject(e.selected?.[0] ?? null);
@@ -186,7 +192,7 @@ export default function EditPDFEditor() {
       fc.off('selection:updated', onSelected);
       fc.off('selection:cleared', onCleared);
     };
-  }, [fabricRef.current]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fabricCanvas]);
 
   // ── Save / restore fabric canvas on page change ──────────────────────────────
   const prevPageRef = useRef(currentPage);
@@ -428,8 +434,6 @@ export default function EditPDFEditor() {
   }, [handleRecord]);
 
   // ── Mode hooks ────────────────────────────────────────────────────────────────
-  const fabricCanvas = fabricRef.current;
-
   useTextMode({
     fabricCanvas,
     active: mode === 'text',
@@ -578,6 +582,7 @@ export default function EditPDFEditor() {
               width={canvasDimensions.width}
               height={canvasDimensions.height}
               fabricRef={fabricRef}
+              onReady={handleFabricReady}
               mode={fabricMode}
               style={{ position: 'absolute', top: 0, left: 0 }}
             />
