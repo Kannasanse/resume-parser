@@ -434,7 +434,7 @@ export default function SelfTestPage() {
   const setAnswer  = (qi, val) => setAnswers(prev => ({ ...prev, [String(qi)]: val }));
   const setSAText  = (qi, val) => setSATexts(prev => ({ ...prev, [String(qi)]: val }));
   const toggleFlag = (i) => setFlagged(prev => { const s = new Set(prev); s.has(i) ? s.delete(i) : s.add(i); return s; });
-  const saveAndExit = () => router.push('/self-test');
+  const saveAndExit = () => router.push('/interview-prep');
 
   const answeredCount = questions.filter((q, i) =>
     q.type === 'short_answer'
@@ -460,7 +460,7 @@ export default function SelfTestPage() {
     return (
       <div className="max-w-md mx-auto text-center py-16 space-y-3">
         <p className="text-ds-text font-medium">Test not found or unavailable.</p>
-        <Link href="/self-test" className="text-sm text-primary hover:underline">← Back to Interview Prep</Link>
+        <Link href="/interview-prep" className="text-sm text-primary hover:underline">← Back to Interview Prep</Link>
       </div>
     );
   }
@@ -535,7 +535,7 @@ export default function SelfTestPage() {
       if (session?.jd_skills) {
         try { sessionStorage.setItem('jd_retake', JSON.stringify({ skills: session.jd_skills, jdText: session.input_data || '' })); } catch {}
       }
-      router.push('/self-test');
+      router.push('/interview-prep');
     };
 
     return (
@@ -714,11 +714,11 @@ export default function SelfTestPage() {
           {isJd ? (
             <>
               <button onClick={handleRetake} className="btn-primary flex-1 text-center py-2.5 rounded-btn text-sm font-semibold">Retake Test</button>
-              <button onClick={() => router.push('/self-test')} className="flex-1 text-center py-2.5 rounded-btn text-sm font-medium text-ds-textMuted border border-ds-border hover:bg-ds-bg transition-colors">Try Different JD</button>
+              <button onClick={() => router.push('/interview-prep')} className="flex-1 text-center py-2.5 rounded-btn text-sm font-medium text-ds-textMuted border border-ds-border hover:bg-ds-bg transition-colors">Try Different JD</button>
             </>
           ) : (
             <>
-              <Link href="/self-test" className="btn-primary flex-1 text-center py-2.5 rounded-btn text-sm font-semibold">Practice Again</Link>
+              <Link href="/interview-prep" className="btn-primary flex-1 text-center py-2.5 rounded-btn text-sm font-semibold">Practice Again</Link>
               <Link href="/builder" className="flex-1 text-center py-2.5 rounded-btn text-sm font-medium text-ds-textMuted border border-ds-border hover:bg-ds-bg transition-colors">Back to Builder</Link>
             </>
           )}

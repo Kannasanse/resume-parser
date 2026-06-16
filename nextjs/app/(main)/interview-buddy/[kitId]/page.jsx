@@ -125,7 +125,7 @@ export default function KitPage() {
         paddingTop: 24, borderTop: '1px solid rgba(255,255,255,0.06)',
       }}>
         <button
-          onClick={() => router.push('/self-test')}
+          onClick={() => router.push('/interview-prep')}
           style={{
             flex: 1, background: '#185FA5', border: 'none',
             borderRadius: 10, padding: '11px 0',
