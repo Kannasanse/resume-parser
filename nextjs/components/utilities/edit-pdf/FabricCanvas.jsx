@@ -6,7 +6,6 @@ export default function FabricCanvas({ width, height, fabricRef, onReady, mode }
   const canvasEl = useRef(null);
   const fabricInstance = useRef(null);
 
-  // Mount: create fabric.Canvas
   useEffect(() => {
     let fc;
     import('fabric').then(({ Canvas }) => {
@@ -17,6 +16,16 @@ export default function FabricCanvas({ width, height, fabricRef, onReady, mode }
         enableRetinaScaling: false,
       });
       fc.setDimensions({ width: width || 800, height: height || 1100 });
+
+      // fabric v6 replaces the canvas with a wrapper div (position: relative).
+      // We need it positioned absolutely so it overlays the PDF canvas.
+      const container = fc.elements?.container;
+      if (container) {
+        container.style.position = 'absolute';
+        container.style.top = '0';
+        container.style.left = '0';
+      }
+
       fabricInstance.current = fc;
       if (fabricRef) fabricRef.current = fc;
       if (onReady) onReady(fc);
@@ -36,13 +45,21 @@ export default function FabricCanvas({ width, height, fabricRef, onReady, mode }
     const fc = fabricInstance.current;
     if (!fc || !width || !height) return;
     fc.setDimensions({ width, height });
+    const container = fc.elements?.container;
+    if (container) {
+      container.style.width = `${width}px`;
+      container.style.height = `${height}px`;
+    }
     fc.renderAll();
   }, [width, height]);
 
-  // Update cursor/interaction mode
+  // Update interaction mode and pointer events
   useEffect(() => {
     const fc = fabricInstance.current;
     if (!fc) return;
+    const container = fc.elements?.container;
+    const upperEl = fc.elements?.upper?.el;
+
     if (mode === 'draw') {
       fc.isDrawingMode = true;
       fc.selection = false;
@@ -56,18 +73,15 @@ export default function FabricCanvas({ width, height, fabricRef, onReady, mode }
       fc.isDrawingMode = false;
       fc.selection = true;
     }
+
+    // Disable pointer events in view/forms mode so form inputs are clickable
+    const noPointer = mode === 'view';
+    if (upperEl) upperEl.style.pointerEvents = noPointer ? 'none' : 'auto';
+    if (container) container.style.pointerEvents = noPointer ? 'none' : 'auto';
+
     fc.renderAll();
   }, [mode]);
 
-  return (
-    <canvas
-      ref={canvasEl}
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        pointerEvents: mode === 'view' ? 'none' : 'auto',
-      }}
-    />
-  );
+  // The canvas element — fabric will replace this with its container div
+  return <canvas ref={canvasEl} />;
 }
