@@ -109,10 +109,15 @@ function PreferencesForm({ onSubmit, loading }) {
       <button
         onClick={() => onSubmit({ hoursPerDay: parseFloat(hoursPerDay), daysPerWeek: parseInt(daysPerWeek), learningStyle: [learningStyle], currentLevel })}
         disabled={loading}
-        className="w-full h-11 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-60"
+        className="w-full h-11 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-60 flex items-center justify-center gap-2"
         style={{ background: 'linear-gradient(135deg, #185FA5, #0C447C)' }}
       >
-        {loading ? 'Generating your course…' : 'Generate my course →'}
+        {loading ? 'Generating your course…' : (
+          <>
+            Generate my course
+            <span style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 4, padding: '1px 7px', fontSize: 11, fontWeight: 700 }}>5 credits</span>
+          </>
+        )}
       </button>
     </div>
   );
@@ -323,7 +328,12 @@ export default function CourseCreationModal({ open, onClose, onCreated }) {
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-6 pb-6">
           {error && (
-            <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-600">{error}</div>
+            <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-600">
+              {error}
+              {error.toLowerCase().includes('insufficient') && (
+                <a href="/credits" className="block mt-1 font-semibold underline">Get more credits →</a>
+              )}
+            </div>
           )}
 
           {/* ── Step 1: Skill Selection ─────────────────────────────────── */}

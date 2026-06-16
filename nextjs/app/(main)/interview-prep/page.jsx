@@ -840,8 +840,15 @@ export default function SelfTestCreate() {
           <div className="card shadow-2xl p-6 space-y-5">
             {error && (
               <div className="bg-ds-dangerLight border border-ds-danger/30 text-ds-danger text-sm rounded px-3 py-2.5 flex items-start justify-between gap-3">
-                <span>{error}</span>
-                <button onClick={generate} className="text-xs font-semibold underline flex-shrink-0">Retry</button>
+                <span>
+                  {error}
+                  {error.toLowerCase().includes('insufficient') && (
+                    <a href="/credits" className="block mt-1 font-semibold underline">Get more credits →</a>
+                  )}
+                </span>
+                {!error.toLowerCase().includes('insufficient') && (
+                  <button onClick={generate} className="text-xs font-semibold underline flex-shrink-0">Retry</button>
+                )}
               </div>
             )}
             {mode === 'skills' ? (
@@ -916,8 +923,9 @@ export default function SelfTestCreate() {
               timer={timer} setTimer={setTimer} timerError={timerError} validateTimer={validateTimer}
               estimatedCount={estimatedCount} mode={mode} />
             <button onClick={generate} disabled={!canGenerate}
-              className="btn-primary w-full py-2.5 rounded-btn text-sm font-semibold disabled:opacity-50">
-              Generate Test →
+              className="btn-primary w-full py-2.5 rounded-btn text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2">
+              Generate Test
+              <span style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 4, padding: '1px 6px', fontSize: 11, fontWeight: 700 }}>2 credits</span>
             </button>
             {!difficulty && <p className="text-xs text-ds-textMuted text-center -mt-3">Select a difficulty to enable generation</p>}
           </div>
@@ -964,8 +972,15 @@ export default function SelfTestCreate() {
             )}
             {error && (
               <div className="bg-ds-dangerLight border border-ds-danger/30 text-ds-danger text-sm rounded px-3 py-2.5 flex items-start justify-between gap-3">
-                <span>{error}</span>
-                <button onClick={generate} className="text-xs font-semibold underline flex-shrink-0">Retry</button>
+                <span>
+                  {error}
+                  {error.toLowerCase().includes('insufficient') && (
+                    <a href="/credits" className="block mt-1 font-semibold underline">Get more credits →</a>
+                  )}
+                </span>
+                {!error.toLowerCase().includes('insufficient') && (
+                  <button onClick={generate} className="text-xs font-semibold underline flex-shrink-0">Retry</button>
+                )}
               </div>
             )}
             {lowConfCount > 0 && (
@@ -1035,8 +1050,9 @@ export default function SelfTestCreate() {
               timer={timer} setTimer={setTimer} timerError={timerError} validateTimer={validateTimer}
               estimatedCount={estimatedCount} mode={mode} />
             <button onClick={generate} disabled={!canGenerate}
-              className="btn-primary w-full py-2.5 rounded-btn text-sm font-semibold disabled:opacity-50">
-              Generate Test →
+              className="btn-primary w-full py-2.5 rounded-btn text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2">
+              Generate Test
+              <span style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 4, padding: '1px 6px', fontSize: 11, fontWeight: 700 }}>2 credits</span>
             </button>
             {!difficulty && jdSkills.length > 0 && <p className="text-xs text-ds-textMuted text-center -mt-3">Select a difficulty to enable generation</p>}
           </div>

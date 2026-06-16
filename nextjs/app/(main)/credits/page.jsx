@@ -2,11 +2,20 @@
 import { useState, useEffect, useCallback } from 'react';
 
 const TYPE_CONFIG = {
-  ats_score:        { label: 'ATS Score Analysis', icon: '🎯', color: '#4F46E5', bg: '#EEF2FF' },
-  resume_import:    { label: 'Resume Import (AI)',  icon: '📄', color: '#059669', bg: '#ECFDF5' },
-  admin_grant:      { label: 'Admin Grant',         icon: '🎁', color: '#D97706', bg: '#FEF3C7' },
-  initial_grant:    { label: 'Welcome Credits',     icon: '⭐', color: '#7C3AED', bg: '#F5F3FF' },
-  request_approved: { label: 'Credit Request',      icon: '✅', color: '#059669', bg: '#ECFDF5' },
+  ats_score:        { label: 'ATS Score Analysis',    icon: '🎯', color: '#4F46E5', bg: '#EEF2FF' },
+  resume_import:    { label: 'Resume Import (AI)',     icon: '📄', color: '#059669', bg: '#ECFDF5' },
+  writing_assist:   { label: 'AI Writing Assistant',  icon: '✏️', color: '#0EA5E9', bg: '#E0F2FE' },
+  test_create:      { label: 'Self-Test Generation',  icon: '📝', color: '#7C3AED', bg: '#F5F3FF' },
+  course_create:    { label: 'Course Creation',        icon: '🎓', color: '#D97706', bg: '#FEF3C7' },
+  career_recommend: { label: 'Career Path Analysis',  icon: '🗺️', color: '#0891B2', bg: '#E0F9FF' },
+  interview_buddy:  { label: 'Interview Buddy',        icon: '🤝', color: '#BE185D', bg: '#FDF2F8' },
+  course_chat:      { label: 'Course AI Chat',         icon: '💬', color: '#6366F1', bg: '#EEF2FF' },
+  study_guide:      { label: 'Study Guide',            icon: '📚', color: '#65A30D', bg: '#F7FEE7' },
+  transcription:    { label: 'Audio Transcription',   icon: '🎙️', color: '#DC2626', bg: '#FEF2F2' },
+  career_analyse:   { label: 'Career Resume Analysis',icon: '🔍', color: '#2563EB', bg: '#EFF6FF' },
+  admin_grant:      { label: 'Admin Grant',            icon: '🎁', color: '#D97706', bg: '#FEF3C7' },
+  initial_grant:    { label: 'Welcome Credits',        icon: '⭐', color: '#7C3AED', bg: '#F5F3FF' },
+  request_approved: { label: 'Credit Request',         icon: '✅', color: '#059669', bg: '#ECFDF5' },
 };
 
 const STATUS_CONFIG = {
@@ -122,19 +131,33 @@ export default function CreditsPage() {
       </div>
 
       {/* Credit costs info */}
-      <div className="bg-ds-card border border-ds-border rounded-xl p-4 mb-6">
-        <div className="text-xs font-bold text-ds-textMuted uppercase tracking-wide mb-3">Credit Costs</div>
-        <div className="flex gap-6">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="w-6 h-6 rounded-md flex items-center justify-center text-base" style={{ background: '#EEF2FF' }}>🎯</span>
-            <span className="text-ds-textMuted">ATS Score</span>
-            <span className="font-bold text-ds-text">3 credits</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="w-6 h-6 rounded-md flex items-center justify-center text-base" style={{ background: '#ECFDF5' }}>📄</span>
-            <span className="text-ds-textMuted">Resume Import</span>
-            <span className="font-bold text-ds-text">5 credits</span>
-          </div>
+      <div className="bg-ds-card border border-ds-border rounded-xl p-5 mb-6">
+        <div className="text-xs font-bold text-ds-textMuted uppercase tracking-wide mb-4">Credit Costs per Action</div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {[
+            { type: 'course_create',    cost: 5 },
+            { type: 'resume_import',    cost: 5 },
+            { type: 'ats_score',        cost: 3 },
+            { type: 'career_recommend', cost: 2 },
+            { type: 'interview_buddy',  cost: 2 },
+            { type: 'test_create',      cost: 2 },
+            { type: 'study_guide',      cost: 2 },
+            { type: 'transcription',    cost: 2 },
+            { type: 'writing_assist',   cost: 1 },
+            { type: 'course_chat',      cost: 1 },
+            { type: 'career_analyse',   cost: 1 },
+          ].map(({ type, cost }) => {
+            const cfg = TYPE_CONFIG[type];
+            return (
+              <div key={type} className="flex items-center gap-2.5 p-2.5 rounded-lg border border-ds-border bg-ds-bg">
+                <span className="w-7 h-7 rounded-md flex items-center justify-center text-sm flex-shrink-0" style={{ background: cfg.bg }}>{cfg.icon}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-medium text-ds-text truncate">{cfg.label}</div>
+                  <div className="text-xs font-bold" style={{ color: cfg.color }}>{cost} credit{cost > 1 ? 's' : ''}</div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 

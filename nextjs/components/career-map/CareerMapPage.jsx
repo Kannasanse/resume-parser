@@ -188,7 +188,12 @@ export default function CareerMapPage() {
 
       {error && (
         <div className="px-6 pt-4">
-          <div className="ds-alert ds-alert-error">{error}</div>
+          <div className="ds-alert ds-alert-error">
+            {error}
+            {error.toLowerCase().includes('insufficient') && (
+              <a href="/credits" className="block mt-1 font-semibold underline">Get more credits →</a>
+            )}
+          </div>
         </div>
       )}
 

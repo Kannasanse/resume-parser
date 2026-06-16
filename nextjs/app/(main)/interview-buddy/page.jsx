@@ -163,6 +163,9 @@ export default function InterviewBuddyPage() {
           borderRadius: 10, fontSize: 13, color: '#F87171',
         }}>
           {error}
+          {error.toLowerCase().includes('insufficient') && (
+            <a href="/credits" style={{ display: 'block', marginTop: 6, color: '#F87171', fontWeight: 700, textDecoration: 'underline' }}>Get more credits →</a>
+          )}
         </div>
       )}
 
@@ -177,9 +180,15 @@ export default function InterviewBuddyPage() {
           fontSize: 15, fontWeight: 700, color: canGenerate ? '#fff' : 'rgba(255,255,255,0.35)',
           cursor: canGenerate ? 'pointer' : 'not-allowed',
           transition: 'background 200ms',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
         }}
       >
-        {loading ? 'Generating your kit…' : 'Generate interview kit →'}
+        {loading ? 'Generating your kit…' : (
+          <>
+            Generate interview kit
+            <span style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 4, padding: '1px 8px', fontSize: 12, fontWeight: 700 }}>2 credits</span>
+          </>
+        )}
       </button>
       <p style={{ textAlign: 'center', marginTop: 10, fontSize: 11, color: 'rgba(232,239,247,0.30)' }}>
         Kits are generated in ~15 seconds using AI analysis of the JD.

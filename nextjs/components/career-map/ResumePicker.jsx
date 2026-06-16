@@ -41,10 +41,15 @@ export default function ResumePicker({ resumes, lastUsedResumeId, onSelect, onSk
         <button
           onClick={handleAnalyse}
           disabled={!selected || loading}
-          className="w-full py-3 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-40"
+          className="w-full py-3 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
           style={{ background: '#185FA5' }}
         >
-          {loading ? 'Analysing resume…' : 'Analyse this resume →'}
+          {loading ? 'Analysing resume…' : (
+            <>
+              Analyse this resume
+              <span style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 4, padding: '1px 7px', fontSize: 11, fontWeight: 700 }}>1 credit</span>
+            </>
+          )}
         </button>
         <p className="text-center text-[14px]" style={{ color: '#6B7280' }}>
           Don't see the right one?{' '}

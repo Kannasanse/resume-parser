@@ -253,9 +253,10 @@ export default function ATSPanel({ resumeId, onClose, atsState, atsData, atsErro
             </div>
             <button
               onClick={handleAnalyzeClick}
-              style={{ background: '#4F46E5', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+              style={{ background: '#4F46E5', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
             >
               Analyze Resume
+              <span style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 4, padding: '1px 6px', fontSize: 11, fontWeight: 700 }}>3 credits</span>
             </button>
           </div>
         )}
@@ -274,9 +275,14 @@ export default function ATSPanel({ resumeId, onClose, atsState, atsData, atsErro
         {state === 'error' && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16, padding: 40, textAlign: 'center' }}>
             <div style={{ fontSize: 13, color: '#D93025', background: '#FEE2E2', padding: '10px 16px', borderRadius: 8 }}>{atsError}</div>
-            <button onClick={handleAnalyzeClick} style={{ background: '#4F46E5', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 24px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-              Try Again
-            </button>
+            {atsError?.toLowerCase().includes('insufficient') && (
+              <a href="/credits" style={{ fontSize: 13, color: '#4F46E5', fontWeight: 600 }}>Get more credits →</a>
+            )}
+            {!atsError?.toLowerCase().includes('insufficient') && (
+              <button onClick={handleAnalyzeClick} style={{ background: '#4F46E5', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 24px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                Try Again
+              </button>
+            )}
           </div>
         )}
 
