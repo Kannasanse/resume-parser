@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { TemplateThumbnail } from '@/components/builder/ResumePreview.jsx';
+import { TemplatePreviewCard } from '@/components/builder/TemplatePreviewCard.jsx';
 import { PageHeading } from '@/components/admin/PageHeading';
 
 function StarIcon({ filled }) {
@@ -80,15 +80,14 @@ export default function AdminTemplatesPage() {
                 ${t.featured ? 'border-yellow-400/70' : 'border-ds-border'}`}
             >
               {/* Thumbnail */}
-              <div className="bg-gray-100 dark:bg-white/5 px-6 pt-4 pb-2">
-                <TemplateThumbnail
-                  templateId={t.id}
-                  active={false}
-                  label={t.name}
-                  style={t.style}
-                  plan={t.plan}
-                />
-              </div>
+              <TemplatePreviewCard
+                templateId={t.id}
+                active={false}
+                label={t.name}
+                style={t.style}
+                plan={t.plan}
+                featured={t.featured}
+              />
 
               {/* Info + toggle */}
               <div className="p-4 flex items-start justify-between gap-3">
