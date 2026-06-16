@@ -254,6 +254,11 @@ export function computeGeometricAdjustments(contentEl, config) {
     return headingH;
   }
 
+  // Reserve bottom margin + safe buffer so content never runs to the physical
+  // page edge.  Blocks that would land past PAGE_CONTENT_END are pushed early.
+  const MARGIN_SAFE  = 16;
+  const bottomBuffer = (config.page.marginBottom || 0) + MARGIN_SAFE;
+
   const adj      = {};
   let cumulative = 0;
 
@@ -283,13 +288,58 @@ export function computeGeometricAdjustments(contentEl, config) {
       return;
     }
 
-    // Push only when the minimum start space (label/heading + first N children)
-    // does not fit in the remaining space on this page.
-    if (remaining < minStartSpace(el)) {
-      adj[key]    = remaining;
-      cumulative += remaining;
-      // Block now starts at the next page boundary (pageEnd).
-      blockPageIdx[key] = pageIdxFor(pageEnd);
+    // Push when the minimum start space does not fit in the remaining space
+    // after reserving the bottom margin + safe buffer.
+    //
+    // Push bullet-free entries (education rows, references) when their full height
+    // would land in the overlap zone.  Entries with bullets are NOT pushed here —
+    // the bullet pass below handles them individually, which produces less whitespace
+    // than pushing the whole entry block.
+    const hasBullets = el.dataset.entryId && !!el.querySelector('[data-bullet-id]');
+    const fullH = el.dataset.entryId && !hasBullets ? measureH(el) : 0;
+    const entryOverflows = el.dataset.entryId
+      && !hasBullets
+      && fullH <= effH
+      && (elTop + fullH) > (pageEnd - bottomBuffer);
+
+    // Compact sections (skills, languages, summary, etc.) have no per-row IDs.
+    // If the section fits on one page but its bottom edge would cross into the
+    // overlap zone, push the whole section to the next page.
+    const COMPACT_TYPES = new Set(['skills', 'certifications', 'languages', 'summary', 'hobbies', 'references', 'custom']);
+    const sectionFullH = el.dataset.sectionId && COMPACT_TYPES.has(el.dataset.type) ? measureH(el) : 0;
+    const sectionOverflows = sectionFullH > 0
+      && sectionFullH <= effH
+      && (elTop + sectionFullH) > (pageEnd - bottomBuffer);
+
+    // Detect compact sections landing just PAST a page boundary (elTop > B_n by a
+    // small float amount due to cumulative pushes). pageBoundaryAfter returns B_{n+2}
+    // in this case, so sectionOverflows never fires. If elTop is within marginTop pts
+    // past a boundary, the section is in the "start overlap zone" and appears in both
+    // the previous page's bottom margin and the current page's top — push it clear.
+    const recentBoundary = elTop > pageH
+      ? pageH + Math.floor((elTop - pageH) / effH) * effH
+      : pageH;
+    const inStartOverlapZone = sectionFullH > 0
+      && elTop > recentBoundary
+      && elTop < recentBoundary + config.page.marginTop;
+
+    if (remaining - bottomBuffer < minStartSpace(el) || entryOverflows || sectionOverflows) {
+      // For compact sections pushed to a boundary beyond the first (pageEnd > pageH),
+      // the destination B_n sits inside the previous page's overlap zone — the heading
+      // appears at the bottom of that page AND the top of the next page.  Push an extra
+      // marginTop so the section clears the overlap zone entirely.
+      const dest = sectionFullH > 0 && pageEnd > pageH
+        ? pageEnd + config.page.marginTop
+        : pageEnd;
+      const push = dest - elTop;
+      adj[key]    = push;
+      cumulative += push;
+      blockPageIdx[key] = pageIdxFor(dest);
+    } else if (inStartOverlapZone) {
+      const push = recentBoundary + config.page.marginTop - elTop;
+      adj[key]    = push;
+      cumulative += push;
+      blockPageIdx[key] = pageIdxFor(recentBoundary + config.page.marginTop);
     } else {
       blockPageIdx[key] = pageIdxFor(elTop);
     }
@@ -301,10 +351,6 @@ export function computeGeometricAdjustments(contentEl, config) {
   //
   // elBottom is computed as elTop + rect.height rather than rect.bottom -
   // containerRect.top to avoid any margin/overflow interference on rect.bottom.
-  // A 1px CLIP_TOLERANCE catches subpixel rendering clips where the bullet's
-  // bottom is fractionally inside the boundary but visually cut by overflow:hidden.
-  const CLIP_TOLERANCE = 1;
-
   contentEl.querySelectorAll('[data-bullet-id]').forEach((el) => {
     const rect     = el.getBoundingClientRect();
     // scrollHeight for the same reason as measureH — unaffected by overflow clipping
@@ -315,11 +361,28 @@ export function computeGeometricAdjustments(contentEl, config) {
 
     const pageEnd  = pageBoundaryAfter(elTop);
 
-    if (elBottom > pageEnd - CLIP_TOLERANCE && elTop < pageEnd) {
-      const push = pageEnd - elTop;
+    // Bullet naturally in the start overlap zone (just past a boundary within marginTop).
+    // pageBoundaryAfter returns B_{n+2} in this case so the overflow check misses it.
+    const bulletRecentBoundary = elTop > pageH
+      ? pageH + Math.floor((elTop - pageH) / effH) * effH
+      : pageH;
+    const bulletInStartOverlapZone = elTop > bulletRecentBoundary
+      && elTop < bulletRecentBoundary + config.page.marginTop;
+
+    if (elBottom > pageEnd - bottomBuffer && elTop < pageEnd) {
+      // Same overlap-zone fix as the section pass: for non-first boundaries, the push
+      // destination B_n is inside the overlap zone — push past it.
+      const dest = pageEnd > pageH ? pageEnd + config.page.marginTop : pageEnd;
+      const push = dest - elTop;
       adj[key]    = push;
       cumulative += push;
-      blockPageIdx[key] = pageIdxFor(pageEnd);
+      blockPageIdx[key] = pageIdxFor(dest);
+    } else if (bulletInStartOverlapZone) {
+      const dest = bulletRecentBoundary + config.page.marginTop;
+      const push = dest - elTop;
+      adj[key]    = push;
+      cumulative += push;
+      blockPageIdx[key] = pageIdxFor(dest);
     } else {
       blockPageIdx[key] = pageIdxFor(elTop);
     }
@@ -355,6 +418,75 @@ export function computeGeometricAdjustments(contentEl, config) {
   );
 
   return { adj, pageSlices: deduplicatedSlices };
+}
+
+// ── Flow-based pagination (simple, no overlap-zone issues) ───────────────────
+//
+// Instead of the windowed approach (full template shifted per card), each page
+// card renders only its assigned blocks via visibleBlockIds.  No marginTop
+// pushes — blocks just flow naturally within their page container.
+//
+// Algorithm: iterate DOM blocks in order, place each on the current page if it
+// fits, otherwise start a new page.  Header height on page 1 is measured from
+// the container top to the first section, so the name/contact block is counted
+// in the available space budget.
+
+export function computeFlowAdjustments(contentEl, config) {
+  if (!contentEl) return { adj: {}, pageSlices: [[]] };
+
+  const { page } = config;
+  const SAFE    = 16;
+  const mt      = page.marginTop;
+  const mb      = page.marginBottom;
+  const pageEnd = page.height - mb - SAFE;
+  // Height of a continuation page (after page 1 header).
+  const effH    = Math.max(1, pageEnd - mt);
+
+  const containerTop = contentEl.getBoundingClientRect().top;
+
+  // Map actual Y position (relative to container top) to a 0-based page index.
+  // This correctly handles CSS grid multi-column layouts: sections in different
+  // columns share the same vertical position, so they land on the same page.
+  function pageIdxFor(y) {
+    if (y < pageEnd) return 0;
+    return 1 + Math.floor((y - pageEnd) / effH);
+  }
+
+  const sliceMap = {};
+  function addToSlice(pageIdx, id) {
+    if (!sliceMap[pageIdx]) sliceMap[pageIdx] = [];
+    sliceMap[pageIdx].push(id);
+  }
+
+  contentEl.querySelectorAll('[data-section-id]').forEach(secEl => {
+    const secId  = secEl.dataset.sectionId;
+    const secTop = secEl.getBoundingClientRect().top - containerTop;
+    const firstEntry = secEl.querySelector('[data-entry-id]');
+
+    if (!firstEntry) {
+      // Compact section (skills, summary, languages…) — one block at its actual Y.
+      addToSlice(pageIdxFor(secTop), secId);
+      return;
+    }
+
+    // Section heading assigned to the page where the heading starts.
+    addToSlice(pageIdxFor(secTop), secId);
+
+    Array.from(secEl.querySelectorAll('[data-entry-id]')).forEach(entryEl => {
+      const entryTop = entryEl.getBoundingClientRect().top - containerTop;
+      addToSlice(pageIdxFor(entryTop), entryEl.dataset.entryId);
+    });
+  });
+
+  contentEl.querySelectorAll('[data-bullet-id]').forEach(el => {
+    const top = el.getBoundingClientRect().top - containerTop;
+    addToSlice(pageIdxFor(top), el.dataset.bulletId);
+  });
+
+  const maxPage = Object.keys(sliceMap).reduce((m, k) => Math.max(m, +k), 0);
+  const pageSlices = Array.from({ length: maxPage + 1 }, (_, i) => sliceMap[i] || []);
+
+  return { adj: {}, pageSlices };
 }
 
 // ── Word-export block builder (server-side) ───────────────────────────────────

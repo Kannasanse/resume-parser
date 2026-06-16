@@ -1,13 +1,27 @@
 // Template and design system definitions for the resume builder
 
+// Default layout applied when a user switches to a template.
+// columnLayout / sectionColumns drive the new-template column splitter.
+// titleSize / listStyle / headingIcon are universal typography/style defaults.
+const DL = (columnLayout, titleSize = 'medium', headingIcon = 'none', listStyle = 'bullet') =>
+  ({ columnLayout, sectionColumns: {}, titleSize, listStyle, headingIcon });
+
 export const TEMPLATES = [
-  { id: 'modern',         name: 'Modern',         style: 'Clean',    plan: 'free',  description: 'Clean accent lines, flexible header alignment, single-column layout.', accent: '#185FA5', sw1: '#185FA5', sw2: '#F4F8FC' },
-  { id: 'atlantic-blue',  name: 'Atlantic Blue',  style: 'Classic',  plan: 'free',  description: 'Dark sidebar with photo placeholder and serif main column.',            accent: '#1F2A44', sw1: '#1F2A44', sw2: '#FFFFFF' },
-  { id: 'corporate',      name: 'Corporate',      style: 'Serif',    plan: 'free',  description: 'Centered name, italic title, classic double-rule section headers.',     accent: '#0F172A', sw1: '#FFFFFF', sw2: '#0F172A' },
-  { id: 'atlantic-crest', name: 'Atlantic Crest', style: 'Modern',   plan: 'basic', description: 'Dark banner top with photo, two-column body for content-dense CVs.',   accent: '#1F2A44', sw1: '#1F2A44', sw2: '#F4F8FC' },
-  { id: 'mercury-flow',   name: 'Mercury Flow',   style: 'Modern',   plan: 'basic', description: 'Gray banner header with photo and a clean date-column layout.',        accent: '#374151', sw1: '#E5E7EB', sw2: '#FFFFFF' },
-  { id: 'steady-form',    name: 'Steady Form',    style: 'Creative', plan: 'basic', description: 'Photo aligned right, name and role inline, gray-bar section headings.', accent: '#1F2A44', sw1: '#FFFFFF', sw2: '#EEF1F5' },
-  { id: 'executive',      name: 'Executive',      style: 'Serif',    plan: 'pro',   description: 'Editorial serif style with a minimal date-column experience block.',    accent: '#0F172A', sw1: '#FFFFFF', sw2: '#0F172A' },
+  { id: 'modern',         name: 'Modern',         style: 'Clean',    plan: 'free',  description: 'Clean accent lines, flexible header alignment, single-column layout.', accent: '#185FA5', sw1: '#185FA5', sw2: '#F4F8FC',  defaultLayout: DL('one') },
+  { id: 'atlantic-blue',  name: 'Atlantic Blue',  style: 'Classic',  plan: 'free',  description: 'Dark sidebar with photo placeholder and serif main column.',            accent: '#1F2A44', sw1: '#1F2A44', sw2: '#FFFFFF',  defaultLayout: DL('two') },
+  { id: 'corporate',      name: 'Corporate',      style: 'Serif',    plan: 'free',  description: 'Centered name, italic title, classic double-rule section headers.',     accent: '#0F172A', sw1: '#FFFFFF', sw2: '#0F172A',  defaultLayout: DL('one') },
+  { id: 'atlantic-crest', name: 'Atlantic Crest', style: 'Modern',   plan: 'basic', description: 'Dark banner top with photo, two-column body for content-dense CVs.',   accent: '#1F2A44', sw1: '#1F2A44', sw2: '#F4F8FC',  defaultLayout: DL('two') },
+  { id: 'mercury-flow',   name: 'Mercury Flow',   style: 'Modern',   plan: 'basic', description: 'Gray banner header with photo and a clean date-column layout.',        accent: '#374151', sw1: '#E5E7EB', sw2: '#FFFFFF',  defaultLayout: DL('two') },
+  { id: 'steady-form',    name: 'Steady Form',    style: 'Creative', plan: 'basic', description: 'Photo aligned right, name and role inline, gray-bar section headings.', accent: '#1F2A44', sw1: '#FFFFFF', sw2: '#EEF1F5', defaultLayout: DL('two') },
+  { id: 'executive',      name: 'Executive',      style: 'Serif',    plan: 'pro',   description: 'Editorial serif style with a minimal date-column experience block.',    accent: '#0F172A', sw1: '#FFFFFF', sw2: '#0F172A',  defaultLayout: DL('two') },
+  { id: 'azure-wave',     name: 'Azure Wave',     style: 'Creative', plan: 'basic', description: 'Soft waves at top and bottom, two-column body, small-caps headings.',   accent: '#5BAEEB', sw1: '#D9ECFB', sw2: '#FFFFFF',  defaultLayout: DL('two') },
+  { id: 'noir-flash',     name: 'Noir Flash',     style: 'Creative', plan: 'basic', description: 'Dark background with yellow accent, vertical display name, two-column.', accent: '#F5C842', sw1: '#141414', sw2: '#F5C842', defaultLayout: DL('one') },
+  { id: 'verdant-crest',  name: 'Verdant Crest',  style: 'Creative', plan: 'basic', description: 'Green low-poly polygon header, circular photo, lollipop skill bars.',   accent: '#5BAE82', sw1: '#D6EFE0', sw2: '#FFFFFF',  defaultLayout: DL('one') },
+  { id: 'confetti',       name: 'Confetti',       style: 'Creative', plan: 'basic', description: 'Coral bubble decorations, pill-shaped section headings, two-column.',   accent: '#C66A66', sw1: '#EBA9A4', sw2: '#FFFFFF',  defaultLayout: DL('two') },
+  { id: 'spotlight',      name: 'Spotlight',      style: 'Modern',   plan: 'basic', description: 'Bold full-accent header band, two-column body with chip-style skills.', accent: '#185FA5', sw1: '#185FA5', sw2: '#FFFFFF',  defaultLayout: DL('two') },
+  { id: 'index',          name: 'Index',          style: 'Clean',    plan: 'basic', description: 'Swiss big-type single column with oversized numbered section headings.', accent: '#185FA5', sw1: '#FFFFFF', sw2: '#16181D', defaultLayout: DL('one', 'large') },
+  { id: 'panels',         name: 'Panels',         style: 'Creative', plan: 'basic', description: 'Dashboard-style cards and chips, tinted header card, two-column.',      accent: '#185FA5', sw1: '#F7F8FB', sw2: '#185FA5', defaultLayout: DL('two') },
+  { id: 'vertex',         name: 'Vertex',         style: 'Creative', plan: 'basic', description: 'Accent rail with circular skill rings, photo avatar, and contact panel.', accent: '#185FA5', sw1: '#185FA5', sw2: '#FFFFFF', defaultLayout: DL('two') },
 ];
 
 export const TEMPLATE_CATEGORIES = ['All', 'Clean', 'Classic', 'Modern', 'Creative', 'Serif'];

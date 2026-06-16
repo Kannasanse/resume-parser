@@ -3,12 +3,14 @@ import { useState, useEffect, useCallback } from 'react';
 
 function fmt(date) {
   if (!date) return '—';
-  return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const d = new Date(date);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function fmtTime(date) {
   if (!date) return '—';
-  return new Date(date).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+  const d = new Date(date);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
 const TX_TYPE_LABELS = {
@@ -22,16 +24,16 @@ const TX_TYPE_LABELS = {
 function TxAmount({ amount }) {
   const positive = amount > 0;
   return (
-    <span style={{ color: positive ? '#059669' : '#D93025', fontWeight: 600 }}>
+    <span className={`font-semibold ${positive ? 'text-ds-success' : 'text-ds-danger'}`}>
       {positive ? '+' : ''}{amount}
     </span>
   );
 }
 
 const STATUS_CONFIG = {
-  pending:  { label: 'Pending',  bg: '#FEF3C7', color: '#D97706', border: '#FDE68A' },
-  approved: { label: 'Approved', bg: '#ECFDF5', color: '#059669', border: '#BBF7D0' },
-  rejected: { label: 'Rejected', bg: '#FEE2E2', color: '#D93025', border: '#FECACA' },
+  pending:  { label: 'Pending',  cls: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-600/40' },
+  approved: { label: 'Approved', cls: 'bg-ds-successLight text-ds-success border-ds-success/30' },
+  rejected: { label: 'Rejected', cls: 'bg-ds-dangerLight text-ds-danger border-ds-danger/30' },
 };
 
 function GrantModal({ user, onClose, onDone }) {
@@ -217,9 +219,10 @@ export default function AdminCreditsPage() {
   const pendingCount = requests.filter(r => r.status === 'pending').length;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="gradient-mesh-1 min-h-screen">
+    <div className="px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-ds-text">Credits Management</h1>
+        <h1 className="text-xl font-bold text-gradient-primary">Credits Management</h1>
         <p className="text-sm text-ds-textMuted mt-0.5">Manage user credits and review requests</p>
       </div>
 
@@ -260,7 +263,7 @@ export default function AdminCreditsPage() {
           ) : requests.length === 0 ? (
             <div className="py-16 text-center text-ds-textMuted text-sm">No {reqFilter !== 'all' ? reqFilter : ''} requests</div>
           ) : (
-            <div className="bg-ds-card border border-ds-border rounded-xl overflow-hidden">
+            <div className="card shadow-sm bg-ds-card border border-ds-border rounded-xl overflow-hidden stagger-children">
               {requests.map((r, i) => {
                 const sc = STATUS_CONFIG[r.status] || STATUS_CONFIG.pending;
                 return (
@@ -278,13 +281,12 @@ export default function AdminCreditsPage() {
                       </div>
                       {r.admin_notes && <div className="text-xs text-ds-textMuted mt-0.5 italic">Note: {r.admin_notes}</div>}
                     </div>
-                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full border flex-shrink-0"
-                      style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>
+                    <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border flex-shrink-0 ${sc.cls}`}>
                       {sc.label}
                     </span>
                     {r.status === 'pending' && (
                       <button onClick={() => setReviewTarget(r)}
-                        className="h-8 px-3 text-xs font-semibold border border-ds-border rounded-lg text-ds-text hover:bg-ds-bg transition-colors flex-shrink-0">
+                        className="btn-primary h-8 px-3 text-xs flex-shrink-0">
                         Review
                       </button>
                     )}
@@ -298,8 +300,8 @@ export default function AdminCreditsPage() {
 
       {/* Users tab */}
       {activeTab === 'users' && (
-        <div className="bg-ds-card border border-ds-border rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="card shadow-sm bg-ds-card border border-ds-border rounded-xl overflow-hidden">
+          <table className="ds-table">
             <thead>
               <tr className="border-b border-ds-border bg-ds-bg">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-ds-textMuted">User</th>
@@ -320,7 +322,7 @@ export default function AdminCreditsPage() {
                         <div className="text-xs text-ds-textMuted">{u.email}</div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${u.role === 'admin' ? 'bg-purple-50 text-purple-700' : 'bg-ds-bg text-ds-textMuted'}`}>
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${u.role === 'admin' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' : 'bg-ds-bg text-ds-textMuted'}`}>
                           {u.role}
                         </span>
                       </td>
@@ -332,7 +334,7 @@ export default function AdminCreditsPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <button onClick={() => setGrantTarget(u)}
-                          className="h-7 px-3 text-xs font-semibold border border-ds-border rounded-lg text-ds-text hover:bg-ds-bg transition-colors">
+                          className="btn-primary h-7 px-3 text-xs">
                           Grant Credits
                         </button>
                       </td>
@@ -362,8 +364,8 @@ export default function AdminCreditsPage() {
             <span className="text-xs text-ds-textMuted">{txTotal} total transactions</span>
           </div>
 
-          <div className="bg-ds-card border border-ds-border rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
+          <div className="card shadow-sm bg-ds-card border border-ds-border rounded-xl overflow-hidden">
+            <table className="ds-table">
               <thead>
                 <tr className="border-b border-ds-border bg-ds-bg">
                   <th className="text-left px-4 py-3 text-xs font-semibold text-ds-textMuted">User</th>
@@ -424,6 +426,7 @@ export default function AdminCreditsPage() {
 
       {grantTarget  && <GrantModal  user={grantTarget}  onClose={() => setGrantTarget(null)}  onDone={handleDone} />}
       {reviewTarget && <ReviewModal req={reviewTarget}  onClose={() => setReviewTarget(null)} onDone={handleDone} />}
+    </div>
     </div>
   );
 }

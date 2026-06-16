@@ -1,7 +1,16 @@
+import { authHeaders, authHeadersFormData } from './authToken.js';
+
 const BASE = '/api/v1';
 
 async function req(path, opts = {}) {
-  const res = await fetch(`${BASE}${path}`, opts);
+  const isFormData = opts.body instanceof FormData;
+  const res = await fetch(`${BASE}${path}`, {
+    ...opts,
+    headers: {
+      ...(isFormData ? authHeadersFormData() : authHeaders()),
+      ...opts.headers,
+    },
+  });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw Object.assign(new Error(body.error || res.statusText), { status: res.status, data: body });

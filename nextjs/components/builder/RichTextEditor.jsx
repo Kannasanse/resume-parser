@@ -105,12 +105,13 @@ function Toolbar({ editor, onAssist, hasAssist }) {
 
       {hasAssist && (
         <>
-          <Divider />
+          <div className="flex-1" />
           <button
             type="button"
             title="AI Writing Assistant"
             onMouseDown={e => { e.preventDefault(); onAssist(); }}
-            className="flex items-center gap-1 h-7 px-2 rounded transition-colors text-[12px] font-semibold text-primary hover:bg-primary/10"
+            className="flex items-center gap-1.5 h-[26px] px-3 rounded-full text-[11px] font-semibold text-white transition-all hover:opacity-90 hover:scale-[1.03] active:scale-[0.97] flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #185FA5, #1D9E75)', boxShadow: '0 2px 8px rgba(24,95,165,0.30)' }}
           >
             <SparkleIcon />
             Improve

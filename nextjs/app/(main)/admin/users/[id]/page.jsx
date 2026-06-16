@@ -56,11 +56,13 @@ const EVENT_LABELS = {
 
 function fmt(iso) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 function fmtDate(iso) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 function SortIcon({ col, active, dir }) {
@@ -272,8 +274,8 @@ function SelfTestsTab({ userId, userName }) {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-ds-bg border-b border-ds-border">
+            <table className="ds-table">
+              <thead>
                 <tr>
                   <TH col="input_type" label="Mode" />
                   <TH col="created_at" label="Date & Time" />
@@ -412,8 +414,8 @@ function ResumesTab({ userId }) {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-ds-bg border-b border-ds-border">
+            <table className="ds-table">
+              <thead>
                 <tr>
                   <TH col="title"      label="Title" />
                   <TH col="template"   label="Template" hidden />
@@ -642,8 +644,8 @@ export default function AdminUserDetailPage() {
       {success && <p className="text-sm text-ds-success bg-ds-successLight rounded px-3 py-2">{success}</p>}
 
       {/* Tab bar */}
-      <div className="border-b border-ds-border">
-        <div className="flex gap-0">
+      <div className="border-b border-ds-border overflow-x-auto">
+        <div className="flex gap-0 min-w-max">
           {TABS.map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)}
               className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${activeTab === t.id ? 'border-primary text-primary' : 'border-transparent text-ds-textMuted hover:text-ds-text hover:border-ds-border'}`}>
@@ -674,7 +676,7 @@ export default function AdminUserDetailPage() {
           {/* Edit name */}
           <div className="bg-ds-card border border-ds-border rounded-lg p-6 space-y-4">
             <h2 className="text-sm font-semibold text-ds-text">Edit Name</h2>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-ds-textSecondary uppercase tracking-wide mb-1.5">First Name <span className="text-ds-danger">*</span></label>
                 <input type="text" value={firstName} onChange={e => { setFirstName(e.target.value); setNameError(''); }}
@@ -696,7 +698,7 @@ export default function AdminUserDetailPage() {
           {/* Account details */}
           <div className="bg-ds-card border border-ds-border rounded-lg p-6 space-y-3">
             <h2 className="text-sm font-semibold text-ds-text">Account Info</h2>
-            <dl className="grid grid-cols-2 gap-3 text-sm">
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div><dt className="text-xs text-ds-textMuted">Email</dt><dd className="text-ds-text">{user.email}</dd></div>
               <div><dt className="text-xs text-ds-textMuted">Joined</dt><dd className="text-ds-text">{fmtDate(user.created_at)}</dd></div>
               <div><dt className="text-xs text-ds-textMuted">Last Login</dt><dd className="text-ds-text">{user.last_login_at ? fmt(user.last_login_at) : 'Never'}</dd></div>
@@ -745,7 +747,7 @@ export default function AdminUserDetailPage() {
           {/* Permissions */}
           <div className="bg-ds-card border border-ds-border rounded-lg p-6 space-y-4">
             <h2 className="text-sm font-semibold text-ds-text">Permissions</h2>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-ds-textSecondary uppercase tracking-wide mb-1.5">Role</label>
                 <select value={role} onChange={e => setRole(e.target.value)} disabled={isSelf && role === 'admin'}

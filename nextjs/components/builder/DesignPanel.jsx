@@ -20,6 +20,18 @@ const ACCENT_TARGETS = [
   { key: 'linkIcons',      label: 'Link icons' },
 ];
 
+const COMPONENT_COLOR_TARGETS = [
+  { key: 'name',            label: 'Name' },
+  { key: 'jobTitle',        label: 'Job Title' },
+  { key: 'headings',        label: 'Section Headings' },
+  { key: 'headingsLine',    label: 'Heading Line' },
+  { key: 'dates',           label: 'Dates' },
+  { key: 'entrySubtitle',   label: 'Employer / School' },
+  { key: 'dotsBarsBubbles', label: 'Skill Indicators' },
+  { key: 'bullets',         label: 'Bullet Points' },
+  { key: 'headerIcons',     label: 'Header Icons' },
+];
+
 // ── Collapsible section (matches prototype .section pattern) ──────────────────
 function PanelSection({ title, children, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -159,48 +171,181 @@ function HexInput({ value, onChange }) {
   );
 }
 
-// ── ArrangementGlyph (matches prototype) ─────────────────────────────────────
-function ArrangementGlyph({ n }) {
-  const dot = <span className="w-[4px] h-[4px] bg-ds-textMuted/60 rounded-sm" />;
-  if (n === 1) return <div className="flex gap-[3px]">{dot}{dot}{dot}{dot}</div>;
-  if (n === 2) return (
-    <div className="grid gap-[3px]">
-      <div className="flex gap-[3px]">{dot}{dot}</div>
-      <div className="flex gap-[3px]">{dot}{dot}</div>
-    </div>
+// ── ArrangementPreview — SVG previews for each details arrangement ────────────
+function ArrangementPreview({ n, active }) {
+  const s = active ? 'var(--primary, #185FA5)' : 'rgba(255,255,255,0.45)';
+  const dim = active ? 'rgba(91,159,212,0.25)' : 'rgba(255,255,255,0.13)';
+
+  if (n === 1) return (
+    // Single inline row — four short pills side by side
+    <svg viewBox="0 0 60 60" width="44" height="44">
+      <rect x="8" y="12" width="36" height="4" rx="1" fill={s} opacity="0.7" />
+      <rect x="8"  y="22" width="8"  height="2.5" rx="1" fill={s} />
+      <rect x="19" y="22" width="8"  height="2.5" rx="1" fill={s} />
+      <rect x="30" y="22" width="8"  height="2.5" rx="1" fill={s} />
+      <rect x="41" y="22" width="7"  height="2.5" rx="1" fill={s} />
+      <rect x="8" y="34" width="40" height="1.5" rx="0.5" fill={s} opacity="0.22" />
+      <rect x="8" y="39" width="30" height="1.5" rx="0.5" fill={s} opacity="0.22" />
+      <rect x="8" y="44" width="38" height="1.5" rx="0.5" fill={s} opacity="0.22" />
+    </svg>
   );
-  return <div className="grid gap-[3px]">{dot}{dot}{dot}{dot}</div>;
+
+  if (n === 2) return (
+    // Two-column 2×2 grid
+    <svg viewBox="0 0 60 60" width="44" height="44">
+      <rect x="8" y="12" width="36" height="4" rx="1" fill={s} opacity="0.7" />
+      <rect x="8"  y="22" width="16" height="2.5" rx="1" fill={s} />
+      <rect x="30" y="22" width="16" height="2.5" rx="1" fill={s} />
+      <rect x="8"  y="28" width="16" height="2.5" rx="1" fill={s} />
+      <rect x="30" y="28" width="16" height="2.5" rx="1" fill={s} />
+      <rect x="8" y="38" width="40" height="1.5" rx="0.5" fill={s} opacity="0.22" />
+      <rect x="8" y="43" width="30" height="1.5" rx="0.5" fill={s} opacity="0.22" />
+      <rect x="8" y="48" width="38" height="1.5" rx="0.5" fill={s} opacity="0.22" />
+    </svg>
+  );
+
+  // n === 3: stacked one-per-line
+  return (
+    <svg viewBox="0 0 60 60" width="44" height="44">
+      <rect x="8" y="12" width="36" height="4" rx="1" fill={s} opacity="0.7" />
+      <rect x="8" y="22" width="22" height="2.5" rx="1" fill={s} />
+      <rect x="8" y="27" width="22" height="2.5" rx="1" fill={s} />
+      <rect x="8" y="32" width="22" height="2.5" rx="1" fill={s} />
+      <rect x="8" y="37" width="22" height="2.5" rx="1" fill={s} />
+      <rect x="35" y="22" width="13" height="1.5" rx="0.5" fill={s} opacity="0.22" />
+      <rect x="35" y="27" width="13" height="1.5" rx="0.5" fill={s} opacity="0.22" />
+      <rect x="35" y="32" width="13" height="1.5" rx="0.5" fill={s} opacity="0.22" />
+      <rect x="8"  y="46" width="40" height="1.5" rx="0.5" fill={s} opacity="0.22" />
+    </svg>
+  );
 }
 
-// ── SkillsLayoutGlyph ─────────────────────────────────────────────────────────
-function SkillsGlyph({ layout }) {
-  const c = 'var(--c-muted, #9CA3AF)';
+// ── SkillsLayoutPreview — SVG previews for each skills layout ─────────────────
+function SkillsPreview({ layout, active }) {
+  const s   = active ? 'var(--primary, #185FA5)' : 'rgba(255,255,255,0.45)';
+  const dim = active ? 'rgba(91,159,212,0.30)' : 'rgba(255,255,255,0.18)';
+
   if (layout === 'grid') return (
-    <div className="grid gap-[2px]" style={{ gridTemplateColumns: '1fr 1fr', width: 20, height: 14 }}>
-      {[0,1,2,3].map(i => <span key={i} className="bg-ds-textMuted/50 rounded-[1px]" />)}
-    </div>
+    // Categorised grid: category label + rows of pills
+    <svg viewBox="0 0 50 50" width="40" height="40">
+      <rect x="5" y="9"  width="12" height="2"   rx="0.5" fill={s} opacity="0.7" />
+      <rect x="5" y="14" width="9"  height="3.5" rx="1.5" fill={dim} />
+      <rect x="16" y="14" width="12" height="3.5" rx="1.5" fill={dim} />
+      <rect x="30" y="14" width="9"  height="3.5" rx="1.5" fill={dim} />
+      <rect x="5" y="23" width="12" height="2"   rx="0.5" fill={s} opacity="0.7" />
+      <rect x="5" y="28" width="12" height="3.5" rx="1.5" fill={dim} />
+      <rect x="19" y="28" width="9"  height="3.5" rx="1.5" fill={dim} />
+      <rect x="30" y="28" width="13" height="3.5" rx="1.5" fill={dim} />
+    </svg>
   );
+
   if (layout === 'rows') return (
-    <div className="grid gap-[3px]" style={{ width: 22 }}>
-      <span className="h-[3px] bg-ds-textMuted/50 rounded-[1px]" />
-      <span className="h-[3px] bg-ds-textMuted/50 rounded-[1px]" style={{ width: '70%' }} />
-      <span className="h-[3px] bg-ds-textMuted/50 rounded-[1px]" style={{ width: '85%' }} />
-    </div>
+    // Rows: skill name lines, varying widths
+    <svg viewBox="0 0 50 50" width="40" height="40">
+      <rect x="5" y="12" width="20" height="2.5" rx="0.5" fill={s} opacity="0.75" />
+      <rect x="5" y="20" width="24" height="2.5" rx="0.5" fill={s} opacity="0.75" />
+      <rect x="5" y="28" width="17" height="2.5" rx="0.5" fill={s} opacity="0.75" />
+      <rect x="5" y="36" width="22" height="2.5" rx="0.5" fill={s} opacity="0.75" />
+    </svg>
   );
-  if (layout === 'compact') return <span className="text-[8px] text-ds-textMuted/70">A·B·C</span>;
+
+  if (layout === 'compact') return (
+    // A·B·C inline text
+    <svg viewBox="0 0 50 50" width="40" height="40">
+      <text x="25" y="29" textAnchor="middle" fill={s} fontSize="11"
+        fontFamily="system-ui, sans-serif" fontWeight="500" letterSpacing="0.04em">
+        A·B·C
+      </text>
+    </svg>
+  );
+
   if (layout === 'bubble') return (
-    <div className="flex gap-[2px] flex-wrap" style={{ width: 26 }}>
-      {[6, 8, 5, 7].map((w, i) => <span key={i} style={{ width: w, height: 5 }} className="bg-ds-textMuted/50 rounded-full" />)}
-    </div>
+    // Rounded pill badges
+    <svg viewBox="0 0 50 50" width="40" height="40">
+      <rect x="5"  y="13" width="15" height="6" rx="3" fill={dim} />
+      <rect x="22" y="13" width="20" height="6" rx="3" fill={dim} />
+      <rect x="5"  y="23" width="22" height="6" rx="3" fill={dim} />
+      <rect x="29" y="23" width="13" height="6" rx="3" fill={dim} />
+      <rect x="5"  y="33" width="18" height="6" rx="3" fill={dim} />
+    </svg>
   );
+
   if (layout === 'level') return (
-    <div className="grid gap-[2px]">
-      {[[3,0],[2,1],[3,0]].map(([n,_], i) => (
-        <div key={i} className="flex gap-[2px]">
-          {[1,2,3].map(d => <span key={d} style={{ width: 3, height: 3 }} className={`rounded-full ${d <= n ? 'bg-ds-textMuted/60' : 'bg-ds-border'}`} />)}
-        </div>
-      ))}
-    </div>
+    // Skill name + dot rating
+    <svg viewBox="0 0 50 50" width="40" height="40">
+      <rect x="5" y="12" width="18" height="2" rx="0.5" fill={s} opacity="0.7" />
+      <circle cx="27" cy="13" r="1.3" fill={s} /><circle cx="31" cy="13" r="1.3" fill={s} /><circle cx="35" cy="13" r="1.3" fill={s} /><circle cx="39" cy="13" r="1.3" fill={s} /><circle cx="43" cy="13" r="1.3" fill="rgba(255,255,255,0.15)" />
+      <rect x="5" y="21" width="18" height="2" rx="0.5" fill={s} opacity="0.7" />
+      <circle cx="27" cy="22" r="1.3" fill={s} /><circle cx="31" cy="22" r="1.3" fill={s} /><circle cx="35" cy="22" r="1.3" fill={s} /><circle cx="39" cy="22" r="1.3" fill="rgba(255,255,255,0.15)" /><circle cx="43" cy="22" r="1.3" fill="rgba(255,255,255,0.15)" />
+      <rect x="5" y="30" width="18" height="2" rx="0.5" fill={s} opacity="0.7" />
+      <circle cx="27" cy="31" r="1.3" fill={s} /><circle cx="31" cy="31" r="1.3" fill={s} /><circle cx="35" cy="31" r="1.3" fill={s} /><circle cx="39" cy="31" r="1.3" fill={s} /><circle cx="43" cy="31" r="1.3" fill={s} />
+      <rect x="5" y="39" width="18" height="2" rx="0.5" fill={s} opacity="0.7" />
+      <circle cx="27" cy="40" r="1.3" fill={s} /><circle cx="31" cy="40" r="1.3" fill={s} /><circle cx="35" cy="40" r="1.3" fill="rgba(255,255,255,0.15)" /><circle cx="39" cy="40" r="1.3" fill="rgba(255,255,255,0.15)" /><circle cx="43" cy="40" r="1.3" fill="rgba(255,255,255,0.15)" />
+    </svg>
+  );
+
+  return null;
+}
+
+// ── IconStylePreview — shows a mail icon rendered in each of the 7 icon styles ─
+// Each style changes how the icon badge is presented (plain, circle outline,
+// rounded square, filled circle, filled square, underline, no badge).
+function IconStylePreview({ n, active }) {
+  const ic  = active ? 'var(--primary, #185FA5)' : 'rgba(255,255,255,0.55)';
+  const bg  = active ? 'rgba(91,159,212,0.22)'   : 'rgba(255,255,255,0.10)';
+
+  // Mail envelope SVG path (24px viewBox)
+  const MailPath = () => (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="1.5" stroke={ic} strokeWidth="1.6" fill="none"/>
+      <polyline points="3,7 12,13 21,7" stroke={ic} strokeWidth="1.6" fill="none" strokeLinecap="round"/>
+    </>
+  );
+
+  if (n === 1) return (
+    // Plain — no badge, just icon
+    <svg viewBox="0 0 24 24" width="20" height="20"><MailPath /></svg>
+  );
+  if (n === 2) return (
+    // Circle outline badge
+    <svg viewBox="-3 -3 30 30" width="22" height="22">
+      <circle cx="12" cy="12" r="14" fill="none" stroke={ic} strokeWidth="1.4" />
+      <MailPath />
+    </svg>
+  );
+  if (n === 3) return (
+    // Rounded square outline badge
+    <svg viewBox="-3 -3 30 30" width="22" height="22">
+      <rect x="-2" y="-2" width="28" height="28" rx="5" fill="none" stroke={ic} strokeWidth="1.4" />
+      <MailPath />
+    </svg>
+  );
+  if (n === 4) return (
+    // Filled circle badge
+    <svg viewBox="-3 -3 30 30" width="22" height="22">
+      <circle cx="12" cy="12" r="14" fill={bg} />
+      <circle cx="12" cy="12" r="14" fill="none" stroke={ic} strokeWidth="1.2" />
+      <MailPath />
+    </svg>
+  );
+  if (n === 5) return (
+    // Filled rounded square badge
+    <svg viewBox="-3 -3 30 30" width="22" height="22">
+      <rect x="-2" y="-2" width="28" height="28" rx="5" fill={bg} />
+      <rect x="-2" y="-2" width="28" height="28" rx="5" fill="none" stroke={ic} strokeWidth="1.2" />
+      <MailPath />
+    </svg>
+  );
+  if (n === 6) return (
+    // Underline accent
+    <svg viewBox="0 -2 24 28" width="20" height="22">
+      <MailPath />
+      <line x1="3" y1="22" x2="21" y2="22" stroke={ic} strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+  if (n === 7) return (
+    // No extra badge — same as plain (style 7 is "bare" in the codebase)
+    <svg viewBox="0 0 24 24" width="20" height="20"><MailPath /></svg>
   );
   return null;
 }
@@ -234,9 +379,12 @@ export default function DesignPanel({
   const setLs = (key, val) => onLayoutChange({ ...ls, [key]: val });
 
   const enabledSections = (sections || []).filter(s => s.enabled !== false);
-  const skillsSec = enabledSections.find(s => s.type === 'skills');
-  const eduSec = enabledSections.find(s => s.type === 'education');
-  const workSec = enabledSections.find(s => s.type === 'work_experience');
+  const skillsSec   = enabledSections.find(s => s.type === 'skills');
+  const eduSec      = enabledSections.find(s => s.type === 'education');
+  const workSec     = enabledSections.find(s => s.type === 'work_experience');
+  const langSec     = enabledSections.find(s => s.type === 'languages');
+  const certsSec    = enabledSections.find(s => s.type === 'certifications');
+  const hobbiesSec  = enabledSections.find(s => s.type === 'hobbies');
 
   // ── DESIGN TAB ──────────────────────────────────────────────────────────────
   if (activeTab === 'design') return (
@@ -289,6 +437,50 @@ export default function DesignPanel({
         </div>
       </PanelSection>
 
+      {/* Component Colors */}
+      <PanelSection title="Component Colors" defaultOpen={false}>
+        <p className="text-[11px] text-ds-textMuted mb-2">Override the color of individual resume elements.</p>
+        <div className="space-y-1">
+          {COMPONENT_COLOR_TARGETS.map(({ key, label }) => {
+            const current = (d.componentColors || {})[key];
+            return (
+              <div key={key} className="flex items-center justify-between py-[3px]">
+                <span className="text-[13px] text-ds-text">{label}</span>
+                <div className="flex items-center gap-1.5">
+                  <label
+                    className="w-6 h-6 rounded cursor-pointer border border-ds-border overflow-hidden relative"
+                    style={{ background: current || '#e5e7eb' }}
+                    title={current || 'Click to set color'}
+                  >
+                    <input
+                      type="color"
+                      value={current || '#185FA5'}
+                      onChange={e => set('componentColors', { ...(d.componentColors || {}), [key]: e.target.value })}
+                      className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                    />
+                  </label>
+                  {current && (
+                    <button
+                      onClick={() => {
+                        const cc = { ...(d.componentColors || {}) };
+                        delete cc[key];
+                        set('componentColors', cc);
+                      }}
+                      className="w-4 h-4 flex items-center justify-center text-ds-textMuted hover:text-ds-text"
+                      title="Reset to default"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </PanelSection>
+
       {/* Font Family */}
       <PanelSection title="Font Family">
         <div className="space-y-[5px]">
@@ -331,13 +523,35 @@ export default function DesignPanel({
 
       {/* Details Arrangement */}
       <PanelSection title="Details Arrangement">
-        <TileGrid cols={3}>
-          {[1, 2, 3].map(n => (
-            <Tile key={n} active={(d.detailsArrangement || 1) === n} onClick={() => set('detailsArrangement', n)}>
-              <ArrangementGlyph n={n} />
-            </Tile>
-          ))}
-        </TileGrid>
+        <div className="flex gap-[8px]">
+          {[1, 2, 3].map(n => {
+            const active = (d.detailsArrangement || 1) === n;
+            return (
+              <button
+                key={n}
+                onClick={() => set('detailsArrangement', n)}
+                style={{
+                  width: 72, height: 72,
+                  background: '#0F1929',
+                  border: `2px solid ${active ? 'var(--primary, #185FA5)' : 'rgba(255,255,255,0.10)'}`,
+                  borderRadius: 12,
+                  padding: 0,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'border-color 150ms',
+                  flexShrink: 0,
+                }}
+                onMouseEnter={e => !active && (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
+                onMouseLeave={e => !active && (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)')}
+                aria-pressed={active}
+              >
+                <ArrangementPreview n={n} active={active} />
+              </button>
+            );
+          })}
+        </div>
         <p className="text-[11px] text-ds-textMuted">
           {(d.detailsArrangement || 1) === 1 && 'Single inline row'}
           {(d.detailsArrangement || 1) === 2 && 'Wrap across two lines'}
@@ -356,13 +570,39 @@ export default function DesignPanel({
 
       {/* Icon Style */}
       <PanelSection title="Icon Style">
-        <TileGrid cols={7}>
-          {[1, 2, 3, 4, 5, 6, 7].map(n => (
-            <Tile key={n} active={(d.headerIconStyle || 1) === n} onClick={() => set('headerIconStyle', n)}>
-              <span className="text-[9px] font-semibold">{n}</span>
-            </Tile>
-          ))}
-        </TileGrid>
+        <div className="flex flex-wrap gap-[7px]">
+          {[1, 2, 3, 4, 5, 6, 7].map(n => {
+            const active = (d.headerIconStyle || 1) === n;
+            return (
+              <button
+                key={n}
+                onClick={() => set('headerIconStyle', n)}
+                style={{
+                  width: 48, height: 48,
+                  background: '#0F1929',
+                  border: `2px solid ${active ? 'var(--primary, #185FA5)' : 'rgba(255,255,255,0.10)'}`,
+                  borderRadius: 10,
+                  padding: 0,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'border-color 150ms',
+                  flexShrink: 0,
+                }}
+                onMouseEnter={e => !active && (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
+                onMouseLeave={e => !active && (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)')}
+                aria-pressed={active}
+                title={['Plain', 'Circle outline', 'Square outline', 'Filled circle', 'Filled square', 'Underline', 'Bare'][n - 1]}
+              >
+                <IconStylePreview n={n} active={active} />
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-[11px] text-ds-textMuted mt-1">
+          {['Plain', 'Circle outline', 'Square outline', 'Filled circle', 'Filled square', 'Underline', 'Bare'][(d.headerIconStyle || 1) - 1]}
+        </p>
       </PanelSection>
 
       {/* Page Size */}
@@ -545,13 +785,35 @@ export default function DesignPanel({
         <PanelSection title="Skills">
           <div>
             <p className="text-xs font-medium text-ds-text mb-2">Layout</p>
-            <TileGrid cols={5}>
-              {['grid', 'rows', 'compact', 'bubble', 'level'].map(l => (
-                <Tile key={l} active={skillsLayout === l} onClick={() => setSkillsDs({ layout: l })} style={{ aspectRatio: '1' }}>
-                  <SkillsGlyph layout={l} />
-                </Tile>
-              ))}
-            </TileGrid>
+            <div className="flex gap-[7px] flex-wrap">
+              {['grid', 'rows', 'compact', 'bubble', 'level'].map(l => {
+                const active = skillsLayout === l;
+                return (
+                  <button
+                    key={l}
+                    onClick={() => setSkillsDs({ layout: l })}
+                    style={{
+                      width: 56, height: 56,
+                      background: '#0F1929',
+                      border: `2px solid ${active ? 'var(--primary, #185FA5)' : 'rgba(255,255,255,0.10)'}`,
+                      borderRadius: 11,
+                      padding: 0,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'border-color 150ms',
+                      flexShrink: 0,
+                    }}
+                    onMouseEnter={e => !active && (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
+                    onMouseLeave={e => !active && (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)')}
+                    aria-pressed={active}
+                  >
+                    <SkillsPreview layout={l} active={active} />
+                  </button>
+                );
+              })}
+            </div>
             <p className="text-[11px] text-ds-textMuted mt-1.5 capitalize">{skillsLayout}</p>
           </div>
 
@@ -606,23 +868,83 @@ export default function DesignPanel({
       {/* Education */}
       {eduSec && onSectionDisplayChange && (
         <PanelSection title="Education">
-          <p className="text-xs font-medium text-ds-text mb-1.5">Display order</p>
-          <Seg
-            value={eduSec.display_settings?.eduOrder || 'school-first'}
-            onChange={v => onSectionDisplayChange(eduSec.id, { ...eduSec.display_settings, eduOrder: v })}
-            options={[{ value: 'school-first', label: 'School → Degree' }, { value: 'degree-first', label: 'Degree → School' }]}
-          />
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs font-medium text-ds-text mb-1.5">Display order</p>
+              <Seg
+                value={eduSec.display_settings?.eduOrder || 'school-first'}
+                onChange={v => onSectionDisplayChange(eduSec.id, { ...eduSec.display_settings, eduOrder: v })}
+                options={[{ value: 'school-first', label: 'School → Degree' }, { value: 'degree-first', label: 'Degree → School' }]}
+              />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-ds-text mb-1.5">Entry style</p>
+              <Seg
+                value={eduSec.display_settings?.entryLayout || 'auto'}
+                onChange={v => onSectionDisplayChange(eduSec.id, { ...eduSec.display_settings, entryLayout: v === 'auto' ? undefined : v })}
+                options={[{ value: 'auto', label: 'Auto' }, { value: 'default', label: 'Default' }, { value: 'date-col', label: 'Date col' }]}
+              />
+            </div>
+          </div>
         </PanelSection>
       )}
 
       {/* Work Experience */}
       {workSec && onSectionDisplayChange && (
         <PanelSection title="Work Experience">
-          <p className="text-xs font-medium text-ds-text mb-1.5">Display order</p>
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs font-medium text-ds-text mb-1.5">Display order</p>
+              <Seg
+                value={workSec.display_settings?.workOrder || 'title-first'}
+                onChange={v => onSectionDisplayChange(workSec.id, { ...workSec.display_settings, workOrder: v })}
+                options={[{ value: 'title-first', label: 'Title → Employer' }, { value: 'employer-first', label: 'Employer → Title' }]}
+              />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-ds-text mb-1.5">Entry style</p>
+              <Seg
+                value={workSec.display_settings?.entryLayout || 'auto'}
+                onChange={v => onSectionDisplayChange(workSec.id, { ...workSec.display_settings, entryLayout: v === 'auto' ? undefined : v })}
+                options={[{ value: 'auto', label: 'Auto' }, { value: 'stacked', label: 'Stacked' }, { value: 'date-col', label: 'Date col' }, { value: 'inline', label: 'Inline' }]}
+              />
+            </div>
+          </div>
+        </PanelSection>
+      )}
+
+      {/* Languages */}
+      {langSec && onSectionDisplayChange && (
+        <PanelSection title="Languages">
+          <p className="text-xs font-medium text-ds-text mb-1.5">Layout</p>
           <Seg
-            value={workSec.display_settings?.workOrder || 'title-first'}
-            onChange={v => onSectionDisplayChange(workSec.id, { ...workSec.display_settings, workOrder: v })}
-            options={[{ value: 'title-first', label: 'Title → Employer' }, { value: 'employer-first', label: 'Employer → Title' }]}
+            value={langSec.display_settings?.layout || 'rows'}
+            onChange={v => onSectionDisplayChange(langSec.id, { ...langSec.display_settings, layout: v })}
+            options={[{ value: 'rows', label: 'Dots' }, { value: 'rings', label: 'Rings' }, { value: 'compact', label: 'Compact' }]}
+          />
+        </PanelSection>
+      )}
+
+      {/* Certifications */}
+      {certsSec && onSectionDisplayChange && (
+        <PanelSection title="Certifications">
+          <p className="text-xs font-medium text-ds-text mb-1.5">Layout</p>
+          <Seg
+            value={certsSec.display_settings?.certLayout || 'default'}
+            onChange={v => onSectionDisplayChange(certsSec.id, { ...certsSec.display_settings, certLayout: v === 'default' ? undefined : v })}
+            options={[{ value: 'default', label: 'Default' }, { value: 'three-col-bullets', label: '3-Col' }, { value: 'compact-list', label: 'Compact' }]}
+          />
+        </PanelSection>
+      )}
+
+      {/* Hobbies */}
+      {hobbiesSec && onSectionDisplayChange && (
+        <PanelSection title="Hobbies">
+          <p className="text-xs font-medium text-ds-text mb-1.5">Display style</p>
+          <Seg
+            value={hobbiesSec.display_settings?.style || 'chips'}
+            onChange={v => onSectionDisplayChange(hobbiesSec.id, { ...hobbiesSec.display_settings, style: v })}
+            options={[{ value: 'text', label: 'Text' }, { value: 'chips', label: 'Chips' }]}
           />
         </PanelSection>
       )}
@@ -643,16 +965,19 @@ export default function DesignPanel({
             ))}
           </TileGrid>
 
-          {ls.columnLayout === 'two' && enabledSections.length > 0 && (
+          {(ls.columnLayout === 'two' || ls.columnLayout === 'mix') && enabledSections.length > 0 && (
             <div className="space-y-1 mt-2">
-              <p className="text-xs text-ds-textMuted mb-1">Assign to columns</p>
+              <p className="text-xs text-ds-textMuted mb-1">
+                {ls.columnLayout === 'mix' ? 'Assign sections (unassigned = full width)' : 'Assign to columns'}
+              </p>
               {enabledSections.map(sec => {
-                const col = ls.sectionColumns?.[sec.id] || 'left';
+                const sides = ls.columnLayout === 'mix' ? ['left', 'right', 'full'] : ['left', 'right'];
+                const col = ls.sectionColumns?.[sec.id] || (ls.columnLayout === 'mix' ? 'full' : 'left');
                 return (
                   <div key={sec.id} className="flex items-center justify-between text-xs">
                     <span className="text-ds-text truncate flex-1 mr-2">{sec.title}</span>
                     <div className="flex rounded border border-ds-border overflow-hidden flex-shrink-0">
-                      {['left', 'right'].map(side => (
+                      {sides.map(side => (
                         <button key={side} onClick={() => setLs('sectionColumns', { ...ls.sectionColumns, [sec.id]: side })}
                           className={`px-2 py-1 capitalize transition-colors ${col === side ? 'bg-primary text-white' : 'text-ds-text hover:bg-ds-bg'}`}>
                           {side}

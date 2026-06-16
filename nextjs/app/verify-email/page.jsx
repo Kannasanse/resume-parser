@@ -2,7 +2,6 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
@@ -50,11 +49,12 @@ function VerifyEmailContent() {
   return (
     <div className="min-h-screen bg-ds-bg flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <Image src="/logo.png" alt="Proflect" width={120} height={133} className="object-contain mx-auto" priority unoptimized />
+        <div className="flex flex-col items-center gap-2 mb-8">
+          <span className="nav-logo-mark">P</span>
+          <span className="text-lg font-bold tracking-tight text-[var(--c-text)]">Proflect</span>
         </div>
 
-        <div className="bg-ds-card rounded-2xl border border-ds-border shadow-lg p-10 text-center space-y-5">
+        <div className="auth-card text-center space-y-5">
           <div className="w-16 h-16 rounded-full bg-primary-light flex items-center justify-center mx-auto">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
               <path d="M3 8l7.89 5.26a2 2 0 0 0 2.22 0L21 8M5 19h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2z"/>
@@ -74,12 +74,10 @@ function VerifyEmailContent() {
           </div>
 
           {status === 'sent' && (
-            <div className="text-sm text-ds-success bg-ds-successLight rounded-lg px-4 py-3">
-              Verification email resent!
-            </div>
+            <div className="ds-alert ds-alert-success text-sm">Verification email resent!</div>
           )}
           {errorMsg && (
-            <div className="text-sm text-ds-danger bg-ds-dangerLight rounded-lg px-4 py-3">{errorMsg}</div>
+            <div className="ds-alert ds-alert-error text-sm">{errorMsg}</div>
           )}
 
           <button

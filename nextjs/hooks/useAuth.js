@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
+import { setAuthToken, clearAuthToken } from '@/lib/authToken';
 
 export function useAuth() {
   const [user, setUser]       = useState(null);
@@ -9,15 +10,19 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  const fetchProfile = useCallback(async (userId) => {
-    if (!userId) { setProfile(null); return; }
-    const supabase = createClient();
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, first_name, last_name, email, role, status, avatar_url')
-      .eq('id', userId)
-      .single();
-    setProfile(data || null);
+  // Fetch the effective profile via the server so proxy_uid cookie is respected
+  const fetchProfile = useCallback(async (token) => {
+    if (!token) { setProfile(null); return; }
+    try {
+      const res = await fetch('/api/v1/me', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!res.ok) { setProfile(null); return; }
+      const { profile: p } = await res.json();
+      setProfile(p || null);
+    } catch {
+      setProfile(null);
+    }
   }, []);
 
   useEffect(() => {
@@ -26,13 +31,20 @@ export function useAuth() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       const u = session?.user ?? null;
       setUser(u);
-      fetchProfile(u?.id).finally(() => setLoading(false));
+      if (session?.access_token) setAuthToken(session.access_token);
+      fetchProfile(session?.access_token).finally(() => setLoading(false));
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       const u = session?.user ?? null;
       setUser(u);
-      fetchProfile(u?.id);
+      if (session?.access_token) {
+        setAuthToken(session.access_token);
+        fetchProfile(session.access_token);
+      } else {
+        clearAuthToken();
+        setProfile(null);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -41,6 +53,7 @@ export function useAuth() {
   const signOut = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
+    clearAuthToken();
     setUser(null);
     setProfile(null);
     router.push('/login');
@@ -50,9 +63,8 @@ export function useAuth() {
   const isAdmin = profile?.role === 'admin';
   const isActive = profile?.status === 'active';
 
-  // Display name: first+last from profile, or email prefix
   const displayName = profile
-    ? [profile.first_name, profile.last_name].filter(Boolean).join(' ') || profile.email
+    ? [profile.first_name, profile.last_name].filter(Boolean).join(' ') || profile.email || user?.email || ''
     : user?.email || '';
 
   const initials = displayName

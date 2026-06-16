@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { TemplateThumbnail } from '@/components/builder/ResumePreview.jsx';
+import { TemplatePreviewCard } from '@/components/builder/TemplatePreviewCard.jsx';
+import { PageHeading } from '@/components/admin/PageHeading';
 
 function StarIcon({ filled }) {
   return (
@@ -47,16 +48,14 @@ export default function AdminTemplatesPage() {
   const featuredCount = templates.filter(t => t.featured).length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-ds-text font-heading">Templates</h1>
-          <p className="text-sm text-ds-textMuted mt-1">
-            Mark templates as Featured to highlight them for users in the template gallery.
-          </p>
-        </div>
+    <div className="px-6 lg:px-8 pt-8 pb-8 space-y-6">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <PageHeading
+          title="Templates"
+          subtitle="Mark templates as Featured to highlight them for users in the template gallery."
+        />
         {!loading && (
-          <span className="text-sm text-ds-textMuted">
+          <span className="text-sm text-ds-textMuted flex-shrink-0 pt-1">
             {featuredCount} of {templates.length} featured
           </span>
         )}
@@ -81,21 +80,19 @@ export default function AdminTemplatesPage() {
                 ${t.featured ? 'border-yellow-400/70' : 'border-ds-border'}`}
             >
               {/* Thumbnail */}
-              <div className="bg-gray-100 px-6 pt-4 pb-2">
-                <TemplateThumbnail
-                  templateId={t.id}
-                  active={false}
-                  label={t.name}
-                  style={t.style}
-                  plan={t.plan}
-                />
-              </div>
+              <TemplatePreviewCard
+                templateId={t.id}
+                active={false}
+                label={t.name}
+                style={t.style}
+                plan={t.plan}
+                featured={t.featured}
+              />
 
               {/* Info + toggle */}
               <div className="p-4 flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-semibold text-sm text-ds-text truncate">{t.name}</p>
-                  <p className="text-xs text-ds-textMuted mt-0.5">{t.style} · {t.plan}</p>
+                  <p className="text-xs text-ds-textMuted">{t.style} · {t.plan}</p>
                   <p className="text-xs text-ds-textMuted mt-1 line-clamp-2">{t.description}</p>
                 </div>
 
@@ -105,7 +102,7 @@ export default function AdminTemplatesPage() {
                   title={t.featured ? 'Remove from Featured' : 'Mark as Featured'}
                   className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-btn border transition-colors disabled:opacity-50
                     ${t.featured
-                      ? 'bg-yellow-50 border-yellow-400 text-yellow-700 hover:bg-yellow-100'
+                      ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-400 dark:border-yellow-600/50 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/30'
                       : 'bg-ds-bg border-ds-border text-ds-textMuted hover:text-ds-text hover:border-ds-borderStrong'
                     }`}
                 >

@@ -2,12 +2,16 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 
 // Marketing pages — accessible to everyone, no redirect when authenticated
-const MARKETING_PATHS  = ['/home'];
+const MARKETING_PATHS  = ['/home', '/features'];
 // Auth pages — redirect away when authenticated
 const AUTH_PAGES       = ['/login', '/signup', '/verify-email', '/forgot-password', '/reset-password', '/join', '/access-denied'];
 const PUBLIC_PATHS     = [...MARKETING_PATHS, ...AUTH_PAGES];
+// Utility pages — publicly viewable; auth is enforced at the action/upload level
+const PUBLIC_UTILITY_PAGES = ['/utilities'];
 const ADMIN_ONLY_PATHS = ['/resumes', '/jobs', '/upload', '/admin', '/home/preview'];
 const ADMIN_ONLY_API   = ['/api/v1/resumes', '/api/v1/jobs', '/api/v1/admin', '/api/v1/organizations'];
+// Job recommendation routes under /api/v1/jobs/ that are user-facing (not admin-only)
+const USER_JOB_API     = ['/api/v1/jobs/recommendations', '/api/v1/jobs/interact', '/api/v1/jobs/saved', '/api/v1/jobs/test'];
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
@@ -40,13 +44,16 @@ export async function middleware(request) {
   const isPublicApiAuth = pathname.startsWith('/api/v1/auth/');
 
   // Public test-taking pages and their API routes
-  const isPublicTest = pathname.startsWith('/test/') || pathname.startsWith('/api/v1/test/');
+  const isPublicTest = pathname.startsWith('/test/') || pathname.startsWith('/api/v1/test/') || pathname === '/api/v1/jobs/test';
 
   if (isPublicShare || isPublicApiAuth || isPublicTest) return supabaseResponse;
 
   // ── Unauthenticated ────────────────────────────────────────────────────────
+  const isUtilityPage = PUBLIC_UTILITY_PAGES.some(p => pathname === p || pathname.startsWith(p + '/'))
+    && !pathname.startsWith('/api/');
+
   if (!user) {
-    if (isPublicPath || pathname.startsWith('/auth/')) return supabaseResponse;
+    if (isPublicPath || isUtilityPage || pathname.startsWith('/auth/')) return supabaseResponse;
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -86,7 +93,8 @@ export async function middleware(request) {
 
   // ── Role enforcement: API ──────────────────────────────────────────────────
   if (pathname.startsWith('/api/')) {
-    const blocked = ADMIN_ONLY_API.some(p => pathname.startsWith(p));
+    const isUserJobApi = USER_JOB_API.some(p => pathname.startsWith(p));
+    const blocked = !isUserJobApi && ADMIN_ONLY_API.some(p => pathname.startsWith(p));
     if (blocked && !isAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

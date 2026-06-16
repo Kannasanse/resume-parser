@@ -1,0 +1,94 @@
+/* ================================================================
+   PROFLECT RESUME — SINGLE SOURCE OF TRUTH
+   Loaded by: ResumeCanvas (live editor) + /print/[id] page
+   ================================================================ */
+
+/* ─── Color accuracy — screen and print ────────────────────── */
+
+.resume-print-root,
+.resume-print-root * {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+  color-adjust: exact;
+}
+
+/* ─── Page break rules ──────────────────────────────────────── */
+
+/*
+  CRITICAL: must apply in all three contexts (live preview, browser
+  print, Puppeteer PDF) so page breaks are identical everywhere.
+*/
+
+.resume-section-block {
+  break-inside: auto;
+  page-break-inside: auto;
+  display: flow-root; /* BFC: prevents heading marginTop from leaking above section div, keeping elTop measurements accurate without clipping overflowing decorative content */
+}
+
+/* Strip top margin from the first section heading in each column/container
+   so continuation pages and column tops don't show blank space. */
+.resume-section-block:first-child > *:first-child {
+  margin-top: 0 !important;
+}
+
+/* Section headings always glue to first content line */
+.resume-section-block > *:first-child {
+  break-after: avoid-page;
+  page-break-after: avoid;
+}
+
+/* Entry headings (role / school) stay with their first bullet */
+[data-entry-heading] {
+  break-after: avoid-page;
+  page-break-after: avoid;
+}
+
+/* Individual experience / education / project entries stay intact */
+.resume-entry-block {
+  break-inside: avoid-page;
+  page-break-inside: avoid;
+}
+
+/* Compact sections — keep together if they fit one page */
+.resume-section-block[data-type="skills"],
+.resume-section-block[data-type="certifications"],
+.resume-section-block[data-type="languages"],
+.resume-section-block[data-type="summary"] {
+  break-inside: avoid-page;
+  page-break-inside: avoid;
+}
+
+/* Explicit page-break trigger — add class to any .resume-section-block */
+.resume-page-break {
+  break-before: page;
+  page-break-before: page;
+}
+
+/* ─── @media print ──────────────────────────────────────────── */
+
+@media print {
+  /* Hide all non-resume chrome (print button bar, etc.) */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Suppress browser-appended link URLs */
+  a::after {
+    content: none !important;
+  }
+
+  /* Rich text body rendered from TipTap HTML */
+  .resume-rich-body p      { margin: 0; }
+  .resume-rich-body p + p  { margin-top: 0.2em; }
+  .resume-rich-body ul     { list-style-type: disc !important; padding-left: 1.2em; margin: 0.2em 0; }
+  .resume-rich-body ol     { list-style-type: decimal !important; padding-left: 1.2em; margin: 0.2em 0; }
+  .resume-rich-body li     { display: list-item !important; margin: 0; }
+  .resume-rich-body strong { font-weight: 700; }
+  .resume-rich-body em     { font-style: italic; }
+  .resume-rich-body u      { text-decoration: underline; }
+
+  /* Inline bullet lists used by legacy bullets[] path */
+  .resume-print-root ul { list-style-type: disc; padding-left: 1.2em; margin: 0.2em 0; }
+  .resume-print-root ol { list-style-type: decimal; padding-left: 1.2em; margin: 0.2em 0; }
+  .resume-print-root li { display: list-item !important; }
+}

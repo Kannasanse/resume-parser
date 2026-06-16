@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import RichTextEditor from './RichTextEditor.jsx';
 
 // ── Shared atoms ──────────────────────────────────────────────────────────────
@@ -67,7 +68,7 @@ function EntryCard({ title, sub, onDelete, children, defaultOpen = false }) {
   return (
     <div className="border border-ds-border rounded-[9px] overflow-hidden bg-ds-card">
       <div
-        className="flex items-center gap-2 px-3 py-[10px] cursor-pointer bg-[#FAFBFC] hover:bg-ds-bg transition-colors"
+        className="flex items-center gap-2 px-3 py-[10px] cursor-pointer bg-[#FAFBFC] dark:bg-[#0D1830] hover:bg-ds-bg transition-colors"
         onClick={() => setOpen(o => !o)}
       >
         <span className="text-ds-textMuted flex-shrink-0 cursor-grab"><GripIcon /></span>
@@ -124,6 +125,98 @@ function SummaryEditor({ content, onChange, resumeId }) {
 
 const LEVEL_LABELS = ['', 'Beginner', 'Intermediate', 'Advanced'];
 
+function useSkillSearch(query) {
+  const [suggestions, setSuggestions] = useState([]);
+  const timer = useRef(null);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) { setSuggestions([]); return; }
+    clearTimeout(timer.current);
+    timer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/v1/skills/search?q=${encodeURIComponent(q)}&limit=8`);
+        if (!res.ok) return;
+        const data = await res.json();
+        setSuggestions((data.skills || []).map(s => s.name));
+      } catch { /* ignore */ }
+    }, 200);
+    return () => clearTimeout(timer.current);
+  }, [query]);
+
+  return suggestions;
+}
+
+function SkillNameInput({ value, onCommit }) {
+  const [query, setQuery] = useState(value);
+  const [open, setOpen] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
+  const inputRef = useRef(null);
+  const listRef = useRef(null);
+  const suggestions = useSkillSearch(query);
+  const showDropdown = open && suggestions.length > 0;
+
+  // Reposition dropdown to input coordinates
+  const updatePos = useCallback(() => {
+    if (!inputRef.current) return;
+    const r = inputRef.current.getBoundingClientRect();
+    setDropdownPos({ top: r.bottom + window.scrollY + 4, left: r.left + window.scrollX, width: r.width });
+  }, []);
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = e => {
+      if (inputRef.current?.contains(e.target) || listRef.current?.contains(e.target)) return;
+      setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // sync when parent value changes (e.g. initial load)
+  useEffect(() => { setQuery(value); }, [value]);
+
+  const dropdown = showDropdown && typeof document !== 'undefined' && createPortal(
+    <ul
+      ref={listRef}
+      className="rounded-[10px] border border-ds-border bg-ds-card shadow-xl py-1 overflow-auto"
+      style={{ position: 'absolute', top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width, maxHeight: 220, zIndex: 9999 }}
+    >
+      {suggestions.map(name => (
+        <li
+          key={name}
+          onMouseDown={e => {
+            e.preventDefault();
+            setQuery(name);
+            onCommit(name);
+            setOpen(false);
+          }}
+          className="px-3 py-2 text-[13px] text-ds-text cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors"
+        >
+          {name}
+        </li>
+      ))}
+    </ul>,
+    document.body
+  );
+
+  return (
+    <div className="relative flex-1">
+      <input
+        ref={inputRef}
+        value={query}
+        onChange={e => { setQuery(e.target.value); setOpen(true); updatePos(); }}
+        onFocus={() => { updatePos(); if (query.trim().length >= 2) setOpen(true); }}
+        onBlur={() => { onCommit(query); setTimeout(() => setOpen(false), 150); }}
+        onKeyDown={e => { if (e.key === 'Escape') setOpen(false); }}
+        placeholder="Skill name (e.g. React)"
+        className={inputCls + ' w-full'}
+      />
+      {dropdown}
+    </div>
+  );
+}
+
 function SkillsEditor({ content, onChange }) {
   const entries = content.entries || [];
 
@@ -138,14 +231,12 @@ function SkillsEditor({ content, onChange }) {
   return (
     <div className="flex flex-col gap-2">
       {entries.map((s, i) => (
-        <div key={i} className="border border-ds-border rounded-[9px] overflow-hidden bg-ds-card">
+        <div key={i} className="border border-ds-border rounded-[9px] bg-ds-card" style={{ overflow: 'visible' }}>
           {/* Skill header row */}
           <div className="flex items-center gap-2 px-3 py-2">
-            <input
-              defaultValue={s.name}
-              onBlur={e => update(i, { name: e.target.value })}
-              placeholder="Skill name (e.g. Programming)"
-              className={inputCls + ' flex-1'}
+            <SkillNameInput
+              value={s.name}
+              onCommit={name => update(i, { name })}
             />
             {/* Proficiency dots */}
             <div className="flex gap-1 flex-shrink-0" title="Proficiency">
@@ -156,7 +247,7 @@ function SkillsEditor({ content, onChange }) {
                   onClick={() => update(i, { level: s.level === lv ? 0 : lv })}
                   className={`w-6 h-[22px] rounded border flex items-center justify-center transition-colors ${(s.level || 0) >= lv ? 'border-primary bg-primary/10' : 'border-ds-border bg-ds-card'}`}
                 >
-                  <span style={{ width: 4 + lv * 2, height: 4 + lv * 2, borderRadius: '50%', background: (s.level || 0) >= lv ? '#185FA5' : '#D1DCE8', display: 'block' }} />
+                  <span className={(s.level || 0) >= lv ? '' : 'dark:!bg-[#2A3F5A]'} style={{ width: 4 + lv * 2, height: 4 + lv * 2, borderRadius: '50%', background: (s.level || 0) >= lv ? '#185FA5' : '#D1DCE8', display: 'block' }} />
                 </button>
               ))}
             </div>

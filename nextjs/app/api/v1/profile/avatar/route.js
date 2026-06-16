@@ -37,6 +37,14 @@ export async function POST(req) {
   const path = `${user.id}/avatar.${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
+  // Remove any previous avatar (different extension won't be overwritten by upsert)
+  await supabase.storage.from(BUCKET).remove([
+    `${user.id}/avatar.jpg`,
+    `${user.id}/avatar.png`,
+    `${user.id}/avatar.webp`,
+    `${user.id}/avatar.gif`,
+  ]);
+
   const { error: uploadError } = await supabase.storage
     .from(BUCKET)
     .upload(path, buffer, { contentType: file.type, upsert: true });

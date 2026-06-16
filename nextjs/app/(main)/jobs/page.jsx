@@ -147,7 +147,7 @@ export default function JobProfiles() {
   const paginatedJobs = filteredJobs.slice((effectivePage - 1) * pageSize, effectivePage * pageSize);
 
   return (
-    <div>
+    <div className="px-4 sm:px-6 lg:px-8 py-6">
       {deletingJob && (
         <DeleteConfirmModal
           jobTitle={deletingJob.title}

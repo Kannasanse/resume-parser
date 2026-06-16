@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth-helpers.js';
 import { deductCredits, getBalance } from '@/lib/credits.js';
-import Groq from 'groq-sdk';
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+import { callGemini } from '@/lib/gemini';
 
 const SYSTEM_PROMPTS = {
   summary: `You are an expert resume writer specialising in professional summaries.
@@ -86,17 +84,8 @@ export async function POST(req, { params }) {
     : `${feedbackLine ? feedbackLine.trimStart() + '\n\n' : ''}Current content:\n${plainText}`;
 
   try {
-    const completion = await groq.chat.completions.create({
-      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user',   content: userMessage },
-      ],
-      max_tokens: 800,
-      temperature: 0.4,
-    });
-
-    let improved = completion.choices?.[0]?.message?.content?.trim() || '';
+    let improved = await callGemini(userMessage, { system: systemPrompt, json: false, temperature: 0.7 });
+    improved = (improved || '').trim();
 
     // Strip any markdown code fences the model may have added
     improved = improved.replace(/^```html?\s*/i, '').replace(/```\s*$/i, '').trim();
@@ -109,38 +98,7 @@ export async function POST(req, { params }) {
     const { balance: newBalance } = await deductCredits(user.id, 'writing_assist');
     return NextResponse.json({ improved, balance: newBalance });
   } catch (err) {
-    console.error('[writing-assist] Groq error:', err.message);
-
-    // Fallback to OpenRouter
-    try {
-      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          'HTTP-Referer': 'https://proflect.app',
-        },
-        body: JSON.stringify({
-          model: 'meta-llama/llama-3.3-70b-instruct:free',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user',   content: userMessage },
-          ],
-          max_tokens: 800,
-          temperature: 0.4,
-        }),
-      });
-      const data = await res.json();
-      let improved = data.choices?.[0]?.message?.content?.trim() || '';
-      improved = improved.replace(/^```html?\s*/i, '').replace(/```\s*$/i, '').trim();
-      if (!improved.includes('<')) {
-        improved = `<p>${improved.replace(/\n+/g, '</p><p>')}</p>`;
-      }
-      const { balance: newBalance } = await deductCredits(user.id, 'writing_assist');
-      return NextResponse.json({ improved, balance: newBalance });
-    } catch (fallbackErr) {
-      console.error('[writing-assist] fallback error:', fallbackErr.message);
-      return NextResponse.json({ error: 'AI service unavailable. Please try again.' }, { status: 503 });
-    }
+    console.error('[writing-assist] error:', err.message);
+    return NextResponse.json({ error: 'AI service unavailable. Please try again.' }, { status: 503 });
   }
 }

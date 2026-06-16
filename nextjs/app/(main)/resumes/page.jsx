@@ -68,7 +68,7 @@ function BulkDeleteModal({ count, onCancel, onDelete }) {
 function ResumeTable({ items, selectedIds, onToggleSelect, onDelete, onDeleteRequest }) {
   return (
     <div className="rounded border border-ds-border overflow-hidden">
-      <table className="w-full text-sm">
+      <table className="ds-table">
         <thead className="bg-ds-bg border-b border-ds-border">
           <tr>
             <th className="w-10 px-4 py-3" />
@@ -250,7 +250,7 @@ export default function ResumeList() {
   const pageEnd   = Math.min(page * pageSize, total);
 
   return (
-    <div className="pb-28">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 pb-28">
       {showBulkModal && (
         <BulkDeleteModal count={selectedIds.size} onCancel={() => setShowBulkModal(false)} onDelete={handleBulkDelete} />
       )}
@@ -413,7 +413,7 @@ export default function ResumeList() {
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-ds-card border-t border-ds-border shadow-xl px-4 py-3">
-          <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <span className="text-sm font-semibold text-ds-text">
                 {selectedIds.size} profile{selectedIds.size > 1 ? 's' : ''} selected

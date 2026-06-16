@@ -1,7 +1,6 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { createClient } from '@/lib/supabase-browser';
 
 function GoogleIcon() {
@@ -110,7 +109,7 @@ export default function SignUpPage() {
 
   const strength = passwordStrength(form.password);
   const inputCls = (field) =>
-    `w-full border rounded-lg px-3 py-2.5 text-sm bg-ds-bg text-ds-text placeholder-ds-textMuted focus:outline-none focus:ring-2 focus:ring-primary transition-colors ${errors[field] ? 'border-ds-danger' : 'border-ds-inputBorder focus:border-primary'}`;
+    `input-enhanced w-full border rounded-lg px-3 py-2.5 text-sm bg-ds-bg text-ds-text placeholder-ds-textMuted focus:outline-none focus:ring-2 focus:ring-primary transition-colors ${errors[field] ? 'border-ds-danger' : 'border-ds-inputBorder focus:border-primary'}`;
 
   if (done) {
     return (
@@ -139,13 +138,24 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-ds-bg flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <Image src="/logo.png" alt="Proflect" width={120} height={133} className="object-contain mx-auto" priority unoptimized />
+    <div className="min-h-screen flex">
+      {/* Left panel — brand */}
+      <div className="hidden md:flex md:w-[42%] flex-col justify-between bg-gradient-to-br from-[#1D9E75] to-[#185FA5] p-12 relative overflow-hidden flex-shrink-0">
+        <div className="absolute inset-0 opacity-[0.08]" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
+        <div className="relative">
+          <p className="text-white font-extrabold text-2xl font-heading tracking-tight">Proflect</p>
         </div>
+        <div className="relative space-y-3">
+          <h2 className="text-white text-[32px] font-extrabold leading-tight font-heading">Build your career. Land your dream role.</h2>
+          <p className="text-white/70 text-sm">Resume builder · Career map · Interview prep · Portfolio</p>
+        </div>
+      </div>
 
-        <div className="bg-ds-card rounded-2xl border border-ds-border shadow-lg p-10 space-y-5">
+      {/* Right panel — form */}
+      <div className="flex-1 flex items-center justify-center px-4 py-8 bg-ds-bg">
+      <div className="w-full max-w-sm">
+
+        <div className="auth-card glass-light animate-fade-in-scale space-y-5">
           <div className="text-center space-y-1">
             <h1 className="text-xl font-bold text-ds-text font-heading">Create your account</h1>
             <p className="text-sm text-ds-textSecondary">Join Proflect today</p>
@@ -206,11 +216,11 @@ export default function SignUpPage() {
             </div>
 
             {serverError && (
-              <div className="text-sm text-ds-danger bg-ds-dangerLight rounded-lg px-4 py-3">{serverError}</div>
+              <div className="ds-alert ds-alert-error text-sm">{serverError}</div>
             )}
 
             <button type="submit" disabled={loading || googleLoading}
-              className="w-full bg-primary text-white py-2.5 rounded-btn text-sm font-semibold hover:bg-primary-dark disabled:opacity-50 transition-colors">
+              className="btn-primary w-full disabled:opacity-50">
               {loading
                 ? <span className="flex items-center justify-center gap-2"><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Creating account…</span>
                 : 'Create Account'}
@@ -224,7 +234,7 @@ export default function SignUpPage() {
           </div>
 
           <button onClick={handleGoogle} disabled={googleLoading || loading}
-            className="w-full flex items-center justify-center gap-3 border border-ds-border rounded-btn py-2.5 text-sm font-medium text-ds-text bg-ds-card hover:bg-ds-bg hover:border-ds-borderStrong disabled:opacity-50 transition-colors">
+            className="w-full flex items-center justify-center gap-3 border border-ds-border rounded-btn py-2.5 text-sm font-medium text-ds-text bg-ds-card hover:bg-ds-bg hover:border-ds-borderStrong hover:shadow-sm disabled:opacity-50 transition-colors">
             {googleLoading
               ? <span className="w-4 h-4 border-2 border-ds-border border-t-primary rounded-full animate-spin" />
               : <GoogleIcon />}
@@ -236,6 +246,7 @@ export default function SignUpPage() {
             <Link href="/login" className="text-primary hover:underline font-medium">Sign in</Link>
           </p>
         </div>
+      </div>
       </div>
     </div>
   );

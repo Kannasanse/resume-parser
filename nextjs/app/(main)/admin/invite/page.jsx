@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { PageHeading } from '@/components/admin/PageHeading';
 
 function EmailChip({ email, onRemove }) {
   return (
@@ -13,6 +14,13 @@ function EmailChip({ email, onRemove }) {
   );
 }
 
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleDateString();
+}
+
+
 export default function AdminInvitePage() {
   const [emailInput, setEmailInput] = useState('');
   const [emails, setEmails]         = useState([]);
@@ -24,13 +32,18 @@ export default function AdminInvitePage() {
   const [invites, setInvites]       = useState([]);
   const [loadingInvites, setLoadingInvites] = useState(true);
 
-  useEffect(() => {
+  const loadInvites = () => {
+    setLoadingInvites(true);
     fetch('/api/v1/admin/invite?limit=50')
       .then(r => r.json())
       .then(d => setInvites(d.invites || []))
       .catch(() => {})
       .finally(() => setLoadingInvites(false));
-  }, [results]);
+  };
+
+  useEffect(() => {
+    loadInvites();
+  }, []);
 
   const addEmail = (raw) => {
     const parts = raw.split(/[\s,;]+/).map(e => e.trim().toLowerCase()).filter(Boolean);
@@ -77,6 +90,7 @@ export default function AdminInvitePage() {
       setResults(data.results);
       setEmails([]);
       setEmailInput('');
+      loadInvites();
     } catch {
       setError('Failed to send invitations. Please try again.');
     } finally {
@@ -91,11 +105,11 @@ export default function AdminInvitePage() {
   };
 
   return (
-    <div className="space-y-8 max-w-2xl">
-      <div>
-        <h1 className="text-2xl font-bold text-ds-text font-heading">Invite Users</h1>
-        <p className="text-sm text-ds-textMuted mt-1">Send email invitations. Invitations expire after 7 days.</p>
-      </div>
+    <div className="px-6 lg:px-8 pt-8 pb-8 space-y-8 max-w-2xl">
+      <PageHeading
+        title="Invite Users"
+        subtitle="Send email invitations. Invitations expire after 7 days."
+      />
 
       <div className="bg-ds-card border border-ds-border rounded-lg p-6 space-y-4">
         <form onSubmit={handleSend} className="space-y-4">
@@ -166,8 +180,8 @@ export default function AdminInvitePage() {
             : invites.filter(i => !i.used_at && new Date(i.expires_at) > new Date()).length === 0
               ? <p className="px-4 py-6 text-sm text-ds-textMuted text-center">No pending invitations.</p>
               : (
-                <table className="w-full text-sm">
-                  <thead className="border-b border-ds-border bg-ds-bg">
+                <table className="ds-table">
+                  <thead>
                     <tr>
                       <th className="text-left px-4 py-2.5 text-xs font-semibold text-ds-textMuted uppercase tracking-wide">Email</th>
                       <th className="text-left px-4 py-2.5 text-xs font-semibold text-ds-textMuted uppercase tracking-wide">Role</th>
@@ -182,7 +196,7 @@ export default function AdminInvitePage() {
                         <tr key={invite.id} className="hover:bg-ds-bg/50">
                           <td className="px-4 py-2.5 text-ds-text">{invite.email}</td>
                           <td className="px-4 py-2.5 text-ds-textMuted capitalize">{invite.role}</td>
-                          <td className="px-4 py-2.5 text-ds-textMuted text-xs">{new Date(invite.expires_at).toLocaleDateString()}</td>
+                          <td className="px-4 py-2.5 text-ds-textMuted text-xs">{fmtDate(invite.expires_at)}</td>
                           <td className="px-4 py-2.5">
                             <button onClick={() => handleCancelInvite(invite.id)}
                               className="text-xs text-ds-danger hover:underline">Cancel</button>

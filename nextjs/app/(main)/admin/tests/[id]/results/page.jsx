@@ -26,6 +26,13 @@ function IntegrityBadges({ summary }) {
   );
 }
 
+function fmtDateTime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleString();
+}
+
+
 export default function TestResults() {
   const { id } = useParams();
   const [testTitle, setTestTitle] = useState('');
@@ -56,7 +63,7 @@ export default function TestResults() {
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   return (
-    <div className="space-y-6">
+    <div className="px-6 lg:px-8 pt-8 pb-8 space-y-6">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <Link href={`/admin/tests/${id}`} className="text-ds-textMuted hover:text-ds-text transition-colors mt-1">
@@ -131,7 +138,7 @@ export default function TestResults() {
                       <div className="flex items-center gap-3 mt-1">
                         <IntegrityBadges summary={attempt.integrity_summary || {}} />
                         <span className="text-xs text-ds-textMuted font-mono">
-                          {new Date(attempt.submitted_at).toLocaleString()}
+                          {fmtDateTime(attempt.submitted_at)}
                         </span>
                       </div>
                     </div>

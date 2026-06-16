@@ -195,7 +195,7 @@ export default function BuilderListPage() {
   const resumes = data?.data || [];
 
   return (
-    <div className="space-y-5">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 space-y-5">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h2 className="font-heading text-xl font-bold text-ds-text">My Resumes</h2>

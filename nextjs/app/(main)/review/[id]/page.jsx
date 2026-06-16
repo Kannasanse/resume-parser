@@ -27,6 +27,12 @@ function ArrowLeftIcon() {
   );
 }
 
+function fmtDateTime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleString();
+}
+
 // ─── Score header ───────────────────────────────────────────────────────────────
 function ScoreHeader({ attempt, test, link, pendingCount }) {
   const hasScore = attempt.score !== null;
@@ -67,7 +73,7 @@ function ScoreHeader({ attempt, test, link, pendingCount }) {
       </div>
 
       <div className="flex flex-wrap gap-4 text-xs text-ds-textMuted pt-1 border-t border-ds-border">
-        <span>Submitted {new Date(attempt.submitted_at).toLocaleString()}</span>
+        <span>Submitted {fmtDateTime(attempt.submitted_at)}</span>
         {attempt.auto_submitted && <span className="text-amber-600 font-medium">Auto-submitted (time expired)</span>}
         {link.recipient_name && <span>Candidate: {link.recipient_name}</span>}
         {pendingCount > 0 && (
