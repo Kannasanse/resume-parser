@@ -59,8 +59,11 @@ export async function POST(request) {
 
     const user = data.user;
 
-    // Clear failed logins on success
-    if (profile) await clearFailedLogins(profile.id);
+    // Clear failed logins + stamp last_login_at (always, using auth user id)
+    await supabaseAdmin
+      .from('profiles')
+      .update({ failed_login_attempts: 0, locked_until: null, last_login_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq('id', user.id);
 
     // Check account status
     if (profile?.status === 'deactivated') {
