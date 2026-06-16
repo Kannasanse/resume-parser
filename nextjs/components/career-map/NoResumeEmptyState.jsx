@@ -36,11 +36,11 @@ export default function NoResumeEmptyState({ onSkip }) {
         {onSkip && (
           <button
             type="button"
-            onClick={onSkip}
-            className="text-[14px] transition-colors"
-            style={{ color: '#9CA3AF' }}
+            onClick={() => router.push('/my-courses?create=1')}
+            className="text-[14px] font-medium transition-colors hover:underline"
+            style={{ color: '#185FA5' }}
           >
-            I'll do this later
+            Create a course with my skills instead →
           </button>
         )}
       </div>

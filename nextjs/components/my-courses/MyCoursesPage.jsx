@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import CourseCard from './CourseCard';
 import CourseStatsBar from './CourseStatsBar';
 import EmptyState from './EmptyState';
@@ -41,6 +42,7 @@ function sortCourses(courses, sort) {
 }
 
 export default function MyCoursesPage() {
+  const searchParams = useSearchParams();
   const [courses, setCourses] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -48,7 +50,7 @@ export default function MyCoursesPage() {
   const [sort, setSort] = useState('updated');
   const [search, setSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
-  const [courseModalOpen, setCourseModalOpen] = useState(false);
+  const [courseModalOpen, setCourseModalOpen] = useState(() => searchParams?.get('create') === '1');
 
   async function load() {
     setLoading(true);
