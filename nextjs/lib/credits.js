@@ -4,12 +4,30 @@ export const CREDIT_COSTS = {
   ats_score:      3,
   resume_import:  5,
   writing_assist: 1,
+  test_create:       2,   // self-test question generation
+  course_create:     5,   // course/study plan generation
+  job_search:        1,   // AI job recommendations
+  career_recommend:  2,   // career path recommendations
+  interview_buddy:   2,   // interview Q&A kit
+  course_chat:       1,   // per AI chat message
+  study_guide:       2,   // study guide generation
+  transcription:     2,   // audio transcription
+  career_analyse:    1,   // resume analysis for career map
 };
 
 export const CREDIT_LABELS = {
   ats_score:        'ATS Score Analysis',
   resume_import:    'Resume Import (AI)',
   writing_assist:   'AI Writing Assistant',
+  test_create:       'Self-Test Generation',
+  course_create:     'Course Creation',
+  job_search:        'AI Job Recommendations',
+  career_recommend:  'Career Path Analysis',
+  interview_buddy:   'Interview Buddy',
+  course_chat:       'Course AI Chat',
+  study_guide:       'Study Guide Generation',
+  transcription:     'Audio Transcription',
+  career_analyse:    'Career Resume Analysis',
   admin_grant:      'Credits granted by admin',
   initial_grant:    'Welcome credits',
   request_approved: 'Credits from approved request',

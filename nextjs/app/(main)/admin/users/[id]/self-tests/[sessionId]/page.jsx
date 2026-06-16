@@ -17,7 +17,8 @@ const DIFF_COLORS = {
 
 function fmt(iso) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 function readiness(pct) {
@@ -205,8 +206,8 @@ export default function AdminSelfTestDetailPage() {
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-ds-bg border-b border-ds-border">
+              <table className="ds-table">
+                <thead>
                   <tr>
                     {[['name', 'Skill'], ['type', 'Type'], ['total', 'Questions'], ['correct', 'Correct'], ['pct', 'Score']].map(([col, label]) => (
                       <th key={col}

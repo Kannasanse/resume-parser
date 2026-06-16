@@ -33,7 +33,7 @@ export async function GET(request, { params }) {
     // Fetch attempt if exists
     const { data: attempt } = await supabase
       .from('self_test_attempts')
-      .select('id, score, max_score, answers, results, submitted_at, auto_submitted, time_remaining_seconds')
+      .select('id, score, max_score, answers, results, submitted_at, auto_submitted, time_remaining_seconds, combined_pct')
       .eq('session_id', id)
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })

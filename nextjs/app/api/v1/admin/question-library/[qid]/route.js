@@ -40,6 +40,18 @@ export async function PATCH(request, { params }) {
     const { data: existing } = await supabase.from('question_library').select('id').eq('id', qid).single();
     if (!existing) return Response.json({ error: 'Question not found' }, { status: 404 });
 
+    // Suppress / re-approve actions
+    if (body.action === 'suppress' || body.action === 'approve') {
+      const isApproved = body.action === 'approve';
+      const { error } = await supabase
+        .from('question_library')
+        .update({ is_approved: isApproved })
+        .eq('id', qid);
+      if (error) throw error;
+      await auditLog({ performedBy: user.id, action: `question_library.${body.action}`, details: { question_id: qid } });
+      return Response.json({ question_id: qid, is_approved: isApproved });
+    }
+
     const { type, question_text, points, skill_tag, topic, options = [], correct_answer } = body;
 
     // Check impact on published tests

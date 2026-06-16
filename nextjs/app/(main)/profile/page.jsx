@@ -42,7 +42,7 @@ export default function ProfilePage() {
   const fileRef = useRef(null);
 
   const [profile, setProfile] = useState(null);
-  const [form, setForm]       = useState({ first_name: '', last_name: '' });
+  const [form, setForm]       = useState({ first_name: '', last_name: '', headline: '', city: '', country: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -62,7 +62,13 @@ export default function ProfilePage() {
       .then(({ data }) => {
         if (data) {
           setProfile(data);
-          setForm({ first_name: data.first_name || '', last_name: data.last_name || '' });
+          setForm({
+            first_name: data.first_name || '',
+            last_name:  data.last_name  || '',
+            headline:   data.headline   || '',
+            city:       data.city       || '',
+            country:    data.country    || '',
+          });
         }
       })
       .finally(() => setLoading(false));
@@ -90,7 +96,14 @@ export default function ProfilePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      setProfile(p => ({ ...p, first_name: form.first_name.trim(), last_name: form.last_name.trim() }));
+      setProfile(p => ({
+        ...p,
+        first_name: form.first_name.trim(),
+        last_name:  form.last_name.trim(),
+        headline:   form.headline.trim(),
+        city:       form.city.trim(),
+        country:    form.country.trim(),
+      }));
       setSuccess('Profile updated successfully.');
     } catch (err) {
       setError(err.message || 'Failed to save. Please try again.');
@@ -151,8 +164,8 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-ds-bg py-10 px-4">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <div className="min-h-screen bg-ds-bg py-10 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl space-y-6">
 
         <div>
           <h1 className="text-2xl font-bold text-ds-text font-heading">My Profile</h1>
@@ -236,7 +249,41 @@ export default function ProfilePage() {
               </div>
             </div>
 
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-ds-textSecondary uppercase tracking-wide mb-1.5">Job Title</label>
+              <input
+                type="text"
+                value={form.headline}
+                onChange={e => { setForm(f => ({ ...f, headline: e.target.value })); setSuccess(''); }}
+                placeholder="e.g. Senior React Developer"
+                className="w-full border border-ds-inputBorder rounded-lg px-3 py-2.5 text-sm bg-ds-bg text-ds-text placeholder-ds-textMuted focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+              />
+              <p className="text-xs text-ds-textMuted mt-1">Used to personalise job recommendations.</p>
+            </div>
+
             <div>
+              <label className="block text-xs font-semibold text-ds-textSecondary uppercase tracking-wide mb-1.5">City</label>
+              <input
+                type="text"
+                value={form.city}
+                onChange={e => { setForm(f => ({ ...f, city: e.target.value })); setSuccess(''); }}
+                placeholder="e.g. Chennai"
+                className="w-full border border-ds-inputBorder rounded-lg px-3 py-2.5 text-sm bg-ds-bg text-ds-text placeholder-ds-textMuted focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-ds-textSecondary uppercase tracking-wide mb-1.5">Country</label>
+              <input
+                type="text"
+                value={form.country}
+                onChange={e => { setForm(f => ({ ...f, country: e.target.value })); setSuccess(''); }}
+                placeholder="e.g. India"
+                className="w-full border border-ds-inputBorder rounded-lg px-3 py-2.5 text-sm bg-ds-bg text-ds-text placeholder-ds-textMuted focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+              />
+            </div>
+
+            <div className="sm:col-span-2">
               <label className="block text-xs font-semibold text-ds-textSecondary uppercase tracking-wide mb-1.5">Email Address</label>
               <input
                 type="email"
@@ -248,13 +295,13 @@ export default function ProfilePage() {
             </div>
 
             {error && (
-              <div className="text-sm text-ds-danger bg-ds-dangerLight rounded-lg px-4 py-3">{error}</div>
+              <div className="sm:col-span-2 text-sm text-ds-danger bg-ds-dangerLight rounded-lg px-4 py-3">{error}</div>
             )}
             {success && (
-              <div className="text-sm text-ds-success bg-ds-successLight rounded-lg px-4 py-3">{success}</div>
+              <div className="sm:col-span-2 text-sm text-ds-success bg-ds-successLight rounded-lg px-4 py-3">{success}</div>
             )}
 
-            <div className="flex justify-end">
+            <div className="sm:col-span-2 flex justify-end">
               <button
                 type="submit"
                 disabled={saving}

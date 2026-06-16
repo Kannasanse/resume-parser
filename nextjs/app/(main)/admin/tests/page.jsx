@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Sk } from '@/components/Skeleton';
+import { PageHeading } from '@/components/admin/PageHeading';
 
 const STATUS_COLORS = {
   draft:     'bg-ds-bg text-ds-textMuted border border-ds-border',
@@ -17,6 +18,12 @@ function StatusBadge({ status }) {
   );
 }
 
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleDateString();
+}
+
 export default function AdminTests() {
   const [tests, setTests]   = useState([]);
   const [total, setTotal]   = useState(0);
@@ -24,10 +31,13 @@ export default function AdminTests() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage]     = useState(1);
+  const [selected, setSelected] = useState(new Set());
+  const [deleting, setDeleting] = useState(false);
   const limit = 50;
 
   const load = useCallback(async () => {
     setLoading(true);
+    setSelected(new Set());
     const params = new URLSearchParams({ page, limit });
     if (search)       params.set('search', search);
     if (statusFilter) params.set('status', statusFilter);
@@ -45,23 +55,62 @@ export default function AdminTests() {
   useEffect(() => { setPage(1); }, [search, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(total / limit));
+  const allSelected = tests.length > 0 && tests.every(t => selected.has(t.id));
+
+  function toggleAll() {
+    if (allSelected) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(tests.map(t => t.id)));
+    }
+  }
+
+  function toggleOne(id) {
+    setSelected(prev => {
+      const s = new Set(prev);
+      s.has(id) ? s.delete(id) : s.add(id);
+      return s;
+    });
+  }
+
+  async function deleteOne(id, title) {
+    if (!confirm(`Delete test "${title}"? This cannot be undone.`)) return;
+    const r = await fetch(`/api/v1/admin/tests/${id}`, { method: 'DELETE' });
+    if (r.ok) {
+      setTests(prev => prev.filter(t => t.id !== id));
+      setTotal(n => n - 1);
+      setSelected(prev => { const s = new Set(prev); s.delete(id); return s; });
+    }
+  }
+
+  async function deleteSelected() {
+    if (!selected.size) return;
+    if (!confirm(`Delete ${selected.size} test${selected.size > 1 ? 's' : ''}? This cannot be undone.`)) return;
+    setDeleting(true);
+    const ids = [...selected];
+    await Promise.all(ids.map(id => fetch(`/api/v1/admin/tests/${id}`, { method: 'DELETE' })));
+    setTests(prev => prev.filter(t => !ids.includes(t.id)));
+    setTotal(n => n - ids.length);
+    setSelected(new Set());
+    setDeleting(false);
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-ds-text font-heading">Tests</h1>
-          <p className="text-sm text-ds-textMuted mt-0.5">Manage assessments for job profiles</p>
-        </div>
+    <div className="px-6 lg:px-8 pt-8 pb-8 space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <PageHeading
+          title="Tests"
+          subtitle="Manage assessments for job profiles"
+        />
         <Link href="/admin/tests/new"
-          className="bg-primary text-white px-4 py-2 rounded-btn text-sm font-medium hover:bg-primary-dark transition-colors">
+          className="flex-shrink-0 bg-primary text-white px-4 py-2 rounded-btn text-sm font-medium hover:bg-primary-dark transition-colors">
           + New Test
         </Link>
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[220px] max-w-sm">
+        <div className="relative flex-1 min-w-0 sm:min-w-[220px] sm:max-w-sm">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ds-textMuted pointer-events-none"
             fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
@@ -87,6 +136,23 @@ export default function AdminTests() {
           <option value="published">Published</option>
           <option value="archived">Archived</option>
         </select>
+
+        {/* Bulk delete bar */}
+        {selected.size > 0 && (
+          <div className="flex items-center gap-2 ml-auto">
+            <span className="text-xs text-ds-textMuted">{selected.size} selected</span>
+            <button
+              onClick={deleteSelected}
+              disabled={deleting}
+              className="flex items-center gap-1.5 text-xs font-medium text-ds-danger border border-ds-danger/40 bg-ds-dangerLight px-3 py-2 rounded-btn hover:bg-ds-danger/20 disabled:opacity-50 transition-colors"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M6 6v14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V6"/></svg>
+              {deleting ? 'Deleting…' : `Delete ${selected.size}`}
+            </button>
+            <button onClick={() => setSelected(new Set())}
+              className="text-xs text-ds-textMuted hover:text-ds-text">Clear</button>
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -120,10 +186,20 @@ export default function AdminTests() {
         </div>
       ) : (
         <>
+          {/* Header row with select-all */}
+          <div className="flex items-center gap-3 px-1">
+            <input type="checkbox" checked={allSelected} onChange={toggleAll}
+              className="accent-primary w-4 h-4 flex-shrink-0 cursor-pointer" />
+            <span className="text-xs text-ds-textMuted">Select all on this page</span>
+          </div>
+
           <div className="space-y-2">
             {tests.map(test => (
-              <div key={test.id} className="bg-ds-card border border-ds-border rounded-lg px-4 sm:px-5 py-4 hover:border-ds-borderStrong transition-colors">
+              <div key={test.id}
+                className={`bg-ds-card border rounded-lg px-4 sm:px-5 py-4 hover:border-ds-borderStrong transition-colors ${selected.has(test.id) ? 'border-primary/50 bg-primary/[0.03]' : 'border-ds-border'}`}>
                 <div className="flex items-start gap-3 sm:gap-4">
+                  <input type="checkbox" checked={selected.has(test.id)} onChange={() => toggleOne(test.id)}
+                    className="accent-primary w-4 h-4 flex-shrink-0 mt-1 cursor-pointer" />
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
                       <span className="font-heading font-semibold text-ds-text">{test.title}</span>
@@ -141,7 +217,7 @@ export default function AdminTests() {
                       )}
                       <span>{test.question_count} question{test.question_count !== 1 ? 's' : ''}</span>
                       <span>{test.link_count} link{test.link_count !== 1 ? 's' : ''} sent</span>
-                      <span className="font-mono">{new Date(test.created_at).toLocaleDateString()}</span>
+                      <span className="font-mono">{fmtDate(test.created_at)}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -153,6 +229,15 @@ export default function AdminTests() {
                       className="text-sm border border-ds-border text-ds-textMuted px-3 py-1.5 rounded-btn font-medium hover:bg-ds-bg hover:text-ds-text transition-colors">
                       Links
                     </Link>
+                    <button
+                      onClick={() => deleteOne(test.id, test.title)}
+                      title="Delete test"
+                      className="w-8 h-8 flex items-center justify-center border border-ds-border text-ds-textMuted rounded-btn hover:border-ds-danger/50 hover:text-ds-danger hover:bg-ds-dangerLight transition-colors"
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M6 6v14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V6"/>
+                      </svg>
+                    </button>
                   </div>
                 </div>
               </div>

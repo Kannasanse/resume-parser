@@ -3,6 +3,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase-browser';
+import { setAuthToken } from '@/lib/authToken';
 
 function GoogleIcon() {
   return (
@@ -82,6 +83,7 @@ function LoginContent() {
         return;
       }
 
+      if (data.access_token) setAuthToken(data.access_token);
       router.push(redirect || (data.isAdmin ? '/resumes' : '/builder'));
       router.refresh();
     } catch {
@@ -95,34 +97,44 @@ function LoginContent() {
     `w-full border rounded-lg px-3 py-2.5 text-sm bg-ds-bg text-ds-text placeholder-ds-textMuted focus:outline-none focus:ring-2 focus:ring-primary transition-colors ${hasError ? 'border-ds-danger' : 'border-ds-inputBorder focus:border-primary'}`;
 
   return (
-    <div className="min-h-screen bg-ds-bg flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/login-hero.png" alt="Proflect" className="mx-auto max-w-[220px] object-contain" />
+    <div className="min-h-screen flex">
+      {/* Left panel — brand */}
+      <div className="hidden md:flex md:w-[42%] flex-col justify-between bg-gradient-to-br from-[#185FA5] to-[#0C447C] p-12 relative overflow-hidden flex-shrink-0">
+        <div className="absolute inset-0 opacity-[0.08]" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
+        <div className="relative">
+          <p className="text-white font-extrabold text-2xl font-heading tracking-tight">Proflect</p>
         </div>
+        <div className="relative space-y-3">
+          <h2 className="text-white text-[32px] font-extrabold leading-tight font-heading">Your career map starts here.</h2>
+          <p className="text-white/70 text-sm">Resume builder · Career map · Interview prep · Portfolio</p>
+        </div>
+      </div>
 
-        <div className="bg-ds-card rounded-2xl border border-ds-border shadow-lg p-10 space-y-5">
+      {/* Right panel — form */}
+      <div className="flex-1 flex items-center justify-center px-4 py-8 bg-ds-bg">
+      <div className="w-full max-w-sm">
+
+        <div className="auth-card glass-light animate-fade-in-scale space-y-5">
           <div className="text-center space-y-1">
             <h1 className="text-xl font-bold text-ds-text font-heading">Welcome back</h1>
             <p className="text-sm text-ds-textSecondary">Sign in to your account</p>
           </div>
 
           {hashError && (
-            <div className="text-sm text-ds-danger bg-ds-dangerLight rounded-lg px-4 py-3">
+            <div className="ds-alert ds-alert-error text-sm">
               {hashError}{' '}
               <Link href="/forgot-password" className="underline font-medium">Request new link</Link>
             </div>
           )}
 
           {lockoutMins > 0 && (
-            <div className="text-sm text-ds-danger bg-ds-dangerLight rounded-lg px-4 py-3">
+            <div className="ds-alert ds-alert-error text-sm">
               Account locked. Try again in <strong>{lockoutMins} minute{lockoutMins !== 1 ? 's' : ''}</strong>.
             </div>
           )}
 
           {unverified && (
-            <div className="text-sm text-ds-warning bg-ds-warningLight rounded-lg px-4 py-3">
+            <div className="ds-alert ds-alert-warning text-sm">
               Please verify your email.{' '}
               <Link href={`/verify-email?email=${encodeURIComponent(email)}`} className="underline font-medium">
                 Resend link
@@ -135,7 +147,7 @@ function LoginContent() {
               <label className="block text-xs font-semibold text-ds-textSecondary uppercase tracking-wide mb-1.5">Email</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)}
                 placeholder="you@example.com" autoComplete="email"
-                className={inputCls(!!error && !lockoutMins && !unverified)} />
+                className={`input-enhanced ${inputCls(!!error && !lockoutMins && !unverified)}`} />
             </div>
 
             <div>
@@ -146,7 +158,7 @@ function LoginContent() {
               <div className="relative">
                 <input type={showPwd ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••" autoComplete="current-password"
-                  className={`${inputCls(!!error && !lockoutMins && !unverified)} pr-10`} />
+                  className={`input-enhanced ${inputCls(!!error && !lockoutMins && !unverified)} pr-10`} />
                 <button type="button" onClick={() => setShowPwd(v => !v)}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ds-textMuted hover:text-ds-text text-xs">
                   {showPwd ? 'Hide' : 'Show'}
@@ -155,11 +167,11 @@ function LoginContent() {
             </div>
 
             {error && !lockoutMins && !unverified && (
-              <div className="text-sm text-ds-danger bg-ds-dangerLight rounded-lg px-4 py-3">{error}</div>
+              <div className="ds-alert ds-alert-error text-sm">{error}</div>
             )}
 
             <button type="submit" disabled={loading || googleLoading || lockoutMins > 0}
-              className="w-full bg-primary text-white py-2.5 rounded-btn text-sm font-semibold hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+              className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed">
               {loading
                 ? <span className="flex items-center justify-center gap-2"><span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Signing in…</span>
                 : 'Sign In'}
@@ -173,7 +185,7 @@ function LoginContent() {
           </div>
 
           <button onClick={handleGoogle} disabled={googleLoading || loading}
-            className="w-full flex items-center justify-center gap-3 border border-ds-border rounded-btn py-2.5 text-sm font-medium text-ds-text bg-ds-card hover:bg-ds-bg hover:border-ds-borderStrong disabled:opacity-50 transition-colors">
+            className="w-full flex items-center justify-center gap-3 border border-ds-border rounded-btn py-2.5 text-sm font-medium text-ds-text bg-ds-card hover:bg-ds-bg hover:border-ds-borderStrong hover:shadow-sm disabled:opacity-50 transition-colors">
             {googleLoading
               ? <span className="w-4 h-4 border-2 border-ds-border border-t-primary rounded-full animate-spin" />
               : <GoogleIcon />}
@@ -185,6 +197,7 @@ function LoginContent() {
             <Link href="/signup" className="text-primary hover:underline font-medium">Sign up</Link>
           </p>
         </div>
+      </div>
       </div>
     </div>
   );

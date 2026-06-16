@@ -411,7 +411,8 @@ export default function ReviewPage() {
   const currentPI = queryClient.getQueryData(['builder-resume', id])?.data?.personal_info || personalInfo;
 
   return (
-    <div className="max-w-3xl mx-auto pb-32">
+    <div className="h-full overflow-y-auto">
+    <div className="max-w-3xl mx-auto px-4 pb-32 pt-6">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-1">
@@ -496,6 +497,7 @@ export default function ReviewPage() {
           {toast.message}
         </div>
       )}
+    </div>
     </div>
   );
 }

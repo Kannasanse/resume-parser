@@ -120,7 +120,7 @@ export default function SectionList({
               onDragOver={(e) => handleDragOver(e, sec.id)}
               onDrop={(e) => handleDrop(e, sec.id)}
               onDragEnd={handleDragEnd}
-              className="flex items-center gap-2.5 px-[18px] py-[11px] select-none bg-ds-card hover:bg-ds-bg/40 transition-colors"
+              className={`flex items-center gap-2.5 px-[18px] py-[11px] select-none transition-colors ${isActive ? 'bg-[#E6F1FB] dark:bg-[rgba(24,95,165,0.20)] border-l-2 border-l-[#185FA5] pl-[16px]' : 'bg-ds-card hover:bg-ds-bg/40'}`}
             >
               {/* Grip */}
               <span className="flex-shrink-0"><GripIcon /></span>
@@ -132,7 +132,7 @@ export default function SectionList({
 
               {/* Title */}
               <span
-                className={`flex-1 min-w-0 text-[13px] font-semibold truncate cursor-pointer ${!sec.enabled ? 'opacity-40 text-ds-textMuted' : 'text-ds-text'}`}
+                className={`flex-1 min-w-0 text-[13px] font-semibold truncate cursor-pointer ${!sec.enabled ? 'opacity-40 text-ds-textMuted' : isActive ? 'text-[#185FA5] dark:text-[#5B9FD4]' : 'text-ds-text'}`}
                 onClick={() => onSelect(isActive ? null : sec.id)}
               >
                 {sec.title}

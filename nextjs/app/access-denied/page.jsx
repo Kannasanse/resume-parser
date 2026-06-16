@@ -12,7 +12,8 @@ export default function AccessDeniedPage() {
     <div className="min-h-screen bg-ds-bg flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <Image src="/logo.png" alt="Proflect" width={120} height={133} className="object-contain mx-auto" unoptimized />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Proflect" height={40} width={118} style={{ height: '40px', width: '118px', minHeight: '40px', minWidth: '118px', maxHeight: '40px', objectFit: 'contain', display: 'block', flexShrink: 0, margin: '0 auto' }} />
         </div>
 
         <div className="bg-ds-card rounded-2xl border border-ds-border shadow-lg p-10 text-center space-y-5">

@@ -16,6 +16,7 @@ import SectionList from '@/components/builder/SectionList.jsx';
 import SectionEditor from '@/components/builder/SectionEditor.jsx';
 import DesignPanel from '@/components/builder/DesignPanel.jsx';
 import ResumePreview from '@/components/builder/ResumePreview.jsx';
+import ResumeCanvas from '@/components/builder/ResumeCanvas.jsx';
 import TemplateGallery from '@/components/builder/TemplateGallery.jsx';
 import ShareModal from '@/components/builder/ShareModal.jsx';
 import ATSPanel from '@/components/builder/ATSPanel.jsx';
@@ -45,7 +46,7 @@ function SaveButton({ onClick, saving, saved, error }) {
     </button>
   );
   return (
-    <button onClick={onClick} className="inline-flex items-center gap-1.5 h-8 px-4 rounded-md text-xs font-semibold bg-primary text-white hover:bg-primary/90 transition-colors">
+    <button onClick={onClick} className="btn-primary inline-flex items-center gap-1.5 h-8 px-4 rounded-md text-xs font-semibold">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
       Save
     </button>
@@ -214,7 +215,7 @@ function Toast({ message, type = 'info', onDismiss }) {
 
 // ── Export & Share dropdown ───────────────────────────────────────────────────
 
-function ExportShareButton({ resumeId, onShare }) {
+function ExportShareButton({ resumeId, onShare, onError }) {
   const [open, setOpen] = useState(false);
   const [wordLoading, setWordLoading] = useState(false);
   const [pdfLoading,  setPdfLoading]  = useState(false);
@@ -243,7 +244,7 @@ function ExportShareButton({ resumeId, onShare }) {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      alert('PDF export failed: ' + err.message);
+      onError?.('PDF export failed: ' + err.message);
     } finally {
       setPdfLoading(false);
     }
@@ -265,7 +266,7 @@ function ExportShareButton({ resumeId, onShare }) {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      alert('Word export failed: ' + err.message);
+      onError?.('Word export failed: ' + err.message);
     } finally {
       setWordLoading(false);
     }
@@ -287,13 +288,13 @@ function ExportShareButton({ resumeId, onShare }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1.5 bg-ds-card border border-ds-border rounded-xl shadow-xl z-50 overflow-hidden min-w-[200px]">
+        <div className="absolute right-0 top-full mt-1.5 bg-ds-card border border-ds-border rounded-xl shadow-xl overflow-hidden min-w-[200px]" style={{ zIndex: 200 }}>
           {/* Share */}
           <button
             onClick={() => { onShare(); setOpen(false); }}
             className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-ds-text hover:bg-ds-bg transition-colors"
           >
-            <span className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+            <span className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-[rgba(59,130,246,0.15)] flex items-center justify-center flex-shrink-0">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
                 <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
@@ -313,7 +314,7 @@ function ExportShareButton({ resumeId, onShare }) {
             disabled={pdfLoading}
             className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-ds-text hover:bg-ds-bg transition-colors disabled:opacity-60"
           >
-            <span className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
+            <span className="w-7 h-7 rounded-lg bg-red-50 dark:bg-[rgba(239,68,68,0.15)] flex items-center justify-center flex-shrink-0">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
               </svg>
@@ -330,7 +331,7 @@ function ExportShareButton({ resumeId, onShare }) {
             disabled={wordLoading}
             className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-ds-text hover:bg-ds-bg transition-colors disabled:opacity-50"
           >
-            <span className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+            <span className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-[rgba(37,99,235,0.15)] flex items-center justify-center flex-shrink-0">
               {wordLoading
                 ? <span className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
                 : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -364,7 +365,6 @@ export default function BuilderEditor() {
   const [importFile, setImportFile] = useState(null);
   const [toast, setToast] = useState(null);
   const [titleEditing, setTitleEditing] = useState(false);
-  const [zoom, setZoom] = useState(0.72);
   const [mobileTab, setMobileTab] = useState('edit'); // 'edit' | 'preview'
   const [panelMode, setPanelMode] = useState('content'); // 'content' | 'customize'
   const [customizeTab, setCustomizeTab] = useState('design'); // 'design' | 'spacing' | 'sections'
@@ -594,11 +594,15 @@ export default function BuilderEditor() {
   // ── Template change ───────────────────────────────────────────────────────
 
   const handleTemplateSelect = useCallback((tplId) => {
-    setPreviewResume(prev => prev ? { ...prev, template_id: tplId } : prev);
-    updateResumeMutation.mutate({ template_id: tplId });
+    const tpl = TEMPLATES.find(t => t.id === tplId);
+    const newLayout = tpl?.defaultLayout
+      ? { ...tpl.defaultLayout, pageBreaks: layoutSettings.pageBreaks || [] }
+      : layoutSettings;
+    setPreviewResume(prev => prev ? { ...prev, template_id: tplId, layout_settings: newLayout } : prev);
+    updateResumeMutation.mutate({ template_id: tplId, layout_settings: newLayout });
     setShowGallery(false);
     showToast('Template applied.', 'success');
-  }, [updateResumeMutation, showToast]);
+  }, [updateResumeMutation, showToast, layoutSettings]);
 
   // ── Reorder ───────────────────────────────────────────────────────────────
 
@@ -720,10 +724,10 @@ export default function BuilderEditor() {
   const templateName = TEMPLATES?.find(t => t.id === previewData.template_id)?.name || previewData.template_id;
 
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 56px)' }}>
+    <div className="gradient-mesh-1 flex flex-col h-full">
 
       {/* ── Top bar ──────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 px-4 h-14 bg-ds-card border-b border-ds-border flex-shrink-0">
+      <div className="glass-light flex items-center gap-3 px-4 h-14 border-b border-ds-border flex-shrink-0 overflow-visible" style={{ zIndex: 50 }}>
         {/* Back */}
         <Link href="/builder" className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded text-ds-textMuted hover:text-ds-text hover:bg-ds-bg transition-colors">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -770,8 +774,8 @@ export default function BuilderEditor() {
             onClick={() => setShowATS(true)}
             className="hidden sm:flex items-center gap-1.5 h-8 px-3 text-xs font-bold text-white rounded-md transition-all"
             style={{
-              background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
-              boxShadow: '0 0 12px rgba(139,92,246,0.5), 0 2px 6px rgba(99,102,241,0.3)',
+              background: 'linear-gradient(135deg, #185FA5, #1D9E75)',
+              boxShadow: '0 2px 8px rgba(24,95,165,0.35)',
             }}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -799,7 +803,7 @@ export default function BuilderEditor() {
             </svg>
             Templates
           </button>
-          <ExportShareButton resumeId={id} onShare={() => setShowShare(true)} />
+          <ExportShareButton resumeId={id} onShare={() => setShowShare(true)} onError={(msg) => showToast(msg, 'error')} />
         </div>
       </div>
 
@@ -823,7 +827,7 @@ export default function BuilderEditor() {
       <div className="flex flex-1 overflow-hidden relative">
 
         {/* ── Left panel (340px, Content / Customize) ───────────────────────── */}
-        <div className={`${mobileTab === 'preview' ? 'hidden md:flex' : 'flex'} flex-col md:w-[340px] md:flex-none flex-1 border-r border-ds-border bg-ds-card overflow-hidden`}>
+        <div className={`${mobileTab === 'preview' ? 'hidden md:flex' : 'flex'} flex-col md:w-[340px] md:flex-none flex-1 border-r border-[rgba(209,220,232,0.6)] bg-ds-card overflow-hidden`}>
 
           {/* Sticky panel header */}
           <div className="flex-shrink-0 bg-ds-card border-b border-ds-border sticky top-0 z-10">
@@ -912,44 +916,25 @@ export default function BuilderEditor() {
         </div>
 
         {/* Preview pane */}
-        <div className={`${mobileTab === 'edit' ? 'hidden md:flex' : 'flex'} flex-col md:flex-1 flex-1 overflow-hidden bg-[#E6ECF2]`}>
+        <div className={`${mobileTab === 'edit' ? 'hidden md:flex' : 'flex'} flex-col md:flex-1 flex-1 overflow-hidden preview-dot-grid`}>
           {/* Preview toolbar */}
-          <div className="flex items-center gap-1 px-2 py-1.5 bg-ds-card border-b border-ds-border text-xs flex-shrink-0 justify-center">
-            <button
-              onClick={() => setZoom(z => Math.max(0.35, parseFloat((z - 0.1).toFixed(1))))}
-              className="w-6 h-6 flex items-center justify-center rounded-full text-ds-textMuted hover:text-ds-text hover:bg-ds-bg transition-colors"
-              title="Zoom out"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/>
-              </svg>
-            </button>
-            <span className="font-semibold text-ds-text tabular-nums min-w-[38px] text-center">
-              {Math.round(zoom * 100)}%
-            </span>
-            <button
-              onClick={() => setZoom(z => Math.min(1.2, parseFloat((z + 0.1).toFixed(1))))}
-              className="w-6 h-6 flex items-center justify-center rounded-full text-ds-textMuted hover:text-ds-text hover:bg-ds-bg transition-colors"
-              title="Zoom in"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                <line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
-              </svg>
-            </button>
-            <div className="w-px h-3.5 bg-ds-border mx-1" />
+          <div className="flex items-center gap-2 px-2 py-1.5 bg-ds-card border-b border-ds-border text-xs flex-shrink-0 justify-center">
             <span className="font-semibold text-ds-text">{page.id === 'letter' ? 'Letter' : 'A4'}</span>
             <span className="text-ds-textMuted">·</span>
             <span className="text-ds-textMuted">{templateName}</span>
           </div>
 
-          {/* Resume preview — single render, correct page breaks, no slicing math */}
-          <ResumePreview
-            resume={previewData}
-            designSettings={previewData.design_settings || {}}
-            scale={zoom}
-            className="flex-1"
-          />
+          {/* Resume preview — auto-scales to fit the panel via ResumeCanvas */}
+          <ResumeCanvas className="flex flex-col flex-1 overflow-hidden">
+            {scale => (
+              <ResumePreview
+                resume={previewData}
+                designSettings={previewData.design_settings || {}}
+                scale={scale}
+                className="flex-1"
+              />
+            )}
+          </ResumeCanvas>
         </div>
 
       </div>
@@ -1029,7 +1014,7 @@ export default function BuilderEditor() {
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40" onClick={() => setInsufficientCredits(null)} />
           <div className="relative bg-ds-card border border-ds-border rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center">
-            <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-4">
+            <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-[rgba(217,119,6,0.15)] flex items-center justify-center mx-auto mb-4">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>
               </svg>

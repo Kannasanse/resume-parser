@@ -70,8 +70,14 @@ export async function POST(request) {
 
     const isAdmin = user.user_metadata?.role === 'admin' || profile?.role === 'admin';
 
-    const successResponse = NextResponse.json({ ok: true, isAdmin });
-    // Copy session cookies from the SSR client response
+    const successResponse = NextResponse.json({
+      ok: true,
+      isAdmin,
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+      expires_in: data.session.expires_in,
+    });
+    // Copy session cookies from the SSR client response (keeps cookie-based auth working too)
     supabaseResponse.cookies.getAll().forEach(cookie => {
       successResponse.cookies.set(cookie.name, cookie.value, cookie);
     });

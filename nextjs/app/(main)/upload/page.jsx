@@ -104,7 +104,7 @@ function UploadInner() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-2xl space-y-5">
       <div>
         <p className="font-mono text-xs text-ds-textMuted uppercase tracking-widest mb-1">Upload</p>
         <h1 className="font-heading text-2xl font-bold text-ds-text tracking-tight">Score a candidate against a job</h1>

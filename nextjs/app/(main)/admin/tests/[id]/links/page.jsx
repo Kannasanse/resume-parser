@@ -30,6 +30,13 @@ function CopyButton({ text }) {
   );
 }
 
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleDateString();
+}
+
+
 export default function TestLinks() {
   const { id } = useParams();
   const [test, setTest]     = useState(null);
@@ -74,7 +81,7 @@ export default function TestLinks() {
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   return (
-    <div className="space-y-6">
+    <div className="px-6 lg:px-8 pt-8 pb-8 space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
@@ -145,7 +152,7 @@ export default function TestLinks() {
                 <div key={link.id} className="bg-ds-card border border-ds-border rounded-lg px-4 py-3 hover:border-ds-borderStrong transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-ds-bg border border-ds-border flex items-center justify-center text-xs font-semibold text-ds-textMuted flex-shrink-0">
-                      {(link.recipient_name || link.recipient_email)[0]?.toUpperCase()}
+                      {(link.recipient_name || link.recipient_email || '?')[0]?.toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-ds-text truncate">
@@ -162,7 +169,7 @@ export default function TestLinks() {
                         )}
                         {link.expires_at && (
                           <span className="text-xs text-ds-textMuted font-mono">
-                            Expires {new Date(link.expires_at).toLocaleDateString()}
+                            Expires {fmtDate(link.expires_at)}
                           </span>
                         )}
                       </div>

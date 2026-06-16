@@ -1,0 +1,24 @@
+import { NextResponse } from 'next/server';
+import supabase from '@/lib/supabase.js';
+import { requireUser } from '@/lib/auth-helpers.js';
+
+export const dynamic = 'force-dynamic';
+
+export async function GET(request) {
+  try {
+    const { user: effectiveUser } = await requireUser(request);
+
+    const { data } = await supabase
+      .from('user_job_interactions')
+      .select('job_id, job_title, company, created_at')
+      .eq('user_id', effectiveUser.id)
+      .eq('action', 'saved')
+      .order('created_at', { ascending: false });
+
+    return NextResponse.json({ saved: data ?? [] });
+  } catch (err) {
+    if (err instanceof Response || err instanceof NextResponse) return err;
+    console.error('[jobs/saved GET]', err);
+    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
+  }
+}

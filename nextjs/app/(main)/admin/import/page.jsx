@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useCallback } from 'react';
+import { PageHeading } from '@/components/admin/PageHeading';
 
 function parseCsvText(text) {
   const lines = text.split(/\r?\n/).filter(l => l.trim());
@@ -90,12 +91,12 @@ export default function AdminImportPage() {
   };
 
   return (
-    <div className="space-y-8 max-w-3xl">
+    <div className="px-6 lg:px-8 pt-8 pb-8 space-y-8 max-w-3xl">
       <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-ds-text font-heading">Bulk Import Users</h1>
-          <p className="text-sm text-ds-textMuted mt-1">Upload a CSV to invite multiple users at once. Max 500 rows.</p>
-        </div>
+        <PageHeading
+          title="Bulk Import Users"
+          subtitle="Upload a CSV to invite multiple users at once. Max 500 rows."
+        />
         <button onClick={handleDownloadTemplate}
           className="text-sm text-primary hover:underline font-medium flex items-center gap-1.5">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -149,8 +150,8 @@ export default function AdminImportPage() {
 
           <div className="bg-ds-card border border-ds-border rounded-lg overflow-hidden">
             <div className="overflow-x-auto max-h-80">
-              <table className="w-full text-sm">
-                <thead className="sticky top-0 border-b border-ds-border bg-ds-bg">
+              <table className="ds-table">
+                <thead className="sticky top-0">
                   <tr>
                     {['first_name', 'last_name', 'email', 'role'].map(col => (
                       <th key={col} className="text-left px-4 py-2.5 text-xs font-semibold text-ds-textMuted uppercase tracking-wide">
@@ -202,8 +203,8 @@ export default function AdminImportPage() {
           </div>
 
           <div className="bg-ds-card border border-ds-border rounded-lg overflow-hidden max-h-80 overflow-y-auto">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 border-b border-ds-border bg-ds-bg">
+            <table className="ds-table">
+              <thead className="sticky top-0">
                 <tr>
                   <th className="text-left px-4 py-2.5 text-xs font-semibold text-ds-textMuted uppercase tracking-wide">Email</th>
                   <th className="text-left px-4 py-2.5 text-xs font-semibold text-ds-textMuted uppercase tracking-wide">Result</th>

@@ -1,0 +1,158 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --primary:       #185FA5;
+  --primary-dark:  #0C447C;
+  --primary-light: #E6F1FB;
+  --text:          #2C2C2A;
+  --text-muted:    #6B7280;
+  --text-faint:    #9CA3AF;
+  --border:        #D1DCE8;
+  --bg:            #F4F8FC;
+  --surface:       #FFFFFF;
+  --success:       #1D9E75;
+  --danger:        #D93025;
+  --radius:        10px;
+}
+
+body {
+  width: 280px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--surface);
+  padding-bottom: 4px;
+}
+
+/* ── Header ──────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--primary);
+}
+.header-sub {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+/* ── States ──────────────────────────────── */
+.state { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.hidden { display: none !important; }
+
+/* ── Badge ───────────────────────────────── */
+.badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.badge-green { background: #D1FAE5; color: #065F46; }
+.badge-gray  { background: var(--bg); color: var(--text-faint); border: 1px solid var(--border); }
+.dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #10B981;
+  display: inline-block;
+}
+
+/* ── Field ───────────────────────────────── */
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 11px; font-weight: 500; color: var(--text-muted); }
+.field select {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+  width: 100%;
+}
+.field select:focus { border-color: var(--primary); }
+
+/* ── Buttons ─────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+  transition: background 0.15s, opacity 0.15s;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary  { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-outline  { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
+.btn-outline:hover { background: var(--primary-light); }
+.btn-danger   { background: var(--danger); color: #fff; font-size: 11px; padding: 5px 10px; }
+.btn-danger:hover { background: #B91C1C; }
+.btn-sm { padding: 4px 10px; font-size: 11px; }
+.full-width { width: 100%; }
+.ml-auto { margin-left: auto; }
+.btn-group { display: flex; flex-direction: column; gap: 6px; }
+
+/* ── Recording bar ───────────────────────── */
+.rec-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #FEE2E2;
+  border-radius: var(--radius);
+  padding: 7px 10px;
+}
+.rec-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #EF4444;
+  animation: pulse 1s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.rec-label { font-weight: 700; font-size: 11px; color: #B91C1C; }
+.timer { font-family: monospace; font-size: 13px; font-weight: 700; color: #991B1B; }
+
+/* ── Transcript area ─────────────────────── */
+.transcript-area {
+  max-height: 220px;
+  overflow-y: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text);
+}
+#transcript-lines p { margin: 0 0 4px; }
+.dots { color: var(--text-faint); font-size: 16px; letter-spacing: 3px; }
+
+/* ── Done state ──────────────────────────── */
+.done-title { font-weight: 700; font-size: 13px; color: var(--success); }
+.done-stats { font-size: 11px; color: var(--text-faint); }
+
+/* ── Misc ────────────────────────────────── */
+.muted  { color: var(--text-muted); }
+.center { text-align: center; }
