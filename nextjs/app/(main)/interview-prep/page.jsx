@@ -761,7 +761,7 @@ export default function SelfTestCreate() {
     }
   };
 
-  const startTest = () => router.push(`/self-test/${session.id}`);
+  const startTest = () => router.push(`/interview-prep/${session.id}`);
 
   const reset = () => { setStep('mode-select'); setMode(null); setSession(null); setError(''); setDifficulty(null); };
 
