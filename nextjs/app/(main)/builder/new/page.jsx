@@ -1,10 +1,10 @@
 'use client';
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { createBuilderResume, createBuilderSection, importResumeFile } from '@/lib/builderApi';
 import { TEMPLATES, TEMPLATE_CATEGORIES, SECTION_TYPES, getDefaultContent } from '@/components/builder/templates.js';
-import { TemplateThumbnail } from '@/components/builder/ResumePreview.jsx';
+import { TemplatePreviewCard, StarBadge } from '@/components/builder/TemplatePreviewCard.jsx';
 
 const DEFAULT_SECTIONS = ['summary', 'work_experience', 'education', 'skills'];
 
@@ -17,11 +17,26 @@ function NewResumePageInner() {
   const searchParams = useSearchParams();
   const startWithUpload = searchParams.get('upload') === '1';
   const [step, setStep] = useState('template'); // 'template' | 'title' | 'import'
-  const [selectedTemplate, setSelectedTemplate] = useState('classic-professional');
+  const [selectedTemplate, setSelectedTemplate] = useState('modern');
   const [category, setCategory] = useState('All');
+  const [search, setSearch] = useState('');
   const [title, setTitle] = useState('');
   const [importFile, setImportFile] = useState(null);
   const [importMode, setImportMode] = useState(startWithUpload ? 'import' : 'blank'); // 'blank' | 'import'
+  const [featuredIds, setFeaturedIds] = useState([]);
+
+  useEffect(() => {
+    fetch('/api/v1/templates')
+      .then(r => r.json())
+      .then(d => setFeaturedIds(d.featuredIds || []))
+      .catch(() => {});
+  }, []);
+
+  const isFeatured = id => featuredIds.includes(id);
+
+  const ALL_CATS = featuredIds.length > 0
+    ? ['All', 'Featured', ...TEMPLATE_CATEGORIES.filter(c => c !== 'All')]
+    : TEMPLATE_CATEGORIES;
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -55,7 +70,16 @@ function NewResumePageInner() {
     },
   });
 
-  const filtered = TEMPLATES.filter(t => category === 'All' || t.style === category);
+  const filtered = TEMPLATES.filter(t => {
+    if (category === 'Featured') return isFeatured(t.id);
+    const matchCat = category === 'All' || t.style === category;
+    const matchSearch = !search || t.name.toLowerCase().includes(search.toLowerCase()) || t.style.toLowerCase().includes(search.toLowerCase());
+    return matchCat && matchSearch;
+  }).sort((a, b) => {
+    const aF = isFeatured(a.id) ? 0 : 1;
+    const bF = isFeatured(b.id) ? 0 : 1;
+    return aF - bF;
+  });
 
   if (step === 'template') {
     return (
@@ -69,18 +93,30 @@ function NewResumePageInner() {
           <p className="text-sm text-ds-textMuted mt-0.5">Select a template to start building your resume.</p>
         </div>
 
-        {/* Category filter */}
-        <div className="flex gap-1.5 flex-wrap">
-          {TEMPLATE_CATEGORIES.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setCategory(cat)}
-              className={`px-3 py-1 text-xs font-medium rounded-btn transition-colors
-                ${category === cat ? 'bg-primary text-white' : 'bg-ds-card border border-ds-border text-ds-textMuted hover:text-ds-text'}`}
-            >
-              {cat}
-            </button>
-          ))}
+        {/* Search + category filters */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search templates..."
+            className="px-3 py-1.5 text-sm border border-ds-inputBorder rounded bg-ds-card text-ds-text placeholder:text-ds-textMuted focus:outline-none focus:ring-1 focus:ring-primary transition-colors w-48"
+          />
+          <div className="flex gap-1.5 flex-wrap">
+            {ALL_CATS.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setCategory(cat)}
+                className={`px-3 py-1 text-xs font-medium rounded-btn transition-colors
+                  ${category === cat
+                    ? cat === 'Featured' ? 'bg-yellow-400 text-yellow-900' : 'bg-primary text-white'
+                    : cat === 'Featured'
+                      ? 'bg-yellow-50 text-yellow-700 border border-yellow-300 hover:bg-yellow-100'
+                      : 'bg-ds-card border border-ds-border text-ds-textMuted hover:text-ds-text'}`}
+              >
+                {cat === 'Featured' ? '★ Featured' : cat}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Template grid */}
@@ -91,16 +127,21 @@ function NewResumePageInner() {
               onClick={() => setSelectedTemplate(t.id)}
               className="cursor-pointer"
             >
-              <TemplateThumbnail
+              <TemplatePreviewCard
                 templateId={t.id}
                 active={selectedTemplate === t.id}
                 label={t.name}
                 style={t.style}
                 plan={t.plan}
+                featured={isFeatured(t.id)}
               />
             </div>
           ))}
         </div>
+
+        {filtered.length === 0 && (
+          <p className="text-center text-ds-textMuted py-8">No templates match your search.</p>
+        )}
 
         <div className="flex justify-end pt-2">
           <button
