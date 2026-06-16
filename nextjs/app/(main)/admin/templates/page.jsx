@@ -92,8 +92,7 @@ export default function AdminTemplatesPage() {
               {/* Info + toggle */}
               <div className="p-4 flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-semibold text-sm text-ds-text truncate">{t.name}</p>
-                  <p className="text-xs text-ds-textMuted mt-0.5">{t.style} · {t.plan}</p>
+                  <p className="text-xs text-ds-textMuted">{t.style} · {t.plan}</p>
                   <p className="text-xs text-ds-textMuted mt-1 line-clamp-2">{t.description}</p>
                 </div>
 
