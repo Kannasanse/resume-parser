@@ -1,6 +1,7 @@
 import supabase from '@/lib/supabase.js';
 import { requireUser } from '@/lib/auth-helpers.js';
 import { callGemini } from '@/lib/gemini';
+import { deductCredits, getBalance, CREDIT_COSTS } from '@/lib/credits.js';
 import { fetchFromLibrary, saveQuestionsToLibrary } from '@/lib/self-test/questionLibrary.js';
 import { METADATA_INSTRUCTION } from '@/lib/self-test/prompts/metadataInstruction.js';
 import { resolveSkill } from '@/lib/skills/resolveSkill.js';
@@ -139,6 +140,16 @@ Hard questions must require reasoning, not recall. Avoid questions that can be a
 export async function POST(request) {
   try {
     const { user } = await requireUser(request);
+
+    const balance = await getBalance(user.id);
+    const COST = CREDIT_COSTS['test_create'];
+    if (balance < COST) {
+      return Response.json(
+        { error: `Insufficient credits. This action costs ${COST} credits.`, code: 'insufficient_credits', balance },
+        { status: 402 }
+      );
+    }
+
     const body = await request.json();
     const {
       input_type, input_data, jd_skills, difficulty, timer_minutes,
@@ -458,7 +469,10 @@ export async function POST(request) {
       saveAIInferredTopics(valid).catch(() => {});
     }
 
-    return Response.json({ session }, { status: 201 });
+    const { ok, balance: newBalance } = await deductCredits(user.id, 'test_create');
+    if (!ok) return Response.json({ error: 'Insufficient credits.', code: 'insufficient_credits', balance: 0 }, { status: 402 });
+
+    return Response.json({ session, credits_used: COST, credits_remaining: newBalance }, { status: 201 });
   } catch (err) {
     if (err instanceof Response) return err;
     return Response.json({ error: err.message }, { status: 500 });

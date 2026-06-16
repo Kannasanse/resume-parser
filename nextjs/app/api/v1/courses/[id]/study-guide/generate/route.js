@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth-helpers.js';
 import supabase from '@/lib/supabase.js';
 import { callGemini } from '@/lib/gemini';
+import { deductCredits, getBalance, CREDIT_COSTS } from '@/lib/credits.js';
 
 function buildSourceContext(sources, maxChars = 56000) {
   let context = '';
@@ -21,6 +22,15 @@ export async function POST(request, { params }) {
     const { user } = await requireUser(request);
     const courseId = params.id;
     const { sourceIds = [] } = await request.json();
+
+    const balance = await getBalance(user.id);
+    const COST = CREDIT_COSTS['study_guide'];
+    if (balance < COST) {
+      return NextResponse.json(
+        { error: `Insufficient credits. This action costs ${COST} credits.`, code: 'insufficient_credits', balance },
+        { status: 402 }
+      );
+    }
 
     // Fetch course
     const { data: plan } = await supabase
@@ -63,10 +73,15 @@ ${context.trim()
       generated_at: new Date().toISOString(),
     }, { onConflict: 'course_id' });
 
+    const { ok, balance: newBalance } = await deductCredits(user.id, 'study_guide');
+    if (!ok) return NextResponse.json({ error: 'Insufficient credits.', code: 'insufficient_credits', balance: 0 }, { status: 402 });
+
     return NextResponse.json({
       guide,
       source_count: usedSources.length,
       generated_at: new Date().toISOString(),
+      credits_used: COST,
+      credits_remaining: newBalance,
     });
   } catch (err) {
     if (err instanceof Response) return err;

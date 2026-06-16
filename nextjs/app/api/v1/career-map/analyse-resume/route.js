@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth-helpers.js';
 import supabase from '@/lib/supabase.js';
 import { callGemini } from '@/lib/gemini';
+import { deductCredits, getBalance, CREDIT_COSTS } from '@/lib/credits.js';
 
 async function callGroq(prompt) {
   return callGemini(prompt, { json: true, temperature: 0.7 });
@@ -48,6 +49,16 @@ function flattenResumeToText(resume, sections) {
 export async function POST(request) {
   try {
     const { user } = await requireUser(request);
+
+    const balance = await getBalance(user.id);
+    const COST = CREDIT_COSTS['career_analyse'];
+    if (balance < COST) {
+      return NextResponse.json(
+        { error: `Insufficient credits. This action costs ${COST} credit.`, code: 'insufficient_credits', balance },
+        { status: 402 }
+      );
+    }
+
     const { resume_id, builder_resume_id } = await request.json();
 
     let resumeText = '';
@@ -142,7 +153,10 @@ Return ONLY the JSON, no preamble.`;
 
     if (error) throw error;
 
-    return NextResponse.json({ session_id: session.id, profile });
+    const { ok, balance: newBalance } = await deductCredits(user.id, 'career_analyse');
+    if (!ok) return NextResponse.json({ error: 'Insufficient credits.', code: 'insufficient_credits', balance: 0 }, { status: 402 });
+
+    return NextResponse.json({ session_id: session.id, profile, credits_used: COST, credits_remaining: newBalance });
   } catch (err) {
     if (err instanceof Response) return err;
     console.error('analyse-resume error:', err);

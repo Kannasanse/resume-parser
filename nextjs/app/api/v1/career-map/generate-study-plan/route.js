@@ -3,10 +3,21 @@ import { requireUser } from '@/lib/auth-helpers.js';
 import supabase from '@/lib/supabase.js';
 import { callGemini } from '@/lib/gemini';
 import { randomUUID } from 'crypto';
+import { deductCredits, getBalance, CREDIT_COSTS } from '@/lib/credits.js';
 
 export async function POST(request) {
   try {
     const { user } = await requireUser(request);
+
+    const balance = await getBalance(user.id);
+    const COST = CREDIT_COSTS['course_create'];
+    if (balance < COST) {
+      return NextResponse.json(
+        { error: `Insufficient credits. This action costs ${COST} credits.`, code: 'insufficient_credits', balance },
+        { status: 402 }
+      );
+    }
+
     const {
       sessionId, targetRoleId, targetRoleTitle, missingSkills, preferences,
       creation_mode = 'career_map', selectedSkills = [],
@@ -178,7 +189,10 @@ Return ONLY a valid JSON object (no markdown fences):
       if (topicError) throw topicError;
     }
 
-    return NextResponse.json({ study_plan_id: studyPlan.id, plan });
+    const { ok, balance: newBalance } = await deductCredits(user.id, 'course_create');
+    if (!ok) return NextResponse.json({ error: 'Insufficient credits.', code: 'insufficient_credits', balance: 0 }, { status: 402 });
+
+    return NextResponse.json({ study_plan_id: studyPlan.id, plan, credits_used: COST, credits_remaining: newBalance });
   } catch (err) {
     if (err instanceof Response) return err;
     console.error('generate-study-plan error:', err);

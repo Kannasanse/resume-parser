@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth-helpers.js';
 import supabase from '@/lib/supabase.js';
 import { callGemini } from '@/lib/gemini';
+import { deductCredits, getBalance, CREDIT_COSTS } from '@/lib/credits.js';
 
 function buildSourceContext(sources, maxChars = 48000) {
   let context = '';
@@ -24,6 +25,15 @@ export async function POST(request, { params }) {
 
     if (!message?.trim()) {
       return NextResponse.json({ error: 'Message required' }, { status: 400 });
+    }
+
+    const balance = await getBalance(user.id);
+    const COST = CREDIT_COSTS['course_chat'];
+    if (balance < COST) {
+      return NextResponse.json(
+        { error: `Insufficient credits. This action costs ${COST} credit.`, code: 'insufficient_credits', balance },
+        { status: 402 }
+      );
     }
 
     // Fetch course to get skill name
@@ -66,7 +76,10 @@ SOURCES:${context}`
       { course_id: courseId, user_id: user.id, role: 'assistant', content: reply  },
     ]);
 
-    return NextResponse.json({ reply });
+    const { ok, balance: newBalance } = await deductCredits(user.id, 'course_chat');
+    if (!ok) return NextResponse.json({ error: 'Insufficient credits.', code: 'insufficient_credits', balance: 0 }, { status: 402 });
+
+    return NextResponse.json({ reply, credits_used: COST, credits_remaining: newBalance });
   } catch (err) {
     if (err instanceof Response) return err;
     console.error('course chat error:', err);

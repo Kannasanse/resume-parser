@@ -1,6 +1,7 @@
 import supabase from '@/lib/supabase.js';
 import { requireUser } from '@/lib/auth-helpers.js';
 import { callGemini } from '@/lib/gemini';
+import { deductCredits, getBalance, CREDIT_COSTS } from '@/lib/credits.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -72,6 +73,16 @@ async function callAI(prompt) {
 export async function POST(request) {
   try {
     const { user } = await requireUser(request);
+
+    const balance = await getBalance(user.id);
+    const COST = CREDIT_COSTS['interview_buddy'];
+    if (balance < COST) {
+      return Response.json(
+        { error: `Insufficient credits. This action costs ${COST} credits.`, code: 'insufficient_credits', balance },
+        { status: 402 }
+      );
+    }
+
     const { jobDescription, roleLevel = 'mid', depth = 'standard' } = await request.json();
 
     if (!jobDescription?.trim() || jobDescription.trim().length < 100) {
@@ -118,7 +129,10 @@ export async function POST(request) {
 
     if (error) throw error;
 
-    return Response.json({ kit }, { status: 201 });
+    const { ok, balance: newBalance } = await deductCredits(user.id, 'interview_buddy');
+    if (!ok) return Response.json({ error: 'Insufficient credits.', code: 'insufficient_credits', balance: 0 }, { status: 402 });
+
+    return Response.json({ kit, credits_used: COST, credits_remaining: newBalance }, { status: 201 });
   } catch (err) {
     console.error('[interview-buddy/generate]', err);
     return Response.json({ error: err.message || 'Server error' }, { status: 500 });

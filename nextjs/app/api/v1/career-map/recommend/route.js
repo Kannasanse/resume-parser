@@ -2,12 +2,23 @@ import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth-helpers.js';
 import supabase from '@/lib/supabase.js';
 import { callGemini } from '@/lib/gemini';
+import { deductCredits, getBalance, CREDIT_COSTS } from '@/lib/credits.js';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request) {
   try {
     const { user } = await requireUser(request);
+
+    const balance = await getBalance(user.id);
+    const COST = CREDIT_COSTS['career_recommend'];
+    if (balance < COST) {
+      return NextResponse.json(
+        { error: `Insufficient credits. This action costs ${COST} credits.`, code: 'insufficient_credits', balance },
+        { status: 402 }
+      );
+    }
+
     const {
       session_id,
       // New adaptive flow
@@ -187,7 +198,10 @@ No preamble.`;
       .update({ recommended_roles: recommendedRoles, updated_at: new Date().toISOString() })
       .eq('id', session_id);
 
-    return NextResponse.json({ recommended_roles: recommendedRoles });
+    const { ok, balance: newBalance } = await deductCredits(user.id, 'career_recommend');
+    if (!ok) return NextResponse.json({ error: 'Insufficient credits.', code: 'insufficient_credits', balance: 0 }, { status: 402 });
+
+    return NextResponse.json({ recommended_roles: recommendedRoles, credits_used: COST, credits_remaining: newBalance });
   } catch (err) {
     if (err instanceof Response) return err;
     console.error('recommend error:', err);

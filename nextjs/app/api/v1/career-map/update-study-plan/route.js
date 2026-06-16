@@ -3,6 +3,7 @@ import { requireUser } from '@/lib/auth-helpers.js';
 import supabase from '@/lib/supabase.js';
 import { callGemini } from '@/lib/gemini';
 import { randomUUID } from 'crypto';
+import { deductCredits, getBalance, CREDIT_COSTS } from '@/lib/credits.js';
 
 function normalize(s) { return (s || '').toLowerCase().trim(); }
 
@@ -19,6 +20,16 @@ function findBestHeadingMatch(newHeading, oldSections) {
 export async function POST(request) {
   try {
     const { user } = await requireUser(request);
+
+    const balance = await getBalance(user.id);
+    const COST = CREDIT_COSTS['course_create'];
+    if (balance < COST) {
+      return NextResponse.json(
+        { error: `Insufficient credits. This action costs ${COST} credits.`, code: 'insufficient_credits', balance },
+        { status: 402 }
+      );
+    }
+
     const { planId, preferences } = await request.json();
     const { hoursPerDay, daysPerWeek, learningStyle, currentLevel } = preferences;
 
@@ -181,7 +192,10 @@ Return ONLY a JSON object:
       updated_at: new Date().toISOString(),
     }).eq('id', planId);
 
-    return NextResponse.json({ ok: true, planId });
+    const { ok, balance: newBalance } = await deductCredits(user.id, 'course_create');
+    if (!ok) return NextResponse.json({ error: 'Insufficient credits.', code: 'insufficient_credits', balance: 0 }, { status: 402 });
+
+    return NextResponse.json({ ok: true, planId, credits_used: COST, credits_remaining: newBalance });
   } catch (err) {
     if (err instanceof Response) return err;
     console.error('update-study-plan error:', err);
