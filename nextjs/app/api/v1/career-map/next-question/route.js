@@ -88,7 +88,7 @@ export async function POST(request) {
     // ── Server-side enforcement ──────────────────────────────────────────────
 
     // Enforce minimums
-    const minQuestions = mode === 'skills' ? 3 : 5;
+    const minQuestions = mode === 'skills' ? 1 : 5;
     if (questionNumber < minQuestions) shouldContinue = true;
 
     // Force stop if AI says continue but gives no reason (past minimum)
@@ -105,8 +105,9 @@ export async function POST(request) {
       stopReason     = 'tier3_blocked';
     }
 
-    // Absolute hard ceiling
-    if (questionNumber >= HARD_MAX_QUESTIONS) {
+    // Absolute hard ceiling (3 for skills, 10 for resume)
+    const modeMax = mode === 'skills' ? 3 : HARD_MAX_QUESTIONS;
+    if (questionNumber >= modeMax) {
       shouldContinue = false;
       stopReason     = stopReason || 'max_questions';
     }
@@ -257,41 +258,52 @@ function buildSkillsPrompt(selectedSkills, previousQuestions, questionNumber, ex
         `Q${q.questionNumber} [${q.questionIntent}]: "${q.questionText}"\n→ ${q.answerLabel || q.answerValue}`
       ).join('\n\n');
 
-  const minSkills = 3;
-  const maxSkills = 7;
+  const minSkills = 1;
+  const maxSkills = 3;
 
-  const phaseBlock = questionNumber >= 6
-    ? `⚠️ FINAL PHASE: Only ${maxSkills - questionNumber + 1} question(s) left. Stop unless a critical learning gap remains.`
-    : questionNumber >= 3
-    ? `EVALUATION PHASE: Stop if you know experience level + goal + timeline. Continue only if a genuine gap exists.`
-    : `ESSENTIAL PHASE: Ask the most important unknown about their learning context.`;
+  const skills = Array.isArray(selectedSkills)
+    ? selectedSkills.map(s => (typeof s === 'string' ? s : s.name)).join(', ')
+    : selectedSkills;
 
-  return `You are a friendly course advisor personalising a study plan.
+  // All 3 intents are distinct — stop as soon as all are covered
+  const remainingIntents = ['learning_goal', 'timeline', 'focus_area'].filter(
+    i => !coveredIntents.includes(i)
+  );
+
+  const phaseBlock = remainingIntents.length === 0
+    ? `ALL intents covered — set shouldContinue: false.`
+    : questionNumber >= maxSkills
+    ? `⚠️ FINAL QUESTION (${questionNumber}/${maxSkills}): Must set shouldContinue: false.`
+    : `Ask about: ${remainingIntents[0]} (most critical remaining).`;
+
+  return `You are a course advisor generating the minimum questions needed to personalise a study plan.
+
+CONTEXT: The user has ALREADY told us their current experience level, available study hours, and preferred learning style through a separate form. Do NOT ask about those again.
 
 HARD CONSTRAINTS:
-1. Maximum ${maxSkills} questions — hard ceiling.
+1. Maximum ${maxSkills} questions total — this is a hard ceiling.
 2. You are generating question ${questionNumber} of maximum ${maxSkills}.
 3. ${phaseBlock}
+4. NEVER ask about: experience level, hours per week, learning style, or practice preferences — already collected.
+5. If ALL intents below are covered, set shouldContinue: false immediately.
 
-Skills they want to learn: ${selectedSkills.join(', ')}
+Skills they want to learn: ${skills}
 
 QUESTIONS AND ANSWERS SO FAR:
 ${prevText}
 
-INTENT COVERAGE — do not re-ask any of these: ${coveredIntents}
+INTENTS ALREADY COVERED — do NOT re-ask: ${coveredIntents || 'none'}
+REMAINING INTENTS TO COVER: ${remainingIntents.join(', ') || 'none — STOP'}
 
 ${extraInstruction ? `⚠️ ${extraInstruction}\n` : ''}
-AVAILABLE INTENTS (pick ONE most-critical unknown):
-  prior_experience      — how much they already know
-  learning_goal         — get a job, build a project, freelance, or personal growth?
-  timeline              — how soon do they want to be proficient?
-  weekly_time           — hours per week available to study
-  practice_preference   — build projects, follow tutorials, or work on a real codebase?
-  focus_area            — specific sub-area within the skill set (if multiple skills)
+AVAILABLE INTENTS (pick the first uncovered one):
+  learning_goal  — why do they want to learn this? (get a job, build a project, freelance, upskill at work, personal curiosity)
+  timeline       — how soon do they want to be job-ready or project-ready?
+  focus_area     — if multiple skills, which should the course prioritise? (skip if only one skill)
 
 Return ONLY valid JSON:
 {
-  "questionText":    "conversational, references their specific skills",
+  "questionText":    "conversational, references their specific skills by name",
   "questionType":    "options" | "free_text",
   "questionIntent":  "one intent name above",
   "options": [
@@ -310,6 +322,7 @@ Return ONLY valid JSON:
 
 For free_text: options=null, provide placeholder, maxLength=300.
 For options: placeholder=null, maxLength=null, exactly 4 options.
-shouldContinue=false when confidenceAfter >= 0.85 AND questionNumber >= ${minSkills}, OR questionNumber = ${maxSkills}.
-continueReason REQUIRED when shouldContinue=true.`;
+shouldContinue=false when all intents are covered OR questionNumber = ${maxSkills}.
+If only one skill was selected, skip focus_area and stop after learning_goal + timeline.
+continueReason REQUIRED when shouldContinue=true — if you cannot write a genuine reason, set shouldContinue=false.`;
 }

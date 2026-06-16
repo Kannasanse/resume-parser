@@ -233,7 +233,7 @@ export default function Questionnaire({ profile, sessionId, onSubmit, loading: p
   if (!current) return null;
 
   const answeredCount = answers.filter(a => a.answerValue).length;
-  const showSkipToResults = answeredCount >= 5;
+  const showSkipToResults = mode === 'resume' && answeredCount >= 5;
 
   return (
     <div className="max-w-2xl mx-auto space-y-3">

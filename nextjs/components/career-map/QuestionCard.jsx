@@ -16,14 +16,6 @@ export default function QuestionCard({
 }) {
   const { questionText, questionType, options, placeholder, maxLength } = question;
 
-  // Estimated total: unknown early on, tightens as we go
-  const estTotal = questionNumber < 5
-    ? null
-    : Math.min(10, questionNumber + 2);
-
-  const progressLabel = questionNumber < 5
-    ? `${questionNumber} question${questionNumber !== 1 ? 's' : ''} so far`
-    : `Question ${questionNumber} of ~${estTotal}`;
 
   const canProceed = questionType === 'free_text'
     ? (answerValue || '').trim().length >= 1
@@ -31,8 +23,8 @@ export default function QuestionCard({
 
   return (
     <div className="card shadow-2xl p-8 space-y-6 animate-fade-in-scale">
-      {/* Header row: back button + progress label */}
-      <div className="flex items-center justify-between">
+      {/* Header row: back button */}
+      <div className="flex items-center">
         {questionNumber > 1 ? (
           <button
             type="button"
@@ -45,7 +37,6 @@ export default function QuestionCard({
             Previous
           </button>
         ) : <span />}
-        <p className="text-xs text-[#9CA3AF] dark:text-[#4A6380] font-medium">{progressLabel}</p>
       </div>
 
       {/* Segmented dot progress bar */}
