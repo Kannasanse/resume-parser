@@ -1,9 +1,9 @@
 # Proflect — Requirements & Implementation Reference
 
-> **Status:** Living document. Reflects implementation as of 2026-06-15.  
-> **Stack:** Next.js 15 App Router · MUI v9 · Tiptap v3 · Supabase · Gemini 3.5 Flash  
-> **Platform:** https://proflect-neo.vercel.app  
-> **Design Reference:** `design-brief` (MUI v9 + TailwindCSS component spec)
+> **Status:** Living document. Reflects implementation as of 2026-06-19.
+> **Stack:** Next.js 15 App Router · Tailwind CSS · Tiptap v3 · Supabase · Gemini 3.5 Flash + Groq Fallback
+> **Platform:** https://proflect-neo.vercel.app
+> **Repository:** https://github.com/Kannasanse/resume-parser
 
 ---
 
@@ -12,1050 +12,1013 @@
 1. [Product Overview](#1-product-overview)
 2. [Tech Stack](#2-tech-stack)
 3. [Design System](#3-design-system)
-4. [AI Model Usage](#4-ai-model-usage)
-5. [Credit System](#5-credit-system)
-6. [Feature Inventory by Surface](#6-feature-inventory-by-surface)
-7. [Page Inventory](#7-page-inventory)
-8. [Block Editor](#8-block-editor)
-9. [API Route Inventory](#9-api-route-inventory)
-10. [Database Tables](#10-database-tables)
-11. [Environment Variables](#11-environment-variables)
-12. [Authentication & Authorization](#12-authentication--authorization)
+4. [Folder & File Structure](#4-folder--file-structure)
+5. [Authentication & Authorization](#5-authentication--authorization)
+6. [Credit System](#6-credit-system)
+7. [AI Model Usage](#7-ai-model-usage)
+8. [External Integrations](#8-external-integrations)
+9. [Feature Inventory](#9-feature-inventory)
+10. [Page Inventory](#10-page-inventory)
+11. [API Route Inventory](#11-api-route-inventory)
+12. [Component Directory](#12-component-directory)
+13. [Library Directory](#13-library-directory)
+14. [Database Schema](#14-database-schema)
+15. [Environment Variables](#15-environment-variables)
 
 ---
 
 ## 1. Product Overview
 
-Proflect is a career-intelligence platform for job seekers and professionals. It combines AI-powered resume analysis, a visual resume builder, a portfolio website builder, a Notion-style block editor for notes, a self-assessment test engine, an AI-guided career-map learning roadmap, and an AI-powered interview preparation kit generator — all in one product.
+Proflect is an AI-powered career intelligence platform for job seekers and professionals. It combines:
 
-**Primary users:**
-- Job seekers preparing resumes and portfolios
-- Professionals mapping their career path
-- Students studying for technical roles
-- Organizations using the proctored test engine (admin surface)
+- **Resume Builder** — template-driven, AI-assisted resume creation with ATS scoring
+- **Career Map** — AI questionnaire + study plan generator with topic-level learning content
+- **Self-Test / Interview Prep** — AI-generated MCQ, T/F, and short-answer tests from skills or JDs
+- **Interview Buddy** — AI-generated interview question kits from job descriptions
+- **Job Recommendations** — AI-powered job search via JSearch API
+- **Notes** — Notion-style block editor with backlinks, tags, and sharing
+- **Utilities Suite** — 35+ PDF, document, and image tools + code playground + screen recorder
+- **My Courses** — Enroll and track study plan progress
+- **Admin Dashboard** — Full user management, credit administration, question library, impersonation
 
 ---
 
 ## 2. Tech Stack
 
 | Layer | Technology |
-|---|---|
-| Framework | Next.js 15, App Router, `'use client'` components |
-| UI | MUI v9 + Tailwind CSS · light-first, dark-mode via `dark:` variant |
-| Rich Text | Tiptap v3 (`^3.23.6`) — ProseMirror-based block editor |
-| Auth | Supabase Auth (email/password + email verification) |
-| Database | Supabase (Postgres) with RLS + RPC functions |
-| Storage | Supabase Storage (avatars, resume files) |
-| PDF export | Puppeteer (headless Chrome) |
-| DOCX export | `docx` npm package |
-| PDF parsing | `pdfjs-dist` (coordinate-aware, multi-column aware) + `pdf-parse` fallback |
-| DOCX parsing | `mammoth` |
-| Utilities — PDF edit | `pdf-lib` (client-side: merge, split, rotate, crop, watermark, redact, sign, protect) |
-| Utilities — Spreadsheets | `xlsx` / SheetJS (server-side: PDF↔Excel conversion) |
-| Utilities — Markdown | `marked` (server-side: Markdown → HTML → PDF via Puppeteer) |
-| Utilities — Image compression | `browser-image-compression` (client-side) |
-| Utilities — Image crop | `react-image-crop` v11 (client-side) |
-| Utilities — ZIP bundling | `jszip` (client-side multi-file downloads) |
-| AI — All features | Google Gemini 3.5 Flash (`@google/genai` SDK) |
-| Deployment | Vercel |
+|-------|-----------|
+| Framework | Next.js 15 (App Router, React Server Components) |
+| Styling | Tailwind CSS v3 with custom design tokens (`ds-*`) |
+| Database | Supabase (PostgreSQL + RLS) |
+| Auth | Supabase Auth (email/password + OAuth) |
+| Rich Text | Tiptap v3 with custom extensions |
+| AI — Primary | Google Gemini 3.5 Flash (`gemini-3.5-flash`) |
+| AI — Fallback | Groq `llama-3.3-70b-versatile` (auto-switch on 429/503/5xx) |
+| AI — Resume Parsing | OpenRouter `meta-llama/llama-3.3-70b-instruct:free` |
+| AI — Transcription | Groq Whisper |
+| Job Search | JSearch API (RapidAPI, 200 calls/month free tier) |
+| Web Search | Tavily + Exa (for career content generation) |
+| Video | YouTube Data API v3 |
+| Email | Resend |
+| File Storage | Supabase Storage |
+| Hosting | Vercel |
+| State / Fetching | TanStack Query v5 |
+| PDF Rendering | PDF.js |
+| Canvas | Fabric.js v6 |
 
 ---
 
 ## 3. Design System
 
-> Full component spec in `design-brief`. Summary below for quick reference.
+Tailwind CSS with a custom token layer exposed as CSS variables:
 
-**Fonts:** `Inter` (all text) · `JetBrains Mono` (code/monospace)
+| Token | Purpose |
+|-------|---------|
+| `ds-bg` | Page background |
+| `ds-card` | Card / panel background |
+| `ds-border` | Default border |
+| `ds-text` | Primary text |
+| `ds-textMuted` | Secondary / muted text |
+| `ds-textSecondary` | Tertiary text |
+| `ds-primary` | Brand primary (blue) |
+| `ds-success` / `ds-successLight` | Success states |
+| `ds-danger` / `ds-dangerLight` | Error / danger states |
+| `ds-inputBorder` | Input field borders |
+| `rounded-btn` | Button border-radius token |
 
-**Color tokens:**
-
-| Token | Value | Usage |
-|---|---|---|
-| Primary | `#185FA5` | Buttons, links, active states |
-| Primary Dark | `#0C447C` | Hover/pressed |
-| Primary Light bg | `#E6F1FB` | Selected rows, chips, active nav |
-| Success | `#1D9E75` | Positive scores, active status |
-| Error | `#D93025` | Errors, failed status, danger zone |
-| Warning | `#F59E0B` | Moderate scores, pending status |
-| Text | `#2C2C2A` | Primary body text |
-| Secondary Text | `#6B7280` | Subtitles, captions |
-| Disabled | `#9CA3AF` | Placeholder, muted |
-| Border | `#D1DCE8` | Card/input borders |
-| Surface | `#FFFFFF` | Card, modal backgrounds |
-| Page bg | `#F4F8FC` | App background |
-
-**Shape:** Inputs/buttons `8px` · Cards `12px` · Modals `16px` · Pills `9999px`  
-**Shadows:** Cards `0 2px 8px rgba(12,68,124,0.10)` · Modals `0 8px 32px rgba(12,68,124,0.16)`  
-**Spacing base:** 8px  
-**Theme:** Light-first; dark-mode toggle exists but is secondary.
-
-**Score band colors:**
-
-| Band | bg | color |
-|---|---|---|
-| Strong Match | `#D1FAE5` | `#1D9E75` |
-| Good Match | `#E6F1FB` | `#185FA5` |
-| Moderate Match | `#FEF3C7` | `#B45309` |
-| Weak Match | `#FEE2E2` | `#D93025` |
+Dark mode is supported via Tailwind's `dark:` prefix. Theme toggle is in the Navbar.
 
 ---
 
-## 4. AI Model Usage
-
-### 3.1 Model Reference
-
-| Provider | Model ID | Notes |
-|---|---|---|
-| Google Gemini | `gemini-3.5-flash` | Single model used across all AI features; via `@google/genai` SDK |
-
-### 3.2 Feature → Model Map
-
-All AI features now use **Gemini 3.5 Flash** via the `callGemini()` wrapper. No provider fallback chain.
-
-| Feature | Cost |
-|---|---|
-| Resume parsing (file upload) | Free |
-| Resume parsing (builder import) | 5 credits |
-| Resume reparse | Free |
-| ATS score analysis | 3 credits |
-| ATS score narrative summary | Included in ATS |
-| Writing assistant | 1 credit |
-| Self-test: Question generation (all input types) | Free |
-| Self-test: JD skill extraction | Free |
-| Self-test: Short-answer grading | Free |
-| Career Map: Learning roadmap generation | Free |
-| Career Map: Section content generation | Free |
-| Jobs: Skill extraction from JD | Free |
-| Admin: Question library generation | Admin only |
-| Interview Buddy: Kit generation | Free |
-| Course workspace: Chat (grounded Q&A) | Free |
-| Course workspace: Study guide generation | Free |
-
-### 3.3 JSON Reliability
-
-`callGemini()` in `lib/gemini.js` applies a 3-stage JSON parse fallback for all `json: true` calls:
-1. Direct `JSON.parse(text)`
-2. Strip markdown fences (` ```json … ``` `) then parse
-3. Apply `jsonrepair` (npm) to fix unescaped newlines, trailing commas, etc.
-
-### 3.4 AI Wrapper Functions
-
-| Function | File | Purpose |
-|---|---|---|
-| `callGemini(contents, opts)` | `lib/gemini.js` | Gemini 3.5 Flash wrapper; supports `system`, `json`, `temperature`, `maxTokens` |
-| `checkAiUsage(userId, supabase)` | `lib/gemini.js` | Count AI uses this calendar month from `ai_usage` table |
-| `recordAiUsage(userId, feature, supabase)` | `lib/gemini.js` | Insert row into `ai_usage` |
-| `parseResume(buffer, mimeType)` | `lib/parser.js` | Gemini-powered parse; returns `{ rawText, structured }` |
-| `extractResumeText(buffer, mimeType)` | `lib/parser.js` | Text extraction only (no AI) |
-
----
-
-## 5. Credit System
-
-### 4.1 Credit Costs
-
-Defined in `lib/credits.js` (`CREDIT_COSTS`):
-
-| Action | Credit Type Key | Cost |
-|---|---|---|
-| ATS Score Analysis | `ats_score` | **3 credits** |
-| Resume Import (AI parse in builder) | `resume_import` | **5 credits** |
-| AI Writing Assistant | `writing_assist` | **1 credit** |
-
-### 4.2 Initial Grant
-
-New users automatically receive **30 credits** on first login (inserted by `ensureCredits()`).
-
-### 4.3 Credit Flow
-
-1. Client calls a credit-gated API route
-2. Route calls `deductCredits(userId, type)` which executes the Supabase RPC `deduct_credits(p_user_id, p_amount)` atomically
-3. RPC returns new balance or `-1` if insufficient
-4. On insufficient balance: `{ ok: false, balance }` — client shows upgrade prompt
-5. Each deduction is logged as a row in `credit_transactions`
-
-### 4.4 Credit Sources
-
-| Source | Type Key | Description |
-|---|---|---|
-| Account creation | `initial_grant` | 30 credits automatically |
-| Admin grant | `admin_grant` | Admin dashboard → user credits panel |
-| Approved request | `request_approved` | User submits credit request; admin approves |
-
-### 4.5 Admin Credit Management
-
-- `GET /api/v1/admin/credits` — list all users with balances
-- `POST /api/v1/admin/credits` — grant credits to a specific user
-- `GET /api/v1/admin/credits/requests` — list pending credit requests
-- `PATCH /api/v1/admin/credits/requests/[reqId]` — approve/reject request
-- `GET /api/v1/admin/credits/transactions` — full transaction log
-
----
-
-## 6. Feature Inventory by Surface
-
-### 5.1 Resume Upload & Parsing
-
-**Route:** `POST /api/v1/resumes/upload`
-
-- Accepts PDF, DOCX, TXT (max 10 MB)
-- Coordinate-aware PDF text extraction handles multi-column layouts (`pdfjs-dist`, sorted by Y then X coordinate)
-- Fallback to `pdf-parse` for encrypted/non-standard PDFs
-- AI parsing: Gemini 3.5 Flash (`callGemini` via `lib/parser.js`)
-- Extracted fields: `personal_info`, `summary`, `skills` (with proficiency), `experience`, `projects`, `education`, `certifications`, `other`
-- Skills proficiency inferred: Expert / Advanced / Intermediate / Beginner / null
-- Stored in `resumes` table with `raw_text` and `parsed_data` (JSONB)
-
-**Reparse:** `POST /api/v1/resumes/[id]/reparse`
-- Re-runs AI parsing on existing `raw_text`; same Gemini 3.5 Flash chain
-
-### 5.2 Resume Viewer
-
-**Route:** `app/(main)/resumes/[id]`
-
-- Read-only view of parsed resume
-- Sections: Contact, Summary, Skills, Experience, Projects, Education, Certifications
-- Skills display with proficiency badges
-- Review mode: `app/(main)/review/[id]` — recruiter-facing link-based view (no auth required)
-
-### 5.3 ATS Score
-
-**Route:** `POST /api/v1/resumes/[id]/score`  
-**Cost:** 3 credits (`ats_score`)
-
-- Requires a job profile (from `job_profiles` table or raw JD text)
-- Scoring dimensions: Skills (40%), Experience (25%), Education (15%), Projects (10%), Quality (10%)
-- Skill synonym matching via `SKILL_SYNONYMS` map in `lib/scorer.js`
-- Returns: overall score (0–100), band (Excellent/Good/Fair/Poor), per-dimension breakdown, skill match detail, narrative summary
-- AI narrative summary: Gemini 3.5 Flash (`callGemini`, 200–400 tokens)
-
-### 5.4 Resume Builder
-
-**Routes:** `GET/POST /api/v1/builder`, `GET/PUT/DELETE /api/v1/builder/[id]`
-
-**Sections:** `GET/POST /api/v1/builder/[id]/sections`, `PUT/DELETE /api/v1/builder/[id]/sections/[sectionId]`
-
-- Visual resume editor with reorderable sections
-- Section types: Summary, Experience, Education, Skills, Projects, Certifications, Custom
-- Photo upload: `POST /api/v1/builder/[id]/photo`
-
-**AI Import (parse resume into builder):**
-- `POST /api/v1/builder/[id]/import` — costs 5 credits (`resume_import`)
-- Uses Gemini 3.5 Flash (`callGemini` via `lib/parser.js`)
-
-**AI Writing Assistant:**
-- `POST /api/v1/builder/[id]/writing-assist` — costs 1 credit (`writing_assist`)
-- Model: Gemini 3.5 Flash
-- Rewrites or improves selected section content
-
-**ATS Score (builder):**
-- `POST /api/v1/builder/[id]/ats-score` — costs 3 credits (`ats_score`)
-- Same scoring logic as resume ATS score
-
-**Export:**
-- `POST /api/v1/builder/[id]/export/pdf` — Puppeteer headless PDF
-- `POST /api/v1/builder/[id]/export/word` — DOCX via `docx` package
-
-**Share / Public view:**
-- `POST /api/v1/builder/[id]/share` — generates a share token
-- `GET /api/public/resume/[token]` — public read-only view (no auth required)
-
-**Templates:**
-- `GET /api/v1/templates` — list available resume templates; returns `featuredIds[]` for Featured category
-- Admin: `GET/POST /api/v1/admin/templates`
-- 11 built-in templates: Modern, Atlantic Blue, Corporate, Atlantic Crest, Mercury Flow, Steady Form, Executive, Azure Wave, Noir Flash, Verdant Crest, Confetti
-- `TemplateGallery` component: search, category/style filter pills, Featured virtual category, thumbnail grid, full-size preview modal with prev/next navigation
-- `ResumeTemplatePreviews.jsx`: SVG-based static preview thumbnails for all 11 templates (no rendering overhead); each exported component accepts a `dark` prop; `TEMPLATE_PREVIEWS` map keyed by template ID; `PreviewThumb` wrapper falls back to CSS-scaled `TemplateThumbnail` for any unmapped ID
-
-### 5.6 Notes (Block Editor)
-
-**Routes:** `GET/POST /api/v1/notes`, `GET/PUT/DELETE /api/v1/notes/[id]`  
-**Pages:** `app/(main)/notes`, `app/(main)/notes/[noteId]`
-
-- Hierarchical notes: parent/child pages (sub-pages)
-- Each note stores content as Tiptap JSON in `notes.content` (JSONB)
-- Notes sidebar: folder tree navigation
-- Block editor uses `mode='full'` (all features enabled)
-- Move-to modal for restructuring note hierarchy
-- Grid and list view for note browsing
-
-### 5.7 Self-Test Engine
-
-**Routes:**  
-`POST /api/v1/self-test` — create session  
-`GET /api/v1/self-test/[id]` — fetch session + questions  
-`POST /api/v1/self-test/[id]/self-grade` — grade short-answer responses  
-`POST /api/v1/self-test/skills` — list available skills  
-`POST /api/v1/self-test/jd-extract` — extract skills from job description  
-
-**Input types:**
-
-| `input_type` | Source | Description |
-|---|---|---|
-| `skills` | User selects from skill list | Generate questions for chosen skills |
-| `content` | Free text or topic content | Generate questions from pasted content (min 100 chars) |
-| `jd` | Job description URL or text | Extract skills from JD → generate skill-mapped questions |
-
-**Question types:**
-- **MCQ** — 4 options, exactly 1 correct, all have `explanation` field
-- **True/False** — one definitively correct answer with `explanation`
-- **Short Answer** — 2–6 sentence written response; AI-graded; has `model_answer`, `grading_rubric`, `answer_keywords`
-
-**Configuration options:**
-- Question count: 5 / 10 / 15 / 20
-- Difficulty: Easy / Medium / Hard
-- Timer: optional per-session countdown (minutes)
-- Question type: MCQ only / Mixed (MCQ + Short Answer)
-
-**AI model:** Gemini 3.5 Flash (`callGemini`) for question generation, JD skill extraction, and short-answer grading.
-
-**Self-test from topic (Career Map integration):**
-- "Test yourself" button on `CourseDetailPage` opens `TestConfigModal`
-- Modal extracts plain text from topic sections (handles string content or Tiptap JSON via recursive `extractTiptapText()`)
-- POSTs to `/api/v1/self-test` with `input_type: 'content'`
-- Redirects to `/self-test/[sessionId]` on success
-
-### 5.8 My Courses — Knowledge Workspace
-
-**Course topic view** (`/career-map/study-plan/[id]/topic/[topicId]`) is a **3-panel workspace**:
+## 4. Folder & File Structure
 
 ```
-[Sources 240px] | [Section nav + content] | [Chat / Study Guide 320px]
+nextjs/
+├── app/
+│   ├── (main)/                    # Protected authenticated routes (see §10)
+│   │   ├── admin/                 # Admin dashboard pages
+│   │   ├── builder/               # Resume builder
+│   │   ├── career-map/            # Career development & study plans
+│   │   ├── credits/               # Credit balance & history
+│   │   ├── interview-buddy/       # Interview kit pages
+│   │   ├── interview-prep/        # Self-test pages
+│   │   ├── job-recommendations/   # AI job search pages
+│   │   ├── jobs/                  # Admin job management
+│   │   ├── my-courses/            # Enrolled courses
+│   │   ├── notes/                 # Block editor notes
+│   │   ├── profile/               # User profile settings
+│   │   ├── resumes/               # Admin resume management
+│   │   ├── review/                # Resume review
+│   │   ├── upload/                # Resume upload
+│   │   └── utilities/             # 35+ utility tools
+│   │       ├── documents/         # 10 document converters
+│   │       ├── images/            # 4 image tools
+│   │       ├── pdf/               # 19 PDF tools
+│   │       ├── playground/        # Code execution sandbox
+│   │       ├── recorder/          # Screen & audio recorder
+│   │       └── security/          # PDF protect/sign/unlock
+│   ├── (marketing)/               # Public marketing / landing pages
+│   ├── api/
+│   │   ├── v1/                    # All API routes (155+)
+│   │   │   ├── admin/             # Admin-only APIs
+│   │   │   ├── auth/              # Login, signup, verify-email
+│   │   │   ├── builder/           # Resume builder CRUD + AI
+│   │   │   ├── career-map/        # Career analysis & study plan AI
+│   │   │   ├── courses/           # Course creation & chat
+│   │   │   ├── credits/           # Credit balance & requests
+│   │   │   ├── interview-buddy/   # Kit generation
+│   │   │   ├── jobs/              # Job search & interactions
+│   │   │   ├── me/                # Current user info
+│   │   │   ├── my-courses/        # Course progress
+│   │   │   ├── notes/             # Note CRUD & sharing
+│   │   │   ├── profile/           # Profile & avatar
+│   │   │   ├── recorder/          # Transcription
+│   │   │   ├── resumes/           # Admin resume management
+│   │   │   ├── review/            # Resume review
+│   │   │   ├── self-test/         # Test creation & grading
+│   │   │   ├── skills/            # Skill library
+│   │   │   ├── templates/         # Resume templates
+│   │   │   └── utilities/         # Document conversion APIs
+│   │   ├── auth/callback/         # OAuth / email verification redirect
+│   │   ├── cron/                  # Scheduled cleanup jobs
+│   │   └── public/resume/         # Public resume sharing endpoint
+│   ├── auth/                      # /login, /signup, /verify-email, /forgot-password, /reset-password
+│   ├── print/[id]/                # Print-mode resume view
+│   └── r/[token]/                 # Public shared resume view
+├── components/
+│   ├── admin/                     # Admin UI (user forms, credit forms, question editor, etc.)
+│   ├── builder/                   # ResumeCanvas, SectionEditor, ATSPanel, TemplateGallery, WritingAssistantModal, etc.
+│   ├── career-map/                # CareerMapPage, Questionnaire, QuestionCard, CareerGraph
+│   │   ├── course/                # CourseDetailPage, CourseChat, StudyGuide, ExerciseSection, SourcesPanel
+│   │   ├── nodes/                 # D3/graph nodes
+│   │   └── roadmap/               # Career progression visualization
+│   ├── editor/                    # RichTextEditor (Tiptap), custom extensions
+│   ├── impersonation/             # Admin impersonation banner
+│   ├── interview-buddy/           # KitPlayer, QuestionCard, CategoryTabs
+│   ├── jobs/                      # JobCard, JobFilters, RecommendationsList
+│   ├── marketing/                 # Landing page sections
+│   ├── my-courses/                # CourseCard, CourseCreationModal, MyCoursesPage
+│   ├── nav/                       # Navbar, Sidebar, MobileNav
+│   ├── playground/                # CodeEditor, ExecutionOutput
+│   ├── quiz/                      # MCQ, TrueFalse, ShortAnswer question components
+│   ├── recorder/                  # ScreenRecorder, AudioRecorder, PlaybackControls
+│   ├── skills/                    # SkillLookupInput, SkillPill, SkillCategory
+│   └── utilities/                 # DocumentConverter, PDFEditor, ImageTools
+│       └── edit-pdf/modes/        # AnnotateMode, DrawMode, TextMode, SignatureMode (Fabric.js v6)
+├── lib/
+│   ├── aiHelpers.js               # AI prompt helpers
+│   ├── auth-helpers.js            # requireUser(), requireAdmin(), rate limiting, impersonation proxy
+│   ├── authUtils.js               # getAuthUser() — reads Supabase session + proxy_uid for impersonation
+│   ├── builderApi.js              # Resume builder API client (TanStack Query fns)
+│   ├── credits.js                 # CREDIT_COSTS, deductCredits(), grantCredits(), getBalance()
+│   ├── email.js                   # Resend email sending
+│   ├── gemini.js                  # callGemini() + callGroqFallback() — primary AI entry point
+│   ├── jobParser.js               # Parse job description text
+│   ├── parser.js                  # Resume parsing (OpenRouter → Groq → regex fallback)
+│   ├── scorer.js                  # ATS scoring logic
+│   ├── storage.js                 # Supabase Storage wrapper
+│   ├── supabase.js                # Supabase admin client (service role)
+│   ├── supabase-browser.js        # Supabase browser client
+│   ├── supabase-server.js         # Supabase server client (SSR)
+│   ├── career-map/
+│   │   ├── buildSearchQuery.js    # Build web search query for career content
+│   │   ├── extractKnowledgeFromResume.js  # Extract known/unknown facts from resume
+│   │   ├── fetchYouTubeVideo.js   # YouTube search with DB caching
+│   │   ├── generateFromWeb.js     # Scrape & generate content from URLs
+│   │   ├── providers/exa.js       # Exa search provider
+│   │   ├── providers/tavily.js    # Tavily search provider
+│   │   ├── sectionTypeRouter.js   # Route section to correct generator
+│   │   ├── structureWebContent.js # Structure raw web text (Groq llama-3.1-8b)
+│   │   ├── synthesiseContent.js   # Synthesize educational content
+│   │   └── youtubeQuotaGuard.js   # YouTube API quota management
+│   ├── jobs/
+│   │   ├── buildJobQuery.js       # Build JSearch query from profile
+│   │   ├── fetchFromJSearch.js    # JSearch API client
+│   │   ├── formatters.js          # Format raw job data
+│   │   ├── jobsCache.js           # 12-hour DB-backed cache
+│   │   └── quotaMonitor.js        # Track JSearch quota (200/month)
+│   ├── playground/
+│   │   ├── htmlBuilder.js         # HTML sandbox
+│   │   ├── javaRunner.js          # Java execution
+│   │   ├── pythonWorker.js        # Python execution
+│   │   └── sqlRunner.js           # SQL execution (sql.js)
+│   ├── recorder/
+│   │   ├── sendToNotes.js         # Save transcript to notes
+│   │   └── useScreenRecorder.js   # Browser MediaRecorder wrapper
+│   ├── self-test/
+│   │   ├── questionLibrary.js     # fetchFromLibrary(), saveQuestionsToLibrary(), normaliseLibraryQuestion()
+│   │   └── prompts/metadataInstruction.js  # AI prompt for question metadata
+│   └── skills/
+│       ├── findExistingByAlias.js # Skill alias lookup
+│       ├── resolveSkill.js        # Resolve skill name to DB record
+│       └── saveTopicHint.js       # Save topic hints per skill
+├── supabase/
+│   └── migrations/                # 25 SQL migration files (see §14)
+├── hooks/                         # React custom hooks (useTheme, etc.)
+├── data/                          # Seed data files
+├── public/                        # Static assets
+├── styles/                        # Global CSS
+├── middleware.js                  # Auth routing middleware (redirects, session validation)
+├── next.config.mjs                # Next.js configuration
+├── tailwind.config.js             # Tailwind + design token config
+└── jsconfig.json                  # Path aliases (@/ → nextjs/)
 ```
 
-All existing functionality (section generation, progress tracking, phases, YouTube, Notes) is preserved. Three new toggleable panels are added via top-bar buttons:
+---
 
-#### Left Panel — Sources
+## 5. Authentication & Authorization
 
-Button: **Sources** in top bar (toggles 240px left panel)
+### Login Flow (Email/Password)
+1. User submits form → `POST /api/v1/auth/login`
+2. Rate limit check: `failed_login_attempts` + `locked_until` from `profiles` table
+3. `supabase.auth.signInWithPassword()` validates credentials
+4. On success: stamp `last_login_at`, clear `failed_login_attempts`
+5. Return `access_token`, `refresh_token`, `isAdmin` flag + set session cookies
+6. Middleware validates `email_confirmed_at` — unconfirmed redirects to `/verify-email`
 
-User can add material to ground the AI chat and study guide:
-- 📄 **PDF** — upload up to 25 MB; text extracted with `pdf-parse`; file stored in Supabase Storage `course-sources` bucket
-- 🔗 **URL** — fetches and strips HTML to plain text
-- 📝 **Text** — free-text paste
+### Signup Flow
+1. `POST /api/v1/auth/signup` — validates email format + password strength (8+ chars, uppercase, number, special char)
+2. Check email not already registered
+3. `supabase.auth.admin.createUser()` with `email_confirm: false`
+4. Create `profiles` row with `status: 'pending'`
+5. Generate confirmation link → send via Resend
+6. User clicks link → `GET /auth/callback` → session established → stamp `last_login_at`
 
-Existing AI-generated sections and web-sourced content are surfaced as `ai` / `web` source types (future enhancement).
+### OAuth / Magic Link Callback
+- Route: `GET /auth/callback`
+- Exchanges code for session via `supabase.auth.exchangeCodeForSession()`
+- Stamps `last_login_at` on success
+- Redirects to `/builder` (user) or `/resumes` (admin)
 
-#### Right Panel — Chat & Study Guide
+### Middleware (`middleware.js`)
+- Validates session on all `/(main)/*` routes
+- Unauthenticated → `/login`
+- Unverified email → `/verify-email`
+- Admin-only routes enforce `role === 'admin'`
 
-Button: **Chat** in top bar (toggles 320px right panel, Chat tab active)
+### `requireUser(request)` — `lib/auth-helpers.js`
+Used by most API routes. Returns `{ user, profile }`. Supports impersonation:
+- If `proxy_uid` cookie is set and the real user is admin → returns the proxied user's identity
 
-**Chat tab** — grounded Q&A against course sources:
-- Model: Gemini 3.5 Flash, temperature 0.2, max 800 tokens
-- Sources injected into system prompt (up to ~12k chars of context)
-- If no sources: falls back to general knowledge with a prompt to add material
-- Chat history persisted in `course_chat_messages`; last 100 messages loaded on open
-- Suggested prompts shown when history is empty
+### `getAuthUser()` — `lib/authUtils.js`
+Used by all builder API routes. Reads Supabase session. Also supports impersonation:
+- Checks `proxy_uid` cookie and `profiles.role === 'admin'` → returns proxied user if active
 
-**Study Guide tab** — auto-generated structured guide:
-- Model: Gemini 3.5 Flash, temperature 0.3, max 1500 tokens
-- Sections: Key Concepts, Key Differences, Common Patterns, Quick Quiz (5–7 Q&A pairs), Sources Used
-- Cached in `course_study_guides` (upsert by course_id); regenerate on demand
-- Export to PDF via existing `/api/v1/utilities/documents/markdown-to-pdf`
-- "Send to Notes" saves to `/api/v1/notes`
+### Admin Impersonation
+1. Admin clicks "Login as" on `/admin/users`
+2. `POST /api/v1/admin/impersonate` → sets `proxy_uid` cookie (8-hour TTL)
+3. Full page reload to `/builder` — all subsequent API calls resolve to the impersonated user
+4. `ImpersonationBanner` shown in `(main)` layout
+5. `DELETE /api/v1/admin/impersonate` → clears cookie, audit logged
 
-**Notes** button still opens `TopicNotesPanel` (unchanged). Notes and Chat/Guide panels are mutually exclusive.
-
-#### New API Routes
-
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/v1/courses/[id]/sources` | List course sources |
-| POST | `/api/v1/courses/[id]/sources` | Add source (multipart for PDF, JSON for url/text) |
-| DELETE | `/api/v1/courses/[id]/sources/[sourceId]` | Remove source |
-| GET | `/api/v1/courses/[id]/chat` | Load chat history (100 messages) |
-| POST | `/api/v1/courses/[id]/chat` | Send message, get grounded reply |
-| GET | `/api/v1/courses/[id]/study-guide/generate` | Load cached guide |
-| POST | `/api/v1/courses/[id]/study-guide/generate` | Generate/regenerate guide |
-
-#### New Database Tables
-
-| Table | Purpose |
-|---|---|
-| `course_sources` | User-added source material (PDF/URL/text) per course; `extracted_text`, `token_count`, `file_path` |
-| `course_chat_messages` | Persisted chat history per course; `role` (user/assistant) |
-| `course_study_guides` | Cached study guide per course (upserted); `source_ids[]`, `generated_at` |
-
-**Migration:** `nextjs/supabase/migrations/20260609_course_workspace.sql`
+### Rate Limiting
+- Failed logins tracked in `profiles.failed_login_attempts`
+- Lock threshold: 5 failures → `locked_until` set to +15 minutes
+- `checkLoginRateLimit()` enforced on every login attempt
 
 ---
 
-### 5.9 Career Map
+## 6. Credit System
 
-**Pages:**
-- `app/(main)/career-map` — search and select target role
-- `app/(main)/career-map/study-plan/[studyPlanId]` — study plan overview
-- `app/(main)/career-map/study-plan/[studyPlanId]/topic/[topicId]` — course topic detail
+### Overview
+All AI-powered features consume credits. Users start with **30 free credits**. Additional credits are requested via admin approval or directly granted by admins.
 
-**Routes:**
-- `POST /api/v1/career-map/learning-roadmap` — generate full study plan for a target role
-- `POST /api/v1/career-map/generate-section-content` — generate content for one topic section (streaming-friendly)
-- `POST /api/v1/career-map/complete-section` — mark section as complete
-- `POST /api/v1/career-map/complete-topic` — mark topic as complete
-- `GET /api/v1/career-map/study-plan/[id]` — fetch plan + all topics
-- `POST /api/v1/career-map/update-study-plan` — update plan metadata
+### Credit Costs (defined in `lib/credits.js`)
 
-**AI model:** Gemini 3.5 Flash (`callGemini`) for roadmap generation and section content generation.
-- Roadmap generation: max 1500 tokens
-- Section content generation: max 1024 tokens; prompt adapts to learner level and learning style; content is 300–600 words structured with `###` sub-headings; includes code examples or exercises when relevant
+| Feature | Type Key | Credits |
+|---------|----------|---------|
+| Resume Import (AI) | `resume_import` | 5 |
+| Course / Study Plan Creation | `course_create` | 5 |
+| ATS Score Analysis | `ats_score` | 3 |
+| Career Path Recommendations | `career_recommend` | 2 |
+| Interview Buddy Kit | `interview_buddy` | 2 |
+| Self-Test Generation | `test_create` | 2 |
+| Study Guide Generation | `study_guide` | 2 |
+| Audio Transcription | `transcription` | 2 |
+| Writing Assist (per use) | `writing_assist` | 1 |
+| Course AI Chat (per message) | `course_chat` | 1 |
+| Career Resume Analysis | `career_analyse` | 1 |
+| AI Job Recommendations | `job_search` | 1 |
 
-**Breadcrumb resolution:**  
-TopBar detects UUID segments in career-map URLs and fetches real names from `/api/v1/career-map/study-plan/[planId]` to show human-readable breadcrumbs (e.g., "Career Map > Frontend Developer > React Hooks") instead of raw UUIDs.
+### Deduction Flow
+1. API route calls `getBalance(userId)` — returns current balance
+2. If `balance < cost` → return HTTP 402 `{ error, code: 'insufficient_credits', balance }`
+3. Execute AI call
+4. On success: `deductCredits(userId, type)` → calls Supabase RPC `deduct_credits()` (atomic SQL)
+5. Logs to `credit_transactions` with type, amount (negative), description
+6. Response includes `credits_used` and `credits_remaining`
 
-**My Courses:**
-- `app/(main)/my-courses` — list enrolled study plans with progress
-- `GET/POST /api/v1/my-courses/[id]` — course details / enroll
-- `GET /api/v1/my-courses/stats` — progress statistics
-- `POST /api/v1/my-courses/[id]/status` — update enrollment status
-- `POST /api/v1/my-courses/[id]/reset-progress` — reset all section/topic progress
+### Grant / Request Flow
+- **Admin grant**: POST `/api/v1/admin/credits` → `grantCredits()` → RPC `add_credits()`
+- **User request**: POST `/api/v1/credits/request` → inserts into `credit_requests` (status: pending)
+- **Admin approves**: POST `/api/v1/admin/credits/requests/[reqId]` → grant + mark approved
 
-### 5.10 Jobs
-
-**Routes:** `GET/POST /api/v1/jobs`, `GET/PUT/DELETE /api/v1/jobs/[id]`  
-`GET /api/v1/jobs/[id]/candidates` — list resumes scored for this job  
-`GET /api/v1/jobs/[id]/score/[resumeId]` — get score for a specific resume  
-
-**Job skill parsing:**
-- `POST /api/v1/jobs/parse-skills` — extract skills from raw JD text
-- Model: Gemini 3.5 Flash
-
-### 5.11 Admin Surface
-
-**Users:**
-- `GET/POST /api/v1/admin/users` — list / create users (sortable by `last_login_at`)
-- `GET/PUT/DELETE /api/v1/admin/users/[id]` — user management
-- `POST /api/v1/admin/users/[id]/actions` — suspend, activate, reset password
-- `GET /api/v1/admin/users/[id]/resumes/[resumeId]` — view any user's resume
-- `GET /api/v1/admin/users/[id]/self-tests` — view user's test history
-- `POST /api/v1/admin/impersonate` — start impersonation session (sets `proxy_uid` cookie; redirects admin to `/builder` as the target user)
-
-**Last Login tracking:**  
-`profiles.last_login_at` is kept in sync automatically via a Postgres trigger on `auth.users` (`on_auth_user_sign_in`). Fires on every sign-in method (password, magic link, OAuth, invite accept). Migration: `nextjs/supabase/migrations/20260612_sync_last_login.sql`.
-
-**Proctored Test Engine (admin):**
-- Create / edit tests: `GET/POST/PUT /api/v1/admin/tests/[id]`
-- Add questions: `GET/POST /api/v1/admin/tests/[id]/questions`
-- Reorder questions: `POST /api/v1/admin/tests/[id]/questions/reorder`
-- Share test via links (token-based): `GET/POST /api/v1/admin/tests/[id]/links`
-- View attempts: `GET /api/v1/admin/tests/[id]/attempts`, `GET .../[aid]`
-
-**Question Library:**
-- `GET/POST /api/v1/admin/question-library` — browse / create questions
-- `PUT/DELETE /api/v1/admin/question-library/[qid]` — edit / delete
-- `POST /api/v1/admin/question-library/generate` — AI-generate questions (Gemini 3.5 Flash)
-- `POST /api/v1/admin/tests/[id]/questions/from-library` — add library questions to a test
-
-**Homepage CMS:**
-- `GET/PUT /api/v1/admin/homepage` — edit landing page content
-- Editable sections: Hero, Features, Steps, Pricing, Testimonials, CTA, Footer, Custom HTML/text blocks
-
-**Skills database:**
-- `GET/POST /api/v1/admin/skills` — manage global skills taxonomy
-- Users can submit new skills; admin approves via pending submissions tab
-
-**Import:**
-- `POST /api/v1/admin/import` — bulk user import
-
-### 5.12 Interview Buddy
-
-**Routes:**  
-`POST /api/v1/interview-buddy/generate` — create kit  
-`GET /api/v1/interview-buddy` — list user's kits (20 most recent)  
-`GET /api/v1/interview-buddy/[kitId]` — fetch kit detail (updates `last_viewed_at`)  
-`DELETE /api/v1/interview-buddy/[kitId]` — delete kit (RLS owner-only)
-
-**Pages:** `app/(main)/interview-buddy` · `app/(main)/interview-buddy/[kitId]`
-
-**Inputs:** Job description text (min 100 chars), role level (entry/mid/senior/lead/exec), depth (quick/standard/deep)
-
-**AI output per kit:**
-- Categorised behavioural interview questions
-- Per-question difficulty chip: `core` (blue), `probing` (orange), `red-flag` (red)
-- Expandable answer coaching with Strong answer / Weak answer guidance (inline colour-formatted)
-- Follow-up probes per question
-- `jdSignal` — which part of the JD triggered the question
-
-**Frontend features:** Category filter pills (All + per-category), expand-all toggle, "Practice with self-test" action, "Print/Save PDF" action, previous kits list on landing page
-
-**AI model:** Gemini 3.5 Flash (`callGemini` with `json: true`), temperature 0.4; `jsonrepair` fallback applied to handle malformed JSON output.
-
-**Database:** `interview_kits` table — RLS via `auth.uid() = user_id`; stores `title`, `company`, `role_level`, `depth`, `jd_text`, `categories` (text[]), `questions` (JSONB), `question_count`, `last_viewed_at`
-
-**Migration:** `nextjs/supabase/migrations/20260609_interview_buddy.sql` — run in prod ✓ (2026-06-09)
+### UI Display
+- **Navbar**: Credit balance pill (red if < 5, gold if ≥ 5) — links to `/credits`
+- **Feature buttons**: Each AI action button shows inline credit cost badge
+- **Credits page** (`/credits`): Balance stats, full cost grid (11 features), request modal, transaction history, request history
 
 ---
 
-### 5.13 Profile
+## 7. AI Model Usage
 
-- `GET/PUT /api/v1/profile` — user profile (name, headline, bio, location, etc.)
-- `POST /api/v1/profile/avatar` — upload avatar to Supabase Storage
+### Primary: Google Gemini 3.5 Flash
+- Entry point: `callGemini(contents, opts)` in `lib/gemini.js`
+- Supports: `system`, `json`, `temperature`, `maxTokens` options
+- JSON mode: `responseMimeType: 'application/json'`
 
-### 5.14 Proctored Test (Candidate)
+### Fallback: Groq llama-3.3-70b-versatile
+- Auto-triggers on HTTP 429, 503, 500, 502, 504 or message patterns matching `overloaded/rate.?limit/quota/unavailable`
+- `callGroqFallback(contents, opts)` — converts Gemini turn format (`{role, parts}`) to OpenAI messages format
+- Endpoint: `https://api.groq.com/openai/v1/chat/completions`
 
-- `GET /api/v1/test/[token]` — load test by share link token (no auth)
-- `POST /api/v1/test/[token]/save` — save answers
-- `POST /api/v1/test/[token]/integrity` — log integrity events (tab-switch, focus-loss, copy-paste, etc.)
+### Resume Parsing Chain (`lib/parser.js`)
+1. OpenRouter `meta-llama/llama-3.3-70b-instruct:free` (primary)
+2. Groq `meta-llama/llama-4-scout-17b-16e-instruct` (fallback)
+3. Regex extraction (last resort: name, email, phone)
 
-### 5.15 Utilities
+### Web Content Structuring
+- `lib/career-map/structureWebContent.js`
+- Groq `llama-3.1-8b-instant` — converts raw scraped text to structured markdown
 
-**Page:** `app/(main)/utilities`  
-34 browser-native tools for PDF manipulation, document conversion, image processing, and PDF security. No authentication required; all processing is either fully client-side (no upload) or via anonymous server routes.
+### Audio Transcription
+- Groq Whisper API — `POST /api/v1/recorder/transcribe` and `transcribe-chunk`
+- 25 MB per chunk limit
 
-**Hub structure** — 5 sections shown on `/utilities`:
+### Where AI is Used (by feature)
 
-#### PDF Tools (14)
+| Feature | Model | Purpose |
+|---------|-------|---------|
+| ATS Scoring | Gemini | 5-dimension resume scoring vs job description |
+| Writing Assist | Gemini | Improve resume section text |
+| Resume Import | OpenRouter → Groq | Parse uploaded PDF/DOCX to structured data |
+| Career Questionnaire | Gemini | Generate adaptive questions (3 for skills, up to 10 for resume mode) |
+| Career Recommendations | Gemini | Recommend 4–6 career roles based on resume |
+| Study Plan Generation | Gemini | Full week-by-week curriculum generation |
+| Topic Content | Gemini + Web Search | Generate concept explanations, real-world applications, prerequisites |
+| Exercises | Gemini | Generate exercises per topic section |
+| Study Guide | Gemini | Synthesize study guide from sources |
+| Course Chat | Gemini | Answer questions about course content |
+| Web Content Structuring | Groq (llama-3.1-8b) | Structure scraped web content |
+| Self-Test Questions | Gemini | Generate MCQ, T/F, short-answer questions |
+| Short Answer Grading | Gemini | Grade free-text answers (accuracy + completeness + clarity) |
+| JD Skill Extraction | Gemini | Extract skills from job descriptions |
+| Interview Buddy | Gemini | Generate interview Q&A kits with follow-ups and guides |
+| Career Resume Analysis | Gemini | Extract profile knowledge from resume for career map |
+| Job Recommendations | JSearch API | Fetch job listings (no LLM for listing fetch itself) |
+| Transcription | Groq Whisper | Transcribe audio recordings |
 
-| Tool | Route | Processing | Description |
-|---|---|---|---|
-| Merge PDF | `/utilities/pdf/merge` | Client (pdf-lib) | Combine multiple PDFs in order |
-| Split PDF | `/utilities/pdf/split` | Client (pdf-lib) | Extract pages or split into multiple files |
-| Compress PDF | `/utilities/pdf/compress` | Server | Reduce file size via re-serialisation |
-| Rotate Pages | `/utilities/pdf/rotate` | Client (pdf-lib + pdfjs) | Per-page or bulk rotation with pdfjs thumbnail preview |
-| Organise Pages | `/utilities/pdf/organise` | Client (pdf-lib + pdfjs) | Reorder/delete pages via drag-and-drop thumbnail grid |
-| Remove Pages | `/utilities/pdf/remove-pages` | Client (pdf-lib + pdfjs) | Click thumbnails to mark pages for removal |
-| Add Page Numbers | `/utilities/pdf/page-numbers` | Client (pdf-lib) | Stamp page numbers; configurable position and font size |
-| Add Watermark | `/utilities/pdf/watermark` | Client (pdf-lib) | Overlay diagonal text (e.g. DRAFT, CONFIDENTIAL) |
-| Crop PDF | `/utilities/pdf/crop` | Client (pdf-lib) | Set Top/Right/Bottom/Left margins in mm; `page.setCropBox()` |
-| Repair PDF | `/utilities/pdf/repair` | Server | Re-load and re-save with `ignoreEncryption: true, throwOnInvalidObject: false` |
-| Extract Images | `/utilities/pdf/extract-images` | Client (pdfjs) | Render pages to canvas at chosen DPI; download as ZIP |
-| Compare PDFs | `/utilities/pdf/compare` | Client (pdfjs) | Side-by-side view of two PDFs with shared page navigator |
-| Redact PDF | `/utilities/pdf/redact` | Client (pdfjs + pdf-lib) | Search text via `page.getTextContent()`; draw black rectangles over matches |
-| Flatten PDF | `/utilities/pdf/flatten` | Client (pdf-lib) | `doc.getForm().flatten()` — bakes form fields into static content |
+---
 
-**Key implementation details — PDF tools:**
-- pdfjs thumbnails: rendered at scale 0.3–0.4 for previews; full DPI scale for exports (72 dpi = scale 1, 150 = 2.08, 300 = 4.17)
-- Redact coordinate system: pdfjs `item.transform[4/5]` is already in PDF user-space (bottom-left origin), directly matching pdf-lib coordinate system
-- Crop: mm to PDF points conversion = `mm * 2.8346`; applied via `page.setCropBox(x_left_pt, y_bottom_pt, width_pt, height_pt)`
-- Rotation: `page.setRotation(degrees(n))` from pdf-lib; existing page rotation is read via pdfjs to initialize CSS preview
+## 8. External Integrations
 
-#### Convert to PDF (7)
+| Service | Purpose | Env Variable(s) |
+|---------|---------|----------------|
+| **Supabase** | PostgreSQL DB, Auth, RLS, Storage | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` |
+| **Google Gemini** | Primary LLM | `GEMINI_API_KEY` |
+| **Groq** | Fallback LLM + Whisper transcription + web structuring | `GROQ_API_KEY` |
+| **OpenRouter** | Resume parsing (free tier Llama) | `OPENROUTER_API_KEY` |
+| **YouTube Data API v3** | Fetch educational videos for study plan topics | `YOUTUBE_API_KEY` |
+| **JSearch (RapidAPI)** | Job listing search (200 calls/month free) | `JSEARCH_API_KEY` |
+| **Tavily Search** | Web search for career content generation | `TAVILY_API_KEY` |
+| **Exa Search** | Alternative web search provider | `EXA_API_KEY` |
+| **Resend** | Transactional email (verification, notifications) | Configured in `lib/email.js` |
 
-| Tool | Route | Processing | Description |
-|---|---|---|---|
-| Word to PDF | `/utilities/documents/word-to-pdf` | Server (Puppeteer) | mammoth → HTML → Puppeteer PDF |
-| Excel to PDF | `/utilities/documents/excel-to-pdf` | Server (SheetJS + Puppeteer) | SheetJS `sheet_to_html()` → styled HTML → Puppeteer landscape A4 PDF |
-| PowerPoint to PDF | `/utilities/documents/ppt-to-pdf` | — | Coming Soon placeholder; suggests Google Slides / LibreOffice |
-| Images to PDF | `/utilities/documents/images-to-pdf` | Client (pdf-lib) | Embeds JPG/PNG (`embedJpg`/`embedPng`); WebP converted via canvas → PNG first; A4/Letter/Auto page sizes |
-| HTML to PDF | `/utilities/documents/html-to-pdf` | Server (Puppeteer) | Accepts pasted HTML or `.html` file; auto-wraps fragments without `<!DOCTYPE` |
-| Text to PDF | `/utilities/documents/text-to-pdf` | Client (pdf-lib) | Wraps plain text into a styled PDF client-side |
-| Markdown to PDF | `/utilities/documents/markdown-to-pdf` | Server (marked + Puppeteer) | Write/Preview tabs; `marked()` → GitHub-styled HTML → Puppeteer PDF |
+---
 
-#### Convert from PDF (5)
+## 9. Feature Inventory
 
-| Tool | Route | Processing | Description |
-|---|---|---|---|
-| PDF to Word | `/utilities/pdf/to-word` | Server (pdfjs + docx) | Text extraction → DOCX via `docx` package |
-| PDF to Excel | `/utilities/pdf/to-excel` | Server (pdfjs + SheetJS) | Y-coordinate snapping (`Math.round(y/5)*5`) for row grouping; one sheet per page |
-| PDF to Images | `/utilities/pdf/to-images` | Client (pdfjs) | Renders each page to canvas; downloads as ZIP via JSZip |
-| PDF to Text | `/utilities/documents/pdf-to-text` | Client (pdfjs) | Extracts raw text; download as `.txt` |
-| PDF to HTML | `/utilities/pdf/to-html` | Server (pdfjs) | Text per page → `<section class="page">` HTML with stylesheet |
+### 9.1 Resume Builder
+**Pages:** `/builder`, `/builder/new`, `/builder/[id]`, `/builder/[id]/review`
 
-#### Image Tools (4)
+| Sub-feature | Details |
+|-------------|---------|
+| Template selection | 15+ templates with static SVG previews (`ResumeTemplatePreviews.jsx`), gallery with search + category + Featured filter |
+| New resume flow | Choose template (click → modal preview), name resume, start blank or import file |
+| Import resume | Upload PDF/DOCX → AI parses to structured JSON → review page with inline editing → confirm → open editor |
+| Section editing | Work experience, education, skills, projects, certifications, languages, summary, references, hobbies, custom |
+| Rich text | Tiptap editor per section |
+| Design panel | Template switch, color scheme, font, spacing |
+| ATS scoring | 5-dimension score (section completeness, keyword match, content quality, formatting, measurable impact) — **3 credits** |
+| Writing assist | AI rewrite for any section — **1 credit** |
+| PDF export | Puppeteer/browser-based PDF generation |
+| DOCX export | Programmatic Word document generation |
+| Share | Generate public share link (`/r/[token]`) |
+| Duplicate | Clone resume with all sections |
+| Print view | `/print/[id]` for browser print |
 
-| Tool | Route | Processing | Description |
-|---|---|---|---|
-| Compress Image | `/utilities/images/compress` | Client (browser-image-compression) | Quality slider 10–100%; `alwaysKeepResolution: true`; multi-file ZIP |
-| Resize Image | `/utilities/images/resize` | Client (Canvas API) | Pixel/percentage/preset resize; aspect lock toggle; JPG/PNG/WebP output |
-| Convert Format | `/utilities/images/convert` | Client (Canvas API) | Multi-file JPG↔PNG↔WebP; quality slider for lossy formats; ZIP download |
-| Crop Image | `/utilities/images/crop` | Client (react-image-crop + Canvas) | Aspect presets (Free/1:1/16:9/4:3/3:2); canvas crop using natural/display scale factor |
+### 9.2 Career Map & Study Plans
+**Pages:** `/career-map`, `/career-map/study-plan/[id]`, `/career-map/study-plan/[id]/topic/[topicId]`
 
-**Key implementation details — image tools:**
-- react-image-crop v11: `centerCrop`, `makeAspectCrop`; `onChange((_, percentCrop) => setCrop(percentCrop))`; `onComplete(pixelCrop)` for pixel coordinates
-- Canvas crop scale: `scaleX = img.naturalWidth / img.width`; `drawImage(img, x*scaleX, y*scaleY, cw, ch, 0, 0, cw, ch)`
+| Sub-feature | Details |
+|-------------|---------|
+| Resume selection | Pick from published resumes; "Create course with my skills instead" if no resume |
+| Career questionnaire (resume mode) | Up to 10 adaptive AI questions covering career_direction, target_role, timeline, learning_commitment, work_environment, blockers |
+| Career recommendations | AI recommends 4–6 roles based on resume + questionnaire — **2 credits** |
+| Skill gap analysis | Compare current skills vs target role requirements |
+| Study plan generation | Full week-by-week curriculum with topics, estimated hours, YouTube video queries — **5 credits** |
+| Topic content | Concept explanation, real-world applications, prerequisites (AI + web search) |
+| YouTube videos | Auto-fetched per topic, ranked by views/engagement/recency, cached in DB |
+| Exercises | AI-generated exercises per section |
+| Study guide | AI-synthesized guide from sources — **2 credits** |
+| Course chat | AI assistant per course — **1 credit** per message |
+| Sources | Add PDF, URL, text, web scrape as course sources |
+| Progress tracking | Section-level and topic-level completion |
+| Skills-based course | Create directly from skills without a resume — **5 credits** |
+| Questionnaire (skills mode) | 1–3 focused questions: `learning_goal`, `timeline`, `focus_area` |
+| Preferences | Hours/day, days/week, learning style (video/reading/project/mixed), current level |
 
-#### Security & Other (4)
+### 9.3 Self-Test / Interview Prep
+**Pages:** `/interview-prep`, `/interview-prep/[id]`
 
-| Tool | Route | Processing | Description |
-|---|---|---|---|
-| Password Protect | `/utilities/security/protect` | Client (pdf-lib) | User + owner password; permission checkboxes (Print, Copy, Edit) via `doc.encrypt()` |
-| Unlock PDF | `/utilities/security/unlock` | Client (pdf-lib) | `PDFDocument.load(bytes, { password })` → copy pages into new unencrypted PDF |
-| Sign PDF | `/utilities/security/sign` | Client (pdf-lib) | Three modes: Draw (canvas mouse/touch), Type (Georgia italic canvas preview), Upload PNG/JPG; placement (bottom-right/center/left), apply to last/all/first page |
-| Merge Word Docs | `/utilities/documents/merge-word` | Server | Combine multiple DOCX files into one |
+| Sub-feature | Details |
+|-------------|---------|
+| Test creation modes | Skills-based, content-based (paste text), JD-based |
+| Question types | MCQ, True/False, Short Answer, Mixed |
+| Difficulty levels | Easy, Medium, Hard (affects scenario weighting) |
+| Timer | Configurable 5–180 min; auto-submits on expiry |
+| Question generation | AI generates questions from question library first, then fills gaps — **2 credits** |
+| JD skill extraction | Extract skills from job description — **1 credit** |
+| Answer submission | MCQ/T/F auto-scored; short answers AI-graded |
+| Short answer grading | AI grades accuracy (0–4), completeness (0–3), clarity (0–3) |
+| Self-grading | Users can self-grade short answers |
+| Results | Overall score, skill breakdown, topic breakdown, question type breakdown |
+| Retake | Create new session from prior attempt |
+| Session history | Filter by mode/date; retake from history |
+| Shareable links | Admin can create public test links (token-based) |
+| Flag for review | F key or flag button per question |
+| Keyboard shortcuts | Arrow keys, F (flag), 1–4 (MCQ options) |
 
-**Shared component notes:**
-- `FileDropZone` — `accept` prop must be a comma-separated string (e.g. `".pdf,application/pdf"`); calls `.split(',')` internally
-- `ToolPageLayout` — wraps all tool pages; accepts `icon` (JSX SVG), `title`, `description`, `parentHref`, `parentLabel`
-- `ProcessingState` — spinner shown during async operations
-- `ToolCard` — used on hub pages; `href`, `name`, `description`, `icon` (JSX), `gradient` (Tailwind `from-/to-` classes)
+### 9.4 Interview Buddy
+**Pages:** `/interview-buddy`, `/interview-buddy/[kitId]`
+
+| Sub-feature | Details |
+|-------------|---------|
+| Kit generation | Paste JD → AI generates categorized Q&A kit — **2 credits** |
+| Depth levels | Quick (basic), Standard, Deep (follow-ups + real-world examples) |
+| Role calibration | Junior/Mid/Senior question calibration |
+| Question categories | Behavioral, Technical, Situational, Role-specific |
+| Answer guides | Model answers + key points per question |
+| Kit player | Navigate Q&A, track progress, view guides |
+| Kit history | List of past kits with last-viewed timestamp |
+
+### 9.5 Job Recommendations
+**Pages:** `/job-recommendations`, `/job-recommendations/saved`
+
+| Sub-feature | Details |
+|-------------|---------|
+| AI job recommendations | JSearch API fetch based on resume skills + location — **1 credit** |
+| 12-hour cache | Results cached in DB; same query reuses cache |
+| Quota tracking | JSearch quota monitored (200 calls/month) |
+| Interactions | Track view, apply, save, dismiss per job |
+| Saved jobs | View all saved job listings |
+| Skill extraction | Parse skills from JD text |
+
+### 9.6 Notes (Block Editor)
+**Pages:** `/notes`, `/notes/[noteId]`
+
+| Sub-feature | Details |
+|-------------|---------|
+| Rich block editor | Tiptap v3 with headings, lists, code, tables, links, images, embeds |
+| Auto-save | Debounced 1s auto-save |
+| Tags | Inline tag extraction and filtering |
+| Backlinks | Bidirectional note linking |
+| Full-text search | Search across all notes content |
+| Sharing | Generate public read-only link (`/notes/public/[token]`) |
+| Pin / Archive | Pin important notes, archive old ones |
+| Duplicate | Clone a note |
+| Folder / parent | Nest notes hierarchically |
+| Context linking | Link note to a resume, topic, or course |
+| Transcript save | Recorder transcripts saved directly to notes |
+
+### 9.7 Utilities Suite
+**Pages:** `/utilities/*`
+
+#### Document Conversion (10 tools)
+Word → PDF, Excel → PDF, HTML → PDF, Markdown → PDF, PPT → PDF, Images → PDF, Merge Word, PDF → Text, Text → PDF, PDF → Word
+
+#### Image Tools (4 tools)
+Compress, Convert (format), Crop, Resize
+
+#### PDF Tools (19 tools)
+Merge, Split, Compress, Repair, Rotate, Flatten, Watermark, Add Page Numbers, Redact, Remove Pages, Organise, Extract Images, Compare, Edit (Fabric.js canvas), PDF → Excel, PDF → HTML, PDF → Images, PDF → Word, Crop
+
+#### PDF Security (3 tools)
+Protect (encrypt), Sign, Unlock
 
 #### Code Playground
+- Languages: Java (Docker), Python (isolated), HTML (sandbox iframe), SQL (sql.js in browser)
+- Live output panel, error display
 
-**Page:** `app/(main)/utilities/playground?lang=web|python|java|sql`  
-**Component:** `components/playground/CodePlayground.jsx`  
-**Sidebar location:** Learning → Code Playground
+#### Screen & Audio Recorder
+- Browser MediaRecorder API
+- Chunked transcription via Groq Whisper — **2 credits**
+- Save transcript to notes
 
-| Language | Execution | Notes |
-|---|---|---|
-| HTML/CSS/JS (`web`) | Client — sandboxed `<iframe>` with `srcdoc` | Live preview; full DOM access |
-| Python | Client — Pyodide WASM via `lib/playground/pythonWorker.js` | Runs in a Web Worker; no install needed |
-| SQL | Client — sql.js WASM served from `/public/sql-wasm.wasm` | In-memory SQLite; create tables, run queries |
-| Java | Server — Wandbox API via `POST /api/v1/playground/run-java` | Proxied server-side to avoid CORS; dynamic compiler resolved from Wandbox `/api/list.json` |
+### 9.8 My Courses
+**Pages:** `/my-courses`
 
-`?lang=<language>` query param sets the initial tab. `CodePlayground` component exposes a language tab switcher.
+| Sub-feature | Details |
+|-------------|---------|
+| Course list | Filter by All / In Progress / Not Started / Completed / Paused |
+| Sort | Last updated, most/least progress, newest/oldest |
+| Search | Text search across course titles |
+| Progress tracking | Per-topic and overall percentage |
+| Course creation | Opens `CourseCreationModal` — skills → questionnaire → preferences → generate |
+| Auto-open on `?create=1` | Navigating to `/my-courses?create=1` opens creation modal immediately |
+| Reset progress | Start course over |
+| Status management | Active, paused, completed states |
 
----
+### 9.9 Admin Dashboard
+**Pages:** `/admin/*`
 
-## 7. Page Inventory
-
-> Persona key: **Admin** = `profiles.role === 'admin'` · **User** = authenticated non-admin · **Public** = unauthenticated
-
-### Auth & Onboarding
-
-| Route | Page | Persona |
-|---|---|---|
-| `/login` | Login | All |
-| `/signup` | Sign Up | All |
-| `/verify-email` | Email Verification | All |
-| `/forgot-password` | Forgot Password | All |
-| `/reset-password` | Reset Password | All |
-| `/join` | Invite Acceptance | All (token-gated) |
-
-### Admin Surface
-
-| Route | Page | Description |
-|---|---|---|
-| `/resumes` | Profiles List | Grid/table of uploaded resumes; status filter; bulk delete |
-| `/resumes/upload` | Upload Resume | Drag-drop file queue; optional job profile link |
-| `/resumes/:id` | Resume Detail | Parsed data tabs + scoring panel; export JSON/CSV |
-| `/jobs` | Job Profiles List | Tile grid; candidate count per job |
-| `/jobs/new` | New Job Profile | Form: basic info, JD, AI skill extraction, scoring weights |
-| `/jobs/:id/edit` | Edit Job Profile | Same form pre-populated |
-| `/jobs/:id` | Job Detail + Candidates | Candidates tab with band filter; Overview + Settings tabs |
-| `/admin` | Dashboard | Stat cards (users, invitations, jobs) + quick actions |
-| `/admin/users` | User List | Search/filter table; role + status chips |
-| `/admin/users/:id` | User Detail + Edit | Role/status edit; danger zone with hold-to-delete |
-| `/admin/invite` | Invite Users | Email chip input; pending invitations panel |
-| `/admin/import` | Bulk CSV Import | 3-step: upload → preview → results |
-
-### User Surface
-
-| Route | Page | Description |
-|---|---|---|
-| `/builder` | Resume List | Resume cards with template swatch; create / upload |
-| `/builder/:id` | Resume Editor | Two-panel split: section editor left, live preview right |
-| `/builder/:id/review` | Review + Export | Full-page A4 preview; Download PDF button |
-| `/interview-buddy` | Interview Buddy — Create | JD paste, role level + depth selectors, previous kits list |
-| `/interview-buddy/:kitId` | Interview Buddy — Kit View | Category filter pills, question cards with expandable coaching, follow-ups |
-| `/utilities/playground` | Code Playground | HTML/CSS/JS · Python · Java · SQL multi-tab editor; `?lang=` param sets initial tab |
-
-### Public
-
-| Route | Page | Description |
-|---|---|---|
-| `/r/:token` | Public Share | Unauthenticated resume view in selected template |
-| `/access-denied` | Access Denied | Role-aware CTA (user → builder, admin → resumes) |
+| Sub-feature | Details |
+|-------------|---------|
+| User management | List, search, filter users; view profile, resumes, test history |
+| User actions | Activate, deactivate, change role, reset password |
+| Impersonation | "Login as" — sets `proxy_uid` cookie, full page reload to `/builder` |
+| Credit management | View balances, grant credits, review requests, transaction history |
+| Question library | CRUD, bulk import, AI generation, difficulty/skill tagging |
+| Test management | Create tests, add questions, generate shareable links, view results |
+| Skill management | CRUD skills, topics, categories, aliases |
+| Template management | Mark templates as Featured — `TemplatePreviewCard` used for consistent preview |
+| Resume management | View uploaded resumes, re-parse, ATS score, export |
+| Bulk import | CSV/JSON data import |
+| Invite management | Send invites, manage pending invites |
+| Audit log | Impersonation start/end logged |
 
 ---
 
-## 8. Block Editor
+## 10. Page Inventory
 
-Built on **Tiptap v3** with ProseMirror. The main component is `BlockEditor` (`components/editor/BlockEditor.jsx`).
+### Public Pages
+| Route | Description |
+|-------|-------------|
+| `/login` | Email/password login with rate limiting |
+| `/signup` | User registration |
+| `/verify-email` | Email verification prompt + resend |
+| `/forgot-password` | Password reset request |
+| `/reset-password` | Set new password (token-based) |
+| `/access-denied` | 403 page |
+| `/r/[token]` | Public shared resume view |
+| `/test/[token]` | Public shared test (token-based) |
+| `/notes/public/[token]` | Public shared note view |
+| `/print/[id]` | Print-mode resume |
 
-### 6.1 Mode Prop
+### User Pages (Protected)
+| Route | Description |
+|-------|-------------|
+| `/builder` | Resume list dashboard |
+| `/builder/new` | New resume wizard (template → title) |
+| `/builder/[id]` | Resume editor |
+| `/builder/[id]/review` | Import review page (scrollable) |
+| `/career-map` | Career map — resume picker → questionnaire → recommendations |
+| `/career-map/study-plan/[id]` | Study plan overview |
+| `/career-map/study-plan/[id]/topic/[topicId]` | Topic learning page (content, videos, exercises, chat) |
+| `/credits` | Credit balance, cost grid, request modal, transaction history |
+| `/interview-buddy` | Interview kit list |
+| `/interview-buddy/[kitId]` | Kit player |
+| `/interview-prep` | Self-test creation + history |
+| `/interview-prep/[id]` | Take self-test |
+| `/job-recommendations` | AI job recommendations |
+| `/job-recommendations/saved` | Saved jobs |
+| `/my-courses` | Enrolled courses list |
+| `/notes` | Notes list |
+| `/notes/[noteId]` | Note editor |
+| `/profile` | Profile settings (name, headline, location, avatar) |
+| `/utilities` | Utility tools hub |
+| `/utilities/documents` | Document converters hub |
+| `/utilities/pdf` | PDF tools hub |
+| `/utilities/playground` | Code sandbox |
+| `/utilities/recorder` | Screen & audio recorder |
+| `/utilities/documents/[tool]` | Individual document converter (10 tools) |
+| `/utilities/images/[tool]` | Individual image tool (4 tools) |
+| `/utilities/pdf/[tool]` | Individual PDF tool (19 tools) |
+| `/utilities/security/[tool]` | PDF security tool (3 tools) |
 
-| Mode | Description | Used On |
-|---|---|---|
-| `full` | All blocks, drag handles, slash menu, bubble menu | Notes |
-| `standard` | Common blocks, no video, no sub-pages | Portfolio sections (planned) |
-| `minimal` | Paragraphs + basic formatting only | Short fields |
-| `readonly` | No editing; renders content only | Review, public views |
-
-`isReadonly = readOnly prop || mode === 'readonly'`  
-`isMinimal = mode === 'minimal'`  
-VideoExtension is excluded when `mode === 'minimal'`.
-
-### 6.2 Supported Block Types
-
-**TEXT**
-- Paragraph (`¶`) — shortcut: Enter
-- Heading 1 (`H1`) — markdown: `# + Space`
-- Heading 2 (`H2`) — markdown: `## + Space`
-- Heading 3 (`H3`) — markdown: `### + Space`
-- Heading 4 (`H4`) — markdown: `#### + Space`
-- Heading 5 (`H5`)
-- Heading 6 (`H6`)
-
-**LISTS**
-- Bulleted List (`•`) — markdown: `- + Space`
-- Numbered List (`1.`) — markdown: `1. + Space`
-- To-do / Task List (`☑`) — markdown: `[] + Space`
-- Toggle — collapsible content block (`▶`)
-
-**MEDIA** *(excluded in `minimal` mode)*
-- Image (`🖼`) — insert by URL via `window.prompt`
-- Video (`▶️`) — embed YouTube, Vimeo, or Loom
-
-**STRUCTURE**
-- Quote / Blockquote (`"`) — markdown: `> + Space`
-- Divider / Horizontal Rule (`—`)
-- Table (`⊞`) — 3×3 default with header row
-
-**CODE**
-- Code Block (`<>`) — markdown: ` ``` + Enter`; supports syntax highlighting
-
-**CALLOUTS** (7 types)
-
-| Block | Icon | `data-callout-type` value |
-|---|---|---|
-| Note (Info) | 💡 | `info` |
-| Success | ✅ | `success` |
-| Warning | ⚠️ | `warning` |
-| Danger | 🚨 | `danger` |
-| Important | 🔥 | `important` |
-| Tip | 🎯 | `tip` |
-| Quote block | 💬 | `quote` |
-
-**PAGES** *(full mode only)*
-- Sub-page (`📄`) — triggers `onCreateSubpage` callback
-
-### 6.3 Inline Formatting (Bubble Menu)
-
-Appears on text selection. Components in `NoteBubbleMenu.jsx`:
-
-Bold · Italic · Underline · Strikethrough · Superscript · Subscript · Inline Code · Link (prompt) · Highlight · H1 / H2 / H3 toggle · Text Alignment (Left / Center / Right / Justify via dropdown)
-
-### 6.4 Keyboard Shortcuts
-
-| Shortcut | Action |
-|---|---|
-| `Ctrl+B` | Bold |
-| `Ctrl+I` | Italic |
-| `Ctrl+U` | Underline |
-| `Ctrl+E` | Inline code |
-| `Ctrl+K` | Link |
-| `Ctrl+Shift+H` | Highlight |
-| `Ctrl+Shift+K` | Delete current block |
-| `# + Space` | Heading 1 |
-| `## + Space` | Heading 2 |
-| `### + Space` | Heading 3 |
-| `#### + Space` | Heading 4 |
-| `- + Space` | Bullet list |
-| `1. + Space` | Numbered list |
-| `[] + Space` | Task list |
-| `` ``` + Enter `` | Code block |
-| `> + Space` | Blockquote |
-
-### 6.5 Slash Menu (`/` command)
-
-Component: `NoteSlashMenu.jsx`
-
-- Triggered by typing `/` at the start of a paragraph
-- Supports keyboard navigation: ↑↓ to move, Enter to insert, Escape to close
-- Mouse hover updates selection; `onMouseDown` (not `onClick`) prevents editor blur
-- Shows "Recently used" section (up to 3 items, stored in `localStorage` under key `editor_recent_blocks`)
-- Real-time fuzzy search across block `label`, `desc`, and `id`
-
-### 6.6 Drag Handle Left Rail (`BlockLeftRail`)
-
-Component: `components/editor/BlockLeftRail.jsx`
-
-- Rendered as a React portal (`createPortal`) at `position: fixed` in `document.body` to escape `overflow: hidden` containers
-- Tracks hovered block via `mousemove` on `editor.view.dom`, walking up the DOM to find direct children of the editor root
-- Block position resolved via `editor.view.posAtDOM(el, 0) - 1` → `$pos.before(1)` / `$pos.after(1)` for top-level block bounds
-- Three buttons per hovered block:
-  - `+` — insert new paragraph below current block
-  - `⠿` (drag handle) — initiate drag-and-drop
-  - `⋮` — open block context menu
-
-**Drag-and-drop (no Tiptap Pro extension required):**
-- `mousedown` on `⠿` → begin tracking mouse movement
-- 2 px blue drop-line renders between blocks during drag
-- Drop target stored in a `ref` (not state) to avoid stale closure in the `mouseup` handler
-- `mouseup` executes ProseMirror transaction:
-  - Moving **down**: `tr.insert(targetPos, node).delete(nodeStart, nodeEnd)` (insert first to keep positions valid)
-  - Moving **up**: `tr.delete(nodeStart, nodeEnd).insert(targetPos, node)`
-- Left rail positions cleared on `#layout-main` scroll events
-
-### 6.7 Block Context Menu (`BlockContextMenu`)
-
-Component: `components/editor/BlockContextMenu.jsx`
-
-- Opens from `⋮` button; renders at `position: fixed` via a React portal at click coordinates
-- Closes on Escape key or outside click (`mousedown` listener on `document`)
-
-**Sections:**
-- **Actions:** Delete block, Duplicate block, Copy text to clipboard
-- **Move:** Move up one block, Move down one block (same ProseMirror transaction pattern as drag-and-drop)
-- **Turn into:** Text (paragraph), H1, H2, H3, Bullet list, Numbered list, Quote, Code block
-
-### 6.8 Custom Tiptap Extensions
-
-| Extension | File | Description |
-|---|---|---|
-| `CalloutExtension` | `extensions/CalloutNode.jsx` | 7 callout variants; `data-callout-type` attribute; content via `block+` |
-| `VideoExtension` | `extensions/VideoNode.jsx` | YouTube/Vimeo/Loom embed; `toEmbedUrl()` transforms share URLs to embed URLs; renders `<iframe>` at 16:9 |
-| `BlockShortcuts` | `extensions/BlockShortcuts.js` | `Ctrl+Shift+K` keyboard shortcut to delete current block |
-
-### 6.9 Tiptap Extensions Used
-
-From `@tiptap/*` packages:
-
-`StarterKit` (heading levels 1–6, paragraph, lists, code block, blockquote, horizontal rule, bold, italic, strike, code, history) · `TaskList` + `TaskItem` · `TextAlign` · `Image` · `Link` · `Highlight` · `Underline` · `Superscript` · `Subscript` · `Table` + `TableRow` + `TableCell` + `TableHeader` · `Placeholder` · `Typography`
+### Admin Pages (Role: admin)
+| Route | Description |
+|-------|-------------|
+| `/admin` | Admin dashboard home |
+| `/admin/credits` | Credit management (balances, grants, requests) |
+| `/admin/import` | Bulk data import |
+| `/admin/invite` | Manage invitations |
+| `/admin/question-library` | Question CRUD |
+| `/admin/question-library/new` | Create question |
+| `/admin/question-library/[id]/edit` | Edit question |
+| `/admin/skills` | Skill library management |
+| `/admin/templates` | Template management (Featured flag) |
+| `/admin/tests` | Test management |
+| `/admin/tests/new` | Create test |
+| `/admin/tests/[id]` | Edit test |
+| `/admin/tests/[id]/links` | Shareable test links |
+| `/admin/tests/[id]/results` | Test results |
+| `/admin/tests/[id]/results/[aid]` | Individual attempt |
+| `/admin/users` | User list + "Login as" |
+| `/admin/users/[id]` | User detail (tabs: account, resumes, self-tests) |
+| `/admin/users/[id]/resumes/[resumeId]` | Resume detail |
+| `/admin/users/[id]/self-tests/[sessionId]` | Test session detail |
 
 ---
 
-## 9. API Route Inventory
-
-### Resume
-
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/v1/resumes` | List user's resumes |
-| POST | `/api/v1/resumes/upload` | Upload & parse resume (Gemini 3.5 Flash) |
-| GET | `/api/v1/resumes/[id]` | Get parsed resume |
-| PUT | `/api/v1/resumes/[id]` | Update resume data |
-| DELETE | `/api/v1/resumes/[id]` | Delete resume |
-| POST | `/api/v1/resumes/[id]/reparse` | Re-run AI parsing |
-| POST | `/api/v1/resumes/[id]/score` | ATS score vs job — **3 credits** |
-| GET | `/api/v1/resumes/[id]/export` | Export resume |
-| GET | `/api/public/resume/[token]` | Public resume view (no auth) |
-
-### Builder
-
-| Method | Path | Description |
-|---|---|---|
-| GET/POST | `/api/v1/builder` | List / create resume builders |
-| GET/PUT/DELETE | `/api/v1/builder/[id]` | Get / update / delete builder |
-| GET/POST | `/api/v1/builder/[id]/sections` | List / add sections |
-| PUT/DELETE | `/api/v1/builder/[id]/sections/[sectionId]` | Update / delete section |
-| POST | `/api/v1/builder/[id]/import` | Import from resume file — **5 credits** |
-| POST | `/api/v1/builder/[id]/ats-score` | ATS score builder — **3 credits** |
-| POST | `/api/v1/builder/[id]/writing-assist` | AI rewrite section — **1 credit** |
-| POST | `/api/v1/builder/[id]/photo` | Upload photo |
-| POST | `/api/v1/builder/[id]/share` | Generate share link |
-| POST | `/api/v1/builder/[id]/duplicate` | Duplicate builder |
-| POST | `/api/v1/builder/[id]/export/pdf` | Export PDF (Puppeteer) |
-| POST | `/api/v1/builder/[id]/export/word` | Export DOCX |
-
-### Jobs
-
-| Method | Path | Description |
-|---|---|---|
-| GET/POST | `/api/v1/jobs` | List / create job profiles |
-| GET/PUT/DELETE | `/api/v1/jobs/[id]` | Job CRUD |
-| GET | `/api/v1/jobs/[id]/candidates` | Scored candidates for job |
-| GET | `/api/v1/jobs/[id]/score/[resumeId]` | Score for specific resume |
-| POST | `/api/v1/jobs/parse-skills` | Extract skills from JD (Groq) |
-
-### Self-Test
-
-| Method | Path | Description |
-|---|---|---|
-| POST | `/api/v1/self-test` | Create test session |
-| GET | `/api/v1/self-test/[id]` | Fetch session + questions |
-| POST | `/api/v1/self-test/[id]/self-grade` | AI-grade short-answer responses |
-| POST | `/api/v1/self-test/skills` | List available skills |
-| POST | `/api/v1/self-test/jd-extract` | Extract skills from JD |
-
-### Career Map
-
-| Method | Path | Description |
-|---|---|---|
-| POST | `/api/v1/career-map/learning-roadmap` | Generate study plan (Gemini 3.5 Flash) |
-| POST | `/api/v1/career-map/generate-section-content` | Generate topic section (Gemini 3.5 Flash) |
-| POST | `/api/v1/career-map/complete-section` | Mark section complete |
-| POST | `/api/v1/career-map/complete-topic` | Mark topic complete |
-| GET | `/api/v1/career-map/study-plan/[id]` | Get plan + all topics |
-| POST | `/api/v1/career-map/update-study-plan` | Update plan metadata |
-| GET | `/api/v1/my-courses/[id]` | Course enrollment details |
-| GET | `/api/v1/my-courses/stats` | Enrollment statistics |
-| POST | `/api/v1/my-courses/[id]/status` | Update enrollment status |
-| POST | `/api/v1/my-courses/[id]/reset-progress` | Reset progress |
+## 11. API Route Inventory
 
 ### Auth
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/api/v1/auth/login` | Email/password login |
+| POST | `/api/v1/auth/signup` | User registration |
+| POST | `/api/v1/auth/verify-email` | Resend verification email |
+| POST | `/api/v1/auth/accept-invite` | Accept org invite |
+| GET | `/auth/callback` | OAuth / email verification redirect |
 
-| Method | Path | Description |
-|---|---|---|
-| POST | `/api/v1/auth/login` | Login |
-| POST | `/api/v1/auth/signup` | Register |
-| POST | `/api/v1/auth/resend-verification` | Resend email verification |
-| POST | `/api/v1/auth/forgot-password` | Send password reset email |
-| POST | `/api/v1/auth/reset-password` | Set new password from reset token |
-| POST | `/api/v1/auth/invite` | Generate invite |
-| POST | `/api/v1/auth/accept-invite` | Accept invite token (`/join` page) |
-| GET | `/api/v1/auth/invite/[token]` | Validate invite token + pre-fill email/role |
+### Builder — Resumes
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/api/v1/builder` | List user's resumes |
+| POST | `/api/v1/builder` | Create resume |
+| GET | `/api/v1/builder/[id]` | Get resume with sections |
+| PUT | `/api/v1/builder/[id]` | Update resume (personal info, template, title) |
+| DELETE | `/api/v1/builder/[id]` | Delete resume |
+| POST | `/api/v1/builder/[id]/duplicate` | Clone resume |
+| POST | `/api/v1/builder/[id]/export/pdf` | Export to PDF |
+| POST | `/api/v1/builder/[id]/export/word` | Export to DOCX |
+| POST | `/api/v1/builder/[id]/import` | AI parse uploaded file — **5 credits** |
+| POST | `/api/v1/builder/[id]/ats-score` | ATS score analysis — **3 credits** |
+| POST | `/api/v1/builder/[id]/writing-assist` | AI writing suggestions — **1 credit** |
+| GET/POST | `/api/v1/builder/[id]/photo` | Upload/delete profile photo |
+| GET/POST | `/api/v1/builder/[id]/share` | Manage share link |
+| GET/POST | `/api/v1/builder/[id]/sections` | List/create sections |
+| GET/PUT/DELETE | `/api/v1/builder/[id]/sections/[sectionId]` | Section CRUD |
+
+### Career Map
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/api/v1/career-map/analyse-resume` | Extract profile from resume — **1 credit** |
+| POST | `/api/v1/career-map/recommend` | Career path recommendations — **2 credits** |
+| POST | `/api/v1/career-map/next-question` | Generate next questionnaire question |
+| POST | `/api/v1/career-map/submit-answer` | Save questionnaire answer |
+| POST | `/api/v1/career-map/generate-study-plan` | Create study plan — **5 credits** |
+| POST | `/api/v1/career-map/update-study-plan` | Regenerate/update study plan — **5 credits** |
+| POST | `/api/v1/career-map/learning-roadmap` | Generate learning roadmap — **5 credits** |
+| POST | `/api/v1/career-map/generate-section-content` | Generate topic section content |
+| POST | `/api/v1/career-map/generate-exercises` | Generate exercises for topic |
+| POST | `/api/v1/career-map/generate-summary` | Generate topic summary |
+| POST | `/api/v1/career-map/complete-topic` | Mark topic complete |
+| POST | `/api/v1/career-map/complete-section` | Mark section complete |
+| GET | `/api/v1/career-map/published-resumes` | List published resumes for analysis |
+| POST | `/api/v1/career-map/fetch-youtube-videos` | Bulk YouTube video fetch |
+| POST | `/api/v1/career-map/fetch-youtube-videos/single` | Single video fetch |
+
+### Courses
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/api/v1/courses/create-from-skills` | Create course from skill list |
+| POST | `/api/v1/courses/[id]/chat` | AI chat message — **1 credit** |
+| GET/POST | `/api/v1/courses/[id]/sources` | Course sources management |
+| DELETE | `/api/v1/courses/[id]/sources/[sourceId]` | Delete source |
+| POST | `/api/v1/courses/[id]/study-guide/generate` | Generate study guide — **2 credits** |
+| GET | `/api/v1/my-courses` | List enrolled courses |
+| GET/PUT | `/api/v1/my-courses/[id]` | Course detail / update status |
+| POST | `/api/v1/my-courses/[id]/reset-progress` | Reset course progress |
+| GET | `/api/v1/my-courses/stats` | Course statistics |
 
 ### Credits
-
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/v1/credits` | Get balance + recent transactions |
-| POST | `/api/v1/credits/request` | Submit credit request |
-
-### Profile
-
-| Method | Path | Description |
-|---|---|---|
-| GET/PUT | `/api/v1/profile` | Get / update profile |
-| POST | `/api/v1/profile/avatar` | Upload avatar |
-
-### Admin
-
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/v1/admin/users` | List users |
-| GET/PUT/DELETE | `/api/v1/admin/users/[id]` | Manage user |
-| POST | `/api/v1/admin/users/[id]/actions` | Suspend / activate |
-| POST | `/api/v1/admin/invite` | Invite user |
-| POST | `/api/v1/admin/import` | Bulk import |
-| GET/POST | `/api/v1/admin/tests` | Test library CRUD |
-| GET/PUT/DELETE | `/api/v1/admin/tests/[id]` | Test management |
-| GET/POST | `/api/v1/admin/tests/[id]/questions` | Questions CRUD |
-| PUT/DELETE | `/api/v1/admin/tests/[id]/questions/[qid]` | Edit/delete question |
-| POST | `/api/v1/admin/tests/[id]/questions/reorder` | Reorder questions |
-| GET/POST | `/api/v1/admin/tests/[id]/links` | Share link management |
-| DELETE | `/api/v1/admin/tests/[id]/links/[lid]` | Delete share link |
-| GET | `/api/v1/admin/tests/[id]/attempts` | All attempts |
-| GET/PUT | `/api/v1/admin/tests/[id]/attempts/[aid]` | Attempt detail / score |
-| GET/POST | `/api/v1/admin/question-library` | Question library |
-| PATCH/DELETE | `/api/v1/admin/question-library/[qid]` | Edit / approve / suppress / delete question |
-| DELETE | `/api/v1/admin/question-library/bulk` | Bulk delete questions |
-| POST | `/api/v1/admin/question-library/generate` | AI-generate questions (Gemini 3.5 Flash) |
-| POST | `/api/v1/admin/question-library/import` | Bulk import questions from CSV or JSON |
-| GET | `/api/v1/admin/question-library/facets` | Skill and topic facets for filter dropdowns |
-| POST | `/api/v1/admin/tests/[id]/questions/from-library` | Add from library |
-| POST | `/api/v1/admin/impersonate` | Start impersonation session as a user |
-| GET | `/api/v1/admin/credits` | Credit overview |
-| POST | `/api/v1/admin/credits` | Grant credits |
-| GET | `/api/v1/admin/credits/requests` | Pending credit requests |
-| PATCH | `/api/v1/admin/credits/requests/[reqId]` | Approve / reject |
-| GET | `/api/v1/admin/credits/transactions` | Transaction log |
-| GET/PUT | `/api/v1/admin/homepage` | Homepage CMS |
-| GET/POST | `/api/v1/admin/templates` | Resume templates |
-| GET/POST | `/api/v1/admin/skills` | Skills taxonomy management |
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/api/v1/credits` | Current balance + recent transactions |
+| GET/POST | `/api/v1/credits/request` | List / submit credit requests |
 
 ### Interview Buddy
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET/POST | `/api/v1/interview-buddy` | List kits / create kit |
+| GET | `/api/v1/interview-buddy/[kitId]` | Get kit details |
+| POST | `/api/v1/interview-buddy/generate` | Generate interview kit — **2 credits** |
 
-| Method | Path | Description |
-|---|---|---|
-| POST | `/api/v1/interview-buddy/generate` | Generate interview kit from JD (Gemini 3.5 Flash) |
-| GET | `/api/v1/interview-buddy` | List user's kits (20 most recent) |
-| GET | `/api/v1/interview-buddy/[kitId]` | Get kit detail; updates `last_viewed_at` |
-| DELETE | `/api/v1/interview-buddy/[kitId]` | Delete kit (owner-only via RLS) |
+### Jobs
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/api/v1/jobs/recommendations` | AI job recommendations — **1 credit** |
+| POST | `/api/v1/jobs/interact` | Track view/apply/save/dismiss |
+| GET | `/api/v1/jobs/saved` | Saved jobs list |
+| POST | `/api/v1/jobs/parse-skills` | Extract skills from JD |
+| GET/POST | `/api/v1/jobs` | Admin: list/create jobs |
+| GET/PUT/DELETE | `/api/v1/jobs/[id]` | Admin: job CRUD |
+| POST | `/api/v1/jobs/[id]/score/[resumeId]` | Score resume against job |
+| GET | `/api/v1/jobs/[id]/candidates` | Admin: job candidates |
 
-### Proctored Test (Candidate)
+### Notes
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET/POST | `/api/v1/notes` | List / create notes |
+| GET/PUT/DELETE | `/api/v1/notes/[id]` | Note CRUD |
+| POST | `/api/v1/notes/[id]/archive` | Archive note |
+| POST | `/api/v1/notes/[id]/pin` | Pin/unpin |
+| POST | `/api/v1/notes/[id]/duplicate` | Clone note |
+| POST | `/api/v1/notes/[id]/share` | Generate share link |
+| GET | `/api/v1/notes/[id]/backlinks` | Get bidirectional links |
+| GET | `/api/v1/notes/public/[token]` | Public note read |
+| GET | `/api/v1/notes/search` | Full-text search |
+| POST | `/api/v1/notes/upload-image` | Upload image |
+| GET | `/api/v1/notes/tags` | Tag list |
 
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/v1/test/[token]` | Load test by share link token |
-| POST | `/api/v1/test/[token]/save` | Save answers |
-| POST | `/api/v1/test/[token]/integrity` | Log integrity event |
+### Self-Test
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET/POST | `/api/v1/self-test` | Session history / create test — POST costs **2 credits** |
+| GET | `/api/v1/self-test/[id]` | Session details |
+| POST | `/api/v1/self-test/[id]/submit` | Submit answers |
+| POST | `/api/v1/self-test/[id]/grade-short-answers` | AI grade short answers |
+| POST | `/api/v1/self-test/[id]/self-grade` | Self-grade short answers |
+| POST | `/api/v1/self-test/evaluate-short-answer` | Evaluate single answer |
+| POST | `/api/v1/self-test/jd-extract` | Extract skills from JD |
+| GET | `/api/v1/self-test/sessions` | Paginated session list |
+| GET | `/api/v1/self-test/sessions/[id]` | Session detail |
+| POST | `/api/v1/self-test/sessions/[id]/retake` | Create retake session |
+| GET | `/api/v1/self-test/skills` | Available test skills |
 
-### Utilities (server-side routes only — most tools are fully client-side)
+### Recorder
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/api/v1/recorder/transcribe` | Transcribe audio — **2 credits** |
+| POST | `/api/v1/recorder/transcribe-chunk` | Transcribe audio chunk — **2 credits** |
+| POST | `/api/v1/recorder/sessions` | Save recording session |
 
-| Method | Path | Description |
-|---|---|---|
-| POST | `/api/v1/utilities/pdf/compress` | Compress PDF via re-serialisation |
-| POST | `/api/v1/utilities/pdf/repair` | Rebuild corrupted PDF (`ignoreEncryption`, `throwOnInvalidObject: false`) |
-| POST | `/api/v1/utilities/pdf/to-excel` | Extract PDF text → XLSX (pdfjs + SheetJS) |
-| POST | `/api/v1/utilities/pdf/to-html` | Extract PDF text → structured HTML (pdfjs) |
-| POST | `/api/v1/utilities/pdf/to-word` | Extract PDF text → DOCX (pdfjs + docx) |
-| POST | `/api/v1/utilities/documents/excel-to-pdf` | XLSX → PDF (SheetJS + Puppeteer, landscape A4) |
-| POST | `/api/v1/utilities/documents/html-to-pdf` | HTML → PDF (Puppeteer) |
-| POST | `/api/v1/utilities/documents/markdown-to-pdf` | Markdown → PDF (marked + Puppeteer) |
-| POST | `/api/v1/utilities/documents/word-to-pdf` | DOCX → PDF (mammoth + Puppeteer) |
-| POST | `/api/v1/utilities/documents/merge-word` | Merge multiple DOCX files into one |
+### Profile & User
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/api/v1/me` | Current user info |
+| GET/PUT | `/api/v1/profile` | User profile |
+| POST | `/api/v1/profile/avatar` | Upload avatar |
 
-All utilities routes accept `multipart/form-data` with a `file` field (or `html`/`markdown` text fields where noted). No authentication required.
+### Skills
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/api/v1/skills` | Full skill list |
+| GET | `/api/v1/skills/search` | Fuzzy skill search |
+| GET | `/api/v1/skills/categories` | Skill categories |
+| GET | `/api/v1/skills/trending` | Trending skills |
+| GET | `/api/v1/skills/popular` | Popular skills |
+| GET | `/api/v1/skills/analytics` | Usage analytics |
+| GET | `/api/v1/skills/[id]` | Skill detail |
+| GET | `/api/v1/skills/[id]/topics` | Skill topics |
 
-### Code Playground
+### Templates
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/api/v1/templates` | List templates with featuredIds |
 
-| Method | Path | Description |
-|---|---|---|
-| POST | `/api/v1/playground/run-java` | Proxy Java code to Wandbox API (avoids CORS); resolves compiler from `/api/list.json` dynamically |
+### Admin APIs
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/api/v1/admin/users` | User list with pagination/sort/filter |
+| GET/PUT | `/api/v1/admin/users/[id]` | User detail / update |
+| POST | `/api/v1/admin/users/[id]/actions` | User actions (activate, deactivate, etc.) |
+| GET | `/api/v1/admin/credits` | All users' credit balances |
+| POST | `/api/v1/admin/credits` | Grant credits to user |
+| GET | `/api/v1/admin/credits/requests` | Pending credit requests |
+| POST/PUT | `/api/v1/admin/credits/requests/[reqId]` | Approve/reject credit request |
+| GET | `/api/v1/admin/credits/transactions` | Transaction history |
+| POST | `/api/v1/admin/impersonate` | Start impersonation (sets proxy_uid cookie) |
+| DELETE | `/api/v1/admin/impersonate` | End impersonation |
+| GET/POST | `/api/v1/admin/question-library` | Question CRUD |
+| POST | `/api/v1/admin/question-library/generate` | AI generate questions |
+| GET/POST | `/api/v1/admin/tests` | Test management |
+| GET/PUT/DELETE | `/api/v1/admin/tests/[id]` | Test CRUD |
+| GET/POST | `/api/v1/admin/tests/[id]/links` | Shareable test links |
+| GET | `/api/v1/admin/tests/[id]/results` | Test attempt results |
+| GET/POST | `/api/v1/admin/skills` | Skill CRUD |
+| GET/PATCH | `/api/v1/admin/templates` | Template management (Featured flag) |
+| POST | `/api/v1/admin/import` | Bulk data import |
+| POST | `/api/v1/admin/invite` | Send invite |
 
 ---
 
-## 10. Database Tables
+## 12. Component Directory
 
-| Table | Purpose |
-|---|---|
-| `resumes` | Uploaded resume files; `parsed_data` (JSONB), `raw_text` |
-| `builder_sections` | Resume builder section data |
-| `notes` | Block editor notes; `content` (Tiptap JSON JSONB), `parent_id` for hierarchy |
-| `study_plans` | Career map study plans |
-| `study_plan_topics` | Topics within a plan; `sections` (JSONB array with `generation_status`) |
-| `career_map_sessions` | Career map assessment sessions; `extracted_profile` |
-| `career_role_database` | Master role/skill taxonomy; `required_skills`, `core_skills`, `avg_years_exp` |
-| `self_test_sessions` | Self-test sessions with questions (JSONB) |
-| `self_test_attempts` | Candidate answers and scores |
-| `admin_tests` | Admin-created proctored tests |
-| `admin_test_questions` | Questions for admin tests |
-| `admin_test_links` | Share links with token for proctored tests |
-| `admin_test_attempts` | Candidate attempt records with integrity events |
-| `question_library` | Reusable admin question bank |
-| `user_credits` | Current credit balance per user |
-| `credit_transactions` | Full ledger of all credit changes (amount, type, description) |
-| `ai_usage` | Portfolio AI usage tracking for monthly rate limiting |
-| `jobs` | Job profiles (title, JD text, required skills) |
-| `job_skills` | Normalized skills per job |
-| `organizations` | Multi-tenant organization support |
-| `profiles` | User profile data (name, headline, avatar URL, bio, location); `last_login_at` synced from `auth.users.last_sign_in_at` via trigger |
-| `skills` | Global skills taxonomy with pending approval queue |
-| `interview_kits` | Interview Buddy kits; `questions` (JSONB), `categories` (text[]), `jd_text`, `last_viewed_at` |
-| `question_library` entries have `is_approved`, `ai_generated`, `generated_for`, `source`, `skill_tag`, `topic`, `difficulty`, `points` | — |
-| `course_sources` | User-added source material per course (PDF/URL/text); `extracted_text`, `token_count`, `file_path` |
-| `course_chat_messages` | Grounded chat history per course; `role` (user/assistant) |
-| `course_study_guides` | Cached AI study guide per course (upserted); `source_ids[]`, `generated_at` |
+### `components/builder/`
+| Component | Purpose |
+|-----------|---------|
+| `ResumeCanvas.jsx` | Main editor canvas — orchestrates all editor panels |
+| `ResumePreview.jsx` | Live resume renderer with 15+ templates |
+| `ResumeTemplatePreviews.jsx` | Static SVG preview components for all 15 templates |
+| `TemplatePreviewCard.jsx` | Shared card for template preview (used in gallery + new resume + admin) |
+| `TemplateGallery.jsx` | Modal gallery for template switching within builder |
+| `SectionEditor.jsx` | Per-section editing UI |
+| `ATSPanel.jsx` | ATS score display, dimension breakdown, improvement suggestions |
+| `DesignPanel.jsx` | Template/color/font/spacing controls |
+| `WritingAssistantModal.jsx` | AI writing suggestions modal |
+| `ShareModal.jsx` | Resume sharing controls |
+| `TemplateThumbnail` | (exported from ResumePreview) — live mini render (fallback only) |
+
+### `components/career-map/`
+| Component | Purpose |
+|-----------|---------|
+| `CareerMapPage.jsx` | Main career map wizard (resume picker → questionnaire → roles) |
+| `ResumePicker.jsx` | Select resume for career analysis (shows 1 credit badge) |
+| `NoResumeEmptyState.jsx` | Empty state when no published resume — links to `/my-courses?create=1` |
+| `Questionnaire.jsx` | State machine for adaptive AI questionnaire |
+| `QuestionCard.jsx` | Renders individual question with progress dots |
+| `OptionsQuestion.jsx` | MCQ-style 4-option question |
+| `FreeTextQuestion.jsx` | Free text answer input |
+| `QuestionnaireComplete.jsx` | Completion screen with confidence score |
+| `ConfidenceDots.jsx` | Visual confidence indicator |
+
+### `components/career-map/course/`
+| Component | Purpose |
+|-----------|---------|
+| `CourseDetailPage.jsx` | Full topic learning page |
+| `CourseChat.jsx` | AI chat interface for course |
+| `SourcesPanel.jsx` | Manage course sources (PDF, URL, etc.) |
+| `StudyGuide.jsx` | Rendered study guide |
+| `ExerciseSection.jsx` | Exercises display |
+| `SectionNavSidebar.jsx` | Section navigation |
+| `GeneratedContent.jsx` | Render AI-generated topic content |
+| `AddSourceModal.jsx` | Add new source |
+
+### `components/my-courses/`
+| Component | Purpose |
+|-----------|---------|
+| `MyCoursesPage.jsx` | Course list with tabs/filters/search; reads `?create=1` to auto-open modal |
+| `CourseCreationModal.jsx` | 3-step creation: skills → questionnaire → preferences → generate |
+| `CourseCard.jsx` | Course card with progress bar |
+| `CourseStatsBar.jsx` | Overall stats bar |
+| `EmptyState.jsx` | No courses empty state |
+| `PreferencesForm` | (inside CourseCreationModal) Hours/day, days/week, style, level |
+
+### `components/nav/`
+| Component | Purpose |
+|-----------|---------|
+| `Navbar.jsx` | Top nav with credit balance pill, dark mode toggle, user menu |
+| `Sidebar.jsx` | Left sidebar navigation |
+
+### `components/utilities/edit-pdf/`
+| Component | Purpose |
+|-----------|---------|
+| `FabricCanvas.jsx` | Fabric.js v6 canvas wrapper; overlays PDF canvas |
+| `EditPDFEditor.jsx` | Main PDF editor — orchestrates mode + canvas |
+| `modes/TextMode.jsx` | Add/edit text on PDF |
+| `modes/AnnotateMode.jsx` | Draw shapes (rect, ellipse, line, triangle) |
+| `modes/DrawMode.jsx` | Freehand drawing with PencilBrush |
+| `modes/SignatureMode.jsx` | Add signature image (uses FabricImage.fromURL) |
+
+---
+
+## 13. Library Directory
+
+### `lib/credits.js`
+```js
+CREDIT_COSTS    // { ats_score: 3, resume_import: 5, writing_assist: 1, ... }
+CREDIT_LABELS   // Human-readable labels for each type
+INITIAL_CREDITS // 30
+ensureCredits(userId)         // Create record if missing
+getBalance(userId)            // Returns current balance
+deductCredits(userId, type)   // Atomic deduct; returns { ok, balance }
+grantCredits(userId, amount, type, description) // Admin/system grant
+getTransactions(userId, limit)  // Recent transaction history
+```
+
+### `lib/gemini.js`
+```js
+callGemini(contents, opts)     // Primary AI call; auto-falls back to Groq
+callGroqFallback(contents, opts) // Direct Groq call (internal)
+// opts: { system, json, temperature, maxTokens }
+// Auto-fallback on: 429, 503, 500, 502, 504 or overloaded/rate-limit messages
+```
+
+### `lib/auth-helpers.js`
+```js
+requireUser(request)    // Validates auth; supports proxy_uid impersonation
+requireAdmin(request)   // requireUser + role === 'admin' check
+checkLoginRateLimit(userId)       // Rate limit check
+recordFailedLogin(userId)         // Increment failure count
+clearFailedLogins(userId)         // Reset + stamp last_login_at
+auditLog({ performedBy, action, targetUserId, ... })
+```
+
+### `lib/authUtils.js`
+```js
+getAuthUser()   // Reads Supabase session + proxy_uid impersonation support
+// Used by all builder/* API routes
+```
+
+### `lib/self-test/questionLibrary.js`
+```js
+fetchFromLibrary(skill, difficulty, type, count)  // Two-pass library lookup
+saveQuestionsToLibrary(questions)                 // Auto-save AI questions
+normaliseLibraryQuestion(q)                       // Map to session format
+updateLibraryQuestionStats(questionId, correct)   // Update times_correct/incorrect
+```
+
+---
+
+## 14. Database Schema
+
+### User & Auth
+| Table | Key Columns |
+|-------|-------------|
+| `auth.users` | Supabase managed — id, email, created_at, email_confirmed_at |
+| `profiles` | id (→ auth.users), first_name, last_name, email, role, status, headline, city, country, avatar_url, last_login_at, failed_login_attempts, locked_until, updated_at |
+
+### Credits
+| Table | Key Columns |
+|-------|-------------|
+| `user_credits` | id, user_id, balance (default 30), created_at, updated_at |
+| `credit_transactions` | id, user_id, amount (negative=debit), type, description, metadata, created_at |
+| `credit_requests` | id, user_id, amount_requested, reason, status (pending/approved/rejected), reviewed_by, reviewed_at, admin_notes |
 
 **Supabase RPCs:**
+- `deduct_credits(p_user_id, p_amount)` → returns new balance or -1 if insufficient
+- `add_credits(p_user_id, p_amount)` → returns new balance
 
-| RPC | Signature | Purpose |
-|---|---|---|
-| `deduct_credits` | `(p_user_id uuid, p_amount int) → int` | Atomic credit deduction; returns new balance or -1 if insufficient |
-| `add_credits` | `(p_user_id uuid, p_amount int) → int` | Admin credit grant; returns new balance |
+### Resume Builder
+| Table | Key Columns |
+|-------|-------------|
+| `builder_resumes` | id, user_id, title, template_id, personal_info (JSONB), created_at, updated_at |
+| `builder_sections` | id, resume_id, user_id, type, title, content (JSONB), position, enabled |
+| `resumes` | id, user_id, file_path, file_name, parsed_data (JSONB), ats_score, status, created_at |
+
+### Career Map & Study Plans
+| Table | Key Columns |
+|-------|-------------|
+| `career_map_sessions` | id, user_id, resume_id, extracted_profile (JSONB), selected_skills, creation_mode, questionnaire (JSONB), status |
+| `career_map_questions` | id, session_id, question_number, question_text, question_type, question_intent, options (JSONB), answer_value, answer_label, confidence_after, should_continue |
+| `study_plans` | id, user_id, session_id, target_role_id, target_role_title, missing_skills, preferences (JSONB), plan_structure (JSONB), total_weeks, total_hours, status |
+| `study_plan_topics` | id, study_plan_id, week_number, topic_order, skill, title, description, estimated_hours, sections (JSONB), youtube_videos (JSONB), is_completed |
+| `study_plan_progress` | id, user_id, topic_id, section_id, is_completed, completed_at |
+
+### Courses
+| Table | Key Columns |
+|-------|-------------|
+| `course_sources` | id, course_id, user_id, type (pdf/url/text/web/ai/youtube), title, url, extracted_text, token_count, metadata (JSONB) |
+| `course_chat_messages` | id, course_id, user_id, role (user/assistant), content, created_at |
+| `course_study_guides` | course_id, user_id, content, source_ids, generated_at |
+
+### Self-Test
+| Table | Key Columns |
+|-------|-------------|
+| `self_test_sessions` | id, user_id, input_type, difficulty, timer_minutes, questions (JSONB), question_types (JSONB), status |
+| `self_test_attempts` | id, session_id, user_id, answers (JSONB), score, short_answer_score, combined_score, combined_pct, auto_submitted |
+| `question_library` | id, skill, topic, type, question_text, options (JSONB), correct_answer, explanation, difficulty, times_correct, times_incorrect, source, created_at |
+| `admin_tests` | id, title, description, skill, difficulty, question_type, question_ids (JSONB), created_by |
+| `admin_test_links` | id, test_id, token, max_attempts, expires_at, created_by |
+
+### Interview Buddy
+| Table | Key Columns |
+|-------|-------------|
+| `interview_kits` | id, user_id, title, company, role_level, depth, jd_text, categories (JSONB), questions (JSONB), question_count, created_at |
+
+### Jobs
+| Table | Key Columns |
+|-------|-------------|
+| `job_listings_cache` | id, cache_key, query_text, jobs (JSONB), result_count, hit_count, cached_at, expires_at |
+| `user_job_interactions` | id, user_id, job_id, job_title, company, action (viewed/applied/saved/dismissed), created_at |
+| `jsearch_quota_log` | id, called_at, query, result_count |
+
+### Notes
+| Table | Key Columns |
+|-------|-------------|
+| `notes` | id, user_id, title, content (JSONB Tiptap), icon, is_pinned, is_archived, word_count, context_type, context_id, parent_id, share_token |
+| `note_tags` | id, note_id, tag_name |
+
+### Skills
+| Table | Key Columns |
+|-------|-------------|
+| `skills` | id, name, slug, category, subcategory, aliases (JSONB), description, is_active, is_trending, is_verified, search_count, selection_count |
+| `skill_categories` | id, name, slug, description, icon, sort_order |
+| `skill_topics` | id, skill_id, name, slug, description, is_active |
+| `skill_analytics` | id, skill_id, event_type, user_id, context, created_at |
+| `user_submitted_skills` | id, name, submitted_by, status, merged_into, admin_note |
+
+### Caching
+| Table | Key Columns |
+|-------|-------------|
+| `youtube_video_cache` | id, query_hash, video_id, video_data (JSONB), skill, hit_count, cached_at, expires_at |
+| `transcript_sessions` | id, session_id, user_id, chunks (JSONB), full_text, language, source_url |
+| `email_resend_limits` | email, resend_count, window_start |
+
+### Audit
+| Table | Key Columns |
+|-------|-------------|
+| `audit_logs` | id, performed_by, action, target_user_id, target_email, details (JSONB), created_at |
 
 ---
 
-## 11. Environment Variables
+## 15. Environment Variables
 
-All secrets in `.env.local` — **gitignored, never commit**.
-
-| Variable | Used By | Required |
-|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase client (browser) | Yes |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase client (browser) | Yes |
-| `SUPABASE_URL` | Supabase server-side client (`lib/supabase.js`) | Yes |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase server-side — bypasses RLS (preferred) | Yes |
-| `GEMINI_API_KEY` | All AI features — Gemini 3.5 Flash via `@google/genai` | Yes |
-| `YOUTUBE_API_KEY` | YouTube Data API (career map video suggestions) | Optional |
-| `TAVILY_API_KEY` | Tavily web search (career map content generation) | Optional |
-| `EXA_API_KEY` | Exa search (career map content generation) | Optional |
-| `JSEARCH_API_KEY` | JSearch API (job recommendations) | Optional |
-| `NEXT_PUBLIC_APP_URL` | Base URL for share links and public routes | Yes |
-
-> **Note:** `SUPABASE_SECRET_KEY` (legacy name) is accepted as a fallback for `SUPABASE_SERVICE_ROLE_KEY` in `lib/supabase.js`, but must be set to the actual service role key value — not the anon key.
-
----
-
-## 12. Authentication & Authorization
-
-- Auth provider: Supabase Auth (email/password)
-- New accounts require email verification before login
-- Server routes use `requireUser(request)` helper (`lib/auth-helpers.js`)
-  - Reads `Authorization: Bearer <token>` header
-  - Returns `{ user }` or throws 401
-- Admin routes additionally check `profiles.role === 'admin'`
-- Organizations: users can belong to an org; org-level access control scopes admin test visibility
-- Public routes (no auth required):
-  - `GET /api/public/resume/[token]` — share link for resume
-  - `GET /api/v1/portfolios/public/[slug]` — published portfolio
-  - `GET /api/v1/test/[token]` — proctored test by share link
-
----
-
-## Appendix: Planned / Not Yet Implemented
-
-The following features were scoped but not yet built:
-
-- **Block editor — additional block types:** Math/KaTeX, Mermaid diagrams, Wikilinks, @mentions, tags, YAML frontmatter, footnotes, columns layout, synced blocks, template blocks, TOC block, bookmark/URL embed block, database/properties block
-- **Builder → BlockEditor migration:** Replace textarea-based section editors in the resume builder with the block editor
-- **Self-test improvements:** Spaced repetition scheduling, history/trend charts, per-skill performance breakdown, leaderboard
-- **Career Map:** Video resource embedding per topic section, community notes on topics
-- **Notes:** Full-text search across all notes, sharing individual notes publicly
-- **Utilities — PowerPoint to PDF:** `/utilities/documents/ppt-to-pdf` is a Coming Soon placeholder; requires LibreOffice or a cloud conversion API on the server
-- **Code Playground:** Expand to additional languages (Go, Rust, C++) via Wandbox; add file persistence and share links
-
----
-
-*Last updated: 2026-06-15*
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `NEXT_PUBLIC_SUPABASE_URL` | ✅ | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ | Supabase anon/public key |
+| `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Supabase service role (admin client) |
+| `GEMINI_API_KEY` | ✅ | Google Gemini API key |
+| `GROQ_API_KEY` | ✅ | Groq API key (fallback LLM + Whisper) |
+| `OPENROUTER_API_KEY` | ✅ | OpenRouter (resume parsing) |
+| `YOUTUBE_API_KEY` | ✅ | YouTube Data API v3 |
+| `JSEARCH_API_KEY` | ✅ | JSearch / RapidAPI (job search) |
+| `TAVILY_API_KEY` | ✅ | Tavily web search |
+| `EXA_API_KEY` | ✅ | Exa web search |
+| `RESEND_API_KEY` | ✅ | Resend email service |
+| `NEXTAUTH_SECRET` | ✅ | Session secret |
+| `NEXT_PUBLIC_APP_URL` | ✅ | App base URL (e.g. https://proflect-neo.vercel.app) |
