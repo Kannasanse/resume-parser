@@ -34,6 +34,7 @@ A unified reference for all Proflect UI tokens, component classes, and patterns.
 13. [Accessibility](#13-accessibility)
 14. [Tailwind Config Reference](#14-tailwind-config-reference)
 15. [File Locations](#15-file-locations)
+16. [Page-Level Design Reference](#16-page-level-design-reference)
 
 ---
 
@@ -786,6 +787,506 @@ module.exports = {
 | `nextjs/app/layout.jsx` | Root layout — dark mode init script |
 | `nextjs/hooks/useTheme.js` | Dark mode toggle hook (`isDark`, `toggle`) |
 | `nextjs/postcss.config.js` | PostCSS — tailwindcss + autoprefixer |
+
+---
+
+---
+
+## 16. Page-Level Design Reference
+
+Visual layout, structure, and component composition for every major page.
+
+> **Global shell** (from `(main)/layout.jsx`): Fixed left sidebar (240px) + flex-column main area (sticky TopBar + scrollable content). ImpersonationBanner shown above TopBar when admin is proxying a user. Idle-session warning modal can appear over any page.
+
+---
+
+### Auth Pages
+
+#### Login (`/login`)
+**Layout:** Full-height split pane — branded left panel (42% desktop, hidden mobile) + centered form on the right.
+
+| Region | Content |
+|--------|---------|
+| Left panel | Gradient background + dot-grid overlay, brand name, tagline |
+| Right — form card | Email input, password input (visibility toggle), "Forgot password" link, primary submit button, Google OAuth button, sign-up link |
+| Error banners | Account locked (amber), email unverified (blue), generic error (red) — shown above form |
+
+Pattern: glass-effect card on light `#F4F8FC` background. No sidebar.
+
+#### Signup (`/signup`)
+**Layout:** Same split pane as login. Left panel uses a teal-to-blue gradient variant.
+
+| Region | Content |
+|--------|---------|
+| Right — form card | First + Last name (2-col grid), Email, Password (with 4-bar strength meter + label), Confirm Password, Google OAuth, login link |
+| Success state | Replaces form: checkmark icon, email confirmation message, resend link |
+
+---
+
+### Main App Shell
+
+#### Sidebar
+Fixed 240px left column, full-height, background `var(--c-bg)`.
+
+| Section | Items |
+|---------|-------|
+| Branding | Logo mark + "Proflect" wordmark |
+| Primary nav | Builder · Career Map · My Courses · Interview Prep · Interview Buddy · Job Recs · Notes · Utilities |
+| Credit pill | Balance badge (gold ≥5 credits, red <5) → links to `/credits` |
+| User section | Avatar, name, role chip, Settings link |
+
+Responsive: collapses to icon-only rail or bottom sheet on mobile.
+
+#### TopBar
+Sticky, full-width, 64px height, white background + bottom border.
+
+| Left | Center | Right |
+|------|--------|-------|
+| Page title / breadcrumb | — | Theme toggle, notifications bell, user avatar menu |
+
+---
+
+### Resume Builder
+
+#### Resume List (`/builder`)
+**Layout:** Full-width single column with constrained max-width content.
+
+```
+[Header: "My Resumes"  |  Upload button  |  + New Resume button]
+[Responsive card grid: 1 col mobile → 2 col tablet → 3 col desktop]
+[Empty state: icon + heading + two CTA buttons]
+```
+
+**Resume card anatomy:**
+- Top: 3-dot overflow menu (Open · Rename · Duplicate · Download PDF · Share · Delete)
+- Body: Colored template accent, resume title (inline-editable on double-click), template badge
+- Bottom bar: **Edit** (primary blue) · **Preview** (outlined)
+- Hover: `card-interactive` lift effect
+
+Loading: 6-card skeleton grid.
+
+#### Resume Editor (`/builder/[id]`)
+**Layout:** Three-panel on desktop, tab-based on mobile.
+
+```
+Desktop:
+┌─────────────┬──────────────────────┬──────────────┐
+│ Left panel  │   Top bar (sticky)   │              │
+│  (340px)    ├──────────────────────┤ Live preview │
+│             │   Edit content area  │   (scaled)   │
+└─────────────┴──────────────────────┴──────────────┘
+
+Mobile:
+[Edit tab | Preview tab]  ← toggle between panels
+```
+
+**Left panel (340px fixed):**
+- Mode toggle: **Content** / **Customize**
+- Customize sub-tabs: Design · Spacing · Sections
+- Personal info card (collapsible) — photo, name, contact fields
+- Section list — accordions per section type, click to expand inline editor
+
+**Top bar (sticky):**
+- Left: Back link, resume title (editable), save status indicator
+- Right: ATS Score (gradient button, "3 credits") · Import · Templates · Export ▾
+
+**Overlays / side panels:**
+- Template gallery (full-screen overlay with search + category filter)
+- ATS panel (right side panel — ring score, 5 dimensions, suggestions)
+- Share modal (link + export PDF/DOCX)
+- Writing Assist modal (AI rewrite, "1 credit")
+- Import progress overlay
+
+#### Import Review (`/builder/[id]/review`)
+**Layout:** Scrollable single column + sticky bottom action bar.
+
+```
+[Header: "Review Your Imported Resume"  |  Start Fresh]
+[Summary card: fields extracted count]
+[Validation error banner (conditional)]
+[Accordion: Personal Info]
+[Accordion: Work Experience]
+[Accordion: Education]
+[… more sections …]
+────────────────────────────────────────────────────
+[sticky bottom bar: Skip review (ghost) | Confirm & Open Editor (primary)]
+```
+
+Section accordions: header shows missing-field count badge; body shows 1–2 column field grid with inline-editable inputs; "⚠ Not found" badges on empty fields.
+
+---
+
+### Career Map
+
+#### Career Map (`/career-map`)
+Multi-step flow managed by `CareerMapPage` component:
+
+| Step | UI |
+|------|----|
+| Resume picker | Card grid of published resumes; "Analyse this resume" (1 credit badge); "Create course with skills →" link if no resume |
+| Questionnaire | Full-width card with question text + answer options (MCQ or free text); progress dots at bottom; back button top-left |
+| Recommendations | Grid of 4–6 role cards with skill match %, gap list; "Generate Study Plan" button (5 credits) |
+| Generating | Centered spinner + status message |
+
+#### Study Plan (`/career-map/study-plan/[id]`)
+**Layout:** Sidebar nav + main content.
+
+```
+┌──────────────────────┬──────────────────────────────┐
+│ Week nav (left)      │ Plan overview                │
+│  Week 1 ▾            │ Title, target role, progress │
+│   • Topic A          │ Overall progress bar         │
+│   • Topic B          │ Week cards (collapsible)     │
+│  Week 2              │  Topic rows with status dots │
+│  …                   │                              │
+└──────────────────────┴──────────────────────────────┘
+```
+
+#### Topic Page (`/career-map/study-plan/[id]/topic/[topicId]`)
+**Layout:** Full-width with sticky section nav.
+
+```
+[Sticky top: breadcrumb + Mark complete button]
+[YouTube video embed (if available)]
+[Tab bar: Concepts · Real-World · Prerequisites · Exercises · Sources · Study Guide · Chat]
+[Tab content area — varies per tab]
+[Sources panel (collapsible right sidebar on desktop)]
+```
+
+Tab content patterns:
+- **Concepts / Real-World / Prerequisites:** `.prose-content` rendered markdown
+- **Exercises:** Card list with expandable answer reveals
+- **Study Guide:** "Generate" button (2 credits) → long-form markdown
+- **Chat:** Message thread + input bar at bottom (1 credit/message)
+- **Sources:** Add PDF / URL / text / web scrape; source cards with token counts
+
+---
+
+### Interview Prep
+
+#### Test List & Creation (`/interview-prep`)
+**Layout:** Full-width, gradient mesh background.
+
+**Top half — mode selection:**
+```
+[Header: "Interview Prep"  description]
+[4-card grid: Assess by Skill · Content · Job Description · Interview Buddy ↗]
+```
+
+**Bottom half — creation form (appears after mode selected):**
+
+Multi-step form inside a card:
+
+| Step | UI Elements |
+|------|-------------|
+| Skills mode | SkillLookupInput (autocomplete + chip tags), focus-area suggestions, QuestionTypeSelector, DifficultyTimer (Easy/Med/Hard radio + timer slider), "Generate" (2 credits) |
+| Content mode | Large textarea + char count, same question type + difficulty selectors |
+| JD mode | Textarea → Extract Skills → chip grid (hard/soft grouped) with add/remove → same selectors |
+| Generating | Centered spinner |
+| Review | Stats grid (count, difficulty, timer), skills chips, Start Test / Start Over |
+
+**Session history table:**
+Desktop: multi-column (Topic · Mode · Score · Band · Questions · Date · Actions)
+Mobile: stacked row cards
+Filters: mode dropdown + date range; Pagination; empty state with CTA.
+
+#### Test Taking (`/interview-prep/[id]`)
+**Layout:** Fixed header + scrollable question card + fixed bottom question nav.
+
+```
+┌─────────────────────────────────────────────────┐
+│ [Progress bar — green fill]                     │  ← fixed top
+│ Question X of Y                    [00:42 timer]│
+├─────────────────────────────────────────────────┤
+│                                                 │
+│  [Save & Exit]              [Submit Quiz ✓]     │
+│  Skill badge · Difficulty chip · Type badge     │
+│  Q3. ▶ "What does useEffect do?"               │  ← scrollable
+│                                                 │
+│  A) First option                                │
+│  B) Second option    ← selected (gradient bg)  │
+│  C) Third option                                │
+│  D) Fourth option                               │
+│                                                 │
+│  [← Prev]                         [Next →]     │
+├─────────────────────────────────────────────────┤
+│ [1][2][3][4][5][6][7]…                          │  ← fixed bottom nav
+│  ● answered  ○ current  ✕ skipped  ⚑ flagged   │
+└─────────────────────────────────────────────────┘
+```
+
+Keyboard shortcuts: Arrow keys (prev/next), 1–4 (MCQ select), F (flag).
+
+#### Test Results (same route, results state)
+```
+[Score card — gradient text "82%" · "41 / 50" · Difficulty · Auto-submitted badge]
+[Skill breakdown — colored progress bars per skill]
+[Topic breakdown — collapsible table]
+[By question type — mini bars]
+[Question review accordion — per question:
+  skill/topic badge · type badge · question text ·
+  user answer (green✓ or red✗) · model answer · explanation (amber box)]
+[Action buttons: Retake | Practice Again | Back]
+```
+
+---
+
+### My Courses (`/my-courses`)
+
+**Layout:** Full-width single column (via `MyCoursesPage` component).
+
+```
+[Header: "My Courses"  |  + Create Course button (5 credits)]
+[Filter tabs: All · In Progress · Not Started · Completed · Paused]
+[Search bar  |  Sort dropdown]
+[Course card grid: 1 col mobile → 2 col → 3 col desktop]
+[Empty state: icon + message + Create Course CTA]
+```
+
+**Course card anatomy:**
+- Header: Target role title, status badge (pill)
+- Progress bar (green fill, % label)
+- Meta: Weeks, topics, hours
+- Footer: **Continue** / **Start** button + last-updated timestamp
+
+**Course Creation Modal (auto-opens on `?create=1`):**
+3-step flow inside a centered modal:
+1. Skill input (SkillLookupInput + chip tags)
+2. Questionnaire (1–3 AI questions: learning goal, timeline, focus area)
+3. Preferences (hours/day · days/week · learning style radio · level select)
+→ Generate (5 credits) → redirects to new study plan
+
+---
+
+### Credits (`/credits`)
+
+**Layout:** Single-column with max-width container.
+
+```
+[Header: "Credits"  |  Request Credits button (or "Pending" badge)]
+[Alert banner — success/error (conditional)]
+
+[3 stat cards: Available balance · Used this month · Total received]
+
+[Credit costs grid — 2–3 col:
+  [icon] Feature name          X credits
+  … 11 features total …]
+
+[Credit requests — collapsible list with status badges (Pending/Approved/Rejected)]
+
+[Usage history — transaction list:
+  [icon] Description              Date    ±Amount]
+```
+
+Request modal: amount input + reason textarea + Submit button.
+
+---
+
+### Notes
+
+#### Notes List (`/notes`)
+**Layout:** Collapsible left sidebar + main content area.
+
+```
+┌──────────────┬────────────────────────────────────┐
+│ Sidebar      │ Toolbar: All Notes | Sort | Grid/  │
+│ (280px)      │         List toggle | + New Note   │
+│              ├────────────────────────────────────┤
+│ [Search]     │ Grid view: 3-col note cards        │
+│ [New Note]   │  or                                │
+│ Note tree    │ List view: tabular rows            │
+│ (pinned,     │                                    │
+│  archived,   │ [Empty state]                      │
+│  tagged)     │ [Loading skeletons]                │
+└──────────────┴────────────────────────────────────┘
+```
+
+**Note card (grid):** Title, snippet preview, date, word count; hover reveals action icons (Pin · Archive · Duplicate · Delete · Move).
+
+Cmd+K: full-text search modal overlay.
+
+#### Note Editor (`/notes/[noteId]`)
+**Layout:** Full-width editor within main content area.
+
+```
+[Breadcrumb path (supports wikilinks)]
+[Note title — large inline editable h1]
+[Tiptap block editor — full width, auto-save 1s debounce]
+[Backlinks panel — collapsible bottom section]
+```
+
+Toolbar: heading levels, bold/italic/code, lists, table, embed, share link.
+
+---
+
+### Interview Buddy
+
+#### Kit List (`/interview-buddy`)
+**Layout:** Full-width single column.
+
+```
+[Header: "Interview Buddy"  |  + New Kit button (2 credits)]
+[Kit card list — most recent first]
+[Empty state: icon + description + Generate CTA]
+```
+
+**Kit creation flow (modal or inline):**
+- JD textarea → Depth selector (Quick / Standard / Deep) → Role level (Junior/Mid/Senior) → Generate (2 credits)
+
+#### Kit Player (`/interview-buddy/[kitId]`)
+**Layout:** Split pane — question nav sidebar + question content.
+
+```
+┌─────────────────┬────────────────────────────────┐
+│ Category tabs   │ Question text (bold, 16px)      │
+│ (left sidebar)  │                                 │
+│ • Behavioral  3 │ [Key points to cover]           │
+│ • Technical   5 │                                 │
+│ • Situational 2 │ [Model answer — collapsible]    │
+│                 │                                 │
+│ [Question list] │ [← Prev]  Q3 of 10  [Next →]   │
+└─────────────────┴────────────────────────────────┘
+```
+
+Progress tracked per question; category tabs show question count badges.
+
+---
+
+### Job Recommendations (`/job-recommendations`)
+
+**Layout:** Full-width with gradient mesh background.
+
+```
+[Header: "Jobs for you" (gradient text)  |  Refresh (1 credit)]
+[Active filters bar — skill chips, location, type]
+[Job card grid — 2 col desktop, 1 col mobile]
+[Load more / Pagination]
+[Empty / quota-exceeded state]
+```
+
+**Job card anatomy:**
+- Company logo + name, posted date
+- Job title (bold), location, type badge (Full-time / Remote)
+- Skills chips (matched vs required)
+- Action row: Save ♥ · Dismiss · Apply ↗
+
+Saved jobs tab: `/job-recommendations/saved` — same card layout, filtered to saved interactions.
+
+---
+
+### Admin Dashboard (`/admin`)
+
+**Layout:** Full-width with gradient background, constrained content.
+
+```
+[Header: "Dashboard" (gradient text)]
+[3 stat cards: Total Users · Pending Invites · Tests Created]
+[Quick actions grid (2–3 col):
+  [Manage Users card → /admin/users]
+  [Invite Users card — 2 buttons: Invite | Bulk Import CSV]
+  [Manage Tests card → /admin/tests]
+  [Template Settings card → /admin/templates]]
+```
+
+Stat cards use `.stat-icon` (gradient background icon) + large number + label.
+
+#### Admin Users (`/admin/users`)
+**Layout:** Full-width data table with filter bar.
+
+```
+[Header: "Users"  |  + Invite User button]
+[Filter bar: Search input · Role filter · Status filter · Sort]
+[Users table:
+  Name · Email · Role chip · Status chip · Last Login · Credits · Actions]
+[Pagination]
+```
+
+Row actions: View Profile · Grant Credits · Login As (sets `proxy_uid`) · Deactivate.
+
+#### Admin User Detail (`/admin/users/[id]`)
+**Layout:** Full-width with tab navigation.
+
+```
+[Header: Avatar · Name · Email · Status badge · Action buttons]
+[Tabs: Account · Resumes · Self-Tests]
+[Tab content area]
+```
+
+Account tab: profile fields, role/status controls, credit balance + grant form, login history, failed attempts.
+
+#### Admin Templates (`/admin/templates`)
+**Layout:** Responsive card grid.
+
+```
+[Header: "Templates"]
+[Template card grid:
+  [TemplatePreviewCard — static SVG preview]
+  [Footer: template name · Featured toggle switch]]
+```
+
+Featured toggle: marks template for promotion in user gallery.
+
+---
+
+### Utilities Hub (`/utilities`)
+
+**Layout:** Category card grid on full-width background.
+
+```
+[Header: "Tools & Utilities"]
+[Category cards:
+  PDF Tools (19)  |  Document Converters (10)  |  Image Tools (4)
+  Code Playground  |  Screen Recorder  |  PDF Security (3)]
+```
+
+**Individual tool pages:**
+```
+[Tool header: icon + name + description]
+[Drop zone or file input (drag & drop)]
+[Options panel (tool-specific controls)]
+[Action button: Convert / Process / Download]
+[Output/preview area]
+```
+
+**PDF Editor (`/utilities/pdf/edit`):**
+```
+┌────────────────┬──────────────────────────────────┐
+│ Mode toolbar   │                                  │
+│ (left):        │  PDF canvas (Fabric.js overlay)  │
+│ • Text         │                                  │
+│ • Annotate     │  [Page 1 of N]                   │
+│ • Draw         │                                  │
+│ • Signature    │                                  │
+└────────────────┴──────────────────────────────────┘
+[Bottom: prev page / next page / zoom / download]
+```
+
+**Code Playground (`/utilities/playground`):**
+```
+[Language selector tabs: HTML · Python · Java · SQL]
+┌─────────────────────┬────────────────────────┐
+│ Monaco code editor  │ Output / preview panel │
+│ (left, ~60%)        │ (right, ~40%)          │
+└─────────────────────┴────────────────────────┘
+[Run button (bottom)]
+```
+
+---
+
+### Cross-Cutting UI Patterns
+
+| Pattern | Description |
+|---------|-------------|
+| **Sticky toolbars** | Save state (builder), progress bar (test), section nav (topic page) — always visible while scrolling content |
+| **Multi-step wizards** | Career map → courses, test creation, signup — each step replaces previous in the same container; no page navigation |
+| **Credit gate modal** | Any AI action shows inline cost badge on button; on 402 response, shows "Get more credits →" link inline in error state |
+| **Skeleton loading** | All data-fetching views show `.ds-skel` placeholder shapes matching the final layout before content loads |
+| **Empty states** | Consistent pattern: centered icon (large, muted) + heading + description + single CTA button |
+| **Inline editing** | Resume title, note title, personal info fields — click to activate text input, blur to auto-save |
+| **3-dot overflow menus** | Resume cards, note cards, question rows — floating `<menu>` panel aligned to trigger |
+| **Confirmation modals** | Delete actions always require a `ds-modal` confirmation with item name, danger button, and cancel |
+| **Impersonation banner** | Amber fixed banner at top of all `(main)` pages when `proxy_uid` cookie is active; shows who is being impersonated + Exit button |
+| **Mobile tab switching** | Builder (Edit/Preview), Notes (List/Editor on small screens) use horizontal tab bars to toggle between panels |
 
 ---
 
