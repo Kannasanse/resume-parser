@@ -1,1751 +1,681 @@
 # Proflect Design System
-> Version 2.0 · Material UI v9 · Web & Mobile · React / Tailwind
+> Version 2.0 · Tailwind CSS v3 · Custom CSS Properties · React · Web & Mobile
 
-A unified reference for all Proflect UI components, tokens, and patterns — structured in alignment with [Material UI v9's component taxonomy](https://mui.com/material-ui/all-components/).
+A unified reference for all Proflect UI tokens, component classes, and patterns.
+**No external component library** — all UI built on Tailwind utilities + custom CSS classes defined in `globals.css`.
 
 ---
 
 ## Table of Contents
 
-1. [Brand Tokens](#1-brand-tokens)
-   - [Color](#color)
-   - [Typography](#typography)
-   - [Spacing](#spacing)
-   - [Elevation & Shadow](#elevation--shadow)
-   - [Border Radius](#border-radius)
-   - [Motion](#motion)
-2. [Inputs](#2-inputs)
-   - [Autocomplete](#autocomplete)
-   - [Button](#button)
-   - [Button Group](#button-group)
-   - [Checkbox](#checkbox)
-   - [Floating Action Button (FAB)](#floating-action-button-fab)
-   - [Number Field](#number-field)
-   - [Radio Group](#radio-group)
-   - [Rating](#rating)
-   - [Select](#select)
-   - [Slider](#slider)
-   - [Switch](#switch)
-   - [Text Field](#text-field)
-   - [Transfer List](#transfer-list)
-   - [Toggle Button](#toggle-button)
-3. [Data Display](#3-data-display)
-   - [Avatar](#avatar)
-   - [Badge](#badge)
-   - [Chip / Tag](#chip--tag)
-   - [Divider](#divider)
-   - [Icons](#icons)
-   - [List](#list)
-   - [Table](#table)
-   - [Tooltip](#tooltip)
-   - [Typography](#typography-1)
-4. [Feedback](#4-feedback)
-   - [Alert](#alert)
-   - [Backdrop](#backdrop)
-   - [Dialog / Modal](#dialog--modal)
-   - [Progress](#progress)
-   - [Skeleton](#skeleton)
-   - [Snackbar / Toast](#snackbar--toast)
-5. [Surfaces](#5-surfaces)
-   - [Accordion](#accordion)
-   - [App Bar](#app-bar)
-   - [Card](#card)
-   - [Paper](#paper)
-6. [Navigation](#6-navigation)
-   - [Bottom Navigation](#bottom-navigation)
-   - [Breadcrumbs](#breadcrumbs)
-   - [Drawer](#drawer)
-   - [Link](#link)
-   - [Menu](#menu)
-   - [Menubar](#menubar)
-   - [Pagination](#pagination)
-   - [Speed Dial](#speed-dial)
-   - [Stepper](#stepper)
-   - [Tabs](#tabs)
-7. [Layout](#7-layout)
-   - [Box](#box)
-   - [Container](#container)
-   - [Grid](#grid)
-   - [Stack](#stack)
-   - [Image List](#image-list)
-8. [Utility Components](#8-utility-components)
-   - [Click-Away Listener](#click-away-listener)
-   - [CSS Baseline](#css-baseline)
-   - [Modal (low-level)](#modal-low-level)
-   - [Popover](#popover)
-   - [Popper](#popper)
-   - [Portal](#portal)
-   - [Textarea Autosize](#textarea-autosize)
-   - [Transitions](#transitions)
-9. [MUI X / Advanced](#9-mui-x--advanced)
-   - [Data Grid](#data-grid)
-   - [Date & Time Pickers](#date--time-pickers)
-   - [Charts](#charts)
-   - [Tree View](#tree-view)
-10. [Lab / Experimental](#10-lab--experimental)
-    - [Masonry](#masonry)
-    - [Timeline](#timeline)
-11. [Search Bar Pattern](#11-search-bar-pattern)
-12. [Filter Pattern](#12-filter-pattern)
-13. [Responsive Breakpoints](#13-responsive-breakpoints)
-14. [Accessibility Standards](#14-accessibility-standards)
-15. [Tailwind Config Reference](#15-tailwind-config-reference)
+1. [Tech Stack](#1-tech-stack)
+2. [Color Tokens](#2-color-tokens)
+   - [CSS Custom Properties (--c-*)](#css-custom-properties---c-)
+   - [Legacy Aliases (--ds-*)](#legacy-aliases---ds-)
+   - [Tailwind Color Config](#tailwind-color-config)
+3. [Typography](#3-typography)
+4. [Spacing](#4-spacing)
+5. [Border Radius](#5-border-radius)
+6. [Shadows & Elevation](#6-shadows--elevation)
+7. [Dark Mode](#7-dark-mode)
+8. [Utility Component Classes](#8-utility-component-classes)
+   - [Cards & Surfaces](#cards--surfaces)
+   - [Buttons](#buttons)
+   - [Chips & Badges](#chips--badges)
+   - [Inputs](#inputs)
+   - [Alerts](#alerts)
+   - [Tables](#tables)
+   - [Progress & Scores](#progress--scores)
+   - [Skeletons](#skeletons)
+9. [Animation & Motion](#9-animation--motion)
+10. [Gradients & Glass](#10-gradients--glass)
+11. [Prose & Rich Text](#11-prose--rich-text)
+12. [Responsive Breakpoints](#12-responsive-breakpoints)
+13. [Accessibility](#13-accessibility)
+14. [Tailwind Config Reference](#14-tailwind-config-reference)
+15. [File Locations](#15-file-locations)
 
 ---
 
-## 1. Brand Tokens
+## 1. Tech Stack
 
-### Color
+| Layer | Technology |
+|-------|-----------|
+| CSS Framework | Tailwind CSS v3.4 |
+| Token Layer | CSS Custom Properties (`--c-*`, `--r-*`, `--shadow-*`) |
+| Dark Mode | `class` strategy (`<html class="dark">`) |
+| Theme Persistence | `localStorage` + system `prefers-color-scheme` |
+| Rich Text | Tiptap v3 (custom extensions) |
+| Code Editor | Monaco Editor |
+| Fonts | Inter (UI) · JetBrains Mono (code) · EB Garamond / Lora (serif resume templates) |
+| Drag & Drop | `@dnd-kit/core` + `@dnd-kit/sortable` |
+| Flow Diagrams | `@xyflow/react` |
 
-#### Core Palette
+---
 
-| Token | Name | Hex | Tailwind Class | Usage |
-|-------|------|-----|----------------|-------|
-| `--color-primary` | Proflect Blue | `#185FA5` | `bg-primary` / `text-primary` | CTAs, links, active states, focus rings |
-| `--color-primary-dark` | Deep Navy | `#0C447C` | `bg-primary-dark` | Hover/pressed, sticky headers |
-| `--color-primary-light` | Sky Mist | `#E6F1FB` | `bg-primary-light` | Selected rows, chip BG, highlight surfaces |
-| `--color-success` | Verified Teal | `#1D9E75` | `bg-success` / `text-success` | Verified, Active, Complete states |
-| `--color-text` | Charcoal | `#2C2C2A` | `text-charcoal` | Body text, headings, labels |
+## 2. Color Tokens
 
-#### Extended Semantic Palette
+### CSS Custom Properties (`--c-*`)
 
-| Token | Hex | Tailwind | Usage |
-|-------|-----|----------|-------|
-| `--color-text-secondary` | `#6B7280` | `text-gray-500` | Subtitles, metadata, placeholders |
-| `--color-text-disabled` | `#9CA3AF` | `text-gray-400` | Disabled fields, inactive tabs |
-| `--color-border` | `#D1DCE8` | `border-border` | Input borders, dividers, table lines |
-| `--color-border-focus` | `#185FA5` | — | Input focus ring |
-| `--color-surface` | `#FFFFFF` | `bg-white` | Cards, modals, dropdowns |
-| `--color-bg` | `#F4F8FC` | `bg-bg` | Page background |
-| `--color-error` | `#D93025` | `text-error` / `bg-error` | Errors, destructive actions |
-| `--color-warning` | `#F59E0B` | `text-warning` | Warnings, pending states |
-| `--color-info` | `#185FA5` | — | Informational alerts (uses Primary) |
+Defined in `nextjs/app/globals.css` under `:root` (light) and `.dark`.
 
-#### MUI Theme Mapping
+#### Light Mode
+
+| Variable | Value | Purpose |
+|----------|-------|---------|
+| `--c-primary` | `#185FA5` | CTAs, links, active states, focus rings |
+| `--c-primary-dark` | `#0C447C` | Hover/pressed states, sticky headers |
+| `--c-primary-light` | `#E6F1FB` | Selected rows, chip BG, highlight surfaces |
+| `--c-success` | `#1D9E75` | Verified, Active, Complete states |
+| `--c-success-bg` | `#D1FAE5` | Success backgrounds |
+| `--c-error` | `#D93025` | Errors, destructive actions |
+| `--c-error-bg` | `#FEE2E2` | Error backgrounds |
+| `--c-warning` | `#F59E0B` | Warnings, pending states |
+| `--c-warning-text` | `#B45309` | Warning text on light BG |
+| `--c-warning-bg` | `#FEF3C7` | Warning backgrounds |
+| `--c-text` | `#2C2C2A` | Primary text (charcoal) |
+| `--c-text-2` | `#6B7280` | Secondary / muted text |
+| `--c-text-3` | `#9CA3AF` | Tertiary / disabled text |
+| `--c-border` | `#D1DCE8` | Input borders, dividers, table lines |
+| `--c-surface` | `#FFFFFF` | Cards, modals, dropdowns |
+| `--c-bg` | `#F4F8FC` | Page background |
+| `--c-neutral-bg` | `#F3F4F6` | Neutral section backgrounds |
+| `--shadow-card` | `0 2px 8px rgba(12,68,124,0.10)` | Card shadow |
+| `--shadow-modal` | `0 8px 32px rgba(12,68,124,0.16)` | Modal shadow |
+| `--r-input` | `8px` | Input border-radius |
+| `--r-card` | `12px` | Card border-radius |
+| `--r-modal` | `16px` | Modal border-radius |
+
+#### Dark Mode (`.dark` selector)
+
+| Variable | Value | Notes |
+|----------|-------|-------|
+| `--c-bg` | `#0A1628` | Deep navy — not pure black |
+| `--c-surface` | `#111F35` | Card/modal surface |
+| `--c-border` | `rgba(255,255,255,0.10)` | Subtle white border |
+| `--c-text` | `#E8EFF7` | Light blue-tinted white |
+| `--c-text-2` | `#8BA3C1` | Cool muted gray |
+| `--c-text-3` | `#4A6380` | Deep muted |
+| `--c-primary` | `#5B9FD4` | Lightened for contrast |
+| `--c-success` | `#34C68A` | Brighter for dark backgrounds |
+| `--c-error-bg` | `rgba(217,48,37,0.15)` | Transparent tint |
+| `--c-warning-bg` | `rgba(245,158,11,0.15)` | Transparent tint |
+| `--c-neutral-bg` | `rgba(255,255,255,0.06)` | Subtle neutral surface |
+| `--shadow-card` | `0 1px 3px rgba(0,0,0,0.30)` | |
+| `--shadow-modal` | `0 8px 32px rgba(0,0,0,0.40)` | |
+
+---
+
+### Legacy Aliases (`--ds-*`)
+
+Backward-compat aliases kept for older components. Map to the `--c-*` values above.
+
+| ds-* Token | Light | Dark |
+|-----------|-------|------|
+| `--ds-bg` | `#F4F8FC` | `#0A1628` |
+| `--ds-card` | `#FFFFFF` | `#111F35` |
+| `--ds-border` | `#D1DCE8` | `rgba(255,255,255,0.10)` |
+| `--ds-borderStrong` | `#A8B8CC` | `rgba(255,255,255,0.20)` |
+| `--ds-inputBorder` | `#A8B4C0` | `rgba(255,255,255,0.12)` |
+| `--ds-text` | `#2C2C2A` | `#E8EFF7` |
+| `--ds-textSecondary` | `#6B7280` | `#8BA3C1` |
+| `--ds-textTertiary` | `#9CA3AF` | `#4A6380` |
+| `--ds-textMuted` | `#9CA3AF` | `#8BA3C1` |
+| `--ds-success` | `#1D9E75` | `#34C68A` |
+| `--ds-successLight` | `#E6F5F0` | `rgba(29,158,117,0.15)` |
+| `--ds-warning` | `#F59E0B` | `#F5A623` |
+| `--ds-warningLight` | `#FEF3C7` | `rgba(245,158,11,0.15)` |
+| `--ds-danger` | `#D93025` | `#F87171` |
+| `--ds-dangerLight` | `#FEE2E2` | `rgba(217,48,37,0.15)` |
+
+> **Preference:** Use `--c-*` tokens in new code. `--ds-*` tokens exist for compatibility.
+
+---
+
+### Tailwind Color Config
 
 ```js
-// createTheme palette mapping
-palette: {
-  primary:   { main: '#185FA5', dark: '#0C447C', light: '#E6F1FB', contrastText: '#fff' },
-  success:   { main: '#1D9E75', contrastText: '#fff' },
-  error:     { main: '#D93025', contrastText: '#fff' },
-  warning:   { main: '#F59E0B', contrastText: '#fff' },
-  text:      { primary: '#2C2C2A', secondary: '#6B7280', disabled: '#9CA3AF' },
-  background:{ default: '#F4F8FC', paper: '#FFFFFF' },
-  divider:   '#D1DCE8',
+// tailwind.config.js — extend.colors
+{
+  primary:   { DEFAULT: '#185FA5', dark: '#0C447C', light: '#E6F1FB' },
+  secondary: { DEFAULT: '#1D9E75', light: '#E6F5F0' },
+  charcoal:  '#2C2C2A',
+  success:   '#1D9E75',
+  error:     '#D93025',
+  warning:   '#F59E0B',
+  border:    '#D1DCE8',
+  surface:   '#FFFFFF',
+  bg:        '#F4F8FC',
 }
 ```
 
----
-
-### Typography
-
-#### Font Stack
-
-| Role | Font | Weights | Import |
-|------|------|---------|--------|
-| **Display / Headings** | `Inter` | 600, 700 | Google Fonts |
-| **Body** | `Inter` | 400, 500 | Google Fonts |
-| **Monospace** | `JetBrains Mono` | 400 | Google Fonts |
-
-#### Type Scale
-
-| Variant (MUI) | Size | Weight | Line Height | Tailwind | Usage |
-|---------------|------|--------|-------------|----------|-------|
-| `h1` | 36px | 700 | 1.15 | `text-4xl font-bold` | Page hero |
-| `h2` | 28px | 700 | 1.2 | `text-3xl font-bold` | Page title |
-| `h3` | 22px | 600 | 1.25 | `text-2xl font-semibold` | Section heading |
-| `h4` | 18px | 600 | 1.3 | `text-lg font-semibold` | Card title |
-| `h5` | 16px | 600 | 1.35 | `text-base font-semibold` | Sub-heading |
-| `h6` | 14px | 600 | 1.4 | `text-sm font-semibold` | Label heading |
-| `subtitle1` | 16px | 400 | 1.6 | `text-base` | Large body / lead |
-| `subtitle2` | 14px | 500 | 1.6 | `text-sm font-medium` | Meta subtitle |
-| `body1` | 16px | 400 | 1.6 | `text-base font-normal` | Primary body |
-| `body2` | 14px | 400 | 1.6 | `text-sm font-normal` | Default body |
-| `caption` | 12px | 400 | 1.5 | `text-xs font-normal` | Timestamps, metadata |
-| `overline` | 11px | 500 | 2.0 | `text-xs font-medium uppercase tracking-widest` | Section labels |
-| `button` | 14px | 500 | 1.75 | `text-sm font-medium` | Button text |
-| `code` | 13px | 400 | 1.6 | `font-mono text-sm` | Inline code |
-
-#### Rules
-- Minimum body font: **14px web**, **15px mobile**
-- Line length: 60–80 characters for readable paragraphs
-- Never use pure `#000000` — always use Charcoal `#2C2C2A`
-- Contrast: white text on `#185FA5` passes AA (5.1:1); Charcoal on white passes AAA (14.5:1)
-
----
-
-### Spacing
-
-**Base unit: 8px** (MUI default). All spacing is a multiple of 8.
-
-| MUI `spacing()` | Value | Tailwind | Usage |
-|-----------------|-------|----------|-------|
-| `spacing(0.5)` | 4px | `p-1` | Tight icon padding |
-| `spacing(1)` | 8px | `p-2` | Compact badge/chip |
-| `spacing(1.5)` | 12px | `p-3` | Button vertical pad |
-| `spacing(2)` | 16px | `p-4` | Card padding, standard gap |
-| `spacing(2.5)` | 20px | `p-5` | Form field gap |
-| `spacing(3)` | 24px | `p-6` | Section inner padding |
-| `spacing(4)` | 32px | `p-8` | Section separation |
-| `spacing(5)` | 40px | `p-10` | Hero padding |
-| `spacing(6)` | 48px | `p-12` | Large section |
-| `spacing(8)` | 64px | `p-16` | Top-of-page whitespace |
-
----
-
-### Elevation & Shadow
-
-MUI uses 25 elevation levels (0–24). Proflect maps to 5 practical levels:
-
-| Proflect Level | MUI Elevation | Tailwind | Usage |
-|----------------|---------------|----------|-------|
-| Flush | `elevation={0}` | `shadow-none` | Inline elements |
-| Low | `elevation={1}` | `shadow-sm` | Input fields, table rows |
-| Default | `elevation={2}` | `shadow` | Cards, dropdowns |
-| Medium | `elevation={4}` | `shadow-md` | Floating panels, popovers |
-| High | `elevation={8}` | `shadow-lg` | Modals, drawers |
-| Highest | `elevation={16}` | `shadow-xl` | Full-screen overlays |
-
-Shadows use Deep Navy `#0C447C` as the base tint for brand consistency.
-
----
-
-### Border Radius
-
-```js
-// MUI theme
-shape: { borderRadius: 8 }
+Usage:
+```html
+<div class="bg-primary text-white">CTA</div>
+<div class="bg-primary-light text-primary">Selected</div>
+<div class="border border-border">Card</div>
+<div class="bg-bg text-charcoal">Page</div>
 ```
 
-| Token | Value | MUI | Tailwind | Usage |
-|-------|-------|-----|----------|-------|
-| `sm` | 4px | `sx={{ borderRadius: 1 }}` | `rounded` | Tags, inline badges |
-| `md` | 8px | Default | `rounded-lg` | Inputs, buttons, chips |
-| `lg` | 12px | `sx={{ borderRadius: '12px' }}` | `rounded-xl` | Modals, large cards |
-| `xl` | 16px | `sx={{ borderRadius: '16px' }}` | `rounded-2xl` | Hero banners |
-| `full` | 9999px | `sx={{ borderRadius: '50%' }}` | `rounded-full` | Avatars, pill badges |
-
 ---
 
-### Motion
+## 3. Typography
 
-```js
-// MUI theme
-transitions: {
-  duration: { shortest: 150, shorter: 200, short: 250, standard: 300, complex: 375, enteringScreen: 225, leavingScreen: 195 },
-  easing:   { easeInOut: 'cubic-bezier(0.4, 0, 0.2, 1)', easeOut: 'cubic-bezier(0.0, 0, 0.2, 1)', easeIn: 'cubic-bezier(0.4, 0, 1, 1)', sharp: 'cubic-bezier(0.4, 0, 0.6, 1)' }
+### Font Stack
+
+| Role | Font | Weights | Usage |
+|------|------|---------|-------|
+| **UI (heading + body)** | `Inter` | 400, 500, 600, 700, 800 | All UI text |
+| **Monospace** | `JetBrains Mono` | 400, 500, 600 | Code editor, inline code |
+| **Serif (resume)** | `EB Garamond` | 400–700 | Serif resume templates |
+| **Serif (resume)** | `Lora` | 400–700 | Serif resume templates |
+
+Fonts loaded via `@import` in `globals.css` (Google Fonts).
+
+### Type Scale
+
+| Usage | Size | Weight | Line Height | Tailwind |
+|-------|------|--------|-------------|----------|
+| Page hero | 36px | 700 | 1.2 | `text-4xl font-bold` |
+| Page title | 28px | 700 | 1.2 | `text-3xl font-bold` |
+| Section heading | 22px | 600 | 1.25 | `text-2xl font-semibold` |
+| Card title | 18px | 600 | 1.3 | `text-lg font-semibold` |
+| Sub-heading | 16px | 600 | 1.35 | `text-base font-semibold` |
+| Label heading | 14px | 600 | 1.4 | `text-sm font-semibold` |
+| Primary body | 16px | 400 | 1.6 | `text-base` |
+| Default body | 14px | 400 | 1.6 | `text-sm` |
+| Metadata | 12px | 400 | 1.5 | `text-xs` |
+| Section overline | 11px | 500 | 2.0 | `text-xs font-medium uppercase tracking-widest` |
+| Button text | 14px | 500 | — | `text-sm font-medium` |
+| Code | 13px | 400 | 1.6 | `font-mono text-sm` |
+
+### Base Rules
+
+```css
+/* globals.css */
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 200ms, color 200ms;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Inter', system-ui, sans-serif;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
 }
 ```
+
+- Minimum readable size: **14px** (base body)
+- Never use pure `#000000` — use charcoal `#2C2C2A`
+- Use `--c-text-2` (`#6B7280`) for supporting text, metadata, placeholders
+
+---
+
+## 4. Spacing
+
+Tailwind default spacing scale (base unit: 4px). No custom extend. Key values:
+
+| Tailwind | Value | Usage |
+|----------|-------|-------|
+| `p-1` | 4px | Tight icon padding |
+| `p-2` | 8px | Compact badge/chip |
+| `p-3` | 12px | Button vertical pad |
+| `p-4` | 16px | Card padding, standard gap |
+| `p-6` | 24px | Section inner padding |
+| `p-8` | 32px | Section separation |
+| `gap-2` | 8px | Tight inline gap |
+| `gap-3` | 12px | Standard inline gap |
+| `gap-4` | 16px | Card grid gap |
+| `gap-6` | 24px | Section gap |
+
+---
+
+## 5. Border Radius
+
+```js
+// tailwind.config.js — extend.borderRadius
+{
+  sm:      '4px',   // Tags, inline badges
+  DEFAULT: '8px',   // Inputs, buttons, chips (rounded-lg)
+  lg:      '12px',  // Cards, dropdowns
+  xl:      '12px',  // Large cards (alias)
+  '2xl':   '16px',  // Modals, hero banners
+  btn:     '999px', // Pill buttons, rounded-full badges
+}
+```
+
+| Context | Class | Radius |
+|---------|-------|--------|
+| Inline badges, tags | `rounded` or `rounded-sm` | 4px |
+| Inputs, buttons, chips | `rounded-lg` | 8px |
+| Cards, dropdowns | `rounded-xl` | 12px |
+| Modals | `rounded-2xl` | 16px |
+| Avatars, pill badges | `rounded-full` | 999px |
+
+CSS variables: `--r-input: 8px`, `--r-card: 12px`, `--r-modal: 16px`
+
+---
+
+## 6. Shadows & Elevation
+
+All shadows tinted with Deep Navy `#0C447C` for brand consistency.
+
+### Tailwind Shadow Classes
+
+```js
+// tailwind.config.js — extend.boxShadow
+{
+  sm:      '0 1px 2px rgba(12,68,124,0.06)',
+  DEFAULT: '0 2px 8px rgba(12,68,124,0.10)',
+  md:      '0 4px 16px rgba(12,68,124,0.12)',
+  lg:      '0 8px 32px rgba(12,68,124,0.16)',
+  xl:      '0 16px 48px rgba(12,68,124,0.20)',
+}
+```
+
+### Extended Shadows (globals.css)
+
+| Class | Usage |
+|-------|-------|
+| `shadow-xs` | Hairline dividers, subtle separators |
+| `shadow-sm` | Input fields, table rows |
+| `shadow` | Standard cards |
+| `shadow-md` | Floating panels, popovers |
+| `shadow-lg` | Modals, drawers |
+| `shadow-xl` | Full-screen overlays |
+| `shadow-2xl` | Hero / marketing |
+| `shadow-glow-primary` | Focus glow on primary elements |
+| `shadow-glow-success` | Success state glow |
+
+### CSS Variable Shadows
+
+| Variable | Value | Usage |
+|----------|-------|-------|
+| `--shadow-card` | `0 2px 8px rgba(12,68,124,0.10)` | `.ds-card` |
+| `--shadow-modal` | `0 8px 32px rgba(12,68,124,0.16)` | `.ds-modal` |
+
+Dark mode: `--shadow-card: 0 1px 3px rgba(0,0,0,0.30)`, `--shadow-modal: 0 8px 32px rgba(0,0,0,0.40)`
+
+---
+
+## 7. Dark Mode
+
+### Strategy
+
+`class` mode — toggle `dark` class on `<html>`.
+
+### Theme Initialization
+
+Inline script in `app/layout.jsx` runs before React hydration:
+
+```js
+const saved = localStorage.getItem('theme');
+const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+if (saved === 'dark' || (!saved && prefersDark)) {
+  document.documentElement.classList.add('dark');
+}
+```
+
+### `useTheme` Hook (`hooks/useTheme.js`)
+
+```js
+const { isDark, toggle } = useTheme();
+// toggle() flips documentElement.classList and persists to localStorage
+```
+
+### Writing Dark-Mode-Aware Code
+
+**Use CSS variables** — they flip automatically:
+```html
+<!-- Preferred: CSS variable -->
+<div style="color: var(--c-text); background: var(--c-surface)">…</div>
+
+<!-- Also common: Tailwind dark: variant -->
+<div class="bg-white dark:bg-[#111F35] text-[#2C2C2A] dark:text-[#E8EFF7]">…</div>
+```
+
+Prefer CSS variables over inline `dark:bg-[#...]` for new components. The inline dark variant is common in older code.
+
+---
+
+## 8. Utility Component Classes
+
+All defined in `nextjs/app/globals.css`.
+
+### Cards & Surfaces
+
+```css
+.ds-card   { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 12px; box-shadow: var(--shadow-card); }
+.ds-paper  { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 12px; }  /* no shadow */
+.ds-modal  { background: var(--c-surface); border-radius: 16px; box-shadow: var(--shadow-modal); }
+```
+
+```
+.card              — base card (white, border, shadow)
+.card-interactive  — .card + hover lift + border color shift
+.card-featured     — .card + gradient top-accent line
+.mode-card         — interactive card with transform lift
+.auth-card         — modal-style card for auth pages
+```
+
+Usage:
+```html
+<div class="ds-card p-6">Standard card</div>
+<div class="card-interactive p-4 cursor-pointer">Clickable card</div>
+```
+
+---
+
+### Buttons
+
+```css
+.btn-primary {
+  /* gradient blue, white text, shine sweep on hover */
+  background: linear-gradient(135deg, #185FA5, #0C447C);
+  color: white;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* hover: ::after shine effect + slight lift */
+}
+```
+
+Secondary (Tailwind):
+```html
+<button class="border border-primary text-primary hover:bg-primary-light rounded-lg px-4 py-2 text-sm font-medium transition-colors">
+  Secondary
+</button>
+```
+
+Destructive:
+```html
+<button class="bg-error hover:bg-red-700 text-white rounded-lg px-4 py-2 text-sm font-medium">
+  Delete
+</button>
+```
+
+---
+
+### Chips & Badges
+
+```css
+.chip-primary { background: linear-gradient(135deg, rgba(24,95,165,0.12), rgba(12,68,124,0.08)); color: #185FA5; border: 1px solid rgba(24,95,165,0.2); border-radius: 8px; }
+.chip-success { /* green gradient */  color: #1D9E75; }
+.chip-warning { /* amber gradient */  color: #B45309; }
+.chip-error   { /* red gradient */    color: #D93025; }
+```
+
+Tailwind equivalents:
+```html
+<!-- Primary chip -->
+<span class="bg-primary-light text-primary text-xs font-medium px-2.5 py-1 rounded-lg">React</span>
+
+<!-- Success status -->
+<span class="bg-green-100 text-success text-xs font-medium px-2 py-0.5 rounded">Active</span>
+
+<!-- Danger status -->
+<span class="bg-red-100 text-error text-xs font-medium px-2 py-0.5 rounded">Rejected</span>
+```
+
+---
+
+### Inputs
+
+```css
+.input-enhanced {
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-input);   /* 8px */
+  transition: border-color 200ms, box-shadow 200ms;
+}
+.input-enhanced:focus {
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 3px rgba(24,95,165,0.12);
+  outline: none;
+}
+```
+
+Tailwind equivalent:
+```html
+<input class="w-full border border-border rounded-lg px-3 py-2 text-sm
+              focus:border-primary focus:ring-2 focus:ring-primary/10 focus:outline-none
+              dark:bg-[#111F35] dark:border-white/10 dark:text-[#E8EFF7]
+              transition-colors" />
+```
+
+---
+
+### Alerts
+
+```css
+.ds-alert         { border-radius: 8px; padding: 12px 16px; display: flex; gap: 12px; }
+.ds-alert-info    { background: var(--c-primary-light); color: var(--c-primary); border: 1px solid rgba(24,95,165,0.2); }
+.ds-alert-success { background: var(--c-success-bg);   color: var(--c-success); border: 1px solid rgba(29,158,117,0.2); }
+.ds-alert-warning { background: var(--c-warning-bg);   color: var(--c-warning-text); }
+.ds-alert-error   { background: var(--c-error-bg);     color: var(--c-error); }
+```
+
+Usage:
+```html
+<div class="ds-alert ds-alert-success">Profile updated successfully.</div>
+<div class="ds-alert ds-alert-error">Upload failed. Please try again.</div>
+```
+
+---
+
+### Tables
+
+```css
+.ds-table {
+  width: 100%; border-collapse: collapse;
+  border: 1px solid var(--c-border); border-radius: 12px; overflow: hidden;
+}
+.ds-table thead           { background: var(--c-primary-light); }
+.ds-table thead th        { color: var(--c-primary); font-size: 12px; font-weight: 600;
+                            text-transform: uppercase; letter-spacing: 0.05em; }
+.ds-table tbody tr:hover  { background: var(--c-bg); }
+.ds-table td              { border-bottom: 1px solid var(--c-border); padding: 12px 16px; }
+```
+
+---
+
+### Progress & Scores
+
+```css
+.ds-progress      { height: 6px; background: var(--c-primary-light); border-radius: 3px; overflow: hidden; }
+.ds-progress-fill { height: 100%; background: var(--c-primary); border-radius: 3px; transition: width 600ms ease; }
+```
+
+ATS score ring — SVG-based in `ATSPanel.jsx`:
+```jsx
+<svg viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="40" fill="none" stroke="var(--c-primary-light)" strokeWidth="8" />
+  <circle cx="50" cy="50" r="40" fill="none" stroke="var(--c-primary)" strokeWidth="8"
+    strokeDasharray={`${score * 2.51} 251`} strokeLinecap="round"
+    transform="rotate(-90 50 50)" style={{ transition: 'stroke-dasharray 800ms ease' }} />
+</svg>
+```
+
+```css
+.stat-icon { width: 48px; height: 48px; border-radius: 12px;
+             background: linear-gradient(135deg, var(--c-primary-light), rgba(24,95,165,0.08));
+             display: flex; align-items: center; justify-content: center; }
+```
+
+---
+
+### Skeletons
+
+```css
+.ds-skel {
+  background: linear-gradient(90deg, var(--c-neutral-bg) 25%, rgba(255,255,255,0.5) 50%, var(--c-neutral-bg) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 6px;
+}
+```
+
+Usage:
+```html
+<div class="ds-skel h-4 w-48 mb-2"></div>
+<div class="ds-skel h-4 w-32"></div>
+```
+
+---
+
+## 9. Animation & Motion
+
+### Durations & Easings
 
 | Use case | Duration | Easing |
 |----------|----------|--------|
-| Hover color shift | 150ms | `easeInOut` |
-| Button press, focus ring | 200ms | `easeInOut` |
-| Dropdown / menu open | 250ms | `easeOut` |
-| Modal enter | 225ms | `easeOut` |
-| Modal leave | 195ms | `easeIn` |
-| Page transition | 300ms | `easeInOut` |
-
----
-
-## 2. Inputs
-
-### Autocomplete
-
-MUI: `<Autocomplete>` — combobox with search + filtering built in.
-
-**Proflect usage:** User search, tag selection, skill input, location search.
-
-| Prop | Proflect default |
-|------|-----------------|
-| `variant` | `outlined` |
-| `size` | `medium` |
-| `multiple` | `false` (use `true` for multi-select chips) |
-| `freeSolo` | `false` (unless creating new entries) |
-| `disablePortal` | `false` |
-
-```jsx
-<Autocomplete
-  options={options}
-  renderInput={(params) => (
-    <TextField {...params} label="Search skills" placeholder="e.g. React, Python" />
-  )}
-  sx={{
-    '& .MuiOutlinedInput-root': {
-      borderRadius: '8px',
-      '&.Mui-focused fieldset': { borderColor: '#185FA5' },
-    }
-  }}
-/>
-```
-
-**States:** Default · Focused · Loading (show `CircularProgress`) · Error · Disabled · No options
-
----
-
-### Button
-
-MUI: `<Button>`, `<IconButton>`, `<LoadingButton>` (MUI X)
-
-#### Variants & Proflect mapping
-
-| MUI Variant | Proflect role | Primary color | Hover |
-|-------------|---------------|---------------|-------|
-| `contained` | Primary CTA | `#185FA5` bg, white text | `#0C447C` bg |
-| `outlined` | Secondary action | White bg, `#185FA5` border/text | `#E6F1FB` bg |
-| `text` | Ghost / tertiary | Transparent, `#185FA5` text | `#E6F1FB` bg |
-| `contained` color=`error` | Destructive | `#D93025` bg | `#B91C1C` bg |
-| `contained` color=`success` | Confirm / verify | `#1D9E75` bg | `#15805E` bg |
-
-#### Sizes
-
-| MUI size | Padding | Font | Min width |
-|----------|---------|------|-----------|
-| `small` | `4px 10px` | 13px | — |
-| `medium` (default) | `6px 16px` | 14px | 64px |
-| `large` | `8px 22px` | 15px | 80px |
-
-```jsx
-// Primary
-<Button variant="contained" color="primary" size="medium">Submit</Button>
-
-// Secondary
-<Button variant="outlined" color="primary">Cancel</Button>
-
-// Ghost
-<Button variant="text" color="primary">Learn more</Button>
-
-// With icon
-<Button variant="contained" startIcon={<SaveIcon />}>Save</Button>
-
-// Icon-only (always provide aria-label)
-<IconButton aria-label="close" color="primary"><CloseIcon /></IconButton>
-```
-
-**States:** Default · Hover · Active/Pressed · Focus (ring) · Disabled · Loading
-
----
-
-### Button Group
-
-MUI: `<ButtonGroup>`
-
-**Proflect usage:** Segmented controls (e.g. List / Grid view toggle, time filters).
-
-```jsx
-<ButtonGroup variant="outlined" color="primary">
-  <Button>Day</Button>
-  <Button>Week</Button>
-  <Button>Month</Button>
-</ButtonGroup>
-```
-
----
-
-### Checkbox
-
-MUI: `<Checkbox>`, `<FormControlLabel>`, `<FormGroup>`
-
-| State | Color |
-|-------|-------|
-| Unchecked | `#D1DCE8` border |
-| Checked | `#185FA5` fill |
-| Indeterminate | `#185FA5` dash |
-| Disabled | `#9CA3AF` |
-| Error | `#D93025` |
-
-```jsx
-<FormGroup>
-  <FormControlLabel
-    control={<Checkbox defaultChecked sx={{ color: '#D1DCE8', '&.Mui-checked': { color: '#185FA5' } }} />}
-    label="Remember me"
-  />
-</FormGroup>
-
-// With helper text and error
-<FormControl error>
-  <FormControlLabel control={<Checkbox />} label="I agree to terms" />
-  <FormHelperText>This field is required</FormHelperText>
-</FormControl>
-```
-
----
-
-### Floating Action Button (FAB)
-
-MUI: `<Fab>`
-
-**Proflect usage:** Primary mobile action (e.g. Add new item on mobile screens).
-
-| Variant | Size | Usage |
-|---------|------|-------|
-| `circular` | `large` (56px) | Main page action |
-| `circular` | `small` (40px) | Secondary actions |
-| `extended` | — | When label needed |
-
-```jsx
-// Standard
-<Fab color="primary" aria-label="add" sx={{ bgcolor: '#185FA5', '&:hover': { bgcolor: '#0C447C' } }}>
-  <AddIcon />
-</Fab>
-
-// Extended (mobile)
-<Fab variant="extended" color="primary">
-  <AddIcon sx={{ mr: 1 }} />
-  Add Profile
-</Fab>
-```
-
-Position: `fixed bottom-6 right-6` (web), above bottom nav (mobile).
-
----
-
-### Number Field
-
-MUI: `<NumberField>` (new in v9)
-
-```jsx
-<NumberField
-  label="Experience (years)"
-  defaultValue={0}
-  min={0}
-  max={50}
-  step={1}
-/>
-```
-
----
-
-### Radio Group
-
-MUI: `<Radio>`, `<RadioGroup>`, `<FormControlLabel>`
-
-```jsx
-<FormControl>
-  <FormLabel sx={{ color: '#2C2C2A', '&.Mui-focused': { color: '#185FA5' } }}>
-    Employment type
-  </FormLabel>
-  <RadioGroup defaultValue="full-time">
-    <FormControlLabel value="full-time" control={<Radio sx={{ '&.Mui-checked': { color: '#185FA5' } }} />} label="Full-time" />
-    <FormControlLabel value="part-time" control={<Radio sx={{ '&.Mui-checked': { color: '#185FA5' } }} />} label="Part-time" />
-    <FormControlLabel value="contract" control={<Radio sx={{ '&.Mui-checked': { color: '#185FA5' } }} />} label="Contract" />
-  </RadioGroup>
-</FormControl>
-```
-
----
-
-### Rating
-
-MUI: `<Rating>`
-
-**Proflect usage:** Skill proficiency rating, candidate scoring.
-
-```jsx
-<Rating
-  value={3.5}
-  precision={0.5}
-  sx={{ color: '#185FA5', '& .MuiRating-iconEmpty': { color: '#D1DCE8' } }}
-/>
-```
-
----
-
-### Select
-
-MUI: `<Select>`, `<MenuItem>`, `<FormControl>`
-
-| Variant | Usage |
-|---------|-------|
-| `outlined` (default) | All standard form selects |
-| `standard` | Inline compact selects (table filters) |
-| `filled` | Not used in Proflect |
-
-```jsx
-<FormControl fullWidth size="medium">
-  <InputLabel>Role</InputLabel>
-  <Select
-    value={role}
-    label="Role"
-    onChange={handleChange}
-    sx={{ borderRadius: '8px', '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#185FA5' } }}
-  >
-    <MenuItem value="engineer">Software Engineer</MenuItem>
-    <MenuItem value="designer">Designer</MenuItem>
-    <MenuItem value="pm">Product Manager</MenuItem>
-  </Select>
-</FormControl>
-
-// Multiple select with chips
-<Select multiple value={selected} renderValue={(vals) => (
-  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-    {vals.map(v => <Chip key={v} label={v} size="small" />)}
-  </Box>
-)}>
-```
-
----
-
-### Slider
-
-MUI: `<Slider>`
-
-**Proflect usage:** Experience range filter, salary range, skill level indicator.
-
-```jsx
-// Range slider
-<Slider
-  value={[2, 8]}
-  min={0} max={20}
-  valueLabelDisplay="auto"
-  valueLabelFormat={(v) => `${v} yrs`}
-  sx={{
-    color: '#185FA5',
-    '& .MuiSlider-thumb': { bgcolor: '#185FA5' },
-    '& .MuiSlider-track': { bgcolor: '#185FA5' },
-    '& .MuiSlider-rail': { bgcolor: '#D1DCE8' },
-  }}
-/>
-```
-
----
-
-### Switch
-
-MUI: `<Switch>`, `<FormControlLabel>`
-
-| State | Colors |
-|-------|--------|
-| Off | `#D1DCE8` track |
-| On | `#185FA5` track |
-| Disabled | `#9CA3AF` |
-
-```jsx
-<FormControlLabel
-  control={
-    <Switch
-      checked={checked}
-      sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: '#185FA5' }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: '#185FA5' } }}
-    />
+| Hover color, focus ring | 150–200ms | `ease-in-out` |
+| Dropdown / collapse open | 250ms | `ease-out` |
+| Modal enter | 225ms | `ease-out` |
+| Modal leave | 195ms | `ease-in` |
+| Page / section transition | 300ms | `ease-in-out` |
+| Score ring fill | 600–800ms | `ease` |
+| Shimmer sweep | 1400ms | `ease-in-out infinite` |
+
+Standard interactive elements: `transition-colors duration-200` or `transition-all duration-200`.
+`.btn-primary` uses `cubic-bezier(0.4, 0, 0.2, 1)`.
+
+### Animation Classes
+
+| Class | Effect | Duration |
+|-------|--------|----------|
+| `.animate-fade-in-up` | Fade + translate Y 10px → 0 | 300ms |
+| `.animate-fade-in-scale` | Fade + scale 0.95 → 1 | 200ms |
+| `.animate-float` | Floating bob ±8px | 3s infinite |
+| `.animate-pulse-glow` | Pulsing glow ring | 2s infinite |
+| `.animate-shake` | Error shake ±4px | 400ms |
+| `.stagger-children` | Children stagger 0–400ms delay | — |
+
+Keyframes defined in `globals.css`: `shimmer`, `fadeInUp`, `float`, `pulseGlow`, `shake`.
+
+### Reduced Motion
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
-  label="Active"
-/>
+}
 ```
 
 ---
 
-### Text Field
+## 10. Gradients & Glass
 
-MUI: `<TextField>` — the most-used input. Wraps Input, InputLabel, FormHelperText.
+### Gradient Utilities
 
-**Proflect standard:** `variant="outlined"`, `size="medium"`, `fullWidth`
+| Class | Definition | Usage |
+|-------|-----------|-------|
+| `.gradient-primary` | `linear-gradient(135deg, #185FA5, #0C447C)` | Primary CTA backgrounds |
+| `.gradient-primary-soft` | `linear-gradient(135deg, #E6F1FB, rgba(24,95,165,0.05))` | Soft section highlights |
+| `.gradient-success` | `linear-gradient(135deg, #1D9E75, #15805E)` | Success banners |
+| `.gradient-amber` | `linear-gradient(135deg, #F59E0B, #D97706)` | Warning banners |
+| `.gradient-mesh-1` | Radial mesh — primary + success | Hero backgrounds |
+| `.gradient-dark-hero` | Dark navy gradient | Dark mode hero sections |
+| `.text-gradient-primary` | Gradient text fill (primary) | Feature headings |
+| `.text-gradient-dark` | Dark gradient text | Dark hero text |
+| `.dot-grid` | `radial-gradient` repeating dot pattern | Page hero backgrounds |
 
-| State | Border | Label | Helper |
-|-------|--------|-------|--------|
-| Default | `#D1DCE8` | `#6B7280` | `#6B7280` |
-| Focused | `#185FA5` (2px) | `#185FA5` | — |
-| Error | `#D93025` | `#D93025` | `#D93025` |
-| Disabled | `#D1DCE8` | `#9CA3AF` | `#9CA3AF` |
-| Success | `#1D9E75` | `#1D9E75` | `#1D9E75` |
+### Glassmorphism
 
-```jsx
-// Standard
-<TextField
-  label="Full name"
-  placeholder="John Doe"
-  fullWidth
-  variant="outlined"
-  helperText="As shown on official documents"
-  sx={{ '& .MuiOutlinedInput-root.Mui-focused fieldset': { borderColor: '#185FA5' }, '& .MuiInputLabel-root.Mui-focused': { color: '#185FA5' } }}
-/>
-
-// Error
-<TextField label="Email" error helperText="Invalid email address" />
-
-// With adornment
-<TextField
-  label="Search"
-  InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment> }}
-/>
-
-// Password
-<TextField
-  label="Password"
-  type={showPass ? 'text' : 'password'}
-  InputProps={{ endAdornment: <InputAdornment position="end"><IconButton onClick={toggle}>{showPass ? <VisibilityOff /> : <Visibility />}</IconButton></InputAdornment> }}
-/>
-```
-
----
-
-### Transfer List
-
-MUI: Custom pattern using `<List>` + `<Checkbox>` + `<Button>` controls.
-
-**Proflect usage:** Assigning skills to job role, selecting team members.
-
-Structure: Left list (available) → action buttons (move right/left) → Right list (selected).
-
----
-
-### Toggle Button
-
-MUI: `<ToggleButton>`, `<ToggleButtonGroup>`
-
-**Proflect usage:** View mode (list/grid/map), filter toggles, status filters.
-
-```jsx
-<ToggleButtonGroup
-  value={view}
-  exclusive
-  onChange={handleView}
-  sx={{
-    '& .MuiToggleButton-root': { color: '#6B7280', border: '1px solid #D1DCE8' },
-    '& .MuiToggleButton-root.Mui-selected': { bgcolor: '#E6F1FB', color: '#185FA5', border: '1px solid #185FA5' },
-  }}
->
-  <ToggleButton value="list" aria-label="list view"><ViewListIcon /></ToggleButton>
-  <ToggleButton value="grid" aria-label="grid view"><ViewModuleIcon /></ToggleButton>
-</ToggleButtonGroup>
-```
-
----
-
-## 3. Data Display
-
-### Avatar
-
-MUI: `<Avatar>`, `<AvatarGroup>`
-
-| Variant | Usage |
-|---------|-------|
-| Image | User profile photo |
-| Initials | When photo unavailable |
-| Icon | System / entity avatars |
-
-```jsx
-// Image
-<Avatar src="/photo.jpg" alt="Jane Doe" sx={{ width: 40, height: 40 }} />
-
-// Initials fallback
-<Avatar sx={{ bgcolor: '#185FA5', width: 40, height: 40 }}>JD</Avatar>
-
-// Group (overlap)
-<AvatarGroup max={4}>
-  <Avatar src="/a.jpg" />
-  <Avatar src="/b.jpg" />
-  <Avatar sx={{ bgcolor: '#185FA5' }}>+3</Avatar>
-</AvatarGroup>
-```
-
-**Sizes:** 24px (xs), 32px (sm), 40px (md/default), 48px (lg), 64px (xl), 96px (profile)
-
----
-
-### Badge
-
-MUI: `<Badge>`
-
-**Proflect usage:** Notification count, unread messages, active indicator.
-
-```jsx
-// Notification count
-<Badge badgeContent={4} color="error">
-  <NotificationsIcon />
-</Badge>
-
-// Dot indicator (online/active)
-<Badge variant="dot" color="success">
-  <Avatar src="/photo.jpg" />
-</Badge>
-```
-
-Colors: `primary` (`#185FA5`), `error` (`#D93025`), `success` (`#1D9E75`), `warning` (`#F59E0B`)
-
----
-
-### Chip / Tag
-
-MUI: `<Chip>`
-
-**Proflect usage:** Skills, tags, filters, status labels, selected filter pills.
-
-| Variant | Usage |
-|---------|-------|
-| `filled` | Status labels, primary tags |
-| `outlined` | Filter chips, secondary tags |
-
-```jsx
-// Skill chip
-<Chip label="React" variant="filled" sx={{ bgcolor: '#E6F1FB', color: '#185FA5', fontWeight: 500 }} />
-
-// Deletable chip (filter selected)
-<Chip label="Remote" onDelete={handleDelete} sx={{ bgcolor: '#E6F1FB', color: '#185FA5' }} />
-
-// Clickable filter chip
-<Chip label="Full-time" variant="outlined" onClick={handleClick} clickable
-  sx={{ borderColor: '#185FA5', color: '#185FA5', '&:hover': { bgcolor: '#E6F1FB' } }} />
-
-// Success status
-<Chip icon={<CheckCircleIcon />} label="Verified" size="small"
-  sx={{ bgcolor: '#D1FAE5', color: '#1D9E75' }} />
-
-// Error status
-<Chip label="Rejected" size="small" sx={{ bgcolor: '#FEE2E2', color: '#D93025' }} />
-```
-
-**Sizes:** `small` (24px height), `medium` (32px height, default)
-
----
-
-### Divider
-
-MUI: `<Divider>`
-
-```jsx
-// Horizontal
-<Divider sx={{ borderColor: '#D1DCE8' }} />
-
-// With text
-<Divider sx={{ borderColor: '#D1DCE8' }}>
-  <Typography variant="caption" color="text.secondary">or</Typography>
-</Divider>
-
-// Vertical (inside flex)
-<Divider orientation="vertical" flexItem sx={{ borderColor: '#D1DCE8', mx: 1 }} />
-```
-
----
-
-### Icons
-
-**Library:** [Material Icons](https://mui.com/material-ui/material-icons/) + [Lucide React](https://lucide.dev) as supplement.
-
-| Style | Usage |
+| Class | Style |
 |-------|-------|
-| `Outlined` | Default — navigation, actions |
-| `Filled` | Active/selected state of navigation icons |
-| `Rounded` | Softer UI, onboarding |
-| `TwoTone` | Illustrations, empty states |
+| `.glass-light` | `backdrop-filter: blur(12px)` + white 70% BG + border |
+| `.glass-dark` | `backdrop-filter: blur(12px)` + navy 70% BG + border |
+| `.glass-primary` | `backdrop-filter: blur(12px)` + primary-light 80% BG |
 
-```jsx
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
-import CheckCircleIcon from '@mui/icons-material/CheckCircle' // filled = active
+Usage: floating panels, navbar on marketing pages, tooltips over images.
 
-// Sizes: inherit(default), small(20px), medium(24px), large(35px)
-<CheckCircleIcon fontSize="small" sx={{ color: '#1D9E75' }} />
+---
+
+## 11. Prose & Rich Text
+
+### AI-Generated Content (`.prose-content`)
+
+Applied to containers rendering AI markdown (study plan topics, career analysis).
+
+```css
+.prose-content p      { margin-bottom: 0.875rem; line-height: 1.7; }
+.prose-content h3     { font-size: 1rem; font-weight: 600; color: var(--c-text); margin: 1.25rem 0 0.5rem; }
+.prose-content ul, ol { padding-left: 1.5rem; margin-bottom: 0.875rem; }
+.prose-content li     { margin-bottom: 0.25rem; line-height: 1.6; }
+.prose-content strong { font-weight: 600; color: var(--c-text); }
+.prose-content code   { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;
+                        background: var(--c-neutral-bg); padding: 2px 6px; border-radius: 4px; }
+.prose-content pre    { background: var(--c-neutral-bg); border-radius: 8px; padding: 1rem; overflow-x: auto; }
+.prose-content a      { color: var(--c-primary); text-decoration: underline; }
+.prose-content blockquote { border-left: 3px solid var(--c-primary); padding-left: 1rem; color: var(--c-text-2); }
 ```
 
-**Color rule:** Always use `currentColor` or semantic color — never hardcode grey for interactive icons.
+### Other Text Classes
+
+| Class | Usage |
+|-------|-------|
+| `.resume-rich-body` | Resume section editor preview — compact formatting |
+| `.rich-content` | Tiptap editor preview — tighter spacing than `.prose-content` |
+
+### Print Styles (`styles/resume-print.css`)
+
+Dedicated stylesheet for `/print/[id]`:
+- `print-color-adjust: exact` — preserves color
+- Page break rules — keeps headings/entries together
+- Hides UI chrome (navbar, sidebars, buttons)
+- Suppresses link URL display
+- Flow-root BFC on section blocks
 
 ---
 
-### List
+## 12. Responsive Breakpoints
 
-MUI: `<List>`, `<ListItem>`, `<ListItemButton>`, `<ListItemIcon>`, `<ListItemText>`, `<ListSubheader>`
+Tailwind defaults (no custom extend):
 
-**Proflect usage:** Sidebar nav items, search results, notification items, menu options.
+| Name | Min Width | Tailwind | Devices |
+|------|-----------|----------|---------|
+| — | 0px | (default) | Mobile portrait |
+| `sm` | 640px | `sm:` | Mobile landscape, small tablet |
+| `md` | 768px | `md:` | Tablet |
+| `lg` | 1024px | `lg:` | Desktop |
+| `xl` | 1280px | `xl:` | Wide desktop |
+| `2xl` | 1536px | `2xl:` | Ultra-wide |
 
-```jsx
-<List disablePadding>
-  <ListSubheader sx={{ bgcolor: '#F4F8FC', color: '#6B7280', fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-    Recent
-  </ListSubheader>
+### Mobile-First Patterns
 
-  <ListItem disablePadding>
-    <ListItemButton
-      selected={selected === 'dashboard'}
-      sx={{
-        borderRadius: '8px',
-        mx: 1,
-        '&.Mui-selected': { bgcolor: '#E6F1FB', color: '#185FA5' },
-        '&:hover': { bgcolor: '#E6F1FB' },
-      }}
-    >
-      <ListItemIcon sx={{ minWidth: 36, color: 'inherit' }}><DashboardIcon /></ListItemIcon>
-      <ListItemText primary="Dashboard" primaryTypographyProps={{ fontSize: '14px', fontWeight: 500 }} />
-    </ListItemButton>
-  </ListItem>
-</List>
+```html
+<!-- Vertical mobile, row desktop -->
+<div class="flex flex-col md:flex-row gap-4">
+
+<!-- Show/hide by breakpoint -->
+<nav class="hidden md:flex">Desktop nav</nav>
+<button class="md:hidden">Hamburger</button>
+
+<!-- Responsive padding -->
+<div class="px-4 md:px-8 lg:px-12">
+
+<!-- Responsive grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 ```
 
----
+### Layout Patterns
 
-### Table
-
-MUI: `<Table>`, `<TableHead>`, `<TableBody>`, `<TableRow>`, `<TableCell>`, `<TableSortLabel>`, `<TablePagination>`
-
-**Proflect usage:** Candidate lists, job listings, analytics tables, admin views.
-
-```jsx
-<TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #D1DCE8', borderRadius: '12px' }}>
-  <Table>
-    <TableHead sx={{ bgcolor: '#E6F1FB' }}>
-      <TableRow>
-        <TableCell sx={{ fontWeight: 600, fontSize: '12px', color: '#185FA5', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          <TableSortLabel active direction="asc">Name</TableSortLabel>
-        </TableCell>
-        <TableCell>Status</TableCell>
-        <TableCell align="right">Actions</TableCell>
-      </TableRow>
-    </TableHead>
-    <TableBody>
-      <TableRow hover sx={{ '&:hover': { bgcolor: '#F4F8FC' }, '&:last-child td': { border: 0 } }}>
-        <TableCell sx={{ fontWeight: 500, color: '#2C2C2A' }}>Jane Doe</TableCell>
-        <TableCell><Chip label="Active" size="small" sx={{ bgcolor: '#D1FAE5', color: '#1D9E75' }} /></TableCell>
-        <TableCell align="right">
-          <Button size="small" variant="text">View</Button>
-        </TableCell>
-      </TableRow>
-    </TableBody>
-  </Table>
-
-  <TablePagination
-    component="div"
-    count={48} page={0} rowsPerPage={10}
-    onPageChange={handlePage}
-    onRowsPerPageChange={handleRowsPerPage}
-    rowsPerPageOptions={[10, 25, 50]}
-    sx={{ borderTop: '1px solid #D1DCE8' }}
-  />
-</TableContainer>
-```
+| Pattern | Mobile | Desktop |
+|---------|--------|---------|
+| Navigation | Bottom nav (fixed, 64px) | Left sidebar (240px permanent) |
+| Page padding | `px-4` | `px-8` |
+| Modals | `w-full mx-4` or full-screen | `max-w-lg mx-auto` |
+| Tables | Horizontal scroll | Full width |
+| Primary FAB | `fixed bottom-20 right-4` | Inline button |
 
 ---
 
-### Tooltip
-
-MUI: `<Tooltip>`
-
-```jsx
-<Tooltip title="Verified by Proflect" placement="top" arrow>
-  <CheckCircleIcon sx={{ color: '#1D9E75' }} />
-</Tooltip>
-```
-
-**Proflect style:** Dark bg (`#2C2C2A`), white text, `arrow`, max-width 220px.
-
-```jsx
-// Custom styled
-<Tooltip
-  title="Your profile is 80% complete"
-  slotProps={{ tooltip: { sx: { bgcolor: '#2C2C2A', fontSize: '12px', maxWidth: 220 } }, arrow: { sx: { color: '#2C2C2A' } } }}
->
-```
-
----
-
-### Typography
-
-MUI: `<Typography>`
-
-```jsx
-<Typography variant="h2" sx={{ color: '#2C2C2A', fontWeight: 700 }}>Page Title</Typography>
-<Typography variant="body1" color="text.secondary">Supporting description text.</Typography>
-<Typography variant="caption" color="text.secondary">Last updated 2 hours ago</Typography>
-<Typography variant="overline" sx={{ color: '#185FA5', letterSpacing: '0.1em' }}>Section Label</Typography>
-```
-
----
-
-## 4. Feedback
-
-### Alert
-
-MUI: `<Alert>`, `<AlertTitle>`
-
-| Severity | Icon | BG | Text |
-|----------|------|-----|------|
-| `info` | ℹ️ | `#E6F1FB` | `#185FA5` |
-| `success` | ✅ | `#D1FAE5` | `#1D9E75` |
-| `warning` | ⚠️ | `#FEF3C7` | `#B45309` |
-| `error` | ❌ | `#FEE2E2` | `#D93025` |
-
-```jsx
-<Alert severity="info" sx={{ borderRadius: '8px', border: '1px solid #185FA5/20' }}>
-  <AlertTitle>Note</AlertTitle>
-  Your session expires in 10 minutes.
-</Alert>
-
-<Alert severity="success" onClose={handleClose}>Profile updated successfully.</Alert>
-<Alert severity="error" action={<Button size="small" color="error">Retry</Button>}>Upload failed.</Alert>
-```
-
----
-
-### Backdrop
-
-MUI: `<Backdrop>`
-
-```jsx
-<Backdrop open={loading} sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1, bgcolor: 'rgba(12,68,124,0.5)', backdropFilter: 'blur(4px)' }}>
-  <CircularProgress color="inherit" />
-</Backdrop>
-```
-
----
-
-### Dialog / Modal
-
-MUI: `<Dialog>`, `<DialogTitle>`, `<DialogContent>`, `<DialogActions>`, `<DialogContentText>`
-
-**Sizes:** `xs` (444px), `sm` (600px), `md` (960px), `lg` (1280px), `xl` (1536px), `fullScreen` (mobile)
-
-```jsx
-<Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth
-  PaperProps={{ sx: { borderRadius: '16px', boxShadow: '0 8px 32px rgba(12,68,124,0.16)' } }}>
-
-  <DialogTitle sx={{ fontWeight: 700, color: '#2C2C2A', borderBottom: '1px solid #D1DCE8', pb: 2 }}>
-    Confirm action
-    <IconButton onClick={handleClose} sx={{ position: 'absolute', right: 12, top: 12 }}>
-      <CloseIcon />
-    </IconButton>
-  </DialogTitle>
-
-  <DialogContent sx={{ pt: 3 }}>
-    <DialogContentText>Are you sure you want to proceed?</DialogContentText>
-  </DialogContent>
-
-  <DialogActions sx={{ borderTop: '1px solid #D1DCE8', px: 3, py: 2, bgcolor: '#F4F8FC' }}>
-    <Button variant="outlined" onClick={handleClose}>Cancel</Button>
-    <Button variant="contained" color="primary" onClick={handleConfirm}>Confirm</Button>
-  </DialogActions>
-</Dialog>
-```
-
-**Mobile:** Use `fullScreen` below `sm` breakpoint: `fullScreen={isMobile}`
-
----
-
-### Progress
-
-MUI: `<CircularProgress>`, `<LinearProgress>`
-
-```jsx
-// Circular — loading state
-<CircularProgress size={24} sx={{ color: '#185FA5' }} />
-<CircularProgress size={24} color="success" />
-
-// Linear — page/file upload progress
-<LinearProgress variant="determinate" value={65}
-  sx={{ height: 6, borderRadius: 3, bgcolor: '#E6F1FB', '& .MuiLinearProgress-bar': { bgcolor: '#185FA5' } }} />
-
-// Indeterminate
-<LinearProgress sx={{ bgcolor: '#E6F1FB', '& .MuiLinearProgress-bar': { bgcolor: '#185FA5' } }} />
-```
-
----
-
-### Skeleton
-
-MUI: `<Skeleton>`
-
-**Proflect usage:** Content loading placeholders for cards, table rows, profile sections.
-
-```jsx
-// Card skeleton
-<Box sx={{ p: 3 }}>
-  <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-    <Skeleton variant="circular" width={48} height={48} />
-    <Box sx={{ flex: 1 }}>
-      <Skeleton variant="text" sx={{ fontSize: '1rem', mb: 0.5 }} />
-      <Skeleton variant="text" sx={{ fontSize: '0.875rem', width: '60%' }} />
-    </Box>
-  </Box>
-  <Skeleton variant="rectangular" height={120} sx={{ borderRadius: '8px' }} />
-</Box>
-```
-
-Animation: `wave` (default) — do not use `pulse` for Proflect.
-
----
-
-### Snackbar / Toast
-
-MUI: `<Snackbar>`, combined with `<Alert>`
-
-| Property | Proflect default |
-|----------|-----------------|
-| Position | `bottom-right` desktop, `bottom-center` mobile |
-| Auto-hide | 4000ms (success), 6000ms (error), none (warning) |
-| Max stack | 3 visible |
-
-```jsx
-<Snackbar
-  open={open}
-  autoHideDuration={4000}
-  onClose={handleClose}
-  anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
->
-  <Alert onClose={handleClose} severity="success" variant="filled"
-    sx={{ bgcolor: '#2C2C2A', color: '#fff', '& .MuiAlert-icon': { color: '#1D9E75' }, borderRadius: '12px', boxShadow: '0 8px 32px rgba(12,68,124,0.16)' }}>
-    Changes saved successfully
-  </Alert>
-</Snackbar>
-```
-
----
-
-## 5. Surfaces
-
-### Accordion
-
-MUI: `<Accordion>`, `<AccordionSummary>`, `<AccordionDetails>`
-
-**Proflect usage:** FAQ sections, filter panels, detailed profile sections.
-
-```jsx
-<Accordion disableGutters elevation={0}
-  sx={{ border: '1px solid #D1DCE8', borderRadius: '8px !important', '&:before': { display: 'none' }, mb: 1 }}>
-  <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: '#185FA5' }} />}
-    sx={{ '& .MuiAccordionSummary-content': { my: 1.5 } }}>
-    <Typography variant="body2" fontWeight={600} color="text.primary">Experience</Typography>
-  </AccordionSummary>
-  <AccordionDetails sx={{ borderTop: '1px solid #D1DCE8', pt: 2 }}>
-    {/* content */}
-  </AccordionDetails>
-</Accordion>
-```
-
----
-
-### App Bar
-
-MUI: `<AppBar>`, `<Toolbar>`
-
-**Proflect standard:** White background, border-bottom, sticky, `elevation={0}`
-
-```jsx
-<AppBar position="sticky" elevation={0}
-  sx={{ bgcolor: '#FFFFFF', borderBottom: '1px solid #D1DCE8', color: '#2C2C2A' }}>
-  <Toolbar sx={{ justifyContent: 'space-between', height: 64, px: { xs: 2, md: 4 } }}>
-    {/* Logo */}
-    <Box component="img" src="/logo.svg" alt="Proflect" sx={{ height: 32 }} />
-
-    {/* Desktop nav links */}
-    <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 0.5 }}>
-      <Button variant="text" sx={{ color: '#2C2C2A', '&:hover': { bgcolor: '#E6F1FB', color: '#185FA5' } }}>Dashboard</Button>
-      {/* Active */}
-      <Button variant="text" sx={{ color: '#185FA5', bgcolor: '#E6F1FB' }}>Profiles</Button>
-    </Box>
-
-    {/* Actions */}
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-      <IconButton aria-label="notifications"><Badge badgeContent={3} color="error"><NotificationsIcon /></Badge></IconButton>
-      <Avatar src="/photo.jpg" sx={{ width: 36, height: 36, cursor: 'pointer', border: '2px solid #D1DCE8' }} />
-    </Box>
-  </Toolbar>
-</AppBar>
-```
-
----
-
-### Card
-
-MUI: `<Card>`, `<CardHeader>`, `<CardContent>`, `<CardActions>`, `<CardMedia>`, `<CardActionArea>`
-
-#### Variants
-
-| Variant | Style |
-|---------|-------|
-| Default | White surface, `elevation={1}`, `borderRadius='12px'` |
-| Highlighted | Sky Mist BG, primary border |
-| Interactive | `CardActionArea` with hover lift |
-| Media | `CardMedia` top image, then content |
-
-```jsx
-// Standard card
-<Card elevation={1} sx={{ borderRadius: '12px', border: '1px solid #D1DCE8' }}>
-  <CardHeader
-    avatar={<Avatar sx={{ bgcolor: '#185FA5' }}>JD</Avatar>}
-    title={<Typography variant="body1" fontWeight={600}>Jane Doe</Typography>}
-    subheader={<Typography variant="caption" color="text.secondary">Software Engineer</Typography>}
-    action={<Chip label="Verified" size="small" sx={{ bgcolor: '#D1FAE5', color: '#1D9E75' }} />}
-  />
-  <CardContent sx={{ pt: 0 }}>
-    <Typography variant="body2" color="text.secondary">5 years of React experience.</Typography>
-  </CardContent>
-  <CardActions sx={{ px: 2, pb: 2 }}>
-    <Button size="small" variant="outlined">View Profile</Button>
-    <Button size="small" variant="contained">Contact</Button>
-  </CardActions>
-</Card>
-```
-
----
-
-### Paper
-
-MUI: `<Paper>`
-
-**Proflect usage:** Section containers, sidebar panels, content regions.
-
-```jsx
-<Paper elevation={0} sx={{ border: '1px solid #D1DCE8', borderRadius: '12px', p: 3 }}>
-  {/* content */}
-</Paper>
-```
-
----
-
-## 6. Navigation
-
-### Bottom Navigation
-
-MUI: `<BottomNavigation>`, `<BottomNavigationAction>`
-
-**Proflect usage:** Primary mobile navigation (max 5 items).
-
-```jsx
-<BottomNavigation value={value} onChange={handleChange} showLabels
-  sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, borderTop: '1px solid #D1DCE8', height: 64,
-        '& .MuiBottomNavigationAction-root': { color: '#9CA3AF', minWidth: 0 },
-        '& .MuiBottomNavigationAction-root.Mui-selected': { color: '#185FA5' } }}>
-  <BottomNavigationAction label="Home" icon={<HomeIcon />} />
-  <BottomNavigationAction label="Search" icon={<SearchIcon />} />
-  <BottomNavigationAction label="Profile" icon={<PersonIcon />} />
-  <BottomNavigationAction label="Settings" icon={<SettingsIcon />} />
-</BottomNavigation>
-```
-
----
-
-### Breadcrumbs
-
-MUI: `<Breadcrumbs>`, `<Link>`, `<Typography>`
-
-```jsx
-<Breadcrumbs separator="›" sx={{ '& .MuiBreadcrumbs-separator': { color: '#9CA3AF' } }}>
-  <Link href="/" underline="hover" sx={{ color: '#185FA5', fontSize: '14px' }}>Home</Link>
-  <Link href="/candidates" underline="hover" sx={{ color: '#185FA5', fontSize: '14px' }}>Candidates</Link>
-  <Typography variant="body2" color="text.primary" fontWeight={500}>Jane Doe</Typography>
-</Breadcrumbs>
-```
-
----
-
-### Drawer
-
-MUI: `<Drawer>`
-
-| Variant | Usage |
-|---------|-------|
-| `temporary` | Mobile nav overlay (swipe to close) |
-| `permanent` | Desktop sidebar (always visible) |
-| `persistent` | Collapsible desktop sidebar |
-
-```jsx
-// Mobile drawer
-<Drawer
-  anchor="left"
-  open={open}
-  onClose={toggleDrawer}
-  PaperProps={{ sx: { width: 280, bgcolor: '#FFFFFF', borderRight: '1px solid #D1DCE8' } }}
->
-  {/* Sidebar nav list */}
-</Drawer>
-
-// Desktop permanent sidebar
-<Drawer variant="permanent"
-  PaperProps={{ sx: { width: 240, bgcolor: '#FFFFFF', borderRight: '1px solid #D1DCE8', pt: 8 } }}>
-```
-
----
-
-### Link
-
-MUI: `<Link>`
-
-```jsx
-<Link href="#" underline="hover" sx={{ color: '#185FA5', fontSize: '14px', fontWeight: 500 }}>
-  View all candidates
-</Link>
-```
-
----
-
-### Menu
-
-MUI: `<Menu>`, `<MenuItem>`, `<MenuList>`, `<Divider>`
-
-**Proflect usage:** Context menus, dropdown actions, user account menu.
-
-```jsx
-<Menu
-  anchorEl={anchor}
-  open={Boolean(anchor)}
-  onClose={handleClose}
-  PaperProps={{ elevation: 4, sx: { borderRadius: '12px', border: '1px solid #D1DCE8', minWidth: 200, mt: 1 } }}
->
-  <MenuItem onClick={handleClose} sx={{ fontSize: '14px', '&:hover': { bgcolor: '#E6F1FB', color: '#185FA5' } }}>
-    <ListItemIcon><EditIcon fontSize="small" /></ListItemIcon>
-    Edit
-  </MenuItem>
-  <MenuItem onClick={handleClose} sx={{ fontSize: '14px', '&:hover': { bgcolor: '#E6F1FB', color: '#185FA5' } }}>
-    <ListItemIcon><ContentCopyIcon fontSize="small" /></ListItemIcon>
-    Duplicate
-  </MenuItem>
-  <Divider sx={{ borderColor: '#D1DCE8' }} />
-  <MenuItem onClick={handleClose} sx={{ color: '#D93025', fontSize: '14px', '&:hover': { bgcolor: '#FEE2E2' } }}>
-    <ListItemIcon><DeleteIcon fontSize="small" sx={{ color: '#D93025' }} /></ListItemIcon>
-    Delete
-  </MenuItem>
-</Menu>
-```
-
----
-
-### Menubar
-
-MUI: `<Menubar>` (new in v9) — horizontal navigation bar with keyboard navigation.
-
-**Proflect usage:** Top-level desktop navigation for multi-section apps.
-
----
-
-### Pagination
-
-MUI: `<Pagination>`, `<PaginationItem>`
-
-```jsx
-<Pagination
-  count={10}
-  page={page}
-  onChange={handlePage}
-  shape="rounded"
-  sx={{
-    '& .MuiPaginationItem-root': { color: '#2C2C2A', borderColor: '#D1DCE8' },
-    '& .MuiPaginationItem-root.Mui-selected': { bgcolor: '#185FA5', color: '#fff', borderColor: '#185FA5' },
-    '& .MuiPaginationItem-root:hover': { bgcolor: '#E6F1FB' },
-  }}
-/>
-```
-
----
-
-### Speed Dial
-
-MUI: `<SpeedDial>`, `<SpeedDialAction>`
-
-**Proflect usage:** Contextual quick actions on mobile dashboards.
-
-```jsx
-<SpeedDial ariaLabel="Quick actions" icon={<SpeedDialIcon />}
-  sx={{ position: 'fixed', bottom: 80, right: 16, '& .MuiSpeedDial-fab': { bgcolor: '#185FA5', '&:hover': { bgcolor: '#0C447C' } } }}>
-  <SpeedDialAction icon={<AddIcon />} tooltipTitle="Add candidate" onClick={handleAdd} />
-  <SpeedDialAction icon={<ShareIcon />} tooltipTitle="Share" onClick={handleShare} />
-</SpeedDial>
-```
-
----
-
-### Stepper
-
-MUI: `<Stepper>`, `<Step>`, `<StepLabel>`, `<StepContent>`
-
-**Proflect usage:** Onboarding flows, multi-step forms, profile completion wizard.
-
-```jsx
-<Stepper activeStep={1} alternativeLabel
-  sx={{ '& .MuiStepIcon-root.Mui-completed': { color: '#1D9E75' }, '& .MuiStepIcon-root.Mui-active': { color: '#185FA5' } }}>
-  {['Account', 'Profile', 'Skills', 'Review'].map(label => (
-    <Step key={label}>
-      <StepLabel>{label}</StepLabel>
-    </Step>
-  ))}
-</Stepper>
-```
-
----
-
-### Tabs
-
-MUI: `<Tabs>`, `<Tab>`, `<TabPanel>` (custom)
-
-**Proflect usage:** Profile sections, dashboard views, settings pages.
-
-```jsx
-<Tabs value={tab} onChange={handleTab}
-  sx={{
-    borderBottom: '1px solid #D1DCE8',
-    '& .MuiTabs-indicator': { bgcolor: '#185FA5', height: 3, borderRadius: '3px 3px 0 0' },
-    '& .MuiTab-root': { color: '#6B7280', fontWeight: 500, fontSize: '14px', textTransform: 'none', minHeight: 48 },
-    '& .MuiTab-root.Mui-selected': { color: '#185FA5', fontWeight: 600 },
-  }}>
-  <Tab label="Overview" value="overview" />
-  <Tab label="Experience" value="experience" />
-  <Tab label="Skills" value="skills" />
-</Tabs>
-```
-
-**Variants:**
-- Default: underline indicator (above)
-- Contained / pill: wrap Tabs in `Paper` with `bgcolor: '#F4F8FC'`, add `borderRadius` to selected Tab
-
----
-
-## 7. Layout
-
-### Box
-
-MUI: `<Box>` — generic layout container, alias for `<div>` with `sx` prop.
-
-```jsx
-<Box sx={{ display: 'flex', gap: 2, alignItems: 'center', p: 3, bgcolor: '#F4F8FC', borderRadius: '12px' }}>
-```
-
----
-
-### Container
-
-MUI: `<Container>`
-
-```jsx
-// Default (max-width: lg = 1280px)
-<Container maxWidth="lg" sx={{ px: { xs: 2, md: 4 } }}>
-
-// Narrow (forms, auth pages)
-<Container maxWidth="sm">
-
-// Full bleed section
-<Box sx={{ bgcolor: '#E6F1FB', py: 8 }}>
-  <Container maxWidth="lg">
-```
-
----
-
-### Grid
-
-MUI: `<Grid>` (v2, uses CSS gap)
-
-```jsx
-<Grid container spacing={3}>
-  <Grid size={{ xs: 12, md: 6, lg: 4 }}>
-    <CandidateCard />
-  </Grid>
-  <Grid size={{ xs: 12, md: 6, lg: 4 }}>
-    <CandidateCard />
-  </Grid>
-</Grid>
-```
-
----
-
-### Stack
-
-MUI: `<Stack>` — one-dimensional flex layout.
-
-```jsx
-// Vertical (default)
-<Stack spacing={2}>
-  <TextField label="First name" />
-  <TextField label="Last name" />
-  <Button variant="contained">Submit</Button>
-</Stack>
-
-// Horizontal
-<Stack direction="row" spacing={2} alignItems="center">
-  <Avatar />
-  <Typography>Jane Doe</Typography>
-  <Chip label="Active" />
-</Stack>
-```
-
----
-
-### Image List
-
-MUI: `<ImageList>`, `<ImageListItem>`, `<ImageListItemBar>`
-
-**Proflect usage:** Portfolio images, project screenshots, certificate gallery.
-
-```jsx
-<ImageList cols={3} gap={12} sx={{ borderRadius: '12px', overflow: 'hidden' }}>
-  {items.map(item => (
-    <ImageListItem key={item.img}>
-      <img src={item.img} alt={item.title} loading="lazy" />
-      <ImageListItemBar title={item.title} subtitle={item.author} />
-    </ImageListItem>
-  ))}
-</ImageList>
-```
-
----
-
-## 8. Utility Components
-
-### Click-Away Listener
-
-MUI: `<ClickAwayListener>` — detects clicks outside a wrapped element.
-
-```jsx
-<ClickAwayListener onClickAway={handleClose}>
-  <Box>{/* dropdown or popover content */}</Box>
-</ClickAwayListener>
-```
-
----
-
-### CSS Baseline
-
-MUI: `<CssBaseline>` — normalizes browser defaults.
-
-```jsx
-// Place once at app root
-<CssBaseline />
-```
-
----
-
-### Modal (low-level)
-
-MUI: `<Modal>` — headless, use `<Dialog>` for most cases.
-
-```jsx
-<Modal open={open} onClose={handleClose} closeAfterTransition
-  BackdropProps={{ sx: { bgcolor: 'rgba(12,68,124,0.5)', backdropFilter: 'blur(4px)' } }}>
-  <Fade in={open}>
-    <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-                bgcolor: '#fff', borderRadius: '16px', p: 4, boxShadow: '0 8px 32px rgba(12,68,124,0.16)' }}>
-      {/* content */}
-    </Box>
-  </Fade>
-</Modal>
-```
-
----
-
-### Popover
-
-MUI: `<Popover>` — anchor-relative overlay.
-
-**Proflect usage:** Profile preview cards, skill detail overlays, help text.
-
-```jsx
-<Popover
-  open={open}
-  anchorEl={anchorEl}
-  onClose={handleClose}
-  anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-  transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-  PaperProps={{ sx: { borderRadius: '12px', border: '1px solid #D1DCE8', boxShadow: '0 4px 16px rgba(12,68,124,0.12)', p: 2, minWidth: 240 } }}
->
-```
-
----
-
-### Popper
-
-MUI: `<Popper>` — lower-level than Popover; used by Autocomplete, Tooltip internally.
-
----
-
-### Portal
-
-MUI: `<Portal>` — renders children into a different DOM node.
-
----
-
-### Textarea Autosize
-
-MUI: `<TextareaAutosize>` — auto-grows with content.
-
-```jsx
-<TextareaAutosize
-  minRows={3}
-  maxRows={8}
-  placeholder="Describe your experience..."
-  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #D1DCE8',
-           fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#2C2C2A', resize: 'none' }}
-/>
-```
-
----
-
-### Transitions
-
-MUI: `<Fade>`, `<Grow>`, `<Slide>`, `<Zoom>`, `<Collapse>`
-
-| Transition | Usage |
-|-----------|-------|
-| `<Fade>` | Modals, toasts, overlays |
-| `<Slide>` | Drawers (direction: left/right/up) |
-| `<Collapse>` | Accordions, expandable rows |
-| `<Grow>` | Popovers, speed dials |
-| `<Zoom>` | FABs entering the screen |
-
----
-
-## 9. MUI X / Advanced
-
-### Data Grid
-
-MUI X: `<DataGrid>`, `<DataGridPro>`, `<DataGridPremium>`
-
-**Proflect usage:** Large candidate tables, analytics views, admin data management.
-
-```jsx
-<DataGrid
-  rows={rows}
-  columns={columns}
-  pageSizeOptions={[10, 25, 50]}
-  checkboxSelection
-  disableRowSelectionOnClick
-  slots={{ toolbar: GridToolbar }}
-  sx={{
-    border: '1px solid #D1DCE8',
-    borderRadius: '12px',
-    '& .MuiDataGrid-columnHeaders': { bgcolor: '#E6F1FB', color: '#185FA5', fontWeight: 600, fontSize: '12px' },
-    '& .MuiDataGrid-row:hover': { bgcolor: '#F4F8FC' },
-    '& .MuiDataGrid-cell:focus': { outline: 'none' },
-    '& .MuiDataGrid-columnSeparator': { display: 'none' },
-    '& .MuiCheckbox-root.Mui-checked': { color: '#185FA5' },
-  }}
-/>
-```
-
----
-
-### Date & Time Pickers
-
-MUI X: `<DatePicker>`, `<TimePicker>`, `<DateTimePicker>`, `<DateRangePicker>`
-
-```jsx
-<DatePicker
-  label="Start date"
-  value={date}
-  onChange={setDate}
-  slotProps={{
-    textField: { fullWidth: true, size: 'medium' },
-    day: { sx: { '&.Mui-selected': { bgcolor: '#185FA5' }, '&.Mui-selected:hover': { bgcolor: '#0C447C' } } }
-  }}
-/>
-```
-
----
-
-### Charts
-
-MUI X: `<BarChart>`, `<LineChart>`, `<PieChart>`, `<ScatterChart>`, `<SparkLineChart>`
-
-```jsx
-<BarChart
-  series={[{ data: [40, 60, 75, 90], color: '#185FA5', label: 'Placements' }]}
-  xAxis={[{ data: ['Q1', 'Q2', 'Q3', 'Q4'], scaleType: 'band' }]}
-  height={300}
-/>
-
-// Color palette for multi-series
-const chartColors = ['#185FA5', '#1D9E75', '#F59E0B', '#D93025', '#0C447C']
-```
-
----
-
-### Tree View
-
-MUI X: `<RichTreeView>`, `<SimpleTreeView>`
-
-**Proflect usage:** Org hierarchy, category navigation, skill taxonomy.
-
-```jsx
-<SimpleTreeView
-  sx={{ '& .MuiTreeItem-root.Mui-selected > .MuiTreeItem-content': { bgcolor: '#E6F1FB', color: '#185FA5' } }}
->
-  <TreeItem itemId="eng" label="Engineering">
-    <TreeItem itemId="fe" label="Frontend" />
-    <TreeItem itemId="be" label="Backend" />
-  </TreeItem>
-</SimpleTreeView>
-```
-
----
-
-## 10. Lab / Experimental
-
-### Masonry
-
-MUI Lab: `<Masonry>` — variable-height card grid.
-
-**Proflect usage:** Portfolio/project gallery, media feeds.
-
-```jsx
-<Masonry columns={{ xs: 1, sm: 2, md: 3 }} spacing={2}>
-  {items.map(item => (
-    <Card key={item.id} elevation={0} sx={{ border: '1px solid #D1DCE8', borderRadius: '12px' }}>
-```
-
----
-
-### Timeline
-
-MUI Lab: `<Timeline>`, `<TimelineItem>`, `<TimelineSeparator>`, `<TimelineContent>`
-
-**Proflect usage:** Work history, career progression, activity feed.
-
-```jsx
-<Timeline position="alternate">
-  <TimelineItem>
-    <TimelineSeparator>
-      <TimelineDot sx={{ bgcolor: '#185FA5' }} />
-      <TimelineConnector sx={{ bgcolor: '#D1DCE8' }} />
-    </TimelineSeparator>
-    <TimelineContent>
-      <Typography variant="body2" fontWeight={600}>Software Engineer</Typography>
-      <Typography variant="caption" color="text.secondary">Acme Corp · 2022–Present</Typography>
-    </TimelineContent>
-  </TimelineItem>
-</Timeline>
-```
-
----
-
-## 11. Search Bar Pattern
-
-A first-class UI pattern combining `<TextField>` + `<InputAdornment>` + optional `<Autocomplete>`.
-
-### Standard Search Bar
-
-```jsx
-<TextField
-  placeholder="Search candidates, skills, roles..."
-  size="medium"
-  fullWidth
-  InputProps={{
-    startAdornment: (
-      <InputAdornment position="start">
-        <SearchIcon sx={{ color: '#9CA3AF' }} />
-      </InputAdornment>
-    ),
-    endAdornment: query && (
-      <InputAdornment position="end">
-        <IconButton size="small" onClick={clearSearch}><CloseIcon fontSize="small" /></IconButton>
-      </InputAdornment>
-    ),
-    sx: { borderRadius: '8px', bgcolor: '#fff', '& fieldset': { borderColor: '#D1DCE8' } }
-  }}
-  sx={{ '& .MuiOutlinedInput-root:hover fieldset': { borderColor: '#185FA5' }, '& .MuiOutlinedInput-root.Mui-focused fieldset': { borderColor: '#185FA5' } }}
-  value={query}
-  onChange={e => setQuery(e.target.value)}
-/>
-```
-
-### Search with Suggestions (Autocomplete)
-
-```jsx
-<Autocomplete
-  freeSolo
-  options={suggestions}
-  renderInput={(params) => (
-    <TextField
-      {...params}
-      placeholder="Search..."
-      InputProps={{
-        ...params.InputProps,
-        startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: '#9CA3AF' }} /></InputAdornment>,
-        sx: { borderRadius: '8px' }
-      }}
-    />
-  )}
-  renderOption={(props, option) => (
-    <Box component="li" {...props} sx={{ fontSize: '14px', '&[aria-selected=true]': { bgcolor: '#E6F1FB !important' } }}>
-      {option}
-    </Box>
-  )}
-/>
-```
-
----
-
-## 12. Filter Pattern
-
-### Inline Filter Bar (desktop)
-
-```jsx
-<Stack direction="row" spacing={2} alignItems="center" sx={{ flexWrap: 'wrap' }}>
-  {/* Search */}
-  <TextField size="small" placeholder="Search..." InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
-    sx={{ width: 280 }} />
-
-  {/* Select filter */}
-  <FormControl size="small" sx={{ minWidth: 140 }}>
-    <InputLabel>Role</InputLabel>
-    <Select value={role} label="Role" onChange={setRole} sx={{ borderRadius: '8px' }}>
-      <MenuItem value="">All roles</MenuItem>
-      <MenuItem value="engineer">Engineer</MenuItem>
-    </Select>
-  </FormControl>
-
-  {/* Toggle group filter */}
-  <ToggleButtonGroup value={status} exclusive onChange={setStatus} size="small">
-    <ToggleButton value="all">All</ToggleButton>
-    <ToggleButton value="active">Active</ToggleButton>
-    <ToggleButton value="pending">Pending</ToggleButton>
-  </ToggleButtonGroup>
-
-  {/* Active filter chips */}
-  {activeFilters.map(f => (
-    <Chip key={f.id} label={f.label} onDelete={() => removeFilter(f.id)} size="small"
-      sx={{ bgcolor: '#E6F1FB', color: '#185FA5' }} />
-  ))}
-
-  {activeFilters.length > 0 && (
-    <Button size="small" variant="text" onClick={clearAll} sx={{ color: '#D93025' }}>Clear all</Button>
-  )}
-</Stack>
-```
-
-### Filter Drawer (mobile)
-
-Open a `<Drawer anchor="bottom">` triggered by a "Filters" `<Button>` with `<FilterListIcon>`. Contains:
-- `<Accordion>` for each filter group
-- `<Slider>` for range filters (salary, experience)
-- `<FormGroup>` + `<Checkbox>` for multi-select filters
-- Sticky footer with "Apply Filters" (primary) + "Reset" (ghost) buttons
-
-### Active Filter Count Badge
-
-```jsx
-<Button variant="outlined" startIcon={<FilterListIcon />}
-  sx={{ borderColor: activeCount > 0 ? '#185FA5' : '#D1DCE8', color: activeCount > 0 ? '#185FA5' : '#6B7280' }}>
-  Filters
-  {activeCount > 0 && <Badge badgeContent={activeCount} color="primary" sx={{ ml: 1.5 }} />}
-</Button>
-```
-
----
-
-## 13. Responsive Breakpoints
-
-MUI breakpoints (configure via `createTheme`):
-
-| Name | Default | Tailwind | Devices |
-|------|---------|----------|---------|
-| `xs` | 0px | (default) | Mobile portrait |
-| `sm` | 600px | `sm:` | Mobile landscape, small tablet |
-| `md` | 900px | `md:` | Tablet |
-| `lg` | 1200px | `lg:` | Desktop |
-| `xl` | 1536px | `xl:` | Wide screens |
-
-```jsx
-// Responsive sx prop
-sx={{ display: { xs: 'none', md: 'flex' } }}
-sx={{ px: { xs: 2, sm: 3, md: 4 } }}
-sx={{ fontSize: { xs: '14px', md: '16px' } }}
-
-// useMediaQuery hook
-const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
-```
-
-**Mobile-first patterns:**
-- Stack vertically on `xs`, row on `md+`
-- Bottom nav on `xs/sm`, side nav on `md+`
-- `fullScreen` dialogs on `xs`
-- FAB for primary action on `xs/sm`, inline button on `md+`
-
----
-
-## 14. Accessibility Standards
+## 13. Accessibility
 
 ### Contrast Ratios (WCAG AA)
 
@@ -1755,84 +685,85 @@ const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 | White `#FFFFFF` | Primary `#185FA5` | 5.1:1 | ✅ AA |
 | Primary `#185FA5` | Sky Mist `#E6F1FB` | 4.6:1 | ✅ AA |
 | White `#FFFFFF` | Deep Navy `#0C447C` | 7.8:1 | ✅ AAA |
-| White `#FFFFFF` | Success `#1D9E75` | 3.2:1 | ⚠️ Large text only |
 | White `#FFFFFF` | Error `#D93025` | 4.5:1 | ✅ AA |
+| White `#FFFFFF` | Success `#1D9E75` | 3.2:1 | ⚠️ Large text only |
 
-### Focus Management
+### Focus Rings
 
-```jsx
-// MUI applies focus rings automatically — ensure theme doesn't remove them
-// Custom focus ring override in theme:
-components: {
-  MuiButtonBase: {
-    defaultProps: { disableRipple: false },
-    styleOverrides: {
-      root: { '&:focus-visible': { outline: '2px solid #185FA5', outlineOffset: '2px' } }
-    }
-  }
-}
+Do not suppress focus without a replacement:
+```css
+:focus-visible { outline: 2px solid var(--c-primary); outline-offset: 2px; }
 ```
 
-### ARIA Essentials
+Tailwind:
+```html
+<button class="focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none">
+```
 
-```jsx
-// Icon-only buttons
-<IconButton aria-label="Delete item"><DeleteIcon /></IconButton>
+### ARIA Patterns
 
-// Loading state
-<Button disabled aria-busy="true">
-  <CircularProgress size={16} sx={{ mr: 1 }} aria-hidden="true" /> Saving…
-</Button>
+```html
+<!-- Icon-only buttons -->
+<button aria-label="Delete resume"><svg aria-hidden="true">…</svg></button>
 
-// Live regions for dynamic updates
-<Box role="status" aria-live="polite" sx={{ srOnly: true }}>
-  {statusMessage}
-</Box>
+<!-- Loading state -->
+<button disabled aria-busy="true">
+  <span class="sr-only">Saving…</span>
+  <svg class="animate-spin" aria-hidden="true">…</svg>
+</button>
 
-// Skip navigation
-<a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4">
+<!-- Live regions for dynamic content -->
+<div role="status" aria-live="polite" class="sr-only">{statusMessage}</div>
+
+<!-- Skip link -->
+<a href="#main-content"
+   class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:bg-white focus:px-4 focus:py-2 focus:rounded">
   Skip to content
 </a>
 ```
 
 ---
 
-## 15. Tailwind Config Reference
+## 14. Tailwind Config Reference
 
 ```js
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ['./src/**/*.{js,ts,jsx,tsx}'],
+  content: ['./app/**/*.{js,jsx}', './components/**/*.{js,jsx}'],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        primary: {
-          DEFAULT: '#185FA5',
-          dark:    '#0C447C',
-          light:   '#E6F1FB',
-        },
-        success:  '#1D9E75',
-        charcoal: '#2C2C2A',
-        border:   '#D1DCE8',
-        surface:  '#FFFFFF',
-        bg:       '#F4F8FC',
-        error:    '#D93025',
-        warning:  '#F59E0B',
+        primary:   { DEFAULT: '#185FA5', dark: '#0C447C', light: '#E6F1FB' },
+        secondary: { DEFAULT: '#1D9E75', light: '#E6F5F0' },
+        charcoal:  '#2C2C2A',
+        success:   '#1D9E75',
+        error:     '#D93025',
+        warning:   '#F59E0B',
+        border:    '#D1DCE8',
+        surface:   '#FFFFFF',
+        bg:        '#F4F8FC',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        heading: ['Inter', 'system-ui', 'sans-serif'],
+        body:    ['Inter', 'system-ui', 'sans-serif'],
+        sans:    ['Inter', 'system-ui', 'sans-serif'],
+        mono:    ['JetBrains Mono', 'monospace'],
       },
       borderRadius: {
-        'xl':  '12px',
-        '2xl': '16px',
+        sm:      '4px',
+        DEFAULT: '8px',
+        lg:      '12px',
+        xl:      '12px',
+        '2xl':   '16px',
+        btn:     '999px',
       },
       boxShadow: {
-        sm:  '0 1px 2px rgba(12,68,124,0.06)',
+        sm:      '0 1px 2px rgba(12,68,124,0.06)',
         DEFAULT: '0 2px 8px rgba(12,68,124,0.10)',
-        md:  '0 4px 16px rgba(12,68,124,0.12)',
-        lg:  '0 8px 32px rgba(12,68,124,0.16)',
-        xl:  '0 16px 48px rgba(12,68,124,0.20)',
+        md:      '0 4px 16px rgba(12,68,124,0.12)',
+        lg:      '0 8px 32px rgba(12,68,124,0.16)',
+        xl:      '0 16px 48px rgba(12,68,124,0.20)',
       },
     },
   },
@@ -1843,82 +774,19 @@ module.exports = {
 }
 ```
 
-### MUI Theme (complete starter)
+---
 
-```js
-import { createTheme } from '@mui/material/styles'
+## 15. File Locations
 
-const proflectTheme = createTheme({
-  palette: {
-    primary:    { main: '#185FA5', dark: '#0C447C', light: '#E6F1FB', contrastText: '#fff' },
-    success:    { main: '#1D9E75', contrastText: '#fff' },
-    error:      { main: '#D93025', contrastText: '#fff' },
-    warning:    { main: '#F59E0B', contrastText: '#fff' },
-    text:       { primary: '#2C2C2A', secondary: '#6B7280', disabled: '#9CA3AF' },
-    background: { default: '#F4F8FC', paper: '#FFFFFF' },
-    divider:    '#D1DCE8',
-  },
-  typography: {
-    fontFamily: "'Inter', system-ui, sans-serif",
-    h1: { fontSize: '2.25rem', fontWeight: 700 },
-    h2: { fontSize: '1.75rem', fontWeight: 700 },
-    h3: { fontSize: '1.375rem', fontWeight: 600 },
-    h4: { fontSize: '1.125rem', fontWeight: 600 },
-    h5: { fontSize: '1rem',     fontWeight: 600 },
-    h6: { fontSize: '0.875rem', fontWeight: 600 },
-    body1: { fontSize: '1rem',     lineHeight: 1.6 },
-    body2: { fontSize: '0.875rem', lineHeight: 1.6 },
-    button: { textTransform: 'none', fontWeight: 500 },
-    caption: { fontSize: '0.75rem' },
-    overline: { fontSize: '0.6875rem', letterSpacing: '0.1em', fontWeight: 500 },
-  },
-  shape: { borderRadius: 8 },
-  shadows: [
-    'none',
-    '0 1px 2px rgba(12,68,124,0.06)',
-    '0 2px 8px rgba(12,68,124,0.10)',
-    '0 2px 8px rgba(12,68,124,0.10)',
-    '0 4px 16px rgba(12,68,124,0.12)',
-    // ... levels 5-24 use progressively deeper navy shadows
-  ],
-  components: {
-    MuiButton: {
-      defaultProps: { disableElevation: true },
-      styleOverrides: {
-        root: { borderRadius: 8, textTransform: 'none', fontWeight: 500 },
-      },
-    },
-    MuiCard: {
-      defaultProps: { elevation: 1 },
-      styleOverrides: { root: { borderRadius: 12 } },
-    },
-    MuiTextField: {
-      defaultProps: { variant: 'outlined', size: 'medium' },
-    },
-    MuiChip: {
-      styleOverrides: { root: { borderRadius: 8 } },
-    },
-    MuiDialog: {
-      styleOverrides: { paper: { borderRadius: 16 } },
-    },
-    MuiTooltip: {
-      styleOverrides: {
-        tooltip: { backgroundColor: '#2C2C2A', fontSize: '12px' },
-        arrow: { color: '#2C2C2A' },
-      },
-    },
-    MuiTab: {
-      styleOverrides: { root: { textTransform: 'none', fontWeight: 500 } },
-    },
-    MuiTableHead: {
-      styleOverrides: { root: { '& th': { fontWeight: 600, fontSize: '12px', letterSpacing: '0.05em' } } },
-    },
-  },
-})
-
-export default proflectTheme
-```
+| File | Purpose |
+|------|---------|
+| `nextjs/tailwind.config.js` | Tailwind config — colors, fonts, radius, shadows |
+| `nextjs/app/globals.css` | All CSS variables, utility classes, animations, dark mode |
+| `nextjs/styles/resume-print.css` | Print-mode styles for `/print/[id]` |
+| `nextjs/app/layout.jsx` | Root layout — dark mode init script |
+| `nextjs/hooks/useTheme.js` | Dark mode toggle hook (`isDark`, `toggle`) |
+| `nextjs/postcss.config.js` | PostCSS — tailwindcss + autoprefixer |
 
 ---
 
-*Proflect Design System · v2.0 · MUI v9 · Web & Mobile · Maintained by the Proflect product team*
+*Proflect Design System · v2.0 · Tailwind CSS · Custom CSS Properties · No external UI library*
