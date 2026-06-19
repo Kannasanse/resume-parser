@@ -312,8 +312,8 @@ function SkillsBody({ sec, util, variantCols }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 18, rowGap: 5 }}>
         {entries.map((s, i) => (
           <div key={i}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontWeight: 500 }}>{s.name}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6, minWidth: 0 }}>
+              <span style={{ fontWeight: 500, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
               {lvlStyle === 'dots' && <SkillLevelDots level={s.level} color={dotColor} />}
               {(lvlStyle === 'bars' || lvlStyle === 'bar') && (
                 <span style={{ display: 'inline-flex', alignItems: 'center', width: 60, height: 6, borderRadius: 3, background: '#E5E7EB', overflow: 'hidden', flexShrink: 0 }}>
@@ -335,11 +335,11 @@ function SkillsBody({ sec, util, variantCols }) {
     <div style={{ display: 'grid', rowGap }}>
       {entries.map((s, i) => (
         <div key={i}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, flexWrap: 'wrap' }}>
-            {dss.startWithBullets && <span style={{ color: dotColor }}>•</span>}
-            <span style={{ fontWeight: 500 }}>{s.name}</span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, flexWrap: 'nowrap', minWidth: 0 }}>
+            {dss.startWithBullets && <span style={{ color: dotColor, flexShrink: 0 }}>•</span>}
+            <span style={{ fontWeight: 500, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
             {s.level > 0 && (
-              <span style={{ color: '#6B7280', fontSize: '0.9em' }}>
+              <span style={{ color: '#6B7280', fontSize: '0.9em', flexShrink: 0, whiteSpace: 'nowrap' }}>
                 {subStyle === 'dash'  ? `— ${SKILL_LEVELS[s.level] || ''}` :
                  subStyle === 'paren' ? `(${SKILL_LEVELS[s.level] || ''})` :
                  `: ${SKILL_LEVELS[s.level] || ''}`}
